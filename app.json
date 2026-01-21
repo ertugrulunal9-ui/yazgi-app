@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "Yazgı",
+    "slug": "yazgi",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "projectRoot": "./",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 24,
+            "enableHermes": true
+          },
+          "ios": {
+            "useFrameworks": "static",
+            "enableHermes": true
+          }
+        }
+      ]
+    ],
+    "jsEngine": "hermes",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yazgi.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#121212"
+      },
+      "package": "com.yazgi.app"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "c4188d07-e11e-43ce-a21d-5f620933c449"
+      }
+    }
+  }
+}
