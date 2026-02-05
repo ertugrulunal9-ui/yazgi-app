@@ -1,0 +1,292 @@
+<debugging_best_practices>
+  <overview>
+    Yazgı projesinde sorun giderme yaparken uyulması gereken en iyi uygulamalar ve yönergeler.
+  </overview>
+
+  <core_principles>
+    <principle priority="1" name="Önce Anla, Sonra Değiştir">
+      <description>
+        Kod değiştirmeden önce sorunu tam olarak anla. Doğrudan düzeltmeye çalışmak yerine
+        önce kök nedeni belirle.
+      </description>
+      <rationale>
+        Hızlı düzeltmeler genellikle semptomları giderir ancak kök nedeni çömez.
+        Bu da gelecekte benzer sorunların tekrarlanmasına neden olur.
+      </rationale>
+      <actions>
+        <action>İlgili dosyaları oku ve bağlamı anla</action>
+        <action>Hata mesajlarını ve stack trace'leri detaylı analiz et</action>
+        <action>"Neden bu hatayı alıyoruz?" sorusuna cevap bul</action>
+      </actions>
+    </principle>
+
+    <principle priority="2" name="Mimariyi Koru">
+      <description>
+        Çözüm uygularken projenin mevcut mimarisini koru. Mimariyi bozan geçici çözümlerden kaçın.
+      </description>
+      <rationale>
+        Mimari tutarsızlıkları kodun bakımını zorlaştırır ve yeni hatalara yol açar.
+        Yazgı projesi belirli bir yapıya sahiptir ve bu yapıya sadık kalınmalıdır.
+      </rationale>
+      <actions>
+        <action>Mevcut kod stillerine ve kurallarına uymaya dikkat et</action>
+        <action>Yeni dosyaları doğru dizin yapısına yerleştir</action>
+        <action>Component, hook ve utility ayrımını koru</action>
+      </actions>
+    </principle>
+
+    <principle priority="3" name="Minimal Değişiklik">
+      <description>
+        Sorunu çözmek için en az değişikliği yap. Gereksiz refaktoring'den kaçın.
+      </description>
+      <rationale>
+        Büyük değişiklikler yeni hatalar getirebilir ve test edilmesi zorlaşır.
+        Hata ayıklama sırasında odak noktası sorunu çözmek olmalıdır.
+      </rationale>
+      <actions>
+        <action>Doğrudan soruna odaklan</action>
+        <action>İlişkisiz kodları değiştirme</action>
+        <action>Refactoring için ayrı bir görev planla</action>
+      </actions>
+    </principle>
+
+    <principle priority="4" name="Type Güvenliği">
+      <description>
+        TypeScript tip güvenliğinden asla ödün verme. any kullanımından kaçın.
+      </description>
+      <rationale>
+        Type güvenliği derleme zamanında hataları yakalar ve kod güvenliğini artırır.
+        Yazgı projesi TypeScript ile geliştirilmektedir ve bu avantajdan yararlanılmalıdır.
+      </rationale>
+      <actions>
+        <action>src/types.ts dosyasındaki tanımlamaları kullan</action>
+        <action>any yerine doğru tip tanımları kullan</action>
+        <action>tsconfig.json strict mode ayarlarını koru</action>
+      </actions>
+    </principle>
+  </core_principles>
+
+  <expo_specific_practices>
+    <practice category="build_issues">
+      <title>Expo Build Sorunları</title>
+      <guidelines>
+        <guideline priority="high">
+          <rule>Native modül hatalarında önce Expo uyumluluğunu kontrol et</rule>
+          <details>
+            Bazı paketler Expo ile uyumlu değildir. Expo dokümantasyonunda
+            supported packages listesini kontrol et.
+          </details>
+        </guideline>
+        <guideline priority="high">
+          <rule>EAS build hatalarında eas.json konfigürasyonunu incele</rule>
+          <details>
+            buildProfile ayarları, environment variables ve native modül
+            konfigürasyonlarını kontrol et.
+          </details>
+        </guideline>
+        <guideline priority="medium">
+          <rule>Android/iOS spesifik sorunları için platform dosyalarını kontrol et</rule>
+          <details>
+            android/app/build.gradle ve ios/Podfile dosyalarındaki
+            ayarları incele.
+          </details>
+        </guideline>
+      </guidelines>
+    </practice>
+
+    <practice category="sdk_compatibility">
+      <title>SDK 52 Uyumluluğu</title>
+      <guidelines>
+        <guideline priority="high">
+          <rule>Paket versiyonlarının Expo SDK 52 ile uyumlu olduğundan emin ol</rule>
+          <details>
+            package.json'daki paket versiyonlarını Expo SDK 52 dokümantasyonu
+            ile karşılaştır.
+          </details>
+        </guideline>
+        <guideline priority="medium">
+          <rule>React Native versiyonunu kontrol et</rule>
+          <details>
+            Expo SDK 52, belirli bir React Native versiyonu ile birlikte gelir.
+            Uyumsuzluk sorunları için bu versiyonu doğrula.
+          </details>
+        </guideline>
+      </guidelines>
+    </practice>
+  </expo_specific_practices>
+
+  <react_native_practices>
+    <practice category="render_optimization">
+      <title>Render Optimizasyonu</title>
+      <guidelines>
+        <guideline priority="high">
+          <rule>Render döngülerinde useEffect bağımlılıklarını kontrol et</rule>
+          <details>
+            Boş bağımlılık dizisi [] bileşen mount olduğunda bir kez çalışır.
+            State veya props bağımlılıklarını doğru ekle.
+          </details>
+        </guideline>
+        <guideline priority="high">
+          <rule>Callback fonksiyonlarını useCallback ile sar</rule>
+          <details>
+            Parent component'e prop olarak geçilen callback fonksiyonları
+            useCallback ile sararak gereksiz re-render'ları önle.
+          </details>
+        </guideline>
+        <guideline priority="medium">
+          <rule>Pahalı hesaplamaları useMemo ile optimize et</rule>
+          <details>
+            Büyük diziler üzerinde map/filter/Reduce işlemleri gibi
+            pahalı hesaplamaları useMemo ile sar.
+          </details>
+        </guideline>
+      </guidelines>
+    </practice>
+
+    <practice category="component_patterns">
+      <title>Component Desenleri</title>
+      <guidelines>
+        <guideline priority="high">
+          <rule>Component props için interface tanımları kullan</rule>
+          <details>
+            Her component için props interface tanımla ve src/types.ts'da
+            veya component dosyasında tanımla.
+          </details>
+        </guideline>
+        <guideline priority="medium">
+          <rule>Component adlarını PascalCase kullan</rule>
+          <details>
+            React Native component adları için PascalCase kullanımına
+            dikkat et (örn: EventScreen, StatBar).
+          </details>
+        </guideline>
+      </guidelines>
+    </practice>
+  </react_native_practices>
+
+  <typescript_practices>
+    <practice category="type_safety">
+      <title>Type Güvenliği</title>
+      <guidelines>
+        <guideline priority="high">
+          <rule>any kullanmaktan kaçın, yerine doğru tip tanımları kullan</rule>
+          <details>
+            any tipi TypeScript'in avantajlarını ortadan kaldırır.
+          </details>
+        </guideline>
+        <guideline priority="high">
+          <rule>src/types.ts dosyasındaki tanımlamaları kullan</rule>
+          <details>
+            Ortak tipler ve interface'ler için src/types.ts dosyasını
+            kullan ve yeni tipleri buraya ekle.
+          </details>
+        </guideline>
+        <guideline priority="medium">
+          <rule>Generics kullanımında doğru tip parametrelerini belirt</rule>
+          <details>
+            Generics kullanırken tip parametrelerini belirtmeyi unutma.
+          </details>
+        </guideline>
+      </guidelines>
+    </practice>
+
+    <practice category="error_handling">
+      <title>Hata Yönetimi</title>
+      <guidelines>
+        <guideline priority="high">
+          <rule>Asenkron fonksiyonlarda try-catch kullan</rule>
+          <details>
+          </details>
+        </guideline>
+        <guideline priority="medium">
+          <rule>Hata tipleri için özel type tanımları kullan</rule>
+          <details>
+            Hata mesajları için string yerine union types veya error
+            objects kullan.
+          </details>
+        </guideline>
+      </guidelines>
+    </practice>
+  </typescript_practices>
+
+  <common_pitfalls>
+    <pitfall>
+      <title>Semptom Tedavisi</title>
+      <description>
+        Hatanın semptomunu gidermek yerine kök nedenini çözmek.
+      </description>
+      <why_problematic>
+        Semptom tedavisi sorunu kalıcı olarak çözmez ve gelecekte benzer
+        sorunların tekrarlanmasına neden olur.
+      </why_problematic>
+      <correct_approach>
+        Önce sorunun kök nedenini belirle, ardından kök nedene odaklanan
+        bir çözüm uygula.
+      </correct_approach>
+    </pitfall>
+
+    <pitfall>
+      <title>Any Kullanımı</title>
+      <description>
+        Tip hatalarını çözmek için any kullanmak.
+      </description>
+      <why_problematic>
+        any kullanımı TypeScript'in tip güvenliği özelliğini devre dışı bırakır
+        ve derleme zamanında hataları yakalama fırsatını kaybedersiniz.
+      </why_problematic>
+      <correct_approach>
+        Doğru tip tanımları kullan, src/types.ts dosyasını güncelle veya
+        yeni interface tanımları oluştur.
+      </correct_approach>
+    </pitfall>
+
+    <pitfall>
+      <title>Console.log ile Debugging</title>
+      <description>
+        Sorunu anlamak için sadece console.log kullanmak.
+      </description>
+      <why_problematic>
+        Console.log yeterli bağlam sağlamaz ve karmaşık sorunlarda yardımcı olmaz.
+      </why_problematic>
+      <correct_approach>
+        Dosyaları okuyarak kod mantığını anla, terminal çıktılarını incele,
+        hata mesajlarını detaylı analiz et.
+      </correct_approach>
+    </pitfall>
+
+    <pitfall>
+      <title>React Web Etiketleri Kullanmak</title>
+      <description>
+        React Native'de div, span, h1 gibi web etiketleri kullanmak.
+      </description>
+      <why_problematic>
+        Bu etiketler React Native'de mevcut değildir ve çalışma zamanı hatalarına
+        neden olur.
+      </why_problematic>
+      <correct_approach>
+        React Native bileşenlerini kullan: View, Text, ScrollView, TouchableOpacity vb.
+      </correct_approach>
+    </pitfall>
+  </common_pitfalls>
+
+  <quality_checklist>
+    <category name="before_fixing">
+      <item>Sorunun tam olarak anlaşıldığından emin ol</item>
+      <item>İlgili dosyalar okundu ve bağlam anlaşıldı</item>
+      <item>Hata mesajları ve stack trace'leri analiz edildi</item>
+      <item>Kök neden belirlendi</item>
+    </category>
+    <category name="while_fixing">
+      <item>Minimal değişiklik yap</item>
+      <item>Mevcut mimariyi koru</item>
+      <item>Type güvenliğinden ödün verme</item>
+      <item>Proje kod stillerine uymaya dikkat et</item>
+    </category>
+    <category name="after_fixing">
+      <item>Çözüm sorunu gerçekten çözdü mü?</item>
+      <item>Yeni sorunlar oluşturmadı mı?</item>
+      <item>Type güvenliği bütünlüğü korundu mu?</item>
+      <item>Çözüm kullanıcıya açık bir şekilde açıklandı mı?</item>
+    </category>
+  </quality_checklist>
+</debugging_best_practices>

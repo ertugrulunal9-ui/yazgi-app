@@ -5,20 +5,17 @@
  */
 
 import React, { ReactNode, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { View, Text, StyleSheet, ViewStyle, Platform } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
   withSpring,
   withSequence,
-  withDelay,
   Easing,
   FadeInDown,
-  FadeOutUp,
-  runOnJS,
 } from 'react-native-reanimated';
-import { triggerHaptic, successHaptic } from './HapticFeedback';
+import { successHaptic } from './HapticFeedback';
 
 export type ToastPosition = 'top' | 'bottom' | 'center';
 
@@ -97,6 +94,8 @@ export const Toast: React.FC<ToastProps> = React.memo(({
         hasTriggeredHaptic.current = false;
       };
     }
+    
+    return undefined;
   }, [visible]);
 
   const hideToast = () => {
@@ -180,7 +179,14 @@ export const AchievementToastNative: React.FC<{
         {
           backgroundColor: colors.bg,
           borderColor: colors.border,
-          shadowColor: colors.glow,
+          ...Platform.select({
+            web: {
+              boxShadow: `0 4px 10px ${colors.glow}`,
+            },
+            ios: {
+              shadowColor: colors.glow,
+            },
+          }),
         },
       ])}
     >
@@ -322,9 +328,16 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderRadius: 12,
     padding: 16,
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 10px rgba(0, 0, 0, 0.5)',
+      },
+      ios: {
+        shadowOpacity: 0.5,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 4 },
+      },
+    }),
   },
   achievementContent: {
     flexDirection: 'row',

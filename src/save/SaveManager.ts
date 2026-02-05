@@ -145,13 +145,12 @@ class SaveManager {
         return migrated;
       }
 
-      const expectedChecksum = generateChecksum({
-        playerName: saveData.playerName,
-        stats: saveData.stats,
-        gameState: saveData.gameState,
-      });
-      
-      if (saveData.metadata.checksum !== expectedChecksum) {
+      const isValid = validateChecksum(
+        { playerName: saveData.playerName, stats: saveData.stats, gameState: saveData.gameState },
+        saveData.metadata.checksum
+      );
+
+      if (!isValid) {
         console.error(`Slot ${slotId} checksum invalid, attempting restore`);
         return await this.restoreFromBackup(slotId);
       }

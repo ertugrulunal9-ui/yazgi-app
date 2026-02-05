@@ -1,4 +1,4 @@
-import { Achievement, Stats, GameState, Skills, SchoolGrades, AchievementProgress } from '../types';
+import { Achievement, Stats, GameState, Skills, SchoolGrades } from '../types';
 
 // 50+ Production-Ready Achievements
 export const ACHIEVEMENTS: Achievement[] = [
@@ -12,7 +12,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🧠',
     isSecret: false,
     reward: { money: 5000 },
-    check: (stats) => stats.intelligence >= 90
+    check: (stats: Stats, _gameState: GameState) => stats.intelligence >= 90
   },
   {
     id: 'super_genius',
@@ -23,7 +23,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🎓',
     isSecret: false,
     reward: { money: 10000, stats: { intelligence: 5 } },
-    check: (stats) => stats.intelligence >= 100
+    check: (stats: Stats) => stats.intelligence >= 100
   },
   {
     id: 'healthy',
@@ -34,7 +34,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '💪',
     isSecret: false,
     reward: { money: 3000 },
-    check: (stats) => stats.health >= 90
+    check: (stats: Stats, _gameState: GameState) => stats.health >= 90
   },
   {
     id: 'athlete',
@@ -45,7 +45,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🏆',
     isSecret: false,
     reward: { money: 7000 },
-    check: (stats) => stats.health >= 100
+    check: (stats: Stats) => stats.health >= 100
   },
   {
     id: 'charming',
@@ -56,7 +56,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '✨',
     isSecret: false,
     reward: { money: 4000 },
-    check: (stats) => stats.charisma >= 90
+    check: (stats: Stats) => stats.charisma >= 90
   },
   {
     id: 'superstar',
@@ -67,7 +67,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🌟',
     isSecret: false,
     reward: { money: 8000 },
-    check: (stats) => stats.charisma >= 100
+    check: (stats: Stats) => stats.charisma >= 100
   },
   {
     id: 'disciplined',
@@ -78,7 +78,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '⚡',
     isSecret: false,
     reward: { money: 3500 },
-    check: (stats) => stats.discipline >= 90
+    check: (stats: Stats) => stats.discipline >= 90
   },
   {
     id: 'iron_will',
@@ -89,7 +89,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🛡️',
     isSecret: false,
     reward: { money: 6000 },
-    check: (stats) => stats.discipline >= 100
+    check: (stats: Stats) => stats.discipline >= 100
   },
   {
     id: 'balanced',
@@ -100,8 +100,8 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '⚖️',
     isSecret: false,
     reward: { money: 10000 },
-    check: (stats) => {
-      return stats.health >= 70 && stats.intelligence >= 70 && 
+    check: (stats: Stats) => {
+      return stats.health >= 70 && stats.intelligence >= 70 &&
              stats.charisma >= 70 && stats.discipline >= 70;
     }
   },
@@ -114,9 +114,23 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '💎',
     isSecret: false,
     reward: { money: 50000 },
-    check: (stats) => {
-      return stats.health >= 90 && stats.intelligence >= 90 && 
+    check: (stats: Stats) => {
+      return stats.health >= 90 && stats.intelligence >= 90 &&
              stats.charisma >= 90 && stats.discipline >= 90;
+    }
+  },
+  {
+    id: 'early_start',
+    name: 'Erken Başlangıç',
+    description: 'Tüm statlar 50+ ile başla',
+    category: 'STATS',
+    rarity: 'RARE',
+    icon: '🌟',
+    isSecret: false,
+    reward: { money: 2000 },
+    check: (stats: Stats, _gameState: GameState) => {
+      return stats.health >= 50 && stats.intelligence >= 50 &&
+             stats.charisma >= 50 && stats.discipline >= 50;
     }
   },
   {
@@ -128,7 +142,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '⚡',
     isSecret: false,
     reward: { money: 500 },
-    check: (stats) => stats.energy >= 80
+    check: (stats: Stats) => stats.energy >= 80
   },
   {
     id: 'family_man',
@@ -139,7 +153,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '👨‍👩‍👧',
     isSecret: false,
     reward: { money: 5000 },
-    check: (stats) => stats.familyRelation >= 90
+    check: (stats: Stats) => stats.familyRelation >= 90
   },
   {
     id: 'survivor',
@@ -150,7 +164,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🩹',
     isSecret: true,
     reward: { stats: { health: 20 } },
-    check: (stats, gameState) => {
+    check: (stats: Stats, gameState: GameState) => {
       return stats.health >= 50 && gameState.achievementProgress?.['survivor'] === 1;
     }
   },
@@ -163,7 +177,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '📈',
     isSecret: true,
     reward: { money: 20000 },
-    check: (stats, gameState) => {
+    check: (stats: Stats, gameState: GameState) => {
       return stats.money >= 50000 && gameState.achievementProgress?.['broke_to_rich'] === 1;
     }
   },
@@ -176,7 +190,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🌱',
     isSecret: false,
     reward: { money: 5000 },
-    check: (stats, gameState) => {
+    check: (stats: Stats, gameState: GameState) => {
       return gameState.age < 10 && (
         stats.health >= 80 || stats.intelligence >= 80 || 
         stats.charisma >= 80 || stats.discipline >= 80
@@ -194,7 +208,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '💵',
     isSecret: false,
     reward: { money: 100 },
-    check: (stats) => stats.money > 0
+    check: (stats: Stats) => stats.money > 0
   },
   {
     id: 'thousandaire',
@@ -205,7 +219,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '💰',
     isSecret: false,
     reward: { money: 500 },
-    check: (stats) => stats.money >= 1000
+    check: (stats: Stats) => stats.money >= 1000
   },
   {
     id: 'ten_thousandaire',
@@ -216,7 +230,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '💸',
     isSecret: false,
     reward: { money: 2000 },
-    check: (stats) => stats.money >= 10000
+    check: (stats: Stats) => stats.money >= 10000
   },
   {
     id: 'rich',
@@ -227,7 +241,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🤑',
     isSecret: false,
     reward: { money: 10000 },
-    check: (stats) => stats.money >= 50000
+    check: (stats: Stats) => stats.money >= 50000
   },
   {
     id: 'millionaire',
@@ -238,7 +252,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '💎',
     isSecret: false,
     reward: { money: 100000 },
-    check: (stats) => stats.money >= 1000000
+    check: (stats: Stats) => stats.money >= 1000000
   },
   {
     id: 'young_entrepreneur',
@@ -249,7 +263,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '👨‍💼',
     isSecret: false,
     reward: { money: 15000 },
-    check: (stats, gameState) => gameState.age < 14 && stats.money >= 10000
+    check: (stats: Stats, gameState: GameState) => gameState.age < 14 && stats.money >= 10000
   },
   {
     id: 'spender',
@@ -260,7 +274,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '💳',
     isSecret: true,
     reward: { money: 5000 },
-    check: (stats, gameState) => (gameState.achievementProgress?.['spender'] || 0) >= 100000
+    check: (_stats: Stats, gameState: GameState) => (gameState.achievementProgress?.['spender'] || 0) >= 100000
   },
   {
     id: 'investor',
@@ -271,9 +285,20 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '📊',
     isSecret: true,
     reward: { money: 10000 },
-    check: (stats, gameState) => gameState.inventory.length > 0 && stats.money >= 30000
+    check: (stats: Stats, gameState: GameState) => gameState.inventory.length > 0 && stats.money >= 30000
   },
-
+  {
+    id: 'saver',
+    name: 'Biriktirici',
+    description: 'Para 20k+ biriktir',
+    category: 'MONEY',
+    rarity: 'RARE',
+    icon: '💰',
+    isSecret: false,
+    reward: { money: 3000 },
+    check: (stats: Stats, _gameState: GameState) => stats.money >= 20000
+  },
+  
   // === SKILLS CATEGORY (8) ===
   {
     id: 'coder',
@@ -284,7 +309,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '💻',
     isSecret: false,
     reward: { money: 2000 },
-    check: (stats, gameState, skills) => skills.coding >= 50
+    check: (_stats: Stats, _gameState: GameState, skills: Skills) => skills.coding >= 50
   },
   {
     id: 'code_master',
@@ -295,7 +320,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🖥️',
     isSecret: false,
     reward: { money: 10000 },
-    check: (stats, gameState, skills) => skills.coding >= 80
+    check: (_stats: Stats, _gameState: GameState, skills: Skills) => skills.coding >= 80
   },
   {
     id: 'musician',
@@ -306,7 +331,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🎵',
     isSecret: false,
     reward: { money: 2000 },
-    check: (stats, gameState, skills) => skills.music >= 50
+    check: (_stats: Stats, _gameState: GameState, skills: Skills) => skills.music >= 50
   },
   {
     id: 'virtuoso',
@@ -317,7 +342,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🎼',
     isSecret: false,
     reward: { money: 10000 },
-    check: (stats, gameState, skills) => skills.music >= 80
+    check: (_stats: Stats, _gameState: GameState, skills: Skills) => skills.music >= 80
   },
   {
     id: 'sportsman',
@@ -328,7 +353,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '⚽',
     isSecret: false,
     reward: { money: 2000 },
-    check: (stats, gameState, skills) => skills.sports >= 50
+    check: (_stats: Stats, _gameState: GameState, skills: Skills) => skills.sports >= 50
   },
   {
     id: 'pro_athlete',
@@ -339,7 +364,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🥇',
     isSecret: false,
     reward: { money: 10000 },
-    check: (stats, gameState, skills) => skills.sports >= 80
+    check: (_stats: Stats, _gameState: GameState, skills: Skills) => skills.sports >= 80
   },
   {
     id: 'designer',
@@ -350,7 +375,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🎨',
     isSecret: false,
     reward: { money: 2000 },
-    check: (stats, gameState, skills) => skills.design >= 50
+    check: (_stats: Stats, _gameState: GameState, skills: Skills) => skills.design >= 50
   },
   {
     id: 'renaissance',
@@ -361,12 +386,26 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🎭',
     isSecret: false,
     reward: { money: 30000 },
-    check: (stats, gameState, skills) => {
-      return skills.coding >= 60 && skills.music >= 60 && 
+    check: (_stats: Stats, _gameState: GameState, skills: Skills) => {
+      return skills.coding >= 60 && skills.music >= 60 &&
              skills.sports >= 60 && skills.design >= 60;
     }
   },
-
+  {
+    id: 'skill_master',
+    name: 'Yetenek Ustası',
+    description: 'Bir yetenek 90+',
+    category: 'SKILLS',
+    rarity: 'EPIC',
+    icon: '🎯',
+    isSecret: false,
+    reward: { money: 8000 },
+    check: (_stats: Stats, _gameState: GameState, skills: Skills) => {
+      return skills.coding >= 90 || skills.music >= 90 ||
+             skills.sports >= 90 || skills.design >= 90;
+    }
+  },
+  
   // === SCHOOL CATEGORY (8) ===
   {
     id: 'straight_a',
@@ -377,7 +416,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '📚',
     isSecret: false,
     reward: { money: 5000, stats: { intelligence: 10 } },
-    check: (stats, gameState, skills, grades) => {
+    check: (_stats: Stats, _gameState: GameState, _skills: Skills, grades: SchoolGrades) => {
       return grades.math >= 90 && grades.science >= 90 && grades.language >= 90;
     }
   },
@@ -390,7 +429,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🔢',
     isSecret: false,
     reward: { money: 3000 },
-    check: (stats, gameState, skills, grades) => grades.math >= 95
+    check: (_stats: Stats, _gameState: GameState, _skills: Skills, grades: SchoolGrades) => grades.math >= 95
   },
   {
     id: 'scientist',
@@ -401,7 +440,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🔬',
     isSecret: false,
     reward: { money: 3000 },
-    check: (stats, gameState, skills, grades) => grades.science >= 95
+    check: (_stats: Stats, _gameState: GameState, _skills: Skills, grades: SchoolGrades) => grades.science >= 95
   },
   {
     id: 'wordsmith',
@@ -412,7 +451,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '📖',
     isSecret: false,
     reward: { money: 3000 },
-    check: (stats, gameState, skills, grades) => grades.language >= 95
+    check: (_stats: Stats, _gameState: GameState, _skills: Skills, grades: SchoolGrades) => grades.language >= 95
   },
   {
     id: 'perfect_student',
@@ -423,7 +462,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🏆',
     isSecret: false,
     reward: { money: 20000, stats: { intelligence: 20 } },
-    check: (stats, gameState, skills, grades) => {
+    check: (_stats: Stats, _gameState: GameState, _skills: Skills, grades: SchoolGrades) => {
       return grades.math === 100 && grades.science === 100 && grades.language === 100;
     }
   },
@@ -436,7 +475,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '📈',
     isSecret: true,
     reward: { money: 5000 },
-    check: (stats, gameState) => (gameState.achievementProgress?.['comeback_kid'] || 0) >= 1
+    check: (_stats: Stats, gameState: GameState) => (gameState.achievementProgress?.['comeback_kid'] || 0) >= 1
   },
   {
     id: 'studious',
@@ -447,9 +486,9 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '✏️',
     isSecret: false,
     reward: { money: 2000 },
-    check: (stats, gameState) => (gameState.actionCounts['study_math'] || 0) + 
-                                  (gameState.actionCounts['study_science'] || 0) + 
-                                  (gameState.actionCounts['study_language'] || 0) >= 50
+    check: (_stats: Stats, gameState: GameState) => (gameState.actionCounts['study_math'] || 0) +
+                                   (gameState.actionCounts['study_science'] || 0) +
+                                   (gameState.actionCounts['study_language'] || 0) >= 50
   },
   {
     id: 'scholar',
@@ -460,11 +499,22 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🎓',
     isSecret: false,
     reward: { money: 5000 },
-    check: (stats, gameState) => (gameState.actionCounts['study_math'] || 0) + 
-                                  (gameState.actionCounts['study_science'] || 0) + 
-                                  (gameState.actionCounts['study_language'] || 0) >= 100
+    check: (_stats: Stats, gameState: GameState) => (gameState.actionCounts['study_math'] || 0) +
+                                   (gameState.actionCounts['study_science'] || 0) +
+                                   (gameState.actionCounts['study_language'] || 0) >= 100
   },
-
+  {
+    id: 'grade_improver',
+    name: 'Not İyileştirici',
+    description: 'Bir derste 30\'tan 80\'a çık',
+    category: 'SCHOOL',
+    rarity: 'RARE',
+    icon: '📈',
+    isSecret: true,
+    reward: { money: 4000 },
+    check: (_stats: Stats, gameState: GameState) => (gameState.achievementProgress?.['grade_improver'] || 0) >= 1
+  },
+  
   // === EVENTS CATEGORY (6) ===
   {
     id: 'event_10',
@@ -475,7 +525,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '📜',
     isSecret: false,
     reward: { money: 1000 },
-    check: (stats, gameState) => gameState.recentEvents.length >= 10
+    check: (_stats: Stats, gameState: GameState) => gameState.recentEvents.length >= 10
   },
   {
     id: 'event_50',
@@ -486,7 +536,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '📋',
     isSecret: false,
     reward: { money: 5000 },
-    check: (stats, gameState) => gameState.recentEvents.length >= 50
+    check: (_stats: Stats, gameState: GameState) => gameState.recentEvents.length >= 50
   },
   {
     id: 'event_100',
@@ -497,7 +547,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '📚',
     isSecret: false,
     reward: { money: 15000 },
-    check: (stats, gameState) => gameState.recentEvents.length >= 100
+    check: (_stats: Stats, gameState: GameState) => gameState.recentEvents.length >= 100
   },
   {
     id: 'adventurer',
@@ -508,7 +558,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🗺️',
     isSecret: false,
     reward: { money: 3000 },
-    check: (stats, gameState) => {
+    check: (_stats: Stats, gameState: GameState) => {
       const uniqueEvents = new Set(gameState.recentEvents);
       return uniqueEvents.size >= 10;
     }
@@ -522,7 +572,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '💭',
     isSecret: false,
     reward: { money: 4000 },
-    check: (stats, gameState) => gameState.memories.length >= 20
+    check: (_stats: Stats, gameState: GameState) => gameState.memories.length >= 20
   },
   {
     id: 'nostalgia',
@@ -533,7 +583,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🎞️',
     isSecret: false,
     reward: { money: 10000 },
-    check: (stats, gameState) => gameState.memories.length >= 50
+    check: (_stats: Stats, gameState: GameState) => gameState.memories.length >= 50
   },
 
   // === SOCIAL CATEGORY (5) ===
@@ -546,7 +596,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '👥',
     isSecret: false,
     reward: { money: 2000 },
-    check: (stats, gameState) => gameState.npcs.filter(n => n.role === 'FRIEND' || n.role === 'BEST_FRIEND').length >= 3
+    check: (_stats: Stats, gameState: GameState) => gameState.npcs.filter(n => n.role === 'FRIEND' || n.role === 'BEST_FRIEND').length >= 3
   },
   {
     id: 'popular',
@@ -557,7 +607,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '⭐',
     isSecret: false,
     reward: { money: 5000, stats: { charisma: 10 } },
-    check: (stats, gameState) => gameState.npcs.filter(n => n.role === 'FRIEND' || n.role === 'BEST_FRIEND').length >= 5
+    check: (_stats: Stats, gameState: GameState) => gameState.npcs.filter(n => n.role === 'FRIEND' || n.role === 'BEST_FRIEND').length >= 5
   },
   {
     id: 'lover',
@@ -568,7 +618,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '❤️',
     isSecret: false,
     reward: { money: 3000 },
-    check: (stats, gameState) => gameState.npcs.some(n => n.role === 'PARTNER')
+    check: (_stats: Stats, gameState: GameState) => gameState.npcs.some(n => n.role === 'PARTNER')
   },
   {
     id: 'social_butterfly',
@@ -579,7 +629,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🦋',
     isSecret: false,
     reward: { money: 8000 },
-    check: (stats, gameState) => gameState.npcs.length >= 10
+    check: (_stats: Stats, gameState: GameState) => gameState.npcs.length >= 10
   },
   {
     id: 'heartbreaker',
@@ -590,7 +640,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '💔',
     isSecret: true,
     reward: { money: 5000 },
-    check: (stats, gameState) => (gameState.achievementProgress?.['heartbreaker'] || 0) >= 3
+    check: (_stats: Stats, gameState: GameState) => (gameState.achievementProgress?.['heartbreaker'] || 0) >= 3
   },
 
   // === SURVIVAL CATEGORY (5) ===
@@ -603,7 +653,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🎂',
     isSecret: false,
     reward: { money: 100 },
-    check: (stats, gameState) => gameState.age >= 1
+    check: (_stats: Stats, gameState: GameState) => gameState.age >= 1
   },
   {
     id: 'teenager',
@@ -614,7 +664,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🧒',
     isSecret: false,
     reward: { money: 1000 },
-    check: (stats, gameState) => gameState.age >= 13
+    check: (_stats: Stats, gameState: GameState) => gameState.age >= 13
   },
   {
     id: 'almost_adult',
@@ -625,7 +675,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🎓',
     isSecret: false,
     reward: { money: 5000 },
-    check: (stats, gameState) => gameState.age >= 18
+    check: (_stats: Stats, gameState: GameState) => gameState.age >= 18
   },
   {
     id: 'workaholic',
@@ -636,7 +686,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '💼',
     isSecret: false,
     reward: { money: 10000 },
-    check: (stats, gameState) => (gameState.actionCounts['work'] || 0) >= 50
+    check: (_stats: Stats, gameState: GameState) => (gameState.actionCounts['work'] || 0) >= 50
   },
   {
     id: 'hoarder',
@@ -647,7 +697,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '📦',
     isSecret: false,
     reward: { money: 3000 },
-    check: (stats, gameState) => gameState.inventory.length >= 10
+    check: (_stats: Stats, gameState: GameState) => gameState.inventory.length >= 10
   },
 
   // === SECRET ACHIEVEMENTS (5) ===
@@ -660,7 +710,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🍀',
     isSecret: true,
     reward: { money: 77777 },
-    check: (stats, gameState) => {
+    check: (stats: Stats, gameState: GameState) => {
       // Unlock at exactly age 7 with 777 money
       return gameState.age === 7 && stats.money === 777;
     }
@@ -674,7 +724,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🦉',
     isSecret: true,
     reward: { money: 5000 },
-    check: (stats, gameState) => {
+    check: (stats: Stats, gameState: GameState) => {
       // Enerji 10 altında 20+ action
       return stats.energy < 10 && gameState.totalTurns >= 20;
     }
@@ -688,7 +738,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '😈',
     isSecret: true,
     reward: { money: 10000 },
-    check: (stats, gameState) => {
+    check: (stats: Stats, _gameState: GameState) => {
       // Aile ilişkisi 20 altında ama para 20k+
       return stats.familyRelation < 20 && stats.money >= 20000;
     }
@@ -702,7 +752,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🎯',
     isSecret: true,
     reward: { stats: { discipline: 20 } },
-    check: (stats, gameState) => {
+    check: (_stats: Stats, gameState: GameState) => {
       // 15 yaşına ulaş hiç eşya almadan
       return gameState.age >= 15 && gameState.inventory.length === 0;
     }
@@ -716,7 +766,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '⚡',
     isSecret: true,
     reward: { money: 50000 },
-    check: (stats, gameState) => {
+    check: (_stats: Stats, gameState: GameState) => {
       // 18 yaşına 200 turn'den az ile ulaş
       return gameState.age >= 18 && gameState.totalTurns < 200;
     }

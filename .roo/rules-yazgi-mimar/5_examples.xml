@@ -1,0 +1,547 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<instructions>
+  <examples>
+    <category name="Component Örnekleri">
+      <example>
+        <title>Atomik Button Component</title>
+        <description>
+          Performans odaklı, erişilebilir atomik button bileşeni:
+        </description>
+        <code><![CDATA[
+import React, { memo } from 'react';
+import {
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  ViewStyle,
+  TextStyle,
+  GestureResponderEvent,
+} from 'react-native';
+import { useTheme } from '@react-navigation/native';
+
+interface ButtonProps {
+  title: string;
+  onPress: (event: GestureResponderEvent) => void;
+  variant?: 'primary' | 'secondary' | 'danger';
+  disabled?: boolean;
+  style?: ViewStyle;
+}
+
+const Button = memo(({ 
+  title, 
+  onPress, 
+  variant = 'primary', 
+  disabled = false,
+  style 
+}: ButtonProps) => {
+  const theme = useTheme();
+  
+  const buttonStyle = useMemo(() => [
+    styles.button,
+    styles[variant],
+    disabled && styles.disabled,
+    style,
+  ], [variant, disabled, style]);
+
+  return (
+    <TouchableOpacity
+      style={buttonStyle}
+      onPress={onPress}
+      disabled={disabled}
+      activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      accessibilityLabel={title}
+    >
+      <Text style={[styles.text, styles[`${variant}Text`]]}>
+        {title}
+      </Text>
+    </TouchableOpacity>
+  );
+});
+
+Button.displayName = 'Button';
+
+const styles = StyleSheet.create({
+  button: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 48,
+  },
+  primary: {
+    backgroundColor: '#6366f1',
+  },
+  secondary: {
+    backgroundColor: '#e5e7eb',
+  },
+  danger: {
+    backgroundColor: '#ef4444',
+  },
+  disabled: {
+    opacity: 0.5,
+  },
+  text: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  primaryText: {
+    color: '#ffffff',
+  },
+  secondaryText: {
+    color: '#1f2937',
+  },
+  dangerText: {
+    color: '#ffffff',
+  },
+});
+
+export default Button;
+        ]]></code>
+      </example>
+      
+      <example>
+        <title>StatBar Component (Yazgı Projesi)</title>
+        <description>
+          Yazgı projesi için performanslı stat bar bileşeni:
+        </description>
+        <code><![CDATA[
+import React, { memo } from 'react';
+import { View, StyleSheet, Animated } from 'react-native';
+
+interface StatBarProps {
+  label: string;
+  value: number;
+  maxValue: number;
+  color: string;
+  showValue?: boolean;
+}
+
+const StatBar = memo(({ 
+  label, 
+  value, 
+  maxValue, 
+  color,
+  showValue = true 
+}: StatBarProps) => {
+  const animatedValue = React.useRef(new Animated.Value(0)).current;
+  
+  React.useEffect(() => {
+    Animated.timing(animatedValue, {
+      toValue: (value / maxValue) * 100,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  }, [value, maxValue, animatedValue]);
+
+  const width = animatedValue.interpolate({
+    inputRange: [0, 100],
+    outputRange: ['0%', '100%'],
+  });
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.label}>{label}</Text>
+        {showValue && (
+          <Text style={styles.value}>{value}/{maxValue}</Text>
+        )}
+      </View>
+      <View style={styles.barBackground}>
+        <Animated.View 
+          style={[
+            styles.barFill, 
+            { width, backgroundColor: color }
+          ]} 
+        />
+      </View>
+    </View>
+  );
+});
+
+StatBar.displayName = 'StatBar';
+
+const styles = StyleSheet.create({
+  container: {
+    marginBottom: 12,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  value: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6b7280',
+  },
+  barBackground: {
+    height: 8,
+    backgroundColor: '#e5e7eb',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  barFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+});
+
+export default StatBar;
+        ]]></code>
+      </example>
+    </category>
+    
+    <category name="Screen Örnekleri">
+      <example>
+        <title>GameScreen Layout</title>
+        <description>
+          Responsive game screen layout:
+        </description>
+        <code><![CDATA[
+import React from 'react';
+import { View, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useWindowDimensions } from 'react-native';
+
+const GameScreen = () => {
+  const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
+  const isTablet = width >= 768;
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <View style={[
+        styles.content,
+        { paddingBottom: insets.bottom }
+      ]}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Yazgı</Text>
+        </View>
+
+        {/* Main Content */}
+        <ScrollView 
+          style={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContainer,
+            isTablet && styles.tabletContainer
+          ]}
+        >
+          {/* Stats Panel */}
+          <View style={styles.statsPanel}>
+            {/* Stat bars here */}
+          </View>
+
+          {/* Event Area */}
+          <View style={styles.eventArea}>
+            {/* Event content here */}
+          </View>
+
+          {/* Action Buttons */}
+          <View style={styles.actions}>
+            {/* Action buttons here */}
+          </View>
+        </ScrollView>
+      </View>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f9fafb',
+  },
+  content: {
+    flex: 1,
+  },
+  header: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  scrollContent: {
+    flex: 1,
+  },
+  scrollContainer: {
+    padding: 16,
+  },
+  tabletContainer: {
+    maxWidth: 1024,
+    alignSelf: 'center',
+  },
+  statsPanel: {
+    marginBottom: 16,
+  },
+  eventArea: {
+    marginBottom: 16,
+  },
+  actions: {
+    gap: 12,
+  },
+});
+
+export default GameScreen;
+        ]]></code>
+      </example>
+    </category>
+    
+    <category name="Animation Örnekleri">
+      <example>
+        <title>Fade In Animation</title>
+        <description>
+          Performanslı fade-in animasyonu:
+        </description>
+        <code><![CDATA[
+import React, { useRef, useEffect } from 'react';
+import { View, Animated, StyleSheet } from 'react-native';
+
+interface FadeInProps {
+  children: React.ReactNode;
+  duration?: number;
+  delay?: number;
+}
+
+const FadeIn = ({ 
+  children, 
+  duration = 300, 
+  delay = 0 
+}: FadeInProps) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration,
+      delay,
+      useNativeDriver: true,
+    }).start();
+  }, [fadeAnim, duration, delay]);
+
+  return (
+    <Animated.View style={{ opacity: fadeAnim }}>
+      {children}
+    </Animated.View>
+  );
+};
+
+export default FadeIn;
+        ]]></code>
+      </example>
+      
+      <example>
+        <title>Screen Transition Animation</title>
+        <description>
+          Ekran geçiş animasyonu:
+        </description>
+        <code><![CDATA[
+import React from 'react';
+import { Animated, StyleSheet } from 'react-native';
+
+interface ScreenTransitionProps {
+  children: React.ReactNode;
+  isVisible: boolean;
+}
+
+const ScreenTransition = ({ 
+  children, 
+  isVisible 
+}: ScreenTransitionProps) => {
+  const translateY = React.useRef(new Animated.Value(20)).current;
+  const opacity = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    if (isVisible) {
+      Animated.parallel([
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [isVisible, translateY, opacity]);
+
+  return (
+    <Animated.View
+      style={[
+        styles.container,
+        {
+          transform: [{ translateY }],
+          opacity,
+        },
+      ]}
+    >
+      {children}
+    </Animated.View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});
+
+export default ScreenTransition;
+        ]]></code>
+      </example>
+    </category>
+    
+    <category name="Hook Örnekleri">
+      <example>
+        <title>useResponsive Hook</title>
+        <description>
+          Responsive değerler için custom hook:
+        </description>
+        <code><![CDATA[
+import { useWindowDimensions } from 'react-native';
+import { useMemo } from 'react';
+
+interface ResponsiveValue {
+  mobile: number;
+  tablet: number;
+  desktop?: number;
+}
+
+export const useResponsive = (
+  values: ResponsiveValue
+): number => {
+  const { width } = useWindowDimensions();
+
+  return useMemo(() => {
+    if (values.desktop && width >= 1024) {
+      return values.desktop;
+    }
+    if (width >= 768) {
+      return values.tablet;
+    }
+    return values.mobile;
+  }, [width, values]);
+};
+
+// Kullanım
+const padding = useResponsive({
+  mobile: 12,
+  tablet: 24,
+  desktop: 32,
+});
+        ]]></code>
+      </example>
+    </category>
+    
+    <category name="Yazgı Projesi Özel Örnekler">
+      <example>
+        <title>Event Card Component</title>
+        <description>
+          Yazgı projesi için event kart bileşeni:
+        </description>
+        <code><![CDATA[
+import React, { memo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+
+interface EventCardProps {
+  title: string;
+  description: string;
+  choices: string[];
+  onSelectChoice: (index: number) => void;
+}
+
+const EventCard = memo(({
+  title,
+  description,
+  choices,
+  onSelectChoice,
+}: EventCardProps) => {
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>{title}</Text>
+      </View>
+      <View style={styles.body}>
+        <Text style={styles.description}>{description}</Text>
+      </View>
+      <View style={styles.choices}>
+        {choices.map((choice, index) => (
+          <TouchableOpacity
+            key={index}
+            style={styles.choice}
+            onPress={() => onSelectChoice(index)}
+            accessibilityRole="button"
+            accessibilityLabel={choice}
+          >
+            <Text style={styles.choiceText}>{choice}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+});
+
+EventCard.displayName = 'EventCard';
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  header: {
+    marginBottom: 12,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  body: {
+    marginBottom: 16,
+  },
+  description: {
+    fontSize: 14,
+    color: '#4b5563',
+    lineHeight: 20,
+  },
+  choices: {
+    gap: 8,
+  },
+  choice: {
+    backgroundColor: '#f3f4f6',
+    padding: 12,
+    borderRadius: 8,
+  },
+  choiceText: {
+    fontSize: 14,
+    color: '#374151',
+  },
+});
+
+export default EventCard;
+        ]]></code>
+      </example>
+    </category>
+  </examples>
+</instructions>

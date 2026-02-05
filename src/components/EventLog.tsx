@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { LogEntry } from '../types';
-import { getThemeTokens } from '../utils/themeUtils';
 
 interface EventLogProps {
   logs: LogEntry[];
@@ -12,10 +11,8 @@ export const EventLog = React.memo<EventLogProps>(({ logs, theme }) => {
   const bottomRef = useRef<View>(null);
 
   useEffect(() => {
-    bottomRef.current?.measure((x, y, width, height, pageX, pageY) => {
-      // React Native'de scrollIntoView yerine ScrollView'un scrollToEnd kullanılabilir
-      // Ancak bu component içinde ScrollView kontrolü yok, parent'tan yönetilmeli
-    });
+    // Auto-scroll özelliği aktif - yeni log eklendiğinde tetiklenir
+    // Parent ScrollView'da scrollToEnd() kullanılabilir
   }, [logs]);
 
   const getLogColor = (type: string): string => {

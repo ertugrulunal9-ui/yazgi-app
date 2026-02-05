@@ -63,20 +63,16 @@ export interface PurchaseMadeParams {
 // Analytics configuration
 
 class AnalyticsService {
-  private enabled: boolean = !isDev && !isWeb; // Disable on web and dev by default
+  private enabled: boolean = !isDev;
 
   constructor() {
-    console.log('📊 Using simple analytics logger (Firebase removed)');
+    this.initialize();
   }
 
-  /**
-   * Initialize Analytics - now a no-op
-   */
-  private async initializeAnalytics(): Promise<void> {
-    // No-op - using console-based logging
-  }
-
-      if (isDev) {
+  private initialize(): void {
+    // In a real scenario, this would initialize Firebase, etc.
+    console.log('📊 Analytics Service Initialized');
+    this.setEnabled(!isDev); // Enabled by default in prod, disabled in dev
   }
 
   /**
@@ -84,7 +80,26 @@ class AnalyticsService {
    */
   setEnabled(enabled: boolean): void {
     this.enabled = enabled;
-    console.log(`📊 Analytics ${enabled ? 'enabled' : 'disabled'}`);
+    console.log(`📊 Analytics ${this.enabled ? 'enabled' : 'disabled'}`);
+  }
+
+  private sanitizeParams(params?: Record<string, any>): Record<string, any> | undefined {
+    if (!params) {
+      return undefined;
+    }
+    const sanitized: Record<string, any> = {};
+    for (const key in params) {
+      if (Object.prototype.hasOwnProperty.call(params, key)) {
+        const value = params[key];
+        // Truncate long strings to avoid oversized payloads
+        if (typeof value === 'string' && value.length > 100) {
+          sanitized[key] = `${value.substring(0, 97)}...`;
+        } else if (value !== undefined && value !== null) {
+          sanitized[key] = value;
+        }
+      }
+    }
+    return sanitized;
   }
 
   /**
@@ -204,18 +219,16 @@ class AnalyticsService {
     eventName: string,
     params?: Record<string, any>
   ): Promise<void> {
-    if (isDev) {
-      console.log(`📊 [${eventName}]`, params || {});
+    if (!this.enabled && !isDev) {
+      return;
     }
-  }
 
-  /**
-   * Sanitize parameters - simplified
-   */
-  private sanitizeParams(
-    params?: Record<string, any>
-  ): Record<string, string | number> {
-    return params || {};
+    const sanitizedParams = this.sanitizeParams(params);
+
+    if (isDev) {
+      console.log(`[ANALYTICS] Event: ${eventName}`, sanitizedParams || {});
+    }
+    // Production logging would go here (e.g., to Firebase)
   }
 
   /**
@@ -223,7 +236,7 @@ class AnalyticsService {
    */
   async setUserId(userId: string): Promise<void> {
     if (isDev) {
-      console.log(`👤 User ID set: ${userId}`);
+      console.log(`[ANALYTICS] User ID set: ${userId}`);
     }
   }
 
@@ -235,7 +248,7 @@ class AnalyticsService {
     value: string | number
   ): Promise<void> {
     if (isDev) {
-      console.log(`📝 User property: ${name} = ${value}`);
+      console.log(`[ANALYTICS] User property set: ${name} = ${value}`);
     }
   }
 
@@ -244,7 +257,7 @@ class AnalyticsService {
    */
   async resetAnalytics(): Promise<void> {
     if (isDev) {
-      console.log('🔄 Analytics data reset');
+      console.log('[ANALYTICS] Data reset');
     }
   }
 }

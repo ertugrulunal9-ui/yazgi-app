@@ -1,119 +1,239 @@
-import React from 'react';
-import { Lock, TrendingUp } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { Achievement } from '../types';
 
 interface AchievementCardProps {
   achievement: Achievement;
   isUnlocked: boolean;
   progress: number;
-  onClick?: () => void;
+  onPress?: () => void;
+  theme: {
+    surfaceBase: string;
+    surfaceRaised: string;
+    textPrimary: string;
+    textSecondary: string;
+    border: string;
+  };
 }
+
+const RARITY_COLORS = {
+  COMMON: { border: 'rgba(107, 114, 128, 0.3)', bg: 'rgba(31, 41, 55, 0.3)', text: '#9ca3af' },
+  RARE: { border: 'rgba(59, 130, 246, 0.3)', bg: 'rgba(30, 58, 138, 0.2)', text: '#60a5fa' },
+  EPIC: { border: 'rgba(168, 85, 247, 0.3)', bg: 'rgba(88, 28, 135, 0.2)', text: '#c084fc' },
+  LEGENDARY: { border: 'rgba(234, 179, 8, 0.3)', bg: 'rgba(113, 63, 18, 0.2)', text: '#facc15' },
+};
+
+const RARITY_LABELS = {
+  COMMON: 'Yaygın',
+  RARE: 'Nadir',
+  EPIC: 'Epik',
+  LEGENDARY: 'Efsane',
+};
 
 export const AchievementCard: React.FC<AchievementCardProps> = ({
   achievement,
   isUnlocked,
   progress,
-  onClick
+  onPress,
+  theme,
 }) => {
-  const rarityColors = {
-    COMMON: 'border-gray-500/30 bg-gray-800/30',
-    RARE: 'border-blue-500/30 bg-blue-900/20',
-    EPIC: 'border-purple-500/30 bg-purple-900/20',
-    LEGENDARY: 'border-yellow-500/30 bg-yellow-900/20',
-  };
+  const rarityStyle = RARITY_COLORS[achievement.rarity];
 
-  const rarityTextColors = {
-    COMMON: 'text-gray-400',
-    RARE: 'text-blue-400',
-    EPIC: 'text-purple-400',
-    LEGENDARY: 'text-yellow-400',
-  };
+  const cardStyle = useMemo(() => ({
+    backgroundColor: rarityStyle.bg,
+    borderColor: rarityStyle.border,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    opacity: isUnlocked ? 1 : 0.6,
+  }), [rarityStyle, isUnlocked]);
+
+  const showProgress = !isUnlocked && progress > 0 && progress < 100;
 
   return (
-    <div
-      onClick={onClick}
-      className={`
-        ${rarityColors[achievement.rarity]}
-        border rounded-lg p-4 transition-all cursor-pointer
-        ${isUnlocked ? 'opacity-100' : 'opacity-60'}
-        hover:scale-[1.02] hover:shadow-lg
-      `}
+    <TouchableOpacity
+      onPress={onPress}
+      style={cardStyle}
+      activeOpacity={0.8}
+      accessibilityLabel={`${achievement.name} başarısı${isUnlocked ? ', açıldı' : ', kilitli'}`}
+      accessibilityRole="button"
     >
-      <div className="flex items-start gap-3">
+      <View style={styles.row}>
         {/* Icon */}
-        <div className={`text-4xl ${!isUnlocked && 'grayscale opacity-50'}`}>
-          {isUnlocked ? achievement.icon : '🔒'}
-        </div>
+        <View style={[styles.iconContainer, !isUnlocked && styles.iconLocked]}>
+          <Text style={styles.iconText}>
+            {isUnlocked ? achievement.icon : '🔒'}
+          </Text>
+        </View>
 
         {/* Content */}
-        <div className="flex-1">
-          <div className="flex items-center justify-between mb-1">
-            <h3 className={`font-bold ${isUnlocked ? 'text-white' : 'text-gray-400'}`}>
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <Text style={[styles.title, { color: isUnlocked ? theme.textPrimary : theme.textSecondary }]}>
               {achievement.isSecret && !isUnlocked ? '???' : achievement.name}
-            </h3>
-            <span className={`text-xs font-semibold ${rarityTextColors[achievement.rarity]}`}>
-              {achievement.rarity}
-            </span>
-          </div>
+            </Text>
+            <Text style={[styles.rarity, { color: rarityStyle.text }]}>
+              {RARITY_LABELS[achievement.rarity]}
+            </Text>
+          </View>
 
-          <p className={`text-sm mb-2 ${isUnlocked ? 'text-gray-300' : 'text-gray-500'}`}>
+          <Text style={[styles.description, { color: isUnlocked ? theme.textSecondary : '#6b7280' }]}>
             {achievement.isSecret && !isUnlocked ? '???' : achievement.description}
-          </p>
+          </Text>
 
           {/* Progress Bar */}
-          {!isUnlocked && progress > 0 && progress < 100 && (
-            <div className="mb-2">
-              <div className="flex justify-between text-xs text-gray-400 mb-1">
-                <span>İlerleme</span>
-                <span>{Math.round(progress)}%</span>
-              </div>
-              <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
+          {showProgress && (
+            <View style={styles.progressContainer}>
+              <View style={styles.progressHeader}>
+                <Text style={styles.progressLabel}>İlerleme</Text>
+                <Text style={styles.progressLabel}>{Math.round(progress)}%</Text>
+              </View>
+              <View style={styles.progressTrack}>
+                <View style={[styles.progressFill, { width: `${progress}%` }]} />
+              </View>
+            </View>
           )}
 
           {/* Reward */}
           {achievement.reward && isUnlocked && (
-            <div className="flex flex-wrap gap-2 text-xs text-gray-400">
+            <View style={styles.rewardRow}>
               {achievement.reward.money && (
-                <span className="bg-green-900/30 text-green-400 px-2 py-1 rounded">
-                  💰 +{achievement.reward.money}₺
-                </span>
+                <View style={[styles.rewardBadge, { backgroundColor: 'rgba(22, 101, 52, 0.3)' }]}>
+                  <Text style={[styles.rewardText, { color: '#4ade80' }]}>
+                    💰 +{achievement.reward.money}₺
+                  </Text>
+                </View>
               )}
               {achievement.reward.stats && (
-                <span className="bg-blue-900/30 text-blue-400 px-2 py-1 rounded">
-                  📈 Stat Boost
-                </span>
+                <View style={[styles.rewardBadge, { backgroundColor: 'rgba(30, 58, 138, 0.3)' }]}>
+                  <Text style={[styles.rewardText, { color: '#60a5fa' }]}>
+                    📈 Stat Boost
+                  </Text>
+                </View>
               )}
               {achievement.reward.item && (
-                <span className="bg-purple-900/30 text-purple-400 px-2 py-1 rounded">
-                  🎁 Item
-                </span>
+                <View style={[styles.rewardBadge, { backgroundColor: 'rgba(88, 28, 135, 0.3)' }]}>
+                  <Text style={[styles.rewardText, { color: '#c084fc' }]}>
+                    🎁 Item
+                  </Text>
+                </View>
               )}
-            </div>
+            </View>
           )}
 
           {/* Locked State */}
           {!isUnlocked && progress === 0 && (
-            <div className="flex items-center gap-1 text-xs text-gray-500">
-              <Lock size={12} />
-              <span>Kilitli</span>
-            </div>
+            <View style={styles.statusRow}>
+              <Feather name="lock" size={12} color="#6b7280" />
+              <Text style={styles.statusLocked}>Kilitli</Text>
+            </View>
           )}
 
           {/* Unlocked State */}
           {isUnlocked && (
-            <div className="flex items-center gap-1 text-xs text-green-400">
-              <TrendingUp size={12} />
-              <span>Açıldı</span>
-            </div>
+            <View style={styles.statusRow}>
+              <Feather name="trending-up" size={12} color="#4ade80" />
+              <Text style={styles.statusUnlocked}>Açıldı</Text>
+            </View>
           )}
-        </div>
-      </div>
-    </div>
+        </View>
+      </View>
+    </TouchableOpacity>
   );
 };
+
+const styles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  iconContainer: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconLocked: {
+    opacity: 0.5,
+  },
+  iconText: {
+    fontSize: 32,
+  },
+  content: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  title: {
+    fontSize: 15,
+    fontWeight: '700',
+    flex: 1,
+  },
+  rarity: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  description: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 8,
+  },
+  progressContainer: {
+    marginBottom: 8,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  progressLabel: {
+    fontSize: 11,
+    color: '#9ca3af',
+  },
+  progressTrack: {
+    height: 6,
+    backgroundColor: '#374151',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#8b5cf6',
+    borderRadius: 3,
+  },
+  rewardRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 4,
+  },
+  rewardBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  rewardText: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  statusLocked: {
+    fontSize: 11,
+    color: '#6b7280',
+  },
+  statusUnlocked: {
+    fontSize: 11,
+    color: '#4ade80',
+  },
+});

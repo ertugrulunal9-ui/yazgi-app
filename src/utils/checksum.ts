@@ -8,8 +8,10 @@ export const calculateChecksum = (data: string): string => {
   return Math.abs(hash).toString(36);
 };
 
-export const validateChecksum = (data: string, expectedChecksum: string): boolean => {
-  const actualChecksum = calculateChecksum(data);
+export const validateChecksum = (data: string | object, expectedChecksum: string): boolean => {
+  const actualChecksum = typeof data === 'string'
+    ? calculateChecksum(data)
+    : generateChecksum(data);
   return actualChecksum === expectedChecksum;
 };
 

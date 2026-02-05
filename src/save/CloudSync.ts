@@ -126,6 +126,23 @@ class CloudSync {
   }
 
   private resolveConflict(local: SaveSlotData, remote: SaveSlotData): ConflictResolution {
+    // Compare playtime - more playtime means more progress
+    if (local.metadata.playtime > remote.metadata.playtime + 5) {
+      return 'local';
+    }
+    if (remote.metadata.playtime > local.metadata.playtime + 5) {
+      return 'remote';
+    }
+
+    // Compare age - higher age means more progress
+    if (local.metadata.age > remote.metadata.age) {
+      return 'local';
+    }
+    if (remote.metadata.age > local.metadata.age) {
+      return 'remote';
+    }
+
+    // Default: use newest based on timestamp
     return 'newest';
   }
 

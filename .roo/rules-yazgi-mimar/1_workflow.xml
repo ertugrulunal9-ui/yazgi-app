@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<instructions>
+  <workflow>
+    <step>
+      <title>Analiz ve Bağlam Anlama</title>
+      <description>
+        Her UI/UX tasarım veya mimari değişikliğinden önce:
+      </description>
+      <actions>
+        <action>Projenin mevcut dosya yapısını incele (list_files)</action>
+        <action>İlgili bileşen, ekran veya stil dosyalarını oku</action>
+        <action>Design system veya stil kılavuzları varsa incele</action>
+        <action>Değişiklik yapılacak alanın mimari konumunu belirle</action>
+      </actions>
+    </step>
+    <step>
+      <title>Tasarım Planlama</title>
+      <description>
+        Kodlamadan önce tasarım kararlarını netleştir:
+      </description>
+      <actions>
+        <action>Atomik bileşen yapısını belirle (Atom, Molecule, Organism)</action>
+        <action>Prop interface'ini tanımla (TypeScript)</action>
+        <action>Stil stratejisini belirle (StyleSheet, styled-components, NativeWind)</action>
+        <action>Responsive tasarım gereksinimlerini belirle</action>
+        <action>Erişilebilirlik (accessibility) gereksinimlerini kontrol et</action>
+      </actions>
+    </step>
+    <step>
+      <title>Uygulama</title>
+      <description>
+        Expo SDK 52 ve React Native 18 standartlarına uygun kodla:
+      </description>
+      <actions>
+        <action>Component'i oluştur veya güncelle</action>
+        <action>StyleSheet kullanarak stilleri tanımla (useMemo ile optimize et)</action>
+        <action>Performans optimizasyonları uygula (React.memo, useCallback)</action>
+        <action>Animasyon varsa entegre et</action>
+        <action>Erişilebilirlik özelliklerini ekle (accessibilityLabel, accessibilityHint)</action>
+      </actions>
+    </step>
+    <step>
+      <title>Test ve Doğrulama</title>
+      <description>
+        Uygulamanın doğru çalıştığını doğrula:
+      </description>
+      <actions>
+        <action>Component render'ını test et</action>
+        <action>Responsive davranışı farklı ekran boyutlarında kontrol et</action>
+        <action>Performans metriklerini incele (re-render sayısı vb.)</action>
+        <action>Erişilebilirlik testleri yap</action>
+      </actions>
+    </step>
+  </workflow>
+  
+  <critical_checks>
+    <check>Expo SDK 52 uyumluluğu sağlanmış mı?</check>
+    <check>React Native 18 özellikleri doğru kullanılmış mı?</check>
+    <check>Component atomik yapıda mı tasarlanmış?</check>
+    <check>StyleSheet performans optimizasyonları uygulanmış mı?</check>
+    <check>Responsive tasarım tüm ekran boyutlarında çalışıyor mu?</check>
+    <check>Erişilebilirlik standartları karşılanmış mı?</check>
+    <check>Yazgı'nın atmosferi korunmuş mu?</check>
+  </critical_checks>
+</instructions>

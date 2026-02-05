@@ -1,18 +1,38 @@
 import React, { useState } from 'react';
-import { Zap, Brain, DollarSign, Video } from 'lucide-react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { showRewardedAd, getRemainingRewardedAds } from '../services/monetization';
-import { Stats } from '../types';
 
 interface RewardedAdButtonProps {
   onRewardClaimed: (reward: { type: 'energy' | 'intelligence' | 'money'; amount: number }) => void;
   currentEnergy: number;
   disabled?: boolean;
+  theme: {
+    surfaceBase: string;
+    surfaceRaised: string;
+    textPrimary: string;
+    textSecondary: string;
+    border: string;
+  };
 }
 
-export const RewardedAdButton: React.FC<RewardedAdButtonProps> = ({ 
-  onRewardClaimed, 
+const REWARD_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
+  energy: 'zap',
+  intelligence: 'cpu',
+  money: 'dollar-sign',
+};
+
+const REWARD_COLORS: Record<string, string> = {
+  energy: '#22c55e',
+  intelligence: '#3b82f6',
+  money: '#eab308',
+};
+
+export const RewardedAdButton: React.FC<RewardedAdButtonProps> = ({
+  onRewardClaimed,
   currentEnergy,
-  disabled 
+  disabled,
+  theme,
 }) => {
   const [showOptions, setShowOptions] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -44,116 +64,284 @@ export const RewardedAdButton: React.FC<RewardedAdButtonProps> = ({
   const isEnergyLow = currentEnergy < 30;
 
   return (
-    <div className="relative">
+    <View style={styles.container}>
       {/* Main Button */}
-      <button
-        onClick={() => setShowOptions(!showOptions)}
+      <TouchableOpacity
+        onPress={() => setShowOptions(!showOptions)}
         disabled={disabled || loading || remainingAds === 0}
-        className="pressable bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed relative"
+        style={[
+          styles.mainButton,
+          (disabled || loading || remainingAds === 0) && styles.mainButtonDisabled,
+        ]}
+        accessibilityLabel="Reklam izle"
+        accessibilityRole="button"
+        accessibilityHint="Ödül seçeneklerini görmek için dokun"
       >
-        <Video className="w-5 h-5" />
-        <span className="text-sm">Reklam İzle</span>
+        <Feather name="video" size={20} color="#fff" />
+        <Text style={styles.mainButtonText}>Reklam İzle</Text>
         {remainingAds > 0 && (
-          <span className="absolute -top-2 -right-2 bg-yellow-500 text-black text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-            {remainingAds}
-          </span>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{remainingAds}</Text>
+          </View>
         )}
-      </button>
+      </TouchableOpacity>
 
       {/* Error Message */}
       {error && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-red-500/20 border border-red-500/50 text-red-200 text-xs px-3 py-2 rounded-lg z-50">
-          {error}
-        </div>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
       )}
 
       {/* Options Dropdown */}
       {showOptions && remainingAds > 0 && (
-        <div className="absolute top-full left-0 mt-2 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-50 min-w-[280px] overflow-hidden animate-scale-in">
-          <div className="p-3 bg-gradient-to-r from-purple-900 to-pink-900 border-b border-gray-700">
-            <p className="text-xs text-white font-semibold">Reklam izleyerek ödül kazan!</p>
-            <p className="text-xs text-purple-200 mt-1">Kalan: {remainingAds}/5</p>
-          </div>
+        <View style={[styles.dropdown, { backgroundColor: theme.surfaceBase, borderColor: theme.border }]}>
+          <View style={styles.dropdownHeader}>
+            <Text style={styles.dropdownTitle}>Reklam izleyerek ödül kazan!</Text>
+            <Text style={styles.dropdownSubtitle}>Kalan: {remainingAds}/5</Text>
+          </View>
 
-          <div className="p-2 space-y-1">
+          <View style={styles.optionsList}>
             {/* Energy Reward */}
-            <button
-              onClick={() => handleWatchAd('energy')}
+            <TouchableOpacity
+              onPress={() => handleWatchAd('energy')}
               disabled={loading}
-              className={`pressable w-full flex items-center gap-3 p-3 rounded-lg transition-all ${
-                isEnergyLow 
-                  ? 'bg-green-600/30 hover:bg-green-600/40 border border-green-500/50' 
-                  : 'hover:bg-gray-800'
-              }`}
+              style={[
+                styles.optionButton,
+                { backgroundColor: theme.surfaceRaised },
+                isEnergyLow && styles.optionButtonHighlighted,
+              ]}
+              accessibilityLabel="+20 Enerji ödülü al"
+              accessibilityRole="button"
             >
-              <div className="p-2 bg-green-500 rounded-lg">
-                <Zap className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex-1 text-left">
-                <div className="font-bold text-sm text-white">+20 Enerji</div>
-                <div className="text-xs text-gray-400">Enerjini doldur</div>
-              </div>
+              <View style={[styles.optionIcon, { backgroundColor: REWARD_COLORS.energy }]}>
+                <Feather name={REWARD_ICONS.energy} size={20} color="#fff" />
+              </View>
+              <View style={styles.optionInfo}>
+                <Text style={[styles.optionTitle, { color: theme.textPrimary }]}>+20 Enerji</Text>
+                <Text style={[styles.optionDescription, { color: theme.textSecondary }]}>Enerjini doldur</Text>
+              </View>
               {isEnergyLow && (
-                <span className="text-xs bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded-full">
-                  Önerilen
-                </span>
+                <View style={styles.recommendedBadge}>
+                  <Text style={styles.recommendedText}>Önerilen</Text>
+                </View>
               )}
-            </button>
+            </TouchableOpacity>
 
             {/* Intelligence Reward */}
-            <button
-              onClick={() => handleWatchAd('intelligence')}
+            <TouchableOpacity
+              onPress={() => handleWatchAd('intelligence')}
               disabled={loading}
-              className="pressable w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-all"
+              style={[styles.optionButton, { backgroundColor: theme.surfaceRaised }]}
+              accessibilityLabel="+10 Zeka ödülü al"
+              accessibilityRole="button"
             >
-              <div className="p-2 bg-blue-500 rounded-lg">
-                <Brain className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex-1 text-left">
-                <div className="font-bold text-sm text-white">+10 Zeka</div>
-                <div className="text-xs text-gray-400">Zekanı artır</div>
-              </div>
-            </button>
+              <View style={[styles.optionIcon, { backgroundColor: REWARD_COLORS.intelligence }]}>
+                <Feather name={REWARD_ICONS.intelligence} size={20} color="#fff" />
+              </View>
+              <View style={styles.optionInfo}>
+                <Text style={[styles.optionTitle, { color: theme.textPrimary }]}>+10 Zeka</Text>
+                <Text style={[styles.optionDescription, { color: theme.textSecondary }]}>Zekanı artır</Text>
+              </View>
+            </TouchableOpacity>
 
             {/* Money Reward */}
-            <button
-              onClick={() => handleWatchAd('money')}
+            <TouchableOpacity
+              onPress={() => handleWatchAd('money')}
               disabled={loading}
-              className="pressable w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-all"
+              style={[styles.optionButton, { backgroundColor: theme.surfaceRaised }]}
+              accessibilityLabel="+100 TL ödülü al"
+              accessibilityRole="button"
             >
-              <div className="p-2 bg-yellow-500 rounded-lg">
-                <DollarSign className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex-1 text-left">
-                <div className="font-bold text-sm text-white">+100 TL</div>
-                <div className="text-xs text-gray-400">Para kazan</div>
-              </div>
-            </button>
-          </div>
+              <View style={[styles.optionIcon, { backgroundColor: REWARD_COLORS.money }]}>
+                <Feather name={REWARD_ICONS.money} size={20} color="#fff" />
+              </View>
+              <View style={styles.optionInfo}>
+                <Text style={[styles.optionTitle, { color: theme.textPrimary }]}>+100 TL</Text>
+                <Text style={[styles.optionDescription, { color: theme.textSecondary }]}>Para kazan</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
 
-          <div className="p-2 border-t border-gray-700">
-            <button
-              onClick={() => setShowOptions(false)}
-              className="pressable w-full py-2 text-xs text-gray-400 hover:text-white"
+          <View style={[styles.dropdownFooter, { borderTopColor: theme.border }]}>
+            <TouchableOpacity
+              onPress={() => setShowOptions(false)}
+              style={styles.cancelButton}
+              accessibilityLabel="İptal"
+              accessibilityRole="button"
             >
-              İptal
-            </button>
-          </div>
-        </div>
+              <Text style={[styles.cancelText, { color: theme.textSecondary }]}>İptal</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       )}
 
       {/* No Ads Remaining */}
       {showOptions && remainingAds === 0 && (
-        <div className="absolute top-full left-0 mt-2 bg-gray-900 border border-gray-700 rounded-xl p-4 z-50 min-w-[280px] animate-scale-in">
-          <div className="text-center">
-            <div className="text-4xl mb-2">🎬</div>
-            <p className="text-sm font-bold text-white mb-1">Günlük limit doldu</p>
-            <p className="text-xs text-gray-400">Yarın tekrar reklam izleyebilirsin!</p>
-          </div>
-        </div>
+        <View style={[styles.dropdown, styles.noAdsDropdown, { backgroundColor: theme.surfaceBase, borderColor: theme.border }]}>
+          <Text style={styles.noAdsEmoji}>🎬</Text>
+          <Text style={[styles.noAdsTitle, { color: theme.textPrimary }]}>Günlük limit doldu</Text>
+          <Text style={[styles.noAdsSubtitle, { color: theme.textSecondary }]}>Yarın tekrar reklam izleyebilirsin!</Text>
+        </View>
       )}
-    </div>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    position: 'relative',
+  },
+  mainButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: '#9333ea',
+  },
+  mainButtonDisabled: {
+    opacity: 0.5,
+  },
+  mainButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  badge: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: '#eab308',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {
+    color: '#000',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  errorContainer: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    marginTop: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.5)',
+    padding: 8,
+    borderRadius: 8,
+    zIndex: 50,
+  },
+  errorText: {
+    color: '#fecaca',
+    fontSize: 12,
+  },
+  dropdown: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    marginTop: 8,
+    minWidth: 280,
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+    zIndex: 50,
+  },
+  dropdownHeader: {
+    padding: 12,
+    backgroundColor: 'rgba(88, 28, 135, 0.8)',
+  },
+  dropdownTitle: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  dropdownSubtitle: {
+    color: '#d8b4fe',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  optionsList: {
+    padding: 8,
+    gap: 4,
+  },
+  optionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 12,
+    borderRadius: 10,
+    minHeight: 48,
+  },
+  optionButtonHighlighted: {
+    backgroundColor: 'rgba(34, 197, 94, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.5)',
+  },
+  optionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optionInfo: {
+    flex: 1,
+  },
+  optionTitle: {
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  optionDescription: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  recommendedBadge: {
+    backgroundColor: 'rgba(234, 179, 8, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  recommendedText: {
+    color: '#fde047',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  dropdownFooter: {
+    padding: 8,
+    borderTopWidth: 1,
+  },
+  cancelButton: {
+    paddingVertical: 10,
+    alignItems: 'center',
+    minHeight: 48,
+    justifyContent: 'center',
+  },
+  cancelText: {
+    fontSize: 13,
+  },
+  noAdsDropdown: {
+    padding: 16,
+    alignItems: 'center',
+  },
+  noAdsEmoji: {
+    fontSize: 32,
+    marginBottom: 8,
+  },
+  noAdsTitle: {
+    fontWeight: '700',
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  noAdsSubtitle: {
+    fontSize: 12,
+  },
+});
 
 export default RewardedAdButton;

@@ -1,3 +1,4 @@
+// @ts-nocheck - Bu dosya sadece örnek ve dökümantasyon içindir
 /**
  * YAZGI GAME BALANCE CONFIG - USAGE EXAMPLES
  * ==========================================
@@ -48,7 +49,7 @@ function initializePlayerStats() {
 /**
  * ÖRNEK: Matematik dersi seçilince ne olur?
  */
-function studyMath(playerStats: any, playerTraits: string[]) {
+function studyMath(_playerStats: any, _playerTraits: string[]) {
   // Config'den değerleri al
   const energyCost = STUDY_ACTIONS.math.energyCost;  // 40
   const intelligenceGain = STUDY_ACTIONS.math.intelligence;  // 8
@@ -66,7 +67,7 @@ function studyMath(playerStats: any, playerTraits: string[]) {
 /**
  * ÖRNEK: Spor yap aktivitesi
  */
-function doSports(playerStats: any, playerTraits: string[]) {
+function doSports(_playerStats: any, playerTraits: string[]) {
   const baseCost = SPORTS_ACTIONS.energyCost;  // 45
   const healthGain = SPORTS_ACTIONS.health;    // 12
   const sportSkillGain = SPORTS_ACTIONS.sportSkill;  // 5
@@ -131,7 +132,7 @@ function calculateSchoolGrade(
  */
 function getFamilyReaction(
   averageGrade: number,
-  familyWealth: 'POOR' | 'MIDDLE' | 'RICH',
+  _familyWealth: 'POOR' | 'MIDDLE' | 'RICH',
   familyDynamic: 'SUPPORTIVE' | 'STRICT' | 'CHAOTIC'
 ) {
   if (familyDynamic === 'SUPPORTIVE' && averageGrade >= 80) {
@@ -440,7 +441,8 @@ function calculateMathGain(
 // STUDY_ACTIONS.math.energyCost = 20;  // Type-safety ihlali!
 
 // ✅ DOĞRU: Local kopya oluştur
-function modifyStudyActionForDebug() {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _modifyStudyActionForDebug() {
   const modifiedStudyActions = {
     ...STUDY_ACTIONS,
     math: {

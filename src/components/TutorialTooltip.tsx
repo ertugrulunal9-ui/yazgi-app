@@ -1,18 +1,12 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
-  Animated,
   TouchableOpacity,
   StyleSheet,
   Modal,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-
-interface TooltipPosition {
-  x: number;
-  y: number;
-}
 
 interface TutorialTooltipProps {
   visible: boolean;

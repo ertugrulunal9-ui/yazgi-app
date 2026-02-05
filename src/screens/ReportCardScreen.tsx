@@ -7,7 +7,6 @@ import {
   FadeInUpView,
   ShimmerButton,
   CountUpText,
-  StatChangeIndicator,
   buttonPress,
 } from '../animations';
 

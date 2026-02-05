@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, RefreshCw, Download, Upload, Lock } from 'lucide-react';
+import { View, Text, TouchableOpacity, ScrollView, Modal, Alert, ActivityIndicator, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SaveSlotMetadata } from '../save/SaveSlot';
 import { SaveSlotCard } from './SaveSlotCard';
 import SaveManager from '../save/SaveManager';
@@ -12,6 +14,15 @@ interface SaveSlotPickerProps {
   currentGameState: any;
   onLoadSlot: (slotId: string) => void;
   currentSlotId?: string;
+  theme: {
+    appBg: string;
+    surfaceBase: string;
+    surfaceRaised: string;
+    textPrimary: string;
+    textSecondary: string;
+    border: string;
+    accentEvent: string;
+  };
 }
 
 export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
@@ -22,7 +33,9 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
   currentGameState,
   onLoadSlot,
   currentSlotId,
+  theme,
 }) => {
+  const insets = useSafeAreaInsets();
   const [slots, setSlots] = useState<SaveSlotMetadata[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -81,17 +94,28 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
   };
 
   const handleDelete = async (slotId: string) => {
-    if (confirm('Bu kayıt silinecek. Emin misin?')) {
-      setIsLoading(true);
-      try {
-        await SaveManager.deleteSlot(slotId);
-        await loadSlots();
-      } catch (error) {
-        console.error('Delete failed:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
+    Alert.alert(
+      'Kaydı Sil',
+      'Bu kayıt silinecek. Emin misin?',
+      [
+        { text: 'İptal', style: 'cancel' },
+        {
+          text: 'Sil',
+          style: 'destructive',
+          onPress: async () => {
+            setIsLoading(true);
+            try {
+              await SaveManager.deleteSlot(slotId);
+              await loadSlots();
+            } catch (error) {
+              console.error('Delete failed:', error);
+            } finally {
+              setIsLoading(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleExport = (slotId: string) => {
@@ -102,109 +126,319 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur flex items-center justify-center p-4 animate-fade-in">
-      <div className="ui-modal w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-primary">Kayıt Slotları</h2>
-            <p className="text-sm text-secondary mt-1">
-              {SaveManager.getAvailableSlots()} slot kullanılabilir
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="pressable surface-raised border border-default rounded-lg p-2"
-          >
-            <X className="icon-density" />
-          </button>
-        </div>
+    <Modal visible={isOpen} animationType="slide" transparent>
+      <View style={[styles.overlay, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+        <View style={[styles.container, { backgroundColor: theme.surfaceBase, borderColor: theme.border }]}>
+          {/* Header */}
+          <View style={styles.header}>
+            <View>
+              <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Kayıt Slotları</Text>
+              <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
+                {SaveManager.getAvailableSlots()} slot kullanılabilir
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={onClose}
+              style={[styles.closeButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}
+              accessibilityLabel="Kapat"
+              accessibilityRole="button"
+            >
+              <Feather name="x" size={24} color={theme.textSecondary} />
+            </TouchableOpacity>
+          </View>
 
-        {/* Premium Banner */}
-        <div className="surface-raised border border-yellow-500/30 rounded-xl p-4 mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Lock className="w-6 h-6 text-yellow-500" />
-            <div>
-              <p className="font-bold text-yellow-500">Premium Slotlar</p>
-              <p className="text-sm text-gray-400">3 ekstra slot aç</p>
-            </div>
-          </div>
-          <button className="pressable bg-yellow-600 hover:bg-yellow-500 border-2 border-yellow-500 text-white font-bold py-2 px-4 rounded-lg text-sm">
-            Kilidi Aç
-          </button>
-        </div>
+          {/* Premium Banner */}
+          <View style={styles.premiumBanner}>
+            <View style={styles.premiumLeft}>
+              <Feather name="lock" size={24} color="#eab308" />
+              <View>
+                <Text style={styles.premiumTitle}>Premium Slotlar</Text>
+                <Text style={styles.premiumSubtitle}>3 ekstra slot aç</Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.premiumButton}
+              accessibilityLabel="Premium slotların kilidini aç"
+              accessibilityRole="button"
+            >
+              <Text style={styles.premiumButtonText}>Kilidi Aç</Text>
+            </TouchableOpacity>
+          </View>
 
-        {/* Refresh Button */}
-        <div className="flex justify-end mb-4">
-          <button
-            onClick={loadSlots}
-            disabled={isLoading}
-            className="pressable surface-raised border border-default rounded-lg px-3 py-2 flex items-center gap-2 text-sm font-semibold disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Yenile
-          </button>
-        </div>
+          {/* Refresh Button */}
+          <View style={styles.refreshRow}>
+            <TouchableOpacity
+              onPress={loadSlots}
+              disabled={isLoading}
+              style={[
+                styles.refreshButton,
+                { backgroundColor: theme.surfaceRaised, borderColor: theme.border },
+                isLoading && styles.buttonDisabled,
+              ]}
+              accessibilityLabel="Yenile"
+              accessibilityRole="button"
+            >
+              <Feather name="refresh-cw" size={16} color={theme.textPrimary} />
+              <Text style={[styles.refreshButtonText, { color: theme.textPrimary }]}>Yenile</Text>
+            </TouchableOpacity>
+          </View>
 
-        {/* Slots Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {slots.map((metadata) => (
-            <SaveSlotCard
-              key={metadata.slotId}
-              metadata={metadata}
-              onLoad={handleLoad}
-              onSave={handleSave}
-              onDelete={handleDelete}
-              onExport={handleExport}
-              isCurrentSlot={metadata.slotId === currentSlotId}
-              isAutoSave={metadata.slotId === 'auto'}
-            />
-          ))}
-        </div>
+          {/* Slots List */}
+          <ScrollView style={styles.slotsList} contentContainerStyle={styles.slotsListContent}>
+            {isLoading && slots.length === 0 ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={theme.accentEvent} />
+                <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Yükleniyor...</Text>
+              </View>
+            ) : (
+              slots.map((metadata) => (
+                <View key={metadata.slotId} style={styles.slotCardWrapper}>
+                  <SaveSlotCard
+                    metadata={metadata}
+                    onLoad={handleLoad}
+                    onSave={handleSave}
+                    onDelete={handleDelete}
+                    onExport={handleExport}
+                    isCurrentSlot={metadata.slotId === currentSlotId}
+                    isAutoSave={metadata.slotId === 'auto'}
+                    theme={theme}
+                  />
+                </View>
+              ))
+            )}
+          </ScrollView>
 
-        {/* Import/Export Footer */}
-        <div className="mt-6 pt-4 border-t border-default flex gap-2">
-          <button
-            onClick={() => setShowExportModal(true)}
-            className="flex-1 pressable surface-raised border border-default rounded-lg py-3 flex items-center justify-center gap-2 font-semibold"
-          >
-            <Download className="w-4 h-4" />
-            İçe Aktar
-          </button>
-        </div>
-      </div>
+          {/* Import Footer */}
+          <View style={[styles.footer, { backgroundColor: theme.surfaceRaised, borderTopColor: theme.border }]}>
+            <TouchableOpacity
+              onPress={() => setShowExportModal(true)}
+              style={[styles.importButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}
+              accessibilityLabel="İçe aktar"
+              accessibilityRole="button"
+            >
+              <Feather name="download" size={16} color={theme.textPrimary} />
+              <Text style={[styles.importButtonText, { color: theme.textPrimary }]}>İçe Aktar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
 
       {/* Export Modal */}
       {showExportModal && exportSlotId && (
-        <div className="fixed inset-0 z-[110] bg-black/50 backdrop-blur flex items-center justify-center p-4">
-          <div className="ui-modal w-full max-w-lg">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-primary">Kayıt Dışa Aktar</h3>
-              <button
-                onClick={() => {
+        <Modal visible={showExportModal} animationType="fade" transparent>
+          <View style={styles.exportOverlay}>
+            <View style={[styles.exportContainer, { backgroundColor: theme.surfaceBase, borderColor: theme.border }]}>
+              <View style={styles.exportHeader}>
+                <Text style={[styles.exportTitle, { color: theme.textPrimary }]}>Kayıt Dışa Aktar</Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setShowExportModal(false);
+                    setExportSlotId(null);
+                  }}
+                  style={[styles.closeButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}
+                  accessibilityLabel="Kapat"
+                  accessibilityRole="button"
+                >
+                  <Feather name="x" size={20} color={theme.textSecondary} />
+                </TouchableOpacity>
+              </View>
+              <Text style={[styles.exportDescription, { color: theme.textSecondary }]}>
+                Export/import işlemleri için SaveExportModal component'i kullanılacak
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
                   setShowExportModal(false);
                   setExportSlotId(null);
                 }}
-                className="pressable surface-raised border border-default rounded-lg p-2"
+                style={[styles.exportCloseButton, { backgroundColor: theme.accentEvent }]}
+                accessibilityLabel="Kapat"
+                accessibilityRole="button"
               >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <p className="text-sm text-secondary mb-4">
-              Export/import işlemleri için SaveExportModal component'i kullanılacak
-            </p>
-            <button
-              onClick={() => {
-                setShowExportModal(false);
-                setExportSlotId(null);
-              }}
-              className="w-full pressable accent-event-bg accent-event-border text-white font-bold py-3 rounded-xl"
-            >
-              Kapat
-            </button>
-          </div>
-        </div>
+                <Text style={styles.exportCloseButtonText}>Kapat</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       )}
-    </div>
+    </Modal>
   );
 };
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  container: {
+    borderRadius: 16,
+    borderWidth: 1,
+    maxHeight: '90%',
+    overflow: 'hidden',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(107, 114, 128, 0.3)',
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    marginTop: 4,
+  },
+  closeButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  premiumBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    margin: 16,
+    marginBottom: 0,
+    padding: 16,
+    backgroundColor: 'rgba(234, 179, 8, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(234, 179, 8, 0.3)',
+    borderRadius: 16,
+  },
+  premiumLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  premiumTitle: {
+    color: '#eab308',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  premiumSubtitle: {
+    color: '#9ca3af',
+    fontSize: 13,
+    marginTop: 2,
+  },
+  premiumButton: {
+    backgroundColor: '#ca8a04',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#eab308',
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  premiumButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  refreshRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  refreshButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    minHeight: 44,
+  },
+  refreshButtonText: {
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  slotsList: {
+    flex: 1,
+  },
+  slotsListContent: {
+    padding: 16,
+    gap: 12,
+  },
+  slotCardWrapper: {
+    marginBottom: 12,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 48,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 14,
+  },
+  footer: {
+    padding: 16,
+    borderTopWidth: 1,
+  },
+  importButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    minHeight: 48,
+  },
+  importButtonText: {
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  exportOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  exportContainer: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 20,
+  },
+  exportHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  exportTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  exportDescription: {
+    fontSize: 14,
+    marginBottom: 16,
+  },
+  exportCloseButton: {
+    paddingVertical: 14,
+    borderRadius: 16,
+    alignItems: 'center',
+    minHeight: 48,
+    justifyContent: 'center',
+  },
+  exportCloseButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+});
+
+export default SaveSlotPicker;

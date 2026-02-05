@@ -15,13 +15,16 @@ export const useNPCs = () => {
     updateGameState({ npcs: updated });
   }, [gameState.npcs, updateGameState]);
 
-  const createRandomNPC = useCallback((age: number): NPC => {
+  const createRandomNPC = useCallback((playerAge: number): NPC => {
     const genders = ['MALE', 'FEMALE'] as const;
     const roles: NPCRole[] = ['ACQUAINTANCE', 'FRIEND', 'CRUSH', 'RIVAL'];
+    // NPC age is within 2 years of player age
+    const npcAge = Math.max(0, playerAge + Math.floor(Math.random() * 5) - 2);
     return {
       id: `npc_${Date.now()}_${Math.random()}`,
       name: `NPC_${Math.random().toString(36).slice(2, 9)}`,
       gender: genders[Math.floor(Math.random() * genders.length)],
+      age: npcAge,
       role: roles[Math.floor(Math.random() * roles.length)],
       relationship: 30 + Math.floor(Math.random() * 40),
       romance: 0,

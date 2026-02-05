@@ -86,8 +86,14 @@ class MusicPlayer {
   ): Promise<void> {
     this.isCrossfading = true;
 
-    const settings = audioManager.getSettings();
     const targetVolume = this.calculateMusicVolume();
+    const settings = audioManager.getSettings();
+
+    // Skip crossfade if music is muted
+    if (settings.muted || settings.musicVolume === 0) {
+      this.isCrossfading = false;
+      return Promise.resolve();
+    }
 
     const steps = 50;
     const stepDuration = duration / steps;

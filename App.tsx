@@ -1,19 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Animated, SafeAreaView, Appearance, Modal, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
-import { GameProvider } from './src/context/GameContext';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { View, Text, Appearance, Modal, ScrollView, TouchableOpacity, Alert, Switch } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { Z_INDEX } from './src/constants/zIndex';
+import { GameProvider, useGame } from './src/context/GameContext';
 import { MainMenuScreen } from './src/screens/MainMenuScreen';
 import { GameScreen } from './src/screens/GameScreen';
 import { EventScreen } from './src/screens/EventScreen';
-import { ReportCardScreen } from './src/screens/ReportCardScreen';
 import { GameOverScreen } from './src/screens/GameOverScreen';
 import { getThemeTokens, getDensityMetrics, getSystemTheme, getWeightedSplashDelay, DEFAULT_UI_PREFS, type UIPrefs, type ThemeMode, type DensityMode } from './src/utils/themeUtils';
 import { getLoadingQuoteByAge } from './src/data/loadingQuotes';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
-import { getInitialGameState, getInitialStats, resetGameStorage } from './src/utils/gameUtils';
+import { resetGameStorage } from './src/utils/gameUtils';
 
 const UI_PREFS_KEY = '@yazgi_sim/ui_prefs/v1';
-const SPLASH_DELAY_POOL = [1500, 1600, 1700, 1700, 1800, 1800, 1800, 1900, 2000, 2200];
 
 interface AppState {
   gameStarted: boolean;
@@ -22,6 +22,7 @@ interface AppState {
 }
 
 const AppContent: React.FC = () => {
+  const { gameState, resetGame } = useGame();
   const [appState, setAppState] = useState<AppState>({
     gameStarted: false,
     currentTab: 'hub',
@@ -31,9 +32,8 @@ const AppContent: React.FC = () => {
   const [uiPrefs, setUiPrefs] = useState<UIPrefs>(DEFAULT_UI_PREFS);
   const [uiPrefsLoaded, setUiPrefsLoaded] = useState(false);
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(getSystemTheme());
-  const [isLoading, setIsLoading] = useState(true);
   const [splashReady, setSplashReady] = useState(false);
-  const [splashQuote, setSplashQuote] = useState(getLoadingQuoteByAge(0));
+  const splashQuote = getLoadingQuoteByAge(0);
   const [splashProgress, setSplashProgress] = useState(0);
 
   // Load UI preferences
@@ -64,13 +64,13 @@ const AppContent: React.FC = () => {
       return () => sub.remove();
     }
     setResolvedTheme(uiPrefs.theme);
+    return undefined;
   }, [uiPrefs.theme]);
 
   // Handle splash screen animation
   useEffect(() => {
     if (!uiPrefsLoaded) return;
     
-    setIsLoading(false);
     const baseDelay = getWeightedSplashDelay();
     const effectiveDelay = uiPrefs.reduceMotion ? Math.round(baseDelay / 2) : baseDelay;
     
@@ -98,8 +98,37 @@ const AppContent: React.FC = () => {
     void AsyncStorage.setItem(UI_PREFS_KEY, JSON.stringify(uiPrefs));
   }, [uiPrefs, uiPrefsLoaded]);
 
-  const theme = getThemeTokens(resolvedTheme);
-  const metrics = getDensityMetrics(uiPrefs.density);
+  const theme = useMemo(() => getThemeTokens(resolvedTheme), [resolvedTheme]);
+  const metrics = useMemo(() => getDensityMetrics(uiPrefs.density), [uiPrefs.density]);
+
+  const handleSettingsDensityChange = useCallback((density: DensityMode) => {
+    setUiPrefs(prev => ({ ...prev, density }));
+  }, []);
+
+  const handleSettingsThemeChange = useCallback((theme: ThemeMode) => {
+    setUiPrefs(prev => ({ ...prev, theme }));
+  }, []);
+
+  const handleSettingsMotionChange = useCallback(() => {
+    setUiPrefs(prev => ({ ...prev, reduceMotion: !prev.reduceMotion }));
+  }, []);
+
+  const handleGameStart = useCallback(() => {
+    setAppState(prev => ({ ...prev, gameStarted: true }));
+  }, []);
+
+  const handleResetGame = useCallback(async () => {
+    Alert.alert('Emin misin?', 'Tüm veriler silinecek ve oyun yeniden başlayacak.', [
+      { text: 'İptal', onPress: () => {} },
+      {
+        text: '🔥 Sıfırla',
+        onPress: async () => {
+          await resetGameStorage();
+          setAppState({ gameStarted: false, currentTab: 'hub', settingsOpen: false });
+        },
+      },
+    ]);
+  }, []);
 
   const showSplash = !uiPrefsLoaded || !splashReady;
 
@@ -121,31 +150,6 @@ const AppContent: React.FC = () => {
     );
   }
 
-  const handleSettingsDensityChange = (density: DensityMode) => {
-    setUiPrefs(prev => ({ ...prev, density }));
-  };
-
-  const handleSettingsThemeChange = (theme: ThemeMode) => {
-    setUiPrefs(prev => ({ ...prev, theme }));
-  };
-
-  const handleSettingsMotionChange = () => {
-    setUiPrefs(prev => ({ ...prev, reduceMotion: !prev.reduceMotion }));
-  };
-
-  const handleResetGame = async () => {
-    Alert.alert('Emin misin?', 'Tüm veriler silinecek ve oyun yeniden başlayacak.', [
-      { text: 'İptal', onPress: () => {} },
-      {
-        text: '🔥 Sıfırla',
-        onPress: async () => {
-          await resetGameStorage();
-          setAppState({ gameStarted: false, currentTab: 'hub', settingsOpen: false });
-        },
-      },
-    ]);
-  };
-
   return (
     <>
       <Modal visible={appState.settingsOpen} transparent animationType="slide">
@@ -153,7 +157,12 @@ const AppContent: React.FC = () => {
           <SafeAreaView style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: theme.border }}>
               <Text style={{ fontSize: 20, fontWeight: '700', color: theme.textPrimary }}>Ayarlar</Text>
-              <TouchableOpacity onPress={() => setAppState(prev => ({ ...prev, settingsOpen: false }))} style={{ padding: 8, borderRadius: 10, backgroundColor: theme.surfaceBase }}>
+              <TouchableOpacity
+                onPress={() => setAppState(prev => ({ ...prev, settingsOpen: false }))}
+                style={{ padding: 12, borderRadius: 10, backgroundColor: theme.surfaceBase, minWidth: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' }}
+                accessibilityLabel="Ayarları kapat"
+                accessibilityRole="button"
+              >
                 <Feather name="x" color={theme.textPrimary} size={24} />
               </TouchableOpacity>
             </View>
@@ -254,8 +263,7 @@ const AppContent: React.FC = () => {
               {/* Motion Reduction */}
               <View style={{ marginBottom: 28 }}>
                 <Text style={{ color: theme.textPrimary, fontSize: 16, fontWeight: '700', marginBottom: 12 }}>⚡ Hareket</Text>
-                <TouchableOpacity
-                  onPress={handleSettingsMotionChange}
+                <View
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -272,10 +280,14 @@ const AppContent: React.FC = () => {
                     <Feather name={uiPrefs.reduceMotion ? 'slash' : 'zap'} color={uiPrefs.reduceMotion ? '#f59e0b' : theme.textSecondary} size={24} />
                     <Text style={{ color: theme.textPrimary, fontSize: 16, fontWeight: '600' }}>Geçişleri Azalt</Text>
                   </View>
-                  <View style={{ width: 50, height: 28, borderRadius: 14, backgroundColor: uiPrefs.reduceMotion ? '#f59e0b' : theme.surfaceOverlay, alignItems: uiPrefs.reduceMotion ? 'flex-end' : 'flex-start', justifyContent: 'center' }}>
-                    <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: theme.surfaceRaised, marginHorizontal: 2 }} />
-                  </View>
-                </TouchableOpacity>
+                  <Switch
+                    value={uiPrefs.reduceMotion}
+                    onValueChange={handleSettingsMotionChange}
+                    trackColor={{ false: theme.surfaceOverlay, true: '#f59e0b' }}
+                    thumbColor={theme.surfaceRaised}
+                    accessibilityLabel="Geçişleri azalt"
+                  />
+                </View>
               </View>
 
               {/* Danger Zone */}
@@ -302,9 +314,18 @@ const AppContent: React.FC = () => {
       </Modal>
 
       {!appState.gameStarted ? (
-        <MainMenuScreen theme={theme} metrics={metrics} onGameStart={() => setAppState(prev => ({ ...prev, gameStarted: true }))} />
+        <MainMenuScreen theme={theme} metrics={metrics} onGameStart={handleGameStart} />
+      ) : gameState.phase === 'GAME_OVER' ? (
+        <GameOverScreen
+          theme={theme}
+          metrics={metrics}
+          onRestart={() => {
+            resetGame();
+            setAppState({ gameStarted: false, currentTab: 'hub', settingsOpen: false });
+          }}
+        />
       ) : (
-        <>
+        <View style={{ flex: 1 }}>
           {/* Game Screens */}
           <GameScreen
             onPhaseChange={(tab) => setAppState(prev => ({ ...prev, currentTab: tab }))}
@@ -317,23 +338,41 @@ const AppContent: React.FC = () => {
 
           {/* Settings Modal Toggle */}
           <TouchableOpacity
-            style={{ position: 'absolute', top: 20, right: 20, zIndex: 1000, padding: 8, borderRadius: 10, backgroundColor: theme.surfaceBase }}
+            style={{
+              position: 'absolute',
+              top: 20,
+              right: 20,
+              zIndex: Z_INDEX.SETTINGS,
+              padding: 12,
+              borderRadius: 12,
+              backgroundColor: theme.surfaceBase,
+              minWidth: 48,
+              minHeight: 48,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
             onPress={() => setAppState(prev => ({ ...prev, settingsOpen: !prev.settingsOpen }))}
+            accessibilityLabel="Ayarları aç"
+            accessibilityRole="button"
           >
             <Feather name="settings" color={theme.textPrimary} size={22} />
           </TouchableOpacity>
-        </>
+        </View>
       )}
     </>
   );
 };
 
+const AppContentMemo = React.memo(AppContent);
+
 export default function App() {
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <GameProvider>
-        <AppContent />
-      </GameProvider>
-    </SafeAreaView>
+    <SafeAreaProvider>
+      <View style={{ flex: 1 }}>
+        <GameProvider>
+          <AppContentMemo />
+        </GameProvider>
+      </View>
+    </SafeAreaProvider>
   );
 }

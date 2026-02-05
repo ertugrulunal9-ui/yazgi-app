@@ -1,0 +1,487 @@
+<common_debugging_patterns>
+  <overview>
+    Yazgı projesinde sık karşılaşılan sorunlar ve bunların çözüm desenleri.
+  </overview>
+
+  <expo_build_patterns>
+    <pattern name="native_module_not_found">
+      <title>Native Module Bulunamadı Hatası</title>
+      <error_example>
+        <message>Unable to resolve module @react-native-async-storage/async-storage</message>
+        <message>Native module 'ExpoAV' not found</message>
+      </error_example>
+      <diagnosis_steps>
+        <step>package.json'da paketin listelendiğini kontrol et</step>
+        <step>node_modules dizininde paketin yüklü olup olmadığını kontrol et</step>
+        <step>Paketin Expo ile uyumlu olup olmadığını doğrula</step>
+      </diagnosis_steps>
+      <solutions>
+        <solution type="package_missing">
+          <title>Paket Yüklü Değil</title>
+          <steps>
+            <step>npm install [paket-adı] veya yarn add [paket-adı] komutunu çalıştır</step>
+            <step>Native modül ise npx expo prebuild --clean çalıştır</step>
+            <step>Uygulamayı yeniden başlat</step>
+          </steps>
+        </solution>
+        <solution type="expo_incompatible">
+          <title>Paket Expo ile Uyumlu Değil</title>
+          <steps>
+            <step>Expo dokümantasyonunda alternatif paket ara</step>
+            <step>Expo config plugins kullanarak entegrasyon dene</step>
+            <step>Gerekirse dev client kullan</step>
+          </steps>
+        </solution>
+      </solutions>
+    </pattern>
+
+    <pattern name="eas_build_failure">
+      <title>EAS Build Başarısızlığı</title>
+      <error_example>
+        <message>Build failed with exit code 1</message>
+        <message>Gradle build failed</message>
+        <message>Xcode build failed</message>
+      </error_example>
+      <diagnosis_steps>
+        <step>EAS build log'larını detaylı incele</step>
+        <step>eas.json konfigürasyonunu kontrol et</step>
+        <step>app.json'da native modül tanımlarını kontrol et</step>
+        <step>Platform spesifik konfigürasyonları incele</step>
+      </diagnosis_steps>
+      <solutions>
+        <solution type="config_error">
+          <title>Konfigürasyon Hatası</title>
+          <steps>
+            <step>eas.json buildProfile ayarlarını düzelt</step>
+            <step>Environment variables'ları kontrol et</step>
+            <step>app.json'da eksik tanımlamaları ekle</step>
+          </steps>
+        </solution>
+        <solution type="dependency_conflict">
+          <title>Bağımlılık Çakışması</title>
+          <steps>
+            <step>package.json'da versiyon çakışmalarını kontrol et</step>
+            <step>npm ls veya yarn why ile bağımlılık ağacını incele</step>
+            <step>Çakışan paketleri güncelle veya downgrade et</step>
+          </steps>
+        </solution>
+      </solutions>
+    </pattern>
+  </expo_build_patterns>
+
+  <render_patterns>
+    <pattern name="maximum_update_depth_exceeded">
+      <title>Maksimum Güncelleme Derinliği Aşıldı</title>
+      <error_example>
+        <message>Maximum update depth exceeded</message>
+        <message>Infinite loop detected</message>
+      </error_example>
+      <diagnosis_steps>
+        <step>Hangi component'in sürekli render olduğunu belirle</step>
+        <step>useEffect bağımlılık dizisini kontrol et</step>
+        <step>State güncelleme mekanizmasını incele</step>
+        <step>Callback fonksiyonlarının useCallback ile sarılıp sarılmadığını kontrol et</step>
+      </diagnosis_steps>
+      <solutions>
+        <solution type="useeffect_dependency">
+          <title>useEffect Bağımlılık Sorunu</title>
+          <example_before>
+            <code><![CDATA[
+useEffect(() => {
+  setCount(count + 1);
+}, [count]);
+            ]]></code>
+          </example_before>
+          <example_after>
+            <code><![CDATA[
+useEffect(() => {
+  setCount(prev => prev + 1);
+}, []); // Boş bağımlılık dizisi
+            ]]></code>
+          </example_after>
+        </solution>
+        <solution type="callback_dependency">
+          <title>Callback Bağımlılık Sorunu</title>
+          <example_before>
+            <code><![CDATA[
+const handleClick = () => {
+  setState(prev => prev + 1);
+};
+
+useEffect(() => {
+  // handleClick her render'da yeni bir fonksiyon
+}, [handleClick]);
+            ]]></code>
+          </example_before>
+          <example_after>
+            <code><![CDATA[
+const handleClick = useCallback(() => {
+  setState(prev => prev + 1);
+}, []);
+
+useEffect(() => {
+  // handleClick stabil bir referans
+}, [handleClick]);
+            ]]></code>
+          </example_after>
+        </solution>
+      </solutions>
+    </pattern>
+
+    <pattern name="unnecessary_renders">
+      <title>Gereksiz Re-render'lar</title>
+      <symptoms>
+        <symptom>Component sürekli render oluyor ama state değişmiyor</symptom>
+        <symptom>Performans sorunları</symptom>
+      </symptoms>
+      <diagnosis_steps>
+        <step>Parent component'in neden render olduğunu kontrol et</step>
+        <step>Props değişimlerini izle</step>
+        <step>Callback ve object referanslarını incele</step>
+      </diagnosis_steps>
+      <solutions>
+        <solution type="usecallback">
+          <title>useCallback Kullanımı</title>
+          <example_before>
+            <code><![CDATA[
+const Parent = () => {
+  const [count, setCount] = useState(0);
+
+  const handleClick = () => {
+    console.log('clicked');
+  };
+
+  return <Child onClick={handleClick} />;
+};
+            ]]></code>
+          </example_before>
+          <example_after>
+            <code><![CDATA[
+const Parent = () => {
+  const [count, setCount] = useState(0);
+
+  const handleClick = useCallback(() => {
+    console.log('clicked');
+  }, []); // Boş bağımlılık dizisi
+
+  return <Child onClick={handleClick} />;
+};
+            ]]></code>
+          </example_after>
+        </solution>
+        <solution type="usememo">
+          <title>useMemo Kullanımı</title>
+          <example_before>
+            <code><![CDATA[
+const Parent = () => {
+  const data = expensiveCalculation(props.items);
+  return <Child data={data} />;
+};
+            ]]></code>
+          </example_before>
+          <example_after>
+            <code><![CDATA[
+const Parent = () => {
+  const data = useMemo(() => {
+    return expensiveCalculation(props.items);
+  }, [props.items]);
+  return <Child data={data} />;
+};
+            ]]></code>
+          </example_after>
+        </solution>
+        <solution type="reactmemo">
+          <title>React.memo Kullanımı</title>
+          <example_before>
+            <code><![CDATA[
+const Child = ({ value, onClick }) => {
+  console.log('Child rendered');
+  return <Text onPress={onClick}>{value}</Text>;
+};
+            ]]></code>
+          </example_before>
+          <example_after>
+            <code><![CDATA[
+const Child = React.memo(({ value, onClick }) => {
+  console.log('Child rendered');
+  return <Text onPress={onClick}>{value}</Text>;
+});
+            ]]></code>
+          </example_after>
+        </solution>
+      </solutions>
+    </pattern>
+  </render_patterns>
+
+  <logic_patterns>
+    <pattern name="async_await_issues">
+      <title>Async/Await Sorunları</title>
+      <error_example>
+        <message>undefined is not an object</message>
+        <message>Cannot read property of undefined</message>
+      </error_example>
+      <diagnosis_steps>
+        <step>Asenkron fonksiyonun await ile çağrılıp çağrılmadığını kontrol et</step>
+        <step>Promise'ın resolve edilip edilmediğini incele</step>
+        <step>Error handling'in olup olmadığını kontrol et</step>
+      </diagnosis_steps>
+      <solutions>
+        <solution type="missing_await">
+          <title>await Eksikliği</title>
+          <example_before>
+            <code><![CDATA[
+const loadData = async () => {
+  const data = fetchData(); // await eksik
+  console.log(data); // undefined
+};
+            ]]></code>
+          </example_before>
+          <example_after>
+            <code><![CDATA[
+const loadData = async () => {
+  const data = await fetchData(); // await eklendi
+  console.log(data); // doğru veri
+};
+            ]]></code>
+          </example_after>
+        </solution>
+        <solution type="error_handling">
+          <title>Hata Yönetimi</title>
+          <example_before>
+            <code><![CDATA[
+const loadData = async () => {
+  const data = await fetchData();
+  return data;
+};
+            ]]></code>
+          </example_before>
+          <example_after>
+            <code><![CDATA[
+const loadData = async () => {
+  try {
+    const data = await fetchData();
+    return data;
+  } catch (error) {
+    console.error('Error loading data:', error);
+    return null;
+  }
+};
+            ]]></code>
+          </example_after>
+        </solution>
+      </solutions>
+    </pattern>
+
+    <pattern name="state_update_issues">
+      <title>State Güncelleme Sorunları</title>
+      <error_example>
+        <message>State update not reflected</message>
+        <message>Previous state not used correctly</message>
+      </error_example>
+      <diagnosis_steps>
+        <step>State güncelleme fonksiyonunun nasıl çağrıldığını kontrol et</step>
+        <step>Previous state kullanımını incele</step>
+        <step>Asenkron state güncellemelerini kontrol et</step>
+      </diagnosis_steps>
+      <solutions>
+        <solution type="previous_state">
+          <title>Previous State Kullanımı</title>
+          <example_before>
+            <code><![CDATA[
+const [count, setCount] = useState(0);
+
+const increment = () => {
+  setCount(count + 1); // Eski değer kullanılıyor
+  setCount(count + 1); // Aynı eski değer
+  // Sonuç: count + 1 (beklenen: count + 2)
+};
+            ]]></code>
+          </example_before>
+          <example_after>
+            <code><![CDATA[
+const [count, setCount] = useState(0);
+
+const increment = () => {
+  setCount(prev => prev + 1); // Previous state kullanılıyor
+  setCount(prev => prev + 1); // Güncellenmiş değer
+  // Sonuç: count + 2 (doğru)
+};
+            ]]></code>
+          </example_after>
+        </solution>
+        <solution type="async_state">
+          <title>Asenkron State Güncellemeleri</title>
+          <example_before>
+            <code><![CDATA[
+const [data, setData] = useState(null);
+
+useEffect(() => {
+  fetchData().then(result => {
+    setData(result);
+    console.log(data); // null (state henüz güncellenmedi)
+  });
+}, []);
+            ]]></code>
+          </example_before>
+          <example_after>
+            <code><![CDATA[
+const [data, setData] = useState(null);
+
+useEffect(() => {
+  fetchData().then(result => {
+    setData(result);
+    console.log(result); // Doğru veri
+  });
+}, []);
+            ]]></code>
+          </example_after>
+        </solution>
+      </solutions>
+    </pattern>
+  </logic_patterns>
+
+  <typescript_patterns>
+    <pattern name="type_not_assignable">
+      <title>Type Atanabilirlik Hatası</title>
+      <error_example>
+      </error_example>
+      <diagnosis_steps>
+        <step>Beklenen tip ile gerçek tip arasındaki farkı belirle</step>
+        <step>Interface tanımlarını kontrol et</step>
+        <step>Type assertion gerekip gerekmediğini değerlendir</step>
+      </diagnosis_steps>
+      <solutions>
+        <solution type="correct_type">
+          <title>Doğru Tip Kullanımı</title>
+          <example_before>
+            <code><![CDATA[
+interface User {
+  name: string;
+  age: number;
+}
+
+const user: User = {
+  name: 'John',
+  age: '25' // Hata: string, number bekleniyor
+};
+            ]]></code>
+          </example_before>
+          <example_after>
+            <code><![CDATA[
+interface User {
+  name: string;
+  age: number;
+}
+
+const user: User = {
+  name: 'John',
+  age: 25 // Düzeltildi: number
+};
+            ]]></code>
+          </example_after>
+        </solution>
+        <solution type="optional_property">
+          <title>Opsiyonel Özellik</title>
+          <example_before>
+            <code><![CDATA[
+interface User {
+  name: string;
+  age: number;
+  email: string; // Her zaman gerekli
+}
+
+const user: User = {
+  name: 'John',
+  age: 25
+  // Hata: email eksik
+};
+            ]]></code>
+          </example_before>
+          <example_after>
+            <code><![CDATA[
+interface User {
+  name: string;
+  age: number;
+  email?: string; // Opsiyonel
+}
+
+const user: User = {
+  name: 'John',
+  age: 25
+  // Hata yok
+};
+            ]]></code>
+          </example_after>
+        </solution>
+      </solutions>
+    </pattern>
+
+    <pattern name="property_does_not_exist">
+      <title>Özellik Mevcut Değil Hatası</title>
+      <error_example>
+      </error_example>
+      <diagnosis_steps>
+        <step>Interface veya type tanımlarını kontrol et</step>
+        <step>Nesnenin gerçek yapısını incele</step>
+        <step>Type assertion veya union type gerekip gerekmediğini değerlendir</step>
+      </diagnosis_steps>
+      <solutions>
+        <solution type="add_property">
+          <title>Özellik Ekleme</title>
+          <example_before>
+            <code><![CDATA[
+interface User {
+  name: string;
+  age: number;
+}
+
+const user: User = { name: 'John', age: 25 };
+console.log(user.email); // Hata: email mevcut değil
+            ]]></code>
+          </example_before>
+          <example_after>
+            <code><![CDATA[
+interface User {
+  name: string;
+  age: number;
+  email?: string; // Özellik eklendi
+}
+
+const user: User = { name: 'John', age: 25 };
+console.log(user.email); // Hata yok (undefined döner)
+            ]]></code>
+          </example_after>
+        </solution>
+        <solution type="type_guard">
+          <title>Type Guard Kullanımı</title>
+          <example_before>
+            <code><![CDATA[
+interface User {
+  name: string;
+  email?: string;
+}
+
+function sendEmail(user: User) {
+  console.log(user.email.toLowerCase()); // Hata: email undefined olabilir
+}
+            ]]></code>
+          </example_before>
+          <example_after>
+            <code><![CDATA[
+interface User {
+  name: string;
+  email?: string;
+}
+
+function sendEmail(user: User) {
+  if (user.email) {
+    console.log(user.email.toLowerCase()); // Güvenli
+  }
+}
+            ]]></code>
+          </example_after>
+        </solution>
+      </solutions>
+    </pattern>
+  </typescript_patterns>
+</common_debugging_patterns>

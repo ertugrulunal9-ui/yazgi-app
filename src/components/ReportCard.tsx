@@ -32,6 +32,23 @@ const ReportCard = React.memo<ReportCardProps>(({ grades, family, onClose, age }
       return "SINIF TEKRARI";
   };
 
+  // Aile dinamiğine göre veli tepkisi
+  const getParentReaction = () => {
+    if (average >= 85) {
+      return family.dynamic === 'SUPPORTIVE' ? '🎉 "Seninle gurur duyuyoruz!"' :
+             family.dynamic === 'STRICT' ? '📚 "İyi ama daha da iyisini bekleriz."' :
+             '🎊 "Harika! Gel sarılalım!"';
+    }
+    if (average >= 60) {
+      return family.dynamic === 'SUPPORTIVE' ? '👍 "Fena değil, devam et."' :
+             family.dynamic === 'STRICT' ? '😤 "Bu notlar kabul edilemez!"' :
+             '🤷 "Ehh, olsun..."';
+    }
+    return family.dynamic === 'SUPPORTIVE' ? '😟 "Seneye telafi ederiz."' :
+           family.dynamic === 'STRICT' ? '😡 "Cep telefonu yasak!"' :
+           '🙄 "Bize mi çektin acaba..."';
+  };
+
   return (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in font-sans">
             <div className="ui-modal w-full max-w-md overflow-hidden relative transform transition-all scale-100">
@@ -68,11 +85,14 @@ const ReportCard = React.memo<ReportCardProps>(({ grades, family, onClose, age }
         </div>
 
         <div className="p-4 surface-raised border-t border-default">
-            <button 
+            <div className="text-center text-sm text-secondary mb-3 italic">
+                {getParentReaction()}
+            </div>
+            <button
                 onClick={onClose}
                 className="pressable w-full py-3 accent-event-bg accent-event-border text-white font-bold rounded-xl flex items-center justify-center gap-2"
             >
-                <span>Velini Çağır</span>
+                <span>Tamam</span>
                 <span className="text-xl">→</span>
             </button>
         </div>

@@ -66,23 +66,53 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
             <View style={{ marginBottom: 16 }}>
               <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>İstatistikler</Text>
               <View style={{ flexDirection: 'row', justifyContent: 'space-around', paddingVertical: 8 }}>
-                <View style={{ alignItems: 'center' }}>
-                  <CountUpText
-                    value={gameState.turn}
-                    style={{ color: theme.accentStat, fontWeight: '700', fontSize: 18 }}
-                  />
-                  <Text style={{ color: theme.textSecondary, fontSize: 11 }}>Tur</Text>
-                </View>
-                <View style={{ alignItems: 'center' }}>
-                  <CountUpText
-                    value={gameState.traits.length}
-                    style={{ color: theme.accentGrade, fontWeight: '700', fontSize: 18 }}
-                  />
-                  <Text style={{ color: theme.textSecondary, fontSize: 11 }}>Özellik</Text>
-                </View>
+                <FadeInLeftView delay={350}>
+                  <View style={{ alignItems: 'center' }}>
+                    <CountUpText
+                      value={gameState.turn}
+                      style={{ color: theme.accentStat, fontWeight: '700', fontSize: 18 }}
+                    />
+                    <Text style={{ color: theme.textSecondary, fontSize: 11 }}>Tur</Text>
+                  </View>
+                </FadeInLeftView>
+                <FadeInRightView delay={350}>
+                  <View style={{ alignItems: 'center' }}>
+                    <CountUpText
+                      value={gameState.traits.length}
+                      style={{ color: theme.accentGrade, fontWeight: '700', fontSize: 18 }}
+                    />
+                    <Text style={{ color: theme.textSecondary, fontSize: 11 }}>Özellik</Text>
+                  </View>
+                </FadeInRightView>
               </View>
             </View>
           </FadeInUpView>
+
+          {/* Kazanılan Özellikler */}
+          {gameState.traits.length > 0 && (
+            <FadeInUpView delay={400}>
+              <View style={{ marginBottom: 16 }}>
+                <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>Kazanılan Özellikler</Text>
+                <StaggeredFadeIn>
+                  {gameState.traits.map((trait) => (
+                    <View key={trait} style={{
+                      backgroundColor: theme.surfaceOverlay,
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 8,
+                      marginBottom: 4,
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                    }}>
+                      <Text style={{ color: theme.accentEvent, fontWeight: '600', fontSize: 13 }}>
+                        ✨ {trait}
+                      </Text>
+                    </View>
+                  ))}
+                </StaggeredFadeIn>
+              </View>
+            </FadeInUpView>
+          )}
 
           <FadeInUpView delay={500}>
             <ShimmerButton

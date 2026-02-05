@@ -1,0 +1,236 @@
+<debugging_workflow>
+  <overview>
+    Bu iş akışı, Yazgı projesinde React Native, Expo ve JavaScript/TypeScript sorunlarını
+    sistematik bir şekilde tanımlamak, analiz etmek ve çözmek için kullanılır.
+  </overview>
+
+  <initialization_steps>
+    <step number="1">
+      <title>Sorunu Anlama</title>
+      <description>
+        Kullanıcının raporladığı sorunu tam olarak anla. Hata mesajlarını, stack trace'leri
+        ve beklenen davranışı not et.
+      </description>
+      <actions>
+        <action>Hata mesajını veya sorunun açıklamasını dikkatlice oku</action>
+        <action>Beklenen davranış ile mevcut davranış arasındaki farkı belirle</action>
+        <action>Sorunun kategorisini belirle (build, render, logic, tip, paket)</action>
+      </actions>
+    </step>
+
+    <step number="2">
+      <title>Bağlam Toplama</title>
+      <description>
+        Sorunun oluştuğu dosyaları ve proje yapısını incele. Kod değiştirmeden önce
+        tam bağlamı anla.
+      </description>
+      <tools>
+        <tool name="read_file" priority="1">
+          <purpose>İlgili dosyaların içeriğini okumak</purpose>
+          <usage>Hata mesajında belirtilen dosyaları oku</usage>
+        </tool>
+        <tool name="list_files" priority="2">
+          <purpose>Proje yapısını anlamak</purpose>
+          <usage>İlgili dizinlerin yapısını incele</usage>
+        </tool>
+        <tool name="search_files" priority="3">
+          <purpose>İlgili kod parçalarını bulmak</purpose>
+          <usage>Belirli fonksiyon veya bileşenleri ara</usage>
+        </tool>
+      </tools>
+    </step>
+  </initialization_steps>
+
+  <debugging_phases>
+    <phase name="analysis">
+      <title>Analiz Fazı</title>
+      <description>
+        Sorunun kök nedenini belirlemek için derinlemesine analiz yap.
+      </description>
+      <steps>
+        <step order="1">
+          <title>Hata Mesajını Ayrıştır</title>
+          <actions>
+            <action>Hata kodunu ve mesajını anla</action>
+            <action>Stack trace'ten çağrı zincirini takip et</action>
+            <action>Hatanın hangi dosya ve satırda oluştuğunu belirle</action>
+          </actions>
+        </step>
+        <step order="2">
+          <title>Kod Bağlamını İncele</title>
+          <actions>
+            <action>Hatanın oluştuğu dosyayı oku</action>
+            <action>İlgili import'ları ve bağımlılıkları kontrol et</action>
+            <action>Bileşen veya fonksiyonun mantığını anla</action>
+          </actions>
+        </step>
+        <step order="3">
+          <title>Kök Nedeni Belirle</title>
+          <actions>
+            <action>"Neden bu hatayı alıyoruz?" sorusunu cevapla</action>
+            <action>Hatanın gerçek nedenini belirle (semptom değil)</action>
+            <action>Mümkünse birden fazla olası nedeni listele</action>
+          </actions>
+        </step>
+      </steps>
+    </phase>
+
+    <phase name="investigation">
+      <title>Araştırma Fazı</title>
+      <description>
+        Ek bilgiler topla ve alternatif senaryoları değerlendir.
+      </description>
+      <steps>
+        <step order="1">
+          <title>Terminal Çıktılarını Kontrol Et</title>
+          <actions>
+            <action>npm/yarn/pnpm çıktılarını incele</action>
+            <action>Expo build log'larını kontrol et</action>
+            <action>Metro bundler hatalarını ara</action>
+          </actions>
+        </step>
+        <step order="2">
+          <title>Paket Versiyonlarını Kontrol Et</title>
+          <actions>
+            <action>package.json dosyasını incele</action>
+            <action>package-lock.json veya yarn.lock dosyalarını kontrol et</action>
+            <action>Expo SDK 52 uyumluluğunu doğrula</action>
+          </actions>
+        </step>
+        <step order="3">
+          <title>Konfigürasyon Dosyalarını İncele</title>
+          <actions>
+            <action>tsconfig.json ayarlarını kontrol et</action>
+            <action>metro.config.js dosyasını incele</action>
+            <action>babel.config.js ayarlarını kontrol et</action>
+            <action>app.json ve eas.json dosyalarını gözden geçir</action>
+          </actions>
+        </step>
+      </steps>
+    </phase>
+
+    <phase name="solution">
+      <title>Çözüm Fazı</title>
+      <description>
+        En uygun çözümü belirle ve uygula.
+      </description>
+      <steps>
+        <step order="1">
+          <title>Çözüm Seçeneklerini Değerlendir</title>
+          <actions>
+            <action>Mümkün olan tüm çözüm yollarını listele</action>
+            <action>Her çözümün artılarını ve eksilerini değerlendir</action>
+            <action>Mevcut mimariyi en az etkileyen çözümü seç</action>
+          </actions>
+        </step>
+        <step order="2">
+          <title>Çözümü Uygula</title>
+          <actions>
+            <action>Seçilen çözümü adım adım uygula</action>
+            <action>Kod değişikliklerini minimal tut</action>
+            <action>Mevcut kod stillerine ve kurallarına uymaya dikkat et</action>
+          </actions>
+        </step>
+        <step order="3">
+          <title>Çözümü Doğrula</title>
+          <actions>
+            <action>Çözümün sorunu gerçekten çözdüğünden emin ol</action>
+            <action>Yeni sorunlar oluşturmadığını kontrol et</action>
+            <action>Tür güvenliği (type safety) bütünlüğünü doğrula</action>
+          </actions>
+        </step>
+      </steps>
+    </phase>
+  </debugging_phases>
+
+  <error_categories>
+    <category name="expo_build_errors">
+      <title>Expo Build Hataları</title>
+      <common_errors>
+        <error>Native module bulunamadığı hataları</error>
+        <error>Android/iOS build konfigürasyon sorunları</error>
+        <error>EAS build hataları</error>
+        <error>SDK versiyon uyumsuzlukları</error>
+      </common_errors>
+      <investigation_steps>
+        <step>eas.json konfigürasyonunu kontrol et</step>
+        <step>app.json'de native modül tanımlarını incele</step>
+        <step>android/ ve ios/ dizinlerindeki konfigürasyonları kontrol et</step>
+        <step>Expo SDK versiyonunu doğrula</step>
+      </investigation_steps>
+    </category>
+
+    <category name="render_issues">
+      <title>Render Sorunları</title>
+      <common_errors>
+        <error>"Maximum update depth exceeded" hataları</error>
+        <error>Component render döngüleri</error>
+        <error>State güncelleme sorunları</error>
+        <error>useEffect bağımlılık hataları</error>
+      </common_errors>
+      <investigation_steps>
+        <step>Component'in state yönetimini incele</step>
+        <step>useEffect bağımlılık dizisini kontrol et</step>
+        <step>Callback fonksiyonlarının useCallback ile sarılıp sarılmadığını kontrol et</step>
+        <step>React.memo ve useMemo kullanımlarını değerlendir</step>
+      </investigation_steps>
+    </category>
+
+    <category name="logic_bugs">
+      <title>Mantıksal Hatalar</title>
+      <common_errors>
+        <error>Asenkron işlem yanlış yönetimi</error>
+        <error>Koşul ifadelerinde mantık hataları</error>
+        <error>Dizi/map işlemlerinde hatalar</error>
+        <error>Oyun mantığı hesaplama hataları</error>
+      </common_errors>
+      <investigation_steps>
+        <step>Asenkron fonksiyonların await/async kullanımını kontrol et</step>
+        <step>Koşul ifadelerini adım adım izle</step>
+        <step>Dizi işlemlerinin doğru parametre aldığını doğrula</step>
+        <step>İlgili utility fonksiyonlarını test et</step>
+      </investigation_steps>
+    </category>
+
+    <category name="type_errors">
+      <title>TypeScript Tip Hataları</title>
+      <common_errors>
+        <error>"Property does not exist" hataları</error>
+        <error>"Type is not assignable" hataları</error>
+        <error>Interface/type tanımlama sorunları</error>
+        <error>Generics kullanım hataları</error>
+      </common_errors>
+      <investigation_steps>
+        <step>src/types.ts dosyasındaki tanımlamaları kontrol et</step>
+        <step>İlgili interface'leri incele</step>
+        <step>Type assertion'ları değerlendir</step>
+        <step>tsconfig.json strict mode ayarlarını kontrol et</step>
+      </investigation_steps>
+    </category>
+
+    <category name="package_issues">
+      <title>Paket Yönetimi Sorunları</title>
+      <common_errors>
+        <error>"Module not found" hataları</error>
+        <error>Paket versiyon çakışmaları</error>
+        <error>Peer dependency uyarıları</error>
+        <error>Native modül link sorunları</error>
+      </common_errors>
+      <investigation_steps>
+        <step>package.json'da paketin listelendiğinden emin ol</step>
+        <step>node_modules dizinini kontrol et</step>
+        <step>npm ls veya yarn why komutlarıyla bağımlılıkları incele</action>
+        <step>Expo uyumlu paketler listesini kontrol et</step>
+      </investigation_steps>
+    </category>
+  </error_categories>
+
+  <completion_criteria>
+    <criterion>Sorunun kök nedeni belirlenmiş</criterion>
+    <criterion>"Neden bu hatayı alıyoruz?" sorusu cevaplanmış</criterion>
+    <criterion>Çözüm uygulanmış ve doğrulanmış</criterion>
+    <criterion>Mevcut mimari bozulmamış</criterion>
+    <criterion>Yeni sorunlar oluşturulmamış</criterion>
+    <criterion>Çözüm kullanıcıya açık bir şekilde açıklanmış</criterion>
+  </completion_criteria>
+</debugging_workflow>

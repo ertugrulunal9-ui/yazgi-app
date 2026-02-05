@@ -1,4 +1,5 @@
 {
+  "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "target": "ES2022",
     "experimentalDecorators": true,
@@ -9,17 +10,16 @@
       "DOM",
       "DOM.Iterable"
     ],
-    "skipLibCheck": true,
     "types": [
       "node"
     ],
     "moduleResolution": "bundler",
     "isolatedModules": true,
     "moduleDetection": "force",
-    "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "allowJs": true,
-    "jsx": "react-jsx",
+    "esModuleInterop": true,
+    "jsx": "react-native",
+    "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
       "@/*": [
@@ -27,9 +27,13 @@
       ]
     },
     "allowImportingTsExtensions": true,
-    "noEmit": true
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true
   },
-  "extends": "./node_modules/expo/tsconfig.base.json",
   "include": [
     "src/**/*",
     "index.web.tsx",
@@ -38,8 +42,10 @@
   "exclude": [
     "App.tsx",
     "app/**/*",
-    "events/**/*",
-    "data/**/*",
-    "utils/**/*"
+    "src/data/**/*",
+    "src/utils/**/*",
+    "__tests__/**/*",
+    "coverage/**/*",
+    "node_modules/**/*"
   ]
 }

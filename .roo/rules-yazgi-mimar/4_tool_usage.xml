@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<instructions>
+  <tool_usage>
+    <tool name="read_file">
+      <description>
+        Dosya içeriklerini okumak için kullan. UI/UX ve mimari analizlerinde:
+      </description>
+      <use_cases>
+        <case>Mevcut component dosyalarını incelemek</case>
+        <case>Screen layout'larını analiz etmek</case>
+        <case>Animation dosyalarını incelemek</case>
+        <case>Style konfigürasyonlarını okumak</case>
+        <case>TypeScript type tanımlarını kontrol etmek</case>
+      </use_cases>
+      <best_practices>
+        <practice>İlgili dosyaları grup halinde oku (örn: component + styles + types)</practice>
+        <practice>Değişiklik yapmadan önce mevcut yapıyı anla</practice>
+        <practice>Design system dosyalarını incelemeden yeni component tasarlama</practice>
+      </best_practices>
+    </tool>
+    
+    <tool name="write_to_file">
+      <description>
+        Yeni dosyalar oluşturmak için kullan. UI/UX ve mimari çalışmalarda:
+      </description>
+      <use_cases>
+        <case>Yeni component dosyaları oluşturmak</case>
+        <case>Screen dosyaları oluşturmak</case>
+        <case>Animation dosyaları oluşturmak</case>
+        <case>Custom hook dosyaları oluşturmak</case>
+        <case>Type definition dosyaları oluşturmak</case>
+      </use_cases>
+      <best_practices>
+        <practice>Dosya isimlerini PascalCase kullan (örn: StatBar.tsx)</practice>
+        <practice>Component dosyalarını src/components/ altında organize et</practice>
+        <practice>Screen dosyalarını src/screens/ altında organize et</practice>
+        <practice>Animation dosyalarını src/animations/ altında organize et</practice>
+        <practice>Hook dosyalarını src/hooks/ altında organize et</practice>
+        <practice>Tüm dosyalarda TypeScript kullan (.tsx uzantısı)</practice>
+      </best_practices>
+    </tool>
+    
+    <tool name="apply_diff">
+      <description>
+        Mevcut dosyalarda değişiklik yapmak için kullan. UI/UX ve mimari güncellemelerinde:
+      </description>
+      <use_cases>
+        <case>Component'lerde styling güncellemeleri</case>
+        <case>Layout düzenlemeleri</case>
+        <case>Animasyon parametre değişiklikleri</case>
+        <case>Prop interface güncellemeleri</case>
+        <case>Accessibility özellikleri eklemek</case>
+      </use_cases>
+      <best_practices>
+        <practice>Değişiklik öncesi dosyayı okuyup bağlamı anla</practice>
+        <practice>SEARCH bloğu tam olarak eşleşmelir (whitespace dahil)</practice>
+        <practice>Küçük değişiklikler için bile apply_diff kullan</practice>
+        <practice>Birden fazla değişikliği tek diff içinde yap</practice>
+      </best_practices>
+    </tool>
+    
+    <tool name="list_files">
+      <description>
+        Proje yapısını incelemek için kullan. UI/UX ve mimari analizlerinde:
+      </description>
+      <use_cases>
+        <case>Component organizasyonunu incelemek</case>
+        <case>Screen yapısını anlamak</case>
+        <case>Animation dosyalarını listelemek</case>
+        <case>Dosya konumlandırmalarını belirlemek</case>
+        <case>Dosya adlandırma standartlarını kontrol etmek</case>
+      </use_cases>
+      <best_practices>
+        <practice>Önce üst seviye listeleme, sonra recursive detaylandırma</practice>
+        <practice>Yeni component için en uygun konumu belirle</practice>
+        <practice>Dosya organizasyonu sorunlarını tespit et</practice>
+      </best_practices>
+    </tool>
+    
+    <tool name="search_files">
+      <description>
+        Proje içinde desen aramak için kullan. UI/UX ve mimari analizlerinde:
+      </description>
+      <use_cases>
+        <case>Component kullanımlarını bulmak</case>
+        <case>Style pattern'larını aramak</case>
+        <case>Animation kullanımlarını tespit etmek</case>
+        <case>Accessibility özelliklerini kontrol etmek</case>
+        <case>Prop interface tanımlarını bulmak</case>
+      </use_cases>
+      <best_practices>
+        <practice>Regex pattern'lerini doğru yaz (Rust regex syntax)</practice>
+        <practice>file_pattern ile aramayı filtrele</practice>
+        <practice>Component refactoring öncesi kullanım yerlerini bul</practice>
+      </best_practices>
+    </tool>
+    
+    <tool name="execute_command">
+      <description>
+        Terminal komutları çalıştırmak için kullan. UI/UX ve mimari çalışmalarında:
+      </description>
+      <use_cases>
+        <case>Expo dev server başlatmak</case>
+        <case>Expo SDK sürümünü kontrol etmek</case>
+        <case>React Native CLI komutları</case>
+        <case>Testleri çalıştırmak</case>
+        <case>Linting ve formatting</case>
+      </use_cases>
+      <best_practices>
+        <practice>UI/UX değişiklikleri için nadiren gerekli</practice>
+        <practice>Expo komutları için npx kullan</practice>
+        <practice>Windows ortamında cmd uyumlu komutlar kullan</practice>
+      </best_practices>
+    </tool>
+    
+    <tool name="browser_action">
+      <description>
+        Tarayıcı ile UI testleri için kullan. UI/UX ve mimari çalışmalarında:
+      </description>
+      <use_cases>
+        <case>Expo web preview'da UI test etmek</case>
+        <case>Responsive davranışı kontrol etmek</case>
+        <case>Animasyonları görsel olarak test etmek</case>
+        <case>Erişilebilirlik testleri yapmak</case>
+      </use_cases>
+      <best_practices>
+        <practice>Expo web preview başlat (npx expo start --web)</practice>
+        <practice>Farklı ekran boyutlarında test et (resize)</practice>
+        <practice>Animasyonları görsel olarak doğrula</practice>
+      </best_practices>
+    </tool>
+  </tool_usage>
+  
+  <file_organization>
+    <structure>
+      <directory path="src/components/">
+        <description>Reusable UI bileşenleri</description>
+        <examples>ActionButton, StatBar, Dashboard, Card</examples>
+      </directory>
+      <directory path="src/screens/">
+        <description>Ekran bileşenleri</description>
+        <examples>MainMenuScreen, GameScreen, EventScreen</examples>
+      </directory>
+      <directory path="src/animations/">
+        <description>Animasyon tanımları</description>
+        <examples>ScreenTransitions, ButtonAnimations, StatAnimations</examples>
+      </directory>
+      <directory path="src/hooks/">
+        <description>Custom React hooks</description>
+        <examples>useEvents, useStats, useAudio</examples>
+      </directory>
+      <directory path="src/styles/">
+        <description>Global stil tanımları (varsa)</description>
+        <examples>theme.ts, colors.ts, typography.ts</examples>
+      </directory>
+    </structure>
+  </file_organization>
+</instructions>

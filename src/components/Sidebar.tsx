@@ -1,10 +1,9 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { Stats, StatKey, Family, GameState, Talent } from '../types';
 import StatBar from './StatBar';
 import { getStatCap } from '../utils/gameUtils';
 import { getTrait } from '../data/traits';
-import { getThemeTokens } from '../utils/themeUtils';
 
 interface SidebarProps {
   age: number;
@@ -13,12 +12,11 @@ interface SidebarProps {
   family?: Family | null;
   gameState?: GameState;
   onAdvanceTurn: () => void;
-  maxTurns: number;
   onOpenSettings: () => void;
   theme: any;
 }
 
-const Sidebar = React.memo<SidebarProps>(({ age, stats, playerName, family, gameState, onAdvanceTurn, maxTurns, onOpenSettings, theme }) => {
+const Sidebar = React.memo<SidebarProps>(({ age, stats, playerName, family, gameState, onAdvanceTurn, onOpenSettings, theme }) => {
   const isBaby = age < 7;
 
   const getStatLabel = (key: StatKey): string => {

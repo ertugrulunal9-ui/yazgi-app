@@ -1,14 +1,12 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { useGame } from '../context/GameContext';
 import { Choice, EventContext, GameEvent, LogEntry, Stats } from '../types';
-import { EVENTS, FALLBACK_EVENT, HOSPITAL_EVENT } from '../data/events';
+import { EVENTS, FALLBACK_EVENT } from '../data/events';
 import {
   checkTraitFormation,
   shouldAgeUp,
-  calculateEnergyCost,
   shouldGenerateReportCard,
   updateStats as updateStatsWithCaps,
-  getStatCap,
   calculateCareerResult
 } from '../utils/gameUtils';
 import { calculateSchoolReport } from '../utils/schoolLogic';
@@ -46,7 +44,7 @@ const selectEvent = (context: EventContext, recentEventIds: string[]): GameEvent
 };
 
 export const useEvents = () => {
-  const { gameState, stats, playerName, setGameState, updateGameState, updateStats } = useGame();
+  const { gameState, stats, advanceTurnInContext, updateGameState } = useGame();
 
   const buildEventContext = useCallback((): EventContext => ({
     age: gameState.age,
@@ -79,7 +77,7 @@ export const useEvents = () => {
     });
   }, [gameState.recentEvents, buildEventContext, updateGameState]);
 
-  const handleEventChoice = useCallback((choice: Choice | ((ctx: EventContext) => Choice), choiceIndex?: number) => {
+  const handleEventChoice = useCallback((choice: Choice | ((ctx: EventContext) => Choice)) => {
     const resolved = resolveChoice(choice);
     const eventId = gameState.currentEvent?.id || '';
 
@@ -87,15 +85,11 @@ export const useEvents = () => {
     const newEventHistory = [...gameState.eventChoiceHistory];
     if (eventId) newEventHistory.push(eventId);
 
-    // İSTATİSTİK GÜNCELLEMELERİ (KRİTİK)
-    // Event seçiminde stat güncellemeleri
     let statChanges: Partial<Stats> = resolved.effect || {};
     
-    // Grade ve skill güncellemeleri
     let gradeUpdates = resolved.gradeUpdates || {};
     let skillUpdates = resolved.skillUpdates || {};
     
-    // Stat güncellemelerini uygula (caps ile birlikte)
     if (Object.keys(statChanges).length > 0) {
       statChanges = updateStatsWithCaps(
         stats,
@@ -106,10 +100,9 @@ export const useEvents = () => {
       );
     }
 
-    // Check trait formation with proper signature
     const traitResult = checkTraitFormation(
-      null, // actionId
-      eventId, // choiceId
+      null,
+      eventId,
       gameState,
       stats
     );
@@ -119,7 +112,7 @@ export const useEvents = () => {
       id: `log_${Date.now()}`,
       age: gameState.age,
       message: resolved.feedback,
-      type: resolved.effect?.health > 0 ? 'positive' : 'negative',
+      type: (resolved.effect?.health ?? 0) > 0 ? 'positive' : 'negative',
       eventId,
     };
 
@@ -141,58 +134,55 @@ export const useEvents = () => {
 
   const advanceTurn = useCallback(() => {
     const newTurn = gameState.turn + 1;
-    
-    // YAŞLANMA ALGORİTMASI (KRİTİK)
-    // GDD Şartı: 0-7 yaş: Her 2 tur, 7-18 yaş: Her 5 tur
     let newAge = gameState.age;
     if (shouldAgeUp(gameState.age, newTurn)) {
       newAge = gameState.age + 1;
     }
     
-    // OKUL SİSTEMİ (YÜKSEK)
-    // GDD Şartı: Her 5 tur (7-18 yaş) rapor kartı
     let pendingReportCard = gameState.pendingReportCard;
+    let newGrades = gameState.schoolGrades;
     if (shouldGenerateReportCard(newAge, newTurn)) {
-      const newGrades = calculateSchoolReport(stats, gameState);
+      newGrades = calculateSchoolReport(stats, gameState);
       pendingReportCard = true;
-      updateGameState({
-        schoolGrades: newGrades,
-        pendingReportCard,
-      });
     }
     
-    // OYUN SONU (Age 18) (KRİTİK)
-    // GDD Şartı: Age 18'de oyun bitmeli ve kariyer sonucu gösterilmeli
     if (newAge >= 18) {
       const careerResult = calculateCareerResult(gameState, stats);
-      updateGameState({
-        phase: 'GAME_OVER',
-        age: newAge,
-        turn: newTurn,
-        lastResult: {
-          feedback: careerResult.description,
-          changes: {},
-        },
+      advanceTurnInContext({
+        newStats: {},
+        newGameState: {
+          phase: 'GAME_OVER',
+          age: newAge,
+          turn: newTurn,
+          schoolGrades: newGrades,
+          pendingReportCard,
+          lastResult: {
+            feedback: careerResult.description,
+            changes: {},
+          },
+        }
       });
       return;
     }
     
-    // Reset energy for new turn
     const newEnergy = gameState.maxEnergy;
-    updateStats({ energy: newEnergy });
+    const ctx = buildEventContext();
+    const evt = selectEvent(ctx, gameState.recentEvents);
     
-    // Update game state for new turn
-    updateGameState({
-      age: newAge,
-      turn: newTurn,
-      phase: 'HUB',
-      currentEvent: null,
-      lastResult: null,
+    advanceTurnInContext({
+      newStats: { energy: newEnergy },
+      newGameState: {
+        age: newAge,
+        turn: newTurn,
+        phase: 'EVENT',
+        currentEvent: evt,
+        recentEvents: [...gameState.recentEvents, evt.id].slice(-6),
+        schoolGrades: newGrades,
+        pendingReportCard,
+        lastResult: null,
+      }
     });
-    
-    // Select a new event for this turn
-    selectNewEvent();
-  }, [gameState.age, gameState.turn, gameState.maxEnergy, gameState.pendingReportCard, updateGameState, updateStats, selectNewEvent, stats]);
+  }, [gameState, stats, advanceTurnInContext, buildEventContext]);
 
   return {
     currentEvent: gameState.currentEvent,
@@ -200,7 +190,6 @@ export const useEvents = () => {
     handleEventChoice,
     resolveChoice,
     resolveEventText,
-    buildEventContext,
     advanceTurn,
   };
 };

@@ -1,0 +1,404 @@
+<tool_usage_guide>
+  <overview>
+    Yazgı Analist & Debugger modu için araç kullanım öncelikleri ve özel talimatlar.
+  </overview>
+
+  <tool_priorities>
+    <priority level="1">
+      <tool>read_file</tool>
+      <when>Her zaman ilk adım olarak kullan</when>
+      <why>
+        Kodu anlamak için dosyaların içeriğini okumak en önemli adımdır.
+        Hata mesajında belirtilen dosyaları ve ilgili import'ları oku.
+      </why>
+      <usage_pattern>
+        <step>Hata mesajında belirtilen dosyayı oku</step>
+        <step>İlgili import'ları takip et ve bu dosyaları da oku</step>
+        <step>Component veya fonksiyonun tam bağlamını anla</step>
+      </usage_pattern>
+    </priority>
+
+    <priority level="2">
+      <tool>list_files</tool>
+      <when>Proje yapısını anlamak için kullan</when>
+      <why>
+        Dosyalar arasındaki ilişkileri anlamak ve doğru dosyaları bulmak için
+        proje yapısını bilmek önemlidir.
+      </why>
+      <usage_pattern>
+        <step>İlgili dizinin yapısını incele</step>
+        <step>Dosya konumlarını ve organizasyonu anla</step>
+        <step>İlgili dosyaları tespit et</step>
+      </usage_pattern>
+    </priority>
+
+    <priority level="3">
+      <tool>search_files</tool>
+      <when>Belirli kod parçalarını bulmak için kullan</when>
+      <why>
+        Fonksiyon, component veya değişken tanımlarını bulmak için
+        regex araması kullanmak etkilidir.
+      </why>
+      <usage_pattern>
+        <step>İlgili fonksiyon veya component adını ara</step>
+        <step>Kullanım yerlerini bul</step>
+        <step>Tanımlama ve kullanım arasındaki ilişkiyi anla</step>
+      </usage_pattern>
+    </priority>
+
+    <priority level="4">
+      <tool>execute_command</tool>
+      <when>Paket yönetimi ve build işlemleri için kullan</when>
+      <why>
+        Terminal komutları ile paketleri kontrol etmek, build işlemlerini
+        çalıştırmak ve hata log'larını almak gerekir.
+      </why>
+      <usage_pattern>
+        <step>Paket versiyonlarını kontrol et (npm ls, yarn why)</step>
+        <step>Build işlemlerini çalıştır (eas build, expo build)</step>
+        <step>Log'ları incele</step>
+      </usage_pattern>
+    </priority>
+
+    <priority level="5">
+      <tool>apply_diff</tool>
+      <when>Çözümü uygulamak için kullan</when>
+      <why>
+        Analiz tamamlandıktan ve çözüm belirlendikten sonra kod değişiklikleri
+        için kullanılır.
+      </why>
+      <usage_pattern>
+        <step>Dosyayı okuyarak tam içeriği anla</step>
+        <step>SEARCH bloğunda tam içeriği eşleştir</step>
+        <step>REPLACE bloğunda düzeltmeyi uygula</step>
+      </usage_pattern>
+    </priority>
+  </tool_priorities>
+
+  <tool_specific_guidance>
+    <tool name="read_file">
+      <purpose>Dosya içeriklerini okumak</purpose>
+      <best_practices>
+        <practice>Her zaman dosyayı okuyarak tam içeriği anla</practice>
+        <practice>İlgili import'ları takip et ve bu dosyaları da oku</practice>
+        <practice>Component veya fonksiyonun tam bağlamını anla</practice>
+        <practice>Maksimum 5 dosyayı aynı anda okuyabilirsin</practice>
+      </best_practices>
+      <example>
+        <scenario>Hata mesajında belirtilen dosyayı okumak</scenario>
+        <code><![CDATA[
+<read_file>
+  <files>
+    <file path="src/screens/GameScreen.tsx"/>
+  </files>
+</read_file>
+        ]]></code>
+      </example>
+      <example>
+        <scenario>İlgili import dosyalarını okumak</scenario>
+        <code><![CDATA[
+<read_file>
+  <files>
+    <file path="src/screens/GameScreen.tsx"/>
+    <file path="src/hooks/useEvents.tsx"/>
+    <file path="src/context/GameContext.tsx"/>
+  </files>
+</read_file>
+        ]]></code>
+      </example>
+    </tool>
+
+    <tool name="list_files">
+      <purpose>Proje yapısını incelemek</purpose>
+      <best_practices>
+        <practice>Proje yapısını anlamak için kullan</practice>
+        <practice>İlgili dizinleri recursive olarak listele</practice>
+        <practice>Dosya konumlarını ve organizasyonu anla</practice>
+      </best_practices>
+      <example>
+        <scenario>src dizininin yapısını incelemek</scenario>
+        <code><![CDATA[
+<list_files>
+  <path>src</path>
+  <recursive>true</recursive>
+</list_files>
+        ]]></code>
+      </example>
+      <example>
+        <scenario>components dizininin üst seviye yapısını görmek</scenario>
+        <code><![CDATA[
+<list_files>
+  <path>src/components</path>
+  <recursive>false</recursive>
+</list_files>
+        ]]></code>
+      </example>
+    </tool>
+
+    <tool name="search_files">
+      <purpose>Belirli kod parçalarını bulmak</purpose>
+      <best_practices>
+        <practice>Fonksiyon veya component adlarını bulmak için kullan</practice>
+        <practice>Regex pattern kullanarak esnek arama yap</practice>
+        <practice>file_pattern ile aramayı sınırla</practice>
+      </best_practices>
+      <example>
+        <scenario>useEvents hook'unu bulmak</scenario>
+        <code><![CDATA[
+<search_files>
+  <path>src</path>
+  <regex>useEvents</regex>
+  <file_pattern>*.tsx</file_pattern>
+</search_files>
+        ]]></code>
+      </example>
+      <example>
+        <scenario>EventScreen component'ini bulmak</scenario>
+        <code><![CDATA[
+<search_files>
+  <path>src</path>
+  <regex>EventScreen</regex>
+  <file_pattern>*.tsx</file_pattern>
+</search_files>
+        ]]></code>
+      </example>
+    </tool>
+
+    <tool name="execute_command">
+      <purpose>Terminal komutları çalıştırmak</purpose>
+      <best_practices>
+        <practice>Paket versiyonlarını kontrol et (npm ls, yarn why)</practice>
+        <practice>Build işlemlerini çalıştır (eas build, expo build)</practice>
+        <practice>Log'ları incele</practice>
+        <practice>Komutları açıklayarak çalıştır</practice>
+      </best_practices>
+      <example>
+        <scenario>Paket versiyonlarını kontrol etmek</scenario>
+        <code><![CDATA[
+<execute_command>
+  <command>npm ls expo</command>
+  <cwd>c:/Yazgi</cwd>
+</execute_command>
+        ]]></code>
+      </example>
+      <example>
+        <scenario>EAS build başlatmak</scenario>
+        <code><![CDATA[
+<execute_command>
+  <command>eas build --platform android --profile preview</command>
+  <cwd>c:/Yazgi</cwd>
+</execute_command>
+        ]]></code>
+      </example>
+      <example>
+        <scenario>Expo prebuild çalıştırmak</scenario>
+        <code><![CDATA[
+<execute_command>
+  <command>npx expo prebuild --clean</command>
+  <cwd>c:/Yazgi</cwd>
+</execute_command>
+        ]]></code>
+      </example>
+    </tool>
+
+    <tool name="apply_diff">
+      <purpose>Kod değişiklikleri yapmak</purpose>
+      <best_practices>
+        <practice>Önce dosyayı okuyarak tam içeriği anla</practice>
+        <practice>SEARCH bloğunda tam içeriği eşleştir</practice>
+        <practice>REPLACE bloğunda düzeltmeyi uygula</practice>
+        <practice>Birden fazla değişikliği tek diff içinde yap</practice>
+        <practice>Line number kullanarak hassas değişiklikler yap</practice>
+      </best_practices>
+      <example>
+        <scenario>useEffect bağımlılık dizisini düzeltmek</scenario>
+        <code><![CDATA[
+<apply_diff>
+  <path>src/screens/GameScreen.tsx</path>
+  <diff>
+    <![CDATA[
+<<<<<<< SEARCH
+:start_line:45
+-------
+useEffect(() => {
+  loadGameData();
+}, [count]);
+=======
+useEffect(() => {
+  loadGameData();
+}, []);
+>>>>>>> REPLACE
+    ]]>
+  </diff>
+</apply_diff>
+        ]]></code>
+      </example>
+      <example>
+        <scenario>Birden fazla değişiklik yapmak</scenario>
+        <code><![CDATA[
+<apply_diff>
+  <path>src/screens/GameScreen.tsx</path>
+  <diff>
+    <![CDATA[
+<<<<<<< SEARCH
+:start_line:10
+-------
+import { useState, useEffect } from 'react';
+=======
+import { useState, useEffect, useCallback } from 'react';
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+:start_line:25
+-------
+const handleClick = () => {
+  setCount(prev => prev + 1);
+};
+=======
+const handleClick = useCallback(() => {
+  setCount(prev => prev + 1);
+}, []);
+>>>>>>> REPLACE
+    ]]>
+  </diff>
+</apply_diff>
+        ]]></code>
+      </example>
+    </tool>
+
+    <tool name="ask_followup_question">
+      <purpose>Kullanıcıdan ek bilgi almak</purpose>
+      <best_practices>
+        <practice>Sorunla ilgili yeterli bilgi yoksa kullan</practice>
+        <practice>2-4 spesifik, eyleme geçirilebilir öneri sun</practice>
+        <practice>Soruları net ve anlaşılır formüle et</practice>
+      </best_practices>
+      <example>
+        <scenario>Hata mesajı veya çıktı eksikse</scenario>
+        <code><![CDATA[
+<ask_followup_question>
+  <question>
+    Lütfen hatanın tam hata mesajını veya terminal çıktısını paylaşır mısın?
+  </question>
+  <follow_up>
+    <suggest>
+      Hata mesajını kopyalayıp buraya yapıştırıyorum
+    </suggest>
+    <suggest>
+      Terminal çıktısının ekran görüntüsünü paylaşıyorum
+    </suggest>
+    <suggest>
+      Sorunu daha detaylı açıklayacağım
+    </suggest>
+  </follow_up>
+</ask_followup_question>
+        ]]></code>
+      </example>
+    </tool>
+  </tool_specific_guidance>
+
+  <command_reference>
+    <category name="package_management">
+      <command>
+        <name>npm ls</name>
+        <description>Paket versiyonlarını ve bağımlılık ağacını gösterir</description>
+        <usage>npm ls [paket-adı]</usage>
+        <example>npm ls expo</example>
+      </command>
+      <command>
+        <name>yarn why</name>
+        <description>Bir paketin neden yüklendiğini gösterir</description>
+        <usage>yarn why [paket-adı]</usage>
+        <example>yarn why react-native</example>
+      </command>
+      <command>
+        <name>npm install</name>
+        <description>Paket yükler</description>
+        <usage>npm install [paket-adı]</usage>
+        <example>npm install @react-native-async-storage/async-storage</example>
+      </command>
+      <command>
+        <name>npm outdated</name>
+        <description>Güncellenebilir paketleri gösterir</description>
+        <usage>npm outdated</usage>
+      </command>
+    </category>
+
+    <category name="expo_commands">
+      <command>
+        <name>expo prebuild</name>
+        <description>Native dosyaları oluşturur</description>
+        <usage>npx expo prebuild --clean</usage>
+        <note>--clean flag'i mevcut dosyaları siler</note>
+      </command>
+      <command>
+        <name>expo start</name>
+        <description>Geliştirme sunucusunu başlatır</description>
+        <usage>npx expo start --clear</usage>
+        <note>--clear flag'i önbelleği temizler</note>
+      </command>
+      <command>
+        <name>eas build</name>
+        <description>EAS build başlatır</description>
+        <usage>eas build --platform [android|ios] --profile [profile]</usage>
+        <example>eas build --platform android --profile preview</example>
+      </command>
+      <command>
+        <name>eas submit</name>
+        <description>Uygulamayı store'a gönderir</description>
+        <usage>eas submit --platform [android|ios]</usage>
+      </command>
+    </category>
+
+    <category name="debugging_commands">
+      <command>
+        <name>expo doctor</name>
+        <description>Proje sağlık durumunu kontrol eder</description>
+        <usage>npx expo doctor</usage>
+      </command>
+      <command>
+        <name>expo install</name>
+        <description>Expo uyumlu paket yükler</description>
+        <usage>npx expo install [paket-adı]</usage>
+        <note>Doğru versiyonu otomatik seçer</note>
+      </command>
+    </category>
+  </command_reference>
+
+  <common_diagnostic_commands>
+    <scenario name="package_not_found">
+      <title>Paket Bulunamadı Hatası</title>
+      <commands>
+        <command>npm ls [paket-adı]</command>
+        <command>npm install [paket-adı]</command>
+        <command>npx expo prebuild --clean</command>
+      </commands>
+    </scenario>
+
+    <scenario name="build_failure">
+      <title>Build Başarısızlığı</title>
+      <commands>
+        <command>npx expo doctor</command>
+        <command>eas build --platform android --profile preview</command>
+        <command>npm ls</command>
+      </commands>
+    </scenario>
+
+    <scenario name="version_conflict">
+      <title>Versiyon Çakışması</title>
+      <commands>
+        <command>npm ls [paket-adı]</command>
+        <command>yarn why [paket-adı]</command>
+        <command>npm outdated</command>
+      </commands>
+    </scenario>
+
+    <scenario name="metro_cache">
+      <title>Metro Önbellek Sorunu</title>
+      <commands>
+        <command>npx expo start --clear</command>
+        <command>rm -rf node_modules && npm install</command>
+      </commands>
+    </scenario>
+  </common_diagnostic_commands>
+</tool_usage_guide>

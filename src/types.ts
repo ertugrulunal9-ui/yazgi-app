@@ -214,10 +214,11 @@ export interface CareerResult {
 export interface NPC {
   id: string;
   name: string;
-  role: NPCRole; 
+  role: NPCRole;
   relationship: number;
   romance: number;
   gender: 'MALE' | 'FEMALE';
+  age?: number;
 }
 
 export interface FloatingText {

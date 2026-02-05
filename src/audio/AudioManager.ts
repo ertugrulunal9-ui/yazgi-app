@@ -31,7 +31,6 @@ class AudioManager {
   private soundPool: Map<string, SoundInstance[]> = new Map();
   private activeSounds: Set<Audio.Sound> = new Set();
   private initialized: boolean = false;
-  private preloadPromises: Map<string, Promise<void>> = new Map();
 
   private constructor() {}
 
@@ -77,7 +76,7 @@ class AudioManager {
       try {
         await this.loadSound(def);
       } catch (error) {
-        console.warn(`Failed to preload sound: ${def.id}`, error);
+        // Silent fail - sound files may not exist yet
       }
     });
 
@@ -87,6 +86,11 @@ class AudioManager {
   // Load sound into pool
   private async loadSound(definition: SoundDefinition): Promise<Audio.Sound> {
     try {
+      // Check if sound path is null or undefined
+      if (!definition.path) {
+        throw new Error(`Sound path is null for: ${definition.id}`);
+      }
+
       const { sound } = await Audio.Sound.createAsync(
         definition.path,
         {
@@ -110,7 +114,7 @@ class AudioManager {
 
       return sound;
     } catch (error) {
-      console.error(`Failed to load sound: ${definition.id}`, error);
+      // Silent fail - sound files may not exist yet
       throw error;
     }
   }
@@ -119,7 +123,6 @@ class AudioManager {
   private async getSoundInstance(soundId: string): Promise<SoundInstance | null> {
     const definition = getSoundDefinition(soundId);
     if (!definition) {
-      console.warn(`Sound not found: ${soundId}`);
       return null;
     }
 
@@ -132,7 +135,7 @@ class AudioManager {
     // Create new if needed (up to pool limit)
     if (!instance && pool.length < 3) {
       try {
-        const sound = await this.loadSound(definition);
+        await this.loadSound(definition);
         instance = pool[pool.length - 1]; // Last added
       } catch (error) {
         return null;
@@ -198,7 +201,7 @@ class AudioManager {
         }
       });
     } catch (error) {
-      console.error(`Failed to play sound: ${soundId}`, error);
+      // Silent fail - sound files may not exist yet
     }
   }
 

@@ -4,24 +4,8 @@
  * Performans için optimize edilmiş
  */
 
-import React, { ReactNode, useRef } from 'react';
+import React, { ReactNode } from 'react';
 import { View, StyleSheet } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withSequence,
-  FadeInDown,
-  FadeInUp,
-  FadeInLeft,
-  FadeInRight,
-  FadeOutDown,
-  FadeOutUp,
-  FadeOutLeft,
-  FadeOutRight,
-  FadeIn,
-  FadeOut,
-} from 'react-native-reanimated';
 
 export type TransitionType = 
   | 'fade'
@@ -119,7 +103,6 @@ export const FadeInDownView: React.FC<{ children: ReactNode; delay?: number }> =
   children,
   delay = 0,
 }) => {
-  console.log('[FadeInDownView] Rendering...', { delay });
   const [opacity, setOpacity] = React.useState(0);
 
   React.useEffect(() => {
@@ -145,7 +128,6 @@ export const FadeInUpView: React.FC<{ children: ReactNode; delay?: number }> = R
   children,
   delay = 0,
 }) => {
-  console.log('[FadeInUpView] Rendering...', { delay });
   const [opacity, setOpacity] = React.useState(0);
 
   React.useEffect(() => {
@@ -236,10 +218,8 @@ export const FadeView: React.FC<{ children: ReactNode; visible?: boolean }> = Re
  */
 export const StaggeredFadeIn: React.FC<{
   children: ReactNode[];
-  staggerDelay?: number;
 }> = ({
   children,
-  staggerDelay = 100
 }) => {
   return (
     <View style={styles.container}>

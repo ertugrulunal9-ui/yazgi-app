@@ -14,6 +14,8 @@ interface UseAchievementsReturn {
   checkAchievements: () => Promise<string[]>;
   isUnlocked: (achievementId: string) => boolean;
   getProgress: (achievementId: string) => number;
+  applyRewardsToStats: (currentStats: Stats, rewards: any[]) => Stats;
+  totalAchievements: number;
   loading: boolean;
 }
 
@@ -91,7 +93,19 @@ export const useAchievements = (
     return 0;
   }, [stats, gameState, skills, grades, isUnlocked]);
 
+  // Apply rewards to stats
+  const applyRewardsToStats = useCallback((currentStats: Stats, rewards: any[]): Stats => {
+    let newStats = { ...currentStats };
+    rewards.forEach(reward => {
+      if (reward) {
+        newStats = applyAchievementReward(newStats, reward);
+      }
+    });
+    return newStats;
+  }, []);
+
   const achievementStats = getAchievementStats(unlockedAchievements);
+  const totalAchievements = ACHIEVEMENTS.length;
 
   return {
     unlockedAchievements,
@@ -99,6 +113,8 @@ export const useAchievements = (
     checkAchievements,
     isUnlocked,
     getProgress,
+    applyRewardsToStats,
+    totalAchievements,
     loading,
   };
 };

@@ -1,0 +1,627 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<instructions>
+  <common_patterns>
+    <category name="Mimari Pattern'leri">
+      <pattern>
+        <title>Layered Architecture</title>
+        <description>
+          Uygulamayı katmanlara ayırarak organize et:
+        </description>
+        <example>
+          <code><![CDATA[
+// Katman yapısı
+src/
+├── presentation/    // UI katmanı
+│   ├── screens/     // Ekran component'leri
+│   ├── components/  // UI component'leri
+│   └── hooks/       // Custom hooks
+├── domain/          // Business logic katmanı
+│   ├── entities/    // Domain entity'leri
+│   ├── usecases/    // Use case'ler
+│   └── repositories/ // Repository interface'leri
+└── data/            // Data katmanı
+    ├── repositories/ // Repository implementasyonları
+    ├── datasources/ // API, local storage vb.
+    └── models/      // Data model'leri
+          ]]></code>
+        </example>
+      </pattern>
+
+      <pattern>
+        <title>Repository Pattern</title>
+        <description>
+          Data erişimini soyutla:
+        </description>
+        <example>
+          <code><![CDATA[
+// Repository interface
+interface IUserRepository {
+  getUser(id: string): Promise<User>;
+  saveUser(user: User): Promise<void>;
+  deleteUser(id: string): Promise<void>;
+}
+
+// Repository implementasyonu
+class UserRepository implements IUserRepository {
+  constructor(private dataSource: UserDataSource) {}
+
+  async getUser(id: string): Promise<User> {
+    return await this.dataSource.getUser(id);
+  }
+
+  async saveUser(user: User): Promise<void> {
+    await this.dataSource.saveUser(user);
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    await this.dataSource.deleteUser(id);
+  }
+}
+          ]]></code>
+        </example>
+      </pattern>
+
+      <pattern>
+        <title>State Machine Pattern</title>
+        <description>
+          Oyun durumlarını state machine ile yönet:
+        </description>
+        <example>
+          <code><![CDATA[
+// Oyun durumları
+type GameState = 
+  | 'loading'
+  | 'menu'
+  | 'playing'
+  | 'paused'
+  | 'gameover'
+  | 'victory';
+
+// State machine
+class GameStateMachine {
+  private state: GameState = 'loading';
+
+  transition(newState: GameState): boolean {
+    const validTransitions: Record<GameState, GameState[]> = {
+      loading: ['menu'],
+      menu: ['playing', 'loading'],
+      playing: ['paused', 'gameover', 'victory'],
+      paused: ['playing', 'menu'],
+      gameover: ['menu'],
+      victory: ['menu'],
+    };
+
+    if (validTransitions[this.state].includes(newState)) {
+      this.state = newState;
+      return true;
+    }
+    return false;
+  }
+
+  getState(): GameState {
+    return this.state;
+  }
+}
+          ]]></code>
+        </example>
+      </pattern>
+    </category>
+
+    <category name="Component Pattern'leri">
+      <pattern>
+        <title>Compound Component Pattern</title>
+        <description>
+          İlişkili bileşenleri bir arada kullan:
+        </description>
+        <example>
+          <code><![CDATA[
+// Kullanım
+<Card>
+  <Card.Header>Başlık</Card.Header>
+  <Card.Body>İçerik</Card.Body>
+  <Card.Footer>Alt bilgi</Card.Footer>
+</Card>
+
+// Implementasyon
+const Card = ({ children }: { children: ReactNode }) => (
+  <View style={styles.card}>{children}</View>
+);
+
+Card.Header = ({ children }: { children: ReactNode }) => (
+  <View style={styles.header}>{children}</View>
+);
+
+Card.Body = ({ children }: { children: ReactNode }) => (
+  <View style={styles.body}>{children}</View>
+);
+
+Card.Footer = ({ children }: { children: ReactNode }) => (
+  <View style={styles.footer}>{children}</View>
+);
+          ]]></code>
+        </example>
+      </pattern>
+
+      <pattern>
+        <title>Render Props Pattern</title>
+        <description>
+          Bileşen davranışını render prop ile özelleştir:
+        </description>
+        <example>
+          <code><![CDATA[
+interface RenderPropsProps<T> {
+  data: T[];
+  render: (item: T, index: number) => ReactNode;
+}
+
+const RenderProps = <T,>({ data, render }: RenderPropsProps<T>) => (
+  <FlatList
+    data={data}
+    renderItem={({ item, index }) => render(item, index)}
+    keyExtractor={(item, index) => index.toString()}
+  />
+);
+          ]]></code>
+        </example>
+      </pattern>
+
+      <pattern>
+        <title>Control Props Pattern</title>
+        <description>
+          Bileşen durumunu dışarıdan kontrol et:
+        </description>
+        <example>
+          <code><![CDATA[
+interface ToggleProps {
+  isOn: boolean;
+  onToggle: (isOn: boolean) => void;
+}
+
+const Toggle = ({ isOn, onToggle }: ToggleProps) => (
+  <TouchableOpacity
+    style={[styles.toggle, isOn && styles.toggleOn]}
+    onPress={() => onToggle(!isOn)}
+  />
+);
+          ]]></code>
+        </example>
+      </pattern>
+
+      <pattern>
+        <title>Higher-Order Component (HOC) Pattern</title>
+        <description>
+          Component'leri fonksiyonlarla genişlet:
+        </description>
+        <example>
+          <code><![CDATA[
+// HOC
+function withLoading<P extends object>(
+  Component: React.ComponentType<P>
+) {
+  return (props: P & { loading: boolean }) => {
+    if (props.loading) {
+      return <ActivityIndicator />;
+    }
+    return <Component {...props} />;
+  };
+}
+
+// Kullanım
+const UserList = withLoading(({ users }: { users: User[] }) => (
+  <FlatList
+    data={users}
+    renderItem={({ item }) => <UserItem user={item} />}
+  />
+));
+          ]]></code>
+        </example>
+      </pattern>
+    </category>
+
+    <category name="Layout Pattern'leri">
+      <pattern>
+        <title>Responsive Container</title>
+        <description>
+          Ekran boyutuna göre responsive layout:
+        </description>
+        <example>
+          <code><![CDATA[
+import { useWindowDimensions } from 'react-native';
+
+const ResponsiveContainer = ({ children }: { children: ReactNode }) => {
+  const { width, height } = useWindowDimensions();
+  const isTablet = width >= 768;
+  const isDesktop = width >= 1024;
+
+  return (
+    <View style={[
+      styles.container,
+      isTablet && styles.tabletContainer,
+      isDesktop && styles.desktopContainer
+    ]}>
+      {children}
+    </View>
+  );
+};
+          ]]></code>
+        </example>
+      </pattern>
+
+      <pattern>
+        <title>Safe Screen Layout</title>
+        <description>
+          Status bar ve home indicator için güvenli alan:
+        </description>
+        <example>
+          <code><![CDATA[
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const SafeScreen = ({ children }: { children: ReactNode }) => {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <View style={{ paddingBottom: insets.bottom }}>
+        {children}
+      </View>
+    </SafeAreaView>
+  );
+};
+          ]]></code>
+        </example>
+      </pattern>
+
+      <pattern>
+        <title>Grid Layout</title>
+        <description>
+          Responsive grid layout:
+        </description>
+        <example>
+          <code><![CDATA[
+interface GridProps {
+  children: ReactNode;
+  columns?: number;
+  gap?: number;
+}
+
+const Grid = ({ 
+  children, 
+  columns = 2, 
+  gap = 12 
+}: GridProps) => {
+  const { width } = useWindowDimensions();
+  
+  // Responsive columns
+  const responsiveColumns = useMemo(() => {
+    if (width >= 1024) return 4;
+    if (width >= 768) return 3;
+    return columns;
+  }, [width, columns]);
+
+  return (
+    <View style={[
+      styles.grid,
+      { gap }
+    ]}>
+      {React.Children.map(children, child => (
+        <View style={{ flex: 1 / responsiveColumns }}>
+          {child}
+        </View>
+      ))}
+    </View>
+  );
+};
+          ]]></code>
+        </example>
+      </pattern>
+    </category>
+
+    <category name="State Management Pattern'leri">
+      <pattern>
+        <title>Context Provider Pattern</title>
+        <description>
+          Context ile global state yönetimi:
+        </description>
+        <example>
+          <code><![CDATA[
+// Context
+interface GameContextType {
+  gameState: GameState;
+  updateGameState: (state: GameState) => void;
+}
+
+const GameContext = createContext<GameContextType | undefined>(undefined);
+
+// Provider
+const GameProvider = ({ children }: { children: ReactNode }) => {
+  const [gameState, setGameState] = useState<GameState>('menu');
+
+  const updateGameState = useCallback((state: GameState) => {
+    setGameState(state);
+  }, []);
+
+  const value = useMemo(() => ({
+    gameState,
+    updateGameState
+  }), [gameState, updateGameState]);
+
+  return (
+    <GameContext.Provider value={value}>
+      {children}
+    </GameContext.Provider>
+  );
+};
+
+// Custom hook
+const useGame = () => {
+  const context = useContext(GameContext);
+  if (!context) {
+    throw new Error('useGame must be used within GameProvider');
+  }
+  return context;
+};
+          ]]></code>
+        </example>
+      </pattern>
+
+      <pattern>
+        <title>Reducer Pattern</title>
+        <description>
+          Complex state yönetimi için reducer kullan:
+        </description>
+        <example>
+          <code><![CDATA[
+// Action types
+type Action =
+  | { type: 'SET_STATS'; payload: Stats }
+  | { type: 'UPDATE_STAT'; payload: { key: string; value: number } }
+  | { type: 'RESET_GAME' };
+
+// Reducer
+const gameReducer = (state: GameState, action: Action): GameState => {
+  switch (action.type) {
+    case 'SET_STATS':
+      return { ...state, stats: action.payload };
+    case 'UPDATE_STAT':
+      return {
+        ...state,
+        stats: {
+          ...state.stats,
+          [action.payload.key]: action.payload.value
+        }
+      };
+    case 'RESET_GAME':
+      return initialState;
+    default:
+      return state;
+  }
+};
+
+// Kullanım
+const [state, dispatch] = useReducer(gameReducer, initialState);
+          ]]></code>
+        </example>
+      </pattern>
+    </category>
+
+    <category name="Hook Pattern'leri">
+      <pattern>
+        <title>Custom Hook Pattern</title>
+        <description>
+          Tekrar kullanılabilir mantık için custom hook:
+        </description>
+        <example>
+          <code><![CDATA[
+const useMediaQuery = (minWidth: number) => {
+  const { width } = useWindowDimensions();
+  return width >= minWidth;
+};
+
+// Kullanım
+const isTablet = useMediaQuery(768);
+          ]]></code>
+        </example>
+      </pattern>
+
+      <pattern>
+        <title>Theme Hook Pattern</title>
+        <description>
+          Tema yönetimi için custom hook:
+        </description>
+        <example>
+          <code><![CDATA[
+const useTheme = () => {
+  const isDark = useColorScheme() === 'dark';
+
+  return useMemo(() => ({
+    colors: {
+      background: isDark ? '#1a1a1a' : '#ffffff',
+      text: isDark ? '#ffffff' : '#1a1a1a',
+      primary: '#6366f1',
+    },
+    isDark,
+  }), [isDark]);
+};
+          ]]></code>
+        </example>
+      </pattern>
+
+      <pattern>
+        <title>LocalStorage Hook Pattern</title>
+        <description>
+          Local storage yönetimi için custom hook:
+        </description>
+        <example>
+          <code><![CDATA[
+const useLocalStorage = <T>(key: string, initialValue: T) => {
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    try {
+      const item = AsyncStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      return initialValue;
+    }
+  });
+
+  const setValue = useCallback(async (value: T) => {
+    try {
+      setStoredValue(value);
+      await AsyncStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+      console.error(error);
+    }
+  }, [key]);
+
+  return [storedValue, setValue] as const;
+};
+          ]]></code>
+        </example>
+      </pattern>
+    </category>
+
+    <category name="New Architecture Pattern'leri">
+      <pattern>
+        <title>Fabric Component Pattern</title>
+        <description>
+          New Architecture'de Fabric Component kullan:
+        </description>
+        <example>
+          <code><![CDATA[
+// Fabric Component (TurboModule)
+import { TurboModuleRegistry } from 'react-native';
+
+export interface Spec extends TurboModule {
+  getConstants(): { initialCount: number };
+  increment(count: number): Promise<number>;
+}
+
+export default TurboModuleRegistry.getEnforcing<Spec>('YazgTurboModule');
+          ]]></code>
+        </example>
+      </pattern>
+
+      <pattern>
+        <title>Concurrent Features Pattern</title>
+        <description>
+          React 18 Concurrent Features kullan:
+        </description>
+        <example>
+          <code><![CDATA[
+// useTransition ile non-blocking UI
+const SearchComponent = () => {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [isPending, startTransition] = useTransition();
+
+  const handleSearch = (text: string) => {
+    setQuery(text);
+    startTransition(() => {
+      // Düşük öncelikli güncelleme
+      setResults(searchData(text));
+    });
+  };
+
+  return (
+    <View>
+      <TextInput value={query} onChangeText={handleSearch} />
+      {isPending ? <ActivityIndicator /> : <ResultList results={results} />}
+    </View>
+  );
+};
+          ]]></code>
+        </example>
+      </pattern>
+    </category>
+
+    <category name="Yazgı Projesi Özel Pattern'ler">
+      <pattern>
+        <title>Game Loop Pattern</title>
+        <description>
+          Oyun döngüsü için pattern:
+        </description>
+        <example>
+          <code><![CDATA[
+const useGameLoop = (tickRate: number = 60) => {
+  const [isRunning, setIsRunning] = useState(false);
+  const lastTickRef = useRef<number>(0);
+
+  const gameLoop = useCallback((timestamp: number) => {
+    if (!isRunning) return;
+
+    const elapsed = timestamp - lastTickRef.current;
+    const tickInterval = 1000 / tickRate;
+
+    if (elapsed >= tickInterval) {
+      // Game tick logic
+      lastTickRef.current = timestamp;
+    }
+
+    requestAnimationFrame(gameLoop);
+  }, [isRunning, tickRate]);
+
+  const start = useCallback(() => {
+    setIsRunning(true);
+    lastTickRef.current = performance.now();
+    requestAnimationFrame(gameLoop);
+  }, [gameLoop]);
+
+  const stop = useCallback(() => {
+    setIsRunning(false);
+  }, []);
+
+  return { isRunning, start, stop };
+};
+          ]]></code>
+        </example>
+      </pattern>
+
+      <pattern>
+        <title>Event System Pattern</title>
+        <description>
+          Olay sistemi için pattern:
+        </description>
+        <example>
+          <code><![CDATA[
+type EventHandler<T = any> = (data: T) => void;
+
+class EventBus {
+  private listeners: Map<string, Set<EventHandler>> = new Map();
+
+  on(event: string, handler: EventHandler): () => void {
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, new Set());
+    }
+    this.listeners.get(event)!.add(handler);
+
+    // Unsubscribe fonksiyonu döndür
+    return () => this.off(event, handler);
+  }
+
+  off(event: string, handler: EventHandler): void {
+    this.listeners.get(event)?.delete(handler);
+  }
+
+  emit(event: string, data?: any): void {
+    this.listeners.get(event)?.forEach(handler => handler(data));
+  }
+}
+
+// Kullanım
+const eventBus = new EventBus();
+
+// Event dinle
+const unsubscribe = eventBus.on('game:over', (data) => {
+  console.log('Game over!', data);
+});
+
+// Event tetikle
+eventBus.emit('game:over', { score: 100 });
+
+// Event dinlemeyi bırak
+unsubscribe();
+          ]]></code>
+        </example>
+      </pattern>
+    </category>
+  </common_patterns>
+</instructions>

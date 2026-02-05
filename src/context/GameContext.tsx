@@ -21,6 +21,12 @@ export interface GameContextType {
   // Composite updates
   updateGameState: (updates: Partial<GameState>) => void;
   updateStats: (updates: Partial<Stats>) => void;
+
+  // For atomic turn advancement
+  advanceTurnInContext: (updates: {
+    newStats: Partial<Stats>,
+    newGameState: Partial<GameState>
+  }) => void;
 }
 
 export const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -85,8 +91,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
   const startNewGame = useCallback((name: string) => {
     setPlayerName(name);
-    setStatsInternal(getInitialStats());
-    setGameStateInternal(getInitialGameState());
+    const newStats = getInitialStats();
+    setStatsInternal(newStats);
+    const newGameState = getInitialGameState();
+    setGameStateInternal(newGameState);
   }, []);
 
   const resetGame = useCallback(() => {
@@ -109,6 +117,20 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     setStatsInternal(prev => ({ ...prev, ...updates }));
   }, []);
 
+  const advanceTurnInContext = useCallback((updates: { newStats: Partial<Stats>, newGameState: Partial<GameState> }) => {
+    console.log('[GameContext] advanceTurnInContext called with:', {
+      phase: updates.newGameState.phase,
+      hasEvent: !!updates.newGameState.currentEvent,
+      eventId: updates.newGameState.currentEvent?.id
+    });
+    setStatsInternal(prev => ({...prev, ...updates.newStats}));
+    setGameStateInternal(prev => {
+      const newState = {...prev, ...updates.newGameState};
+      console.log('[GameContext] New gameState set:', { phase: newState.phase, hasEvent: !!newState.currentEvent });
+      return newState;
+    });
+  }, []);
+
   const value: GameContextType = {
     gameState,
     stats,
@@ -122,6 +144,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     setPlayerName,
     updateGameState,
     updateStats,
+    advanceTurnInContext,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

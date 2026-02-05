@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { StatKey } from '../types';
 
@@ -24,7 +24,7 @@ const StatBar = React.memo<StatBarProps>(({ label, value, statKey, cap = 100, th
 
   const isMastered = !isMoney && value >= 100;
 
-  const styles = StyleSheet.create({
+  const styles = useMemo(() => StyleSheet.create({
     container: {
       marginBottom: 16,
     },
@@ -83,7 +83,7 @@ const StatBar = React.memo<StatBarProps>(({ label, value, statKey, cap = 100, th
       marginTop: 4,
       fontWeight: '500',
     },
-  });
+  }), [theme?.textSecondary, theme?.surfaceBase, theme?.border, theme?.accentStat]);
 
   return (
     <View style={styles.container}>

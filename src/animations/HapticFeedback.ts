@@ -4,6 +4,7 @@
  */
 
 import * as Haptics from 'expo-haptics';
+import { Platform } from 'react-native';
 import { audioManager } from '../audio/AudioManager';
 
 export type HapticType = 
@@ -20,6 +21,10 @@ export type HapticType =
  * @param type Haptic geri bildirim tipi
  */
 export const triggerHaptic = async (type: HapticType): Promise<void> => {
+  if (Platform.OS === 'web') {
+    return;
+  }
+
   try {
     switch (type) {
       case 'light':

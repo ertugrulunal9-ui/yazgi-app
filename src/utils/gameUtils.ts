@@ -1,6 +1,7 @@
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Stats, StatKey, Family, GameState, CareerResult, NPC, FamilyWealth, FamilyDynamic } from '../types';
-import { TRAIT_DEFINITIONS, getRandomGeneticTraits } from '../data/traits';
+import { TRAIT_DEFINITIONS } from '../data/traits';
 
 export const clamp = (value: number, min: number, max: number): number => {
   return Math.min(Math.max(value, min), max);
@@ -19,9 +20,6 @@ export const shouldAgeUp = (currentAge: number, turnCount: number): boolean => {
 
 // --- AİLE SİSTEMİ BAŞLATMA (KRİTİK) ---
 export const createRandomFamily = (): Family => {
-  const wealthOptions: FamilyWealth[] = ['POOR', 'MIDDLE', 'RICH'];
-  const dynamicOptions: FamilyDynamic[] = ['SUPPORTIVE', 'STRICT', 'CHAOTIC'];
-  
   // Wealth dağılımı: %30 Poor, %50 Middle, %20 Rich
   const wealthRoll = Math.random();
   let wealth: FamilyWealth;
@@ -172,20 +170,6 @@ export const getInitialGameState = (): GameState => {
     };
 };
 
-const hasLocalStorage = typeof localStorage !== 'undefined';
-let asyncStorageInstance: any | null = null;
-
-const getAsyncStorage = async () => {
-  if (asyncStorageInstance) return asyncStorageInstance;
-  try {
-    const mod = await import('@react-native-async-storage/async-storage');
-    asyncStorageInstance = (mod as any).default ?? mod;
-    return asyncStorageInstance;
-  } catch {
-    return null;
-  }
-};
-
 // --- MULTI-SLOT SAVE SYSTEM INTEGRATION ---
 // Current slot ID - defaults to Slot 1 for backwards compatibility
 let currentSlotId: string = '1';
@@ -198,12 +182,26 @@ export const getCurrentSlotId = (): string => {
   return currentSlotId;
 };
 
+export const getAsyncStorage = async (key: string) => {
+  try {
+    const jsonValue = await AsyncStorage.getItem(key);
+    return jsonValue != null ? JSON.parse(jsonValue) : null;
+  } catch (e) {
+    console.error('Failed to read value from async storage', e);
+    return null;
+  }
+};
+
 /**
  * Initialize save system (call once on app start)
  * Migrates legacy saves automatically
  */
 export const initializeSaveSystem = async () => {
   try {
+    const legacyData = await getAsyncStorage(SAVE_KEY);
+    if (legacyData) {
+      console.log('Legacy save data found. Migration will be handled by SaveManager.');
+    }
     const SaveManager = (await import('../save/SaveManager')).default;
     await SaveManager.initialize();
     return true;
@@ -558,11 +556,11 @@ export const checkTraitFormation = (
     unlockMessage?: string;
     progressUpdates: string[]; // NEW: Returns which traits made progress
 } => {
-    let newTraits = [];
-    let removedTraits = [];
+    let newTraits: string[] = [];
+    let removedTraits: string[] = [];
     let updatedProgress = { ...state.traitProgress };
-    let unlockMessage = undefined;
-    let progressUpdates = [];
+    let unlockMessage: string | undefined = undefined;
+    let progressUpdates: string[] = [];
 
     // Filter relevant ACQUIRED traits that are NOT yet owned
     const potentialTraits = TRAIT_DEFINITIONS.filter(t => t.category === 'ACQUIRED' && t.formation && !state.traits.includes(t.id));

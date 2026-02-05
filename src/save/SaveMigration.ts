@@ -1,5 +1,5 @@
 import { GameState, Stats } from '../types';
-import { SaveSlotData, SaveSlotMetadata, SAVE_VERSION, createEmptySlot } from './SaveSlot';
+import { SaveSlotData, SaveSlotMetadata, SAVE_VERSION } from './SaveSlot';
 import { generateChecksum } from '../utils/checksum';
 
 interface LegacySaveData {

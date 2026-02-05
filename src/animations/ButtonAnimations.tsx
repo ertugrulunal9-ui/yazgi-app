@@ -5,13 +5,12 @@
  */
 
 import React, { ReactNode } from 'react';
-import { Pressable, StyleSheet, ViewStyle, View } from 'react-native';
+import { Pressable, StyleSheet, ViewStyle } from 'react-native';
 import { triggerHaptic, buttonPress } from './HapticFeedback';
 
-export type ButtonAnimationType = 
+export type ButtonAnimationType =
   | 'pressScale'      // Basınca küçülme
   | 'ripple'          // Ripple efekti
-  | 'shimmer'         // Parlama efekti
   | 'bounce'          // Zıplama efekti
   | 'pulse'           // Nabız efekti
   | 'shake'           // Sarsma efekti
@@ -25,7 +24,6 @@ interface AnimatedButtonProps {
   style?: ViewStyle;
   animationType?: ButtonAnimationType;
   scaleAmount?: number;
-  duration?: number;
 }
 
 /**
@@ -40,11 +38,9 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = React.memo(({
   style,
   animationType = 'pressScale',
   scaleAmount = 0.95,
-  duration = 150,
 }) => {
   const [scale, setScale] = React.useState(1);
   const [opacity, setOpacity] = React.useState(1);
-  const [shimmerOffset, setShimmerOffset] = React.useState(-100);
 
   const handlePressIn = () => {
     if (disabled) return;
@@ -63,9 +59,6 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = React.memo(({
       case 'ripple':
         setOpacity(0.7);
         break;
-      case 'shimmer':
-        setShimmerOffset(100);
-        break;
     }
   };
 
@@ -79,9 +72,6 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = React.memo(({
         break;
       case 'ripple':
         setOpacity(1);
-        break;
-      case 'shimmer':
-        setShimmerOffset(-100);
         break;
     }
   };
@@ -111,9 +101,6 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = React.memo(({
       {children}
     </Pressable>
   );
-}, (prevProps, nextProps) => {
-  return prevProps.disabled === nextProps.disabled &&
-         prevProps.animationType === nextProps.animationType;
 });
 
 /**
@@ -134,7 +121,7 @@ export const PulseButton: React.FC<AnimatedButtonProps> = React.memo(({
       isAnimatingRef.current = true;
       let growing = true;
       const interval = setInterval(() => {
-        setScale(prev => growing ? 1.05 : 1);
+        setScale(growing ? 1.05 : 1);
         growing = !growing;
       }, 1000);
       return () => {
@@ -145,19 +132,18 @@ export const PulseButton: React.FC<AnimatedButtonProps> = React.memo(({
       isAnimatingRef.current = false;
       setScale(1);
     }
+    return undefined;
   }, [disabled]);
 
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      style={[styles.button, style, { transform: [{ scale }] }]}
+      style={[styles.button, style, { transform: [{ scale }], zIndex: 10 }]}
     >
       {children}
     </Pressable>
   );
-}, (prevProps, nextProps) => {
-  return prevProps.disabled === nextProps.disabled;
 });
 
 /**
@@ -200,6 +186,7 @@ export const ShakeButton: React.FC<AnimatedButtonProps & { shake?: boolean }> = 
       }, 50);
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [shake, disabled]);
 
   return (
@@ -211,9 +198,6 @@ export const ShakeButton: React.FC<AnimatedButtonProps & { shake?: boolean }> = 
       {children}
     </Pressable>
   );
-}, (prevProps, nextProps) => {
-  return prevProps.disabled === nextProps.disabled &&
-         prevProps.shake === nextProps.shake;
 });
 
 /**
@@ -243,6 +227,7 @@ export const ShimmerButton: React.FC<AnimatedButtonProps> = React.memo(({
       shimmerRef.current = false;
       setOpacity(1);
     }
+    return undefined;
   }, [disabled]);
 
   return (
@@ -254,8 +239,6 @@ export const ShimmerButton: React.FC<AnimatedButtonProps> = React.memo(({
       {children}
     </Pressable>
   );
-}, (prevProps, nextProps) => {
-  return prevProps.disabled === nextProps.disabled;
 });
 
 const styles = StyleSheet.create({

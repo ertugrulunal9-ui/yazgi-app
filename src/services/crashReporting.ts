@@ -19,9 +19,15 @@ class CrashReportingService {
 
   constructor() {
     console.log('🚨 Using simple error logger (Firebase removed)');
+    this.initialized = true;
+  }
+
+  isEnabled(): boolean {
+    return this.enabled && this.initialized;
   }
 
   async setUserId(userId: string): Promise<void> {
+    if (!this.isEnabled()) return;
     errorLogger.setUserId(userId);
     if (isDev) {
       console.log(`👤 User ID: ${userId}`);

@@ -129,7 +129,7 @@ class MonetizationService {
       this.resetDailyAdCountIfNeeded();
       
       this.isInitialized = true;
-      console.log('✅ Monetization Service initialized');
+      console.log(`✅ Monetization Service initialized (provider: ${this.adProvider})`);
     } catch (error) {
       console.error('❌ Monetization initialization failed:', error);
       throw error;

@@ -124,7 +124,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderRelease: (evt, gestureState) => {
+      onPanResponderRelease: (_evt, gestureState) => {
         const { dx } = gestureState;
         if (dx < -50 && currentSlide < SLIDES.length - 1) {
           nextSlide();

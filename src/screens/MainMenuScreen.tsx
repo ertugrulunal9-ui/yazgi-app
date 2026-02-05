@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, SafeAreaView } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, TextInput, SafeAreaView, TouchableOpacity } from 'react-native';
 import { useGame } from '../context/GameContext';
 import { getThemeTokens, getDensityMetrics } from '../utils/themeUtils';
 import {
   FadeInDownView,
   FadeInUpView,
-  PulseButton,
   buttonPress,
   successHaptic,
 } from '../animations';
@@ -16,77 +15,156 @@ interface MainMenuScreenProps {
   onGameStart: () => void;
 }
 
-export const MainMenuScreen: React.FC<MainMenuScreenProps> = ({ theme, metrics, onGameStart }) => {
-  console.log('[MainMenuScreen] Rendering...', { theme, metrics });
+// TextInput bileşenini ayrı component olarak çıkarıp optimize et
+const NameInput: React.FC<{
+  value: string;
+  onChangeText: (text: string) => void;
+  inputStyle: any;
+  inputContainerStyle: any;
+}> = React.memo(({ value, onChangeText, inputStyle, inputContainerStyle }) => {
+  return (
+    <View style={inputContainerStyle}>
+      <Text style={{ color: '#ffffff', fontWeight: '700', marginBottom: 8 }}>Adınızı Giriniz</Text>
+      <TextInput
+        style={inputStyle}
+        placeholder="Adı girin..."
+        placeholderTextColor="#9ca3af"
+        value={value}
+        onChangeText={onChangeText}
+        autoFocus
+        selectTextOnFocus
+        accessibilityLabel="Karakter adı"
+        accessibilityHint="Oyunda kullanılacak karakterinizin adını girin"
+      />
+    </View>
+  );
+});
+
+export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme, metrics, onGameStart }) => {
   const [nameInput, setNameInput] = useState('');
   const { startNewGame } = useGame();
 
-  const handleStartGame = () => {
+  const handleStartGame = useCallback(() => {
     if (!nameInput.trim()) {
       buttonPress();
       alert('Lütfen adınızı giriniz');
       return;
     }
+    
     buttonPress();
     successHaptic();
     startNewGame(nameInput);
     onGameStart();
-  };
+  }, [nameInput, startNewGame, onGameStart]);
+
+  const inputStyle = useMemo(() => ({
+    backgroundColor: '#ffffff',
+    color: '#000000',
+    padding: metrics.pad,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.border,
+    fontSize: metrics.font,
+  }), [theme.border, metrics.pad, metrics.font]);
+
+  const buttonStyle = useMemo(() => ({
+    backgroundColor: nameInput.trim() ? theme.accentEvent : 'rgba(59,130,246,0.3)',
+    padding: metrics.pad * 1.5,
+    borderRadius: 12,
+    alignItems: 'center' as const,
+    opacity: nameInput.trim() ? 1 : 0.6,
+    zIndex: 999,
+    elevation: 5,
+  }), [nameInput, theme.accentEvent, metrics.pad]);
+
+  const containerStyle = useMemo(() => ({
+    flex: 1,
+    backgroundColor: theme.appBg,
+  }), [theme.appBg]);
+
+  // Header style - Üst kısım için
+  const headerStyle = useMemo(() => ({
+    flexShrink: 0,
+    paddingHorizontal: metrics.pad * 2,
+    paddingTop: metrics.pad * 2,
+    paddingBottom: metrics.pad,
+  }), [metrics.pad]);
+
+  // Main content style - Ekranın tamamına yayılan orta kısım
+  const mainContentStyle = useMemo(() => ({
+    flexGrow: 1,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    paddingHorizontal: metrics.pad * 2,
+  }), [metrics.pad]);
+
+  // Bottom menu style - Sabit alt kısım
+  const bottomMenuStyle = useMemo(() => ({
+    flexShrink: 0,
+    backgroundColor: theme.surfaceRaised,
+    borderTopWidth: 1,
+    borderTopColor: theme.border,
+    paddingHorizontal: metrics.pad * 2,
+    paddingVertical: metrics.pad * 1.5,
+    gap: 12,
+  }), [theme.surfaceRaised, theme.border, metrics.pad]);
+
+  const inputContainerStyle = useMemo(() => ({
+    backgroundColor: theme.surfaceBase,
+    borderRadius: 14,
+    padding: metrics.pad,
+    borderWidth: 1,
+    borderColor: theme.border,
+  }), [theme.surfaceBase, theme.border, metrics.pad]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.appBg }}>
-      <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: metrics.pad * 2 }}>
+    <SafeAreaView style={containerStyle}>
+      {/* Header - Üst Kısım */}
+      <View style={headerStyle}>
         <FadeInDownView delay={0}>
-          <Text style={{ fontSize: 32, fontWeight: '800', color: theme.textPrimary, marginBottom: 8, textAlign: 'center' }}>
+          <Text style={{ fontSize: 28, fontWeight: '800', color: theme.textPrimary, marginBottom: 4, textAlign: 'center' }}>
             Yazgı 🎭
           </Text>
         </FadeInDownView>
         
         <FadeInUpView delay={100}>
-          <Text style={{ fontSize: 14, color: theme.textSecondary, textAlign: 'center', marginBottom: 32 }}>
+          <Text style={{ fontSize: 13, color: theme.textSecondary, textAlign: 'center' }}>
             Hayat Simülasyonu
           </Text>
         </FadeInUpView>
+      </View>
 
+      {/* Main Content - Ekranın Tamamına Yayılan Orta Kısım */}
+      <View style={mainContentStyle}>
         <FadeInUpView delay={200}>
-          <View style={{ backgroundColor: theme.surfaceBase, borderRadius: 14, padding: metrics.pad, marginBottom: 20, borderWidth: 1, borderColor: theme.border }}>
-            <Text style={{ color: theme.textPrimary, fontWeight: '700', marginBottom: 8 }}>Adınızı Giriniz</Text>
-          </View>
+          <Text style={{ fontSize: 48, opacity: 0.15 }}>
+            🌙
+          </Text>
         </FadeInUpView>
-        <View style={{ backgroundColor: theme.surfaceBase, borderRadius: 14, padding: metrics.pad, marginBottom: 20, borderWidth: 1, borderColor: theme.border }}>
-          <TextInput
-            style={{
-              backgroundColor: theme.surfaceRaised,
-              color: theme.textPrimary,
-              padding: metrics.pad,
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: theme.border,
-              fontSize: metrics.font,
-            }}
-            placeholder="Adı girin..."
-            placeholderTextColor={theme.textSecondary}
-            value={nameInput}
-            onChangeText={setNameInput}
-          />
-        </View>
+      </View>
 
-        <FadeInUpView delay={300}>
-          <PulseButton
-            onPress={handleStartGame}
-            disabled={!nameInput.trim()}
-            style={{
-              backgroundColor: nameInput.trim() ? theme.accentEvent : 'rgba(59,130,246,0.3)',
-              padding: metrics.pad * 1.5,
-              borderRadius: 12,
-              alignItems: 'center',
-              opacity: nameInput.trim() ? 1 : 0.6,
-            }}
-          >
-            <Text style={{ color: '#ffffff', fontSize: metrics.font, fontWeight: '700' }}>Oyuna Başla</Text>
-          </PulseButton>
-        </FadeInUpView>
+      {/* Bottom Menu - Sabit Alt Kısım */}
+      <View style={bottomMenuStyle}>
+        <NameInput
+          key="nameInput"
+          value={nameInput}
+          onChangeText={setNameInput}
+          inputStyle={inputStyle}
+          inputContainerStyle={inputContainerStyle}
+        />
+
+        <TouchableOpacity
+          onPress={handleStartGame}
+          style={[buttonStyle, {pointerEvents: !nameInput.trim() ? 'none' : 'auto'}]}
+          activeOpacity={0.8}
+          accessibilityLabel="Oyuna başla"
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !nameInput.trim() }}
+          accessibilityHint={!nameInput.trim() ? "Önce karakter adı girin" : "Yeni oyun başlatır"}
+        >
+          <Text style={{ color: '#ffffff', fontSize: metrics.font, fontWeight: '700' }}>Oyuna Başla</Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
-};
+});
