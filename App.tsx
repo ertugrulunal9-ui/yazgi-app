@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { View, Text, Appearance, ScrollView, TouchableOpacity, Alert, Switch, StyleSheet, Pressable, Platform } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -16,8 +16,17 @@ import { Feather } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
 import { getCurrentSlotId, setCurrentSlotId, clearSlotSave } from './src/utils/gameUtils';
 import SaveSlotPicker from './src/components/SaveSlotPicker';
+import { SaveSlotData } from './src/save/SaveSlot';
+import { Onboarding } from './src/components/Onboarding';
+import { TutorialTooltip, useTutorialTooltip } from './src/components/TutorialTooltip';
+import { handleGameStart, handleCharacterCreation, logTutorialCompleted, logTutorialTooltipShown } from './src/utils/analyticsEvents';
+import { initMonetization } from './src/services/monetization';
 
 const UI_PREFS_KEY = '@yazgi_sim/ui_prefs/v1';
+const ONBOARDING_KEY = '@yazgi/onboarding_completed';
+const HUB_TOOLTIP_KEY = '@yazgi/hub_tutorial_shown';
+const EVENT_TOOLTIP_KEY = '@yazgi/event_tooltip_shown';
+const ENERGY_TOOLTIP_KEY = '@yazgi/energy_tutorial_shown';
 
 interface AppState {
   gameStarted: boolean;
@@ -41,6 +50,11 @@ const AppContent: React.FC = () => {
   const splashQuote = getLoadingQuoteByAge(0);
   const [splashProgress, setSplashProgress] = useState(0);
   const [fontsLoaded] = useFonts(Feather.font);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
+  const tooltip = useTutorialTooltip();
+  const tooltipLockRef = useRef(false);
+  const analyticsLoggedRef = useRef(false);
 
   // Load UI preferences
   useEffect(() => {
@@ -58,6 +72,27 @@ const AppContent: React.FC = () => {
       }
     };
     void loadUIPrefs();
+  }, []);
+
+  useEffect(() => {
+    initMonetization().catch((error) => {
+      console.warn('Monetization init failed:', error);
+    });
+  }, []);
+
+  // Load onboarding status
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      try {
+        const completed = await AsyncStorage.getItem(ONBOARDING_KEY);
+        setHasCompletedOnboarding(completed === 'true');
+      } catch {
+        setHasCompletedOnboarding(false);
+      } finally {
+        setCheckingOnboarding(false);
+      }
+    };
+    void checkOnboarding();
   }, []);
 
   // Resolve theme changes
@@ -135,6 +170,7 @@ const AppContent: React.FC = () => {
             await clearSlotSave('auto');
             setCurrentSlotId('auto');
             resetGame();
+            analyticsLoggedRef.current = false;
             setAppState({ gameStarted: false, currentTab: 'hub', settingsOpen: false });
           },
         },
@@ -148,12 +184,95 @@ const AppContent: React.FC = () => {
     }
   }, [isLoading, playerName, appState.gameStarted]);
 
-  const handleLoadSlot = useCallback(async (slotId: string) => {
-    const success = await loadSavedGame(slotId);
+  useEffect(() => {
+    if (isLoading || !playerName || !gameState.characterInfo || analyticsLoggedRef.current) {
+      return;
+    }
+    if (gameState.turn > 1) {
+      return;
+    }
+    analyticsLoggedRef.current = true;
+    const wealthMap: Record<string, number> = { POOR: 0, MIDDLE: 1, RICH: 2 };
+    const wealth = gameState.family ? wealthMap[gameState.family.wealth] ?? 1 : 1;
+    const familyType = gameState.family?.dynamic ?? 'UNKNOWN';
+    void handleGameStart(playerName, 'normal');
+    void handleCharacterCreation({
+      name: playerName,
+      wealth,
+      talent: gameState.talent === 'NONE' ? 0 : 1,
+      traits: gameState.traits || [],
+      familyType,
+    });
+  }, [isLoading, playerName, gameState.characterInfo, gameState.family, gameState.talent, gameState.traits]);
+
+  const handleLoadSlot = useCallback(async (slotId: string, saveData: SaveSlotData) => {
+    const success = await loadSavedGame(slotId, saveData);
     if (success) {
       setAppState(prev => ({ ...prev, gameStarted: true }));
     }
   }, [loadSavedGame]);
+
+  useEffect(() => {
+    if (!hasCompletedOnboarding || !appState.gameStarted) return;
+    if (tooltip.visible || tooltipLockRef.current) return;
+
+    const maybeShowTooltip = async () => {
+      tooltipLockRef.current = true;
+      try {
+        if (gameState.phase === 'EVENT' && gameState.currentEvent) {
+          const shown = await AsyncStorage.getItem(EVENT_TOOLTIP_KEY);
+          if (!shown && gameState.eventChoiceHistory.length === 0) {
+            tooltip.showTooltip(
+              '🎬 Bir Event Başladı!',
+              'Seçimler yaparak karakterini şekillendirirsin. Her seçimin bir sonucu var.'
+            );
+            await AsyncStorage.setItem(EVENT_TOOLTIP_KEY, 'true');
+            void logTutorialTooltipShown('first_event');
+            return;
+          }
+        }
+
+        if (gameState.phase === 'HUB' && gameState.age >= 7) {
+          const shown = await AsyncStorage.getItem(HUB_TOOLTIP_KEY);
+          if (!shown) {
+            tooltip.showTooltip(
+              '📚 Hub Menü',
+              'Ders çalışma, spor, sosyal etkinlik gibi aktiviteleri buradan seçebilirsin.'
+            );
+            await AsyncStorage.setItem(HUB_TOOLTIP_KEY, 'true');
+            void logTutorialTooltipShown('hub_menu');
+            return;
+          }
+        }
+
+        if (gameState.phase === 'HUB' && gameState.turn <= 2) {
+          const shown = await AsyncStorage.getItem(ENERGY_TOOLTIP_KEY);
+          if (!shown) {
+            tooltip.showTooltip(
+              '⚡ Enerji Önemli',
+              'Enerji bittiğinde gün sona erer. Her gün enerji yenilenir.'
+            );
+            await AsyncStorage.setItem(ENERGY_TOOLTIP_KEY, 'true');
+            void logTutorialTooltipShown('energy_intro');
+          }
+        }
+      } finally {
+        tooltipLockRef.current = false;
+      }
+    };
+
+    void maybeShowTooltip();
+  }, [
+    hasCompletedOnboarding,
+    appState.gameStarted,
+    gameState.phase,
+    gameState.age,
+    gameState.turn,
+    gameState.currentEvent,
+    gameState.eventChoiceHistory,
+    tooltip.visible,
+    tooltip.showTooltip,
+  ]);
 
   const gameStateForSave = useMemo(() => ({
     ...gameState,
@@ -186,27 +305,7 @@ const AppContent: React.FC = () => {
     transform: [{ translateX: settingsTranslateX.value }],
   }));
 
-  const showSplash = !uiPrefsLoaded || !splashReady || !fontsLoaded;
-
-  if (showSplash) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.appBg, justifyContent: 'center', alignItems: 'center' }}>
-        <View style={{ width: '85%', backgroundColor: theme.surfaceRaised, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: theme.border }}>
-          <Text style={{ fontSize: 26, fontWeight: '800', textAlign: 'center', marginBottom: 8, color: theme.textPrimary }}>
-            Yazgı
-          </Text>
-          <Text style={{ color: theme.textSecondary, fontSize: 14, textAlign: 'center', marginBottom: 16 }}>
-            {splashQuote}
-          </Text>
-          <View style={{ height: 8, width: '100%', backgroundColor: theme.surfaceOverlay, borderRadius: 999, overflow: 'hidden', borderWidth: 1, borderColor: theme.border }}>
-            <View style={{ height: '100%', width: `${splashProgress * 100}%`, backgroundColor: theme.accentEvent }} />
-          </View>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  const settingsStyles = StyleSheet.create({
+  const settingsStyles = useMemo(() => StyleSheet.create({
     container: {
       position: 'absolute',
       top: 0,
@@ -214,7 +313,6 @@ const AppContent: React.FC = () => {
       right: 0,
       bottom: 0,
       zIndex: Z_INDEX.SETTINGS + 100,
-      pointerEvents: appState.settingsOpen ? 'auto' : 'none',
     },
     overlay: {
       ...StyleSheet.absoluteFillObject,
@@ -283,12 +381,43 @@ const AppContent: React.FC = () => {
       flexDirection: 'row',
       gap: 10,
     },
-  });
+  }), [theme]);
+
+  const showSplash = !uiPrefsLoaded || !splashReady || !fontsLoaded || checkingOnboarding;
+
+  if (showSplash) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.appBg, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={{ width: '85%', backgroundColor: theme.surfaceRaised, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: theme.border }}>
+          <Text style={{ fontSize: 26, fontWeight: '800', textAlign: 'center', marginBottom: 8, color: theme.textPrimary }}>
+            Yazgı
+          </Text>
+          <Text style={{ color: theme.textSecondary, fontSize: 14, textAlign: 'center', marginBottom: 16 }}>
+            {splashQuote}
+          </Text>
+          <View style={{ height: 8, width: '100%', backgroundColor: theme.surfaceOverlay, borderRadius: 999, overflow: 'hidden', borderWidth: 1, borderColor: theme.border }}>
+            <View style={{ height: '100%', width: `${splashProgress * 100}%`, backgroundColor: theme.accentEvent }} />
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!hasCompletedOnboarding) {
+    return (
+      <Onboarding
+        onComplete={async () => {
+          setHasCompletedOnboarding(true);
+          void logTutorialCompleted();
+        }}
+      />
+    );
+  }
 
   return (
     <>
       {/* Settings Panel - Absolute positioned instead of Modal */}
-      <View style={settingsStyles.container}>
+      <View style={settingsStyles.container} pointerEvents={appState.settingsOpen ? 'auto' : 'none'}>
         <Animated.View style={[settingsStyles.overlay, settingsOverlayStyle]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={closeSettings} />
         </Animated.View>
@@ -493,6 +622,8 @@ const AppContent: React.FC = () => {
             onPhaseChange={(tab) => setAppState(prev => ({ ...prev, currentTab: tab }))}
             onOpenSettings={() => setAppState(prev => ({ ...prev, settingsOpen: true }))}
             currentTab={appState.currentTab}
+            theme={theme}
+            metrics={metrics}
           />
 
           {/* Event Screen - Overlay */}
@@ -539,6 +670,14 @@ const AppContent: React.FC = () => {
           border: theme.border,
           accentEvent: theme.accentEvent,
         }}
+      />
+
+      <TutorialTooltip
+        visible={tooltip.visible}
+        title={tooltip.title}
+        message={tooltip.message}
+        onDismiss={tooltip.hideTooltip}
+        onNext={tooltip.nextStep}
       />
     </>
   );

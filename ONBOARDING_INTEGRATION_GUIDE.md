@@ -30,7 +30,7 @@ import { Onboarding } from './components/Onboarding';
 import { TutorialTooltip, useTutorialTooltip } from './components/TutorialTooltip';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const ONBOARDING_KEY = '@yazgi/onboarding_completed_v1';
+const ONBOARDING_KEY = '@yazgi/onboarding_completed';
 
 export default function App() {
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
