@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, StatusBar, Modal } from 'react-native';
 import { EVENTS, FALLBACK_EVENT } from '../src/data/events';
-import { getRandomGeneticTraits } from '../src/data/traits';
+import { getRandomGeneticTraits, getTrait } from '../src/data/traits';
 import { getStatCap, updateStats, createRandomNPC } from '../src/utils/gameUtils';
 
 // Simple ReportCard Component for Mobile
@@ -58,7 +58,7 @@ export default function Game() {
   const [npcs, setNpcs] = useState<any[]>([]);
   const [traits, setTraits] = useState<any[]>([]);
   const [inventory, setInventory] = useState<string[]>([]);
-  
+
   const [showEventModal, setShowEventModal] = useState(false);
   const [currentEvent, setCurrentEvent] = useState<any>(null);
   const [showResult, setShowResult] = useState(false);
@@ -72,11 +72,11 @@ export default function Game() {
 
   const handleStartGame = () => {
     if (!playerName.trim()) return;
-    const initialTraits = getRandomGeneticTraits(1);
-    setTraits(initialTraits || []);
+    const initialTraitIds = getRandomGeneticTraits(1); // Returns string[] of trait IDs
+    setTraits(initialTraitIds || []);
     setStats({
-        health: initialTraits.some(t=>t.id==='sickly') ? 40 : 90,
-        intelligence: 10, charisma: 10, discipline: 10, energy: 100, money: 0, familyRelation: 70, karma: 50
+      health: initialTraitIds.some(id => id === 'SICKLY') ? 40 : 90,
+      intelligence: 10, charisma: 10, discipline: 10, energy: 100, money: 0, familyRelation: 70, karma: 50
     });
     setGrades({ math: 30, science: 30, language: 30 });
     setNpcs([createRandomNPC(), createRandomNPC()]);
@@ -91,16 +91,16 @@ export default function Game() {
     let nextAge = age;
 
     if (nextTurn > 4) {
-        nextTurn = 1; 
-        nextAge = age + 1; 
-        if (nextAge >= 18) { setPhase('ENDING'); return; }
-        setAge(nextAge);
-        if (nextAge >= 7) setShowReportCard(true);
-        else triggerEvent(nextAge);
+      nextTurn = 1;
+      nextAge = age + 1;
+      if (nextAge >= 18) { setPhase('ENDING'); return; }
+      setAge(nextAge);
+      if (nextAge >= 7) setShowReportCard(true);
+      else triggerEvent(nextAge);
     } else {
-        triggerEvent(nextAge);
+      triggerEvent(nextAge);
     }
-    
+
     setTurn(nextTurn);
     setStats((prev: any) => ({ ...prev, energy: 100 }));
     setActiveTab('MAIN');
@@ -117,16 +117,16 @@ export default function Game() {
 
   const updateGameStats = (effect?: any, gradeUpdates?: any) => {
     if (effect) {
-      setStats((prev: any) => updateStats(prev, effect, age, null, traits.map(t => t.id)));
+      setStats((prev: any) => updateStats(prev, effect, age, null, traits)); // traits is already string[]
     }
     if (gradeUpdates) {
-        setGrades((prev: any) => {
-            const newGrades = { ...prev };
-            Object.keys(gradeUpdates).forEach(key => {
-                if (key in newGrades) (newGrades as any)[key] = Math.min(100, Math.max(0, (newGrades as any)[key] + gradeUpdates[key]));
-            });
-            return newGrades;
+      setGrades((prev: any) => {
+        const newGrades = { ...prev };
+        Object.keys(gradeUpdates).forEach(key => {
+          if (key in newGrades) (newGrades as any)[key] = Math.min(100, Math.max(0, (newGrades as any)[key] + gradeUpdates[key]));
         });
+        return newGrades;
+      });
     }
   };
 
@@ -155,9 +155,9 @@ export default function Game() {
           <Text style={styles.title}>YOLUN SONU</Text>
           <Text style={styles.subtitle}>18 yıllık yazgın şekillendi, {playerName}.</Text>
           <View style={styles.finalStatsBox}>
-             <Text style={styles.finalVerdictTitle}>Kaderin:</Text>
-             <Text style={styles.finalVerdictText}>{verdict.title}</Text>
-             <Text style={styles.finalVerdictDesc}>{verdict.desc}</Text>
+            <Text style={styles.finalVerdictTitle}>Kaderin:</Text>
+            <Text style={styles.finalVerdictText}>{verdict.title}</Text>
+            <Text style={styles.finalVerdictDesc}>{verdict.desc}</Text>
           </View>
           <TouchableOpacity style={styles.button} onPress={() => setPhase('SETUP')}>
             <Text style={styles.buttonText}>YENİ BİR HAYAT</Text>
@@ -171,7 +171,6 @@ export default function Game() {
     <SafeAreaView style={styles.gameContainer}>
       <StatusBar barStyle="light-content" />
       <ReportCard visible={showReportCard} grades={grades} onClose={() => setShowReportCard(false)} playerName={playerName} age={age} />
-      
       {phase === 'SETUP' ? (
         <View style={styles.card}>
           <Text style={styles.emoji}>👁️</Text>
@@ -187,17 +186,20 @@ export default function Game() {
               <Text style={styles.headerSubtitle}>{age} Yaş • {turn}/4. Dönem</Text>
             </View>
             <View style={styles.gradeHeader}>
-                <Text style={styles.gradeLabel}>ORTALAMA</Text>
-                <Text style={styles.gradeValue}>{Math.round((grades.math + grades.science + grades.language)/3)}</Text>
+              <Text style={styles.gradeLabel}>ORTALAMA</Text>
+              <Text style={styles.gradeValue}>{Math.round((grades.math + grades.science + grades.language) / 3)}</Text>
             </View>
             <TouchableOpacity style={styles.ageButton} onPress={advanceTurn}><Text style={styles.ageButtonText}>{turn === 4 ? "YILI BİTİR" : "TUR ATLA"}</Text></TouchableOpacity>
           </View>
 
           <View style={styles.traitsSection}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {traits.map((t, i) => (
-                <View key={i} style={styles.traitBadge}><Text style={styles.traitText}>✨ {t.name}</Text></View>
-              ))}
+              {traits.map((traitId, i) => {
+                const traitDef = getTrait(traitId);
+                return traitDef ? (
+                  <View key={i} style={styles.traitBadge}><Text style={styles.traitText}>✨ {traitDef.name}</Text></View>
+                ) : null;
+              })}
             </ScrollView>
           </View>
 
@@ -215,9 +217,9 @@ export default function Game() {
               <View style={styles.menuGrid}>
                 {age < 7 && (
                   <>
-                    <MenuButton icon="🧸" title="Oyna" color="#3b82f6" onPress={() => handleAction(10, {health: 2, charisma: 1}, "Oynadın.")} />
-                    <MenuButton icon="👀" title="Keşfet" color="#10b981" onPress={() => handleAction(15, {intelligence: 2}, "Etrafı keşfettin.")} />
-                    <MenuButton icon="🤗" title="Kucak" color="#ec4899" onPress={() => handleAction(5, {familyRelation: 10, karma: 2}, "Ailenle bağ kurdun.")} />
+                    <MenuButton icon="🧸" title="Oyna" color="#3b82f6" onPress={() => handleAction(10, { health: 2, charisma: 1 }, "Oynadın.")} />
+                    <MenuButton icon="👀" title="Keşfet" color="#10b981" onPress={() => handleAction(15, { intelligence: 2 }, "Etrafı keşfettin.")} />
+                    <MenuButton icon="🤗" title="Kucak" color="#ec4899" onPress={() => handleAction(5, { familyRelation: 10, karma: 2 }, "Ailenle bağ kurdun.")} />
                   </>
                 )}
                 {age >= 7 && <MenuButton icon="📚" title="Eğitim" color="#8b5cf6" onPress={() => setActiveTab('EDUCATION')} />}
@@ -229,26 +231,26 @@ export default function Game() {
             ) : (
               <View style={styles.subMenuContainer}>
                 <View style={styles.subMenuHeader}>
-                    <Text style={styles.subMenuTitle}>{activeTab}</Text>
-                    <TouchableOpacity onPress={() => setActiveTab('MAIN')}><Text style={styles.backBtn}>← GERİ</Text></TouchableOpacity>
+                  <Text style={styles.subMenuTitle}>{activeTab}</Text>
+                  <TouchableOpacity onPress={() => setActiveTab('MAIN')}><Text style={styles.backBtn}>← GERİ</Text></TouchableOpacity>
                 </View>
-                <ScrollView style={{flex:1}}>
-                    {activeTab === 'EDUCATION' && (
-                        <>
-                            <ActionRow name="Ders Çalış (Genel)" cost={25} onPress={() => handleAction(25, {intelligence: 1, discipline: 1}, "Tüm derslere biraz göz attın.", {gradeUpdates: {math: 2, science: 2, language: 2}})} />
-                            <ActionRow name="Matematik Odaklan" cost={30} onPress={() => handleAction(30, {intelligence: 2}, "Problem çözmekten beynin yandı.", {gradeUpdates: {math: 8, science: -2}})} />
-                            <ActionRow name="Özel Ders (100 💰)" cost={40} onPress={() => { if(stats.money >= 100) handleAction(40, {intelligence: 5}, "Hocadan çok şey kaptın.", {gradeUpdates: {math: 15, science: 15, language: 15}, money: -100}); else addLog("❌ Paran yetmiyor!"); }} />
-                        </>
-                    )}
-                    {activeTab === 'FRIENDS' && npcs.map((npc, i) => (
-                        <View key={i} style={styles.npcRow}><Text style={styles.npcName}>{npc.name} ({npc.role})</Text><Text style={styles.npcRelation}>%{npc.relationship}</Text></View>
-                    ))}
-                    {activeTab === 'INV' && (inventory.length > 0 ? inventory.map((item, i) => <View key={i} style={styles.npcRow}><Text style={styles.npcName}>{item}</Text></View>) : <Text style={styles.logText}>Çantan boş.</Text>)}
+                <ScrollView style={{ flex: 1 }}>
+                  {activeTab === 'EDUCATION' && (
+                    <>
+                      <ActionRow name="Ders Çalış (Genel)" cost={25} onPress={() => handleAction(25, { intelligence: 1, discipline: 1 }, "Tüm derslere biraz göz attın.", { gradeUpdates: { math: 2, science: 2, language: 2 } })} />
+                      <ActionRow name="Matematik Odaklan" cost={30} onPress={() => handleAction(30, { intelligence: 2 }, "Problem çözmekten beynin yandı.", { gradeUpdates: { math: 8, science: -2 } })} />
+                      <ActionRow name="Özel Ders (100 💰)" cost={40} onPress={() => { if (stats.money >= 100) handleAction(40, { intelligence: 5 }, "Hocadan çok şey kaptın.", { gradeUpdates: { math: 15, science: 15, language: 15 }, money: -100 }); else addLog("❌ Paran yetmiyor!"); }} />
+                    </>
+                  )}
+                  {activeTab === 'FRIENDS' && npcs.map((npc, i) => (
+                    <View key={i} style={styles.npcRow}><Text style={styles.npcName}>{npc.name} ({npc.role})</Text><Text style={styles.npcRelation}>%{npc.relationship}</Text></View>
+                  ))}
+                  {activeTab === 'INV' && (inventory.length > 0 ? inventory.map((item, i) => <View key={i} style={styles.npcRow}><Text style={styles.npcName}>{item}</Text></View>) : <Text style={styles.logText}>Çantan boş.</Text>)}
                 </ScrollView>
               </View>
             )}
           </View>
-          <View style={styles.logArea}><ScrollView>{history.map((item, index) => (<Text key={index} style={[styles.logText, index === 0 && {color: '#fff'}]}>• {item.message}</Text>))}</ScrollView></View>
+          <View style={styles.logArea}><ScrollView>{history.map((item, index) => (<Text key={index} style={[styles.logText, index === 0 && { color: '#fff' }]}>• {item.message}</Text>))}</ScrollView></View>
         </>
       )}
 
@@ -260,13 +262,13 @@ export default function Game() {
                 <Text style={styles.eventText}>{currentEvent?.text}</Text>
                 <View style={styles.choiceContainer}>
                   {currentEvent?.choices?.map((choice: any, idx: number) => (
-                    <TouchableOpacity key={idx} style={styles.choiceButton} onPress={() => { 
-                        const filteredEffect = { ...choice.effect };
-                        delete filteredEffect.karma;
-                        setLastChanges(filteredEffect); 
-                        updateGameStats(choice.effect, choice.gradeUpdates); 
-                        setResultFeedback(choice.feedback); 
-                        setShowResult(true); 
+                    <TouchableOpacity key={idx} style={styles.choiceButton} onPress={() => {
+                      const filteredEffect = { ...choice.effect };
+                      delete filteredEffect.karma;
+                      setLastChanges(filteredEffect);
+                      updateGameStats(choice.effect, choice.gradeUpdates);
+                      setResultFeedback(choice.feedback);
+                      setShowResult(true);
                     }}><Text style={choice.text.length > 30 ? styles.choiceButtonTextSmall : styles.choiceButtonText}>{choice.text}</Text></TouchableOpacity>
                   ))}
                 </View>
@@ -274,8 +276,8 @@ export default function Game() {
             ) : (
               <>
                 <Text style={styles.resultTitle}>Sonuç</Text><Text style={styles.resultText}>{resultFeedback}</Text>
-                <View style={styles.changeList}>{lastChanges && Object.keys(lastChanges).map((key: any) => (<Text key={key} style={[styles.changeItem, {color: lastChanges[key] >= 0 ? '#22c55e' : '#ef4444'}]}>{lastChanges[key] >= 0 ? '+' : ''}{lastChanges[key]} {key.toUpperCase()}</Text>))}</View>
-                <TouchableOpacity style={styles.continueButton} onPress={() => {setShowEventModal(false); setShowResult(false);}}><Text style={styles.continueButtonText}>DEVAM ET</Text></TouchableOpacity>
+                <View style={styles.changeList}>{lastChanges && Object.keys(lastChanges).map((key: any) => (<Text key={key} style={[styles.changeItem, { color: lastChanges[key] >= 0 ? '#22c55e' : '#ef4444' }]}>{lastChanges[key] >= 0 ? '+' : ''}{lastChanges[key]} {key.toUpperCase()}</Text>))}</View>
+                <TouchableOpacity style={styles.continueButton} onPress={() => { setShowEventModal(false); setShowResult(false); }}><Text style={styles.continueButtonText}>DEVAM ET</Text></TouchableOpacity>
               </>
             )}
           </View>
@@ -289,9 +291,9 @@ const StatBox = ({ label, value, color, showRaw, age, statKey }: any) => {
   const cap = getStatCap(age, statKey, null, []);
   return (
     <View style={styles.statBox}>
-      <View style={{flexDirection:'row', justifyContent:'space-between', marginBottom: 3}}><Text style={styles.statLabel}>{label}</Text><Text style={[styles.statValue, {color}]}>{Math.round(value)}{!showRaw && `/${cap}`}</Text></View>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}><Text style={styles.statLabel}>{label}</Text><Text style={[styles.statValue, { color }]}>{Math.round(value)}{!showRaw && `/${cap}`}</Text></View>
       <View style={styles.barBackground}>
-        <View style={[styles.barForeground, { width: `${Math.min((value/cap)*100, 100)}%`, backgroundColor: color }]} />
+        <View style={[styles.barForeground, { width: `${Math.min((value / cap) * 100, 100)}%`, backgroundColor: color }]} />
       </View>
     </View>
   );

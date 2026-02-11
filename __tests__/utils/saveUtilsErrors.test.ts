@@ -67,7 +67,8 @@ describe('SaveUtils - Error Handling & Edge Cases', () => {
     it('should handle very old timestamps', () => {
       const veryOld = now - 365 * 24 * 60 * 60 * 1000; // 1 year ago
       const result = formatLastPlayed(veryOld);
-      expect(result).toMatch(/\d{1,2}\s\w{3}/); // Should be date format
+      // Turkish month names have special characters (Şub, Oca, etc.)
+      expect(result).toMatch(/\d{1,2}\s\S{3}/); // Should be date format like "2 Şub"
     });
 
     it('should handle timestamp of 0', () => {

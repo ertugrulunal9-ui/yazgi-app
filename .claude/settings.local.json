@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(npx tsc:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(gh pr list:*)",
+      "Bash(npm test:*)",
+      "Bash(done)",
+      "Bash(python3:*)"
     ]
   }
 }

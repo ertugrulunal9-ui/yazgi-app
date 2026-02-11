@@ -8,7 +8,7 @@ export const trackSpecialProgress = (
   prevStats?: Stats
 ): GameState => {
   const newGameState = { ...gameState };
-  
+
   if (!newGameState.achievementProgress) {
     newGameState.achievementProgress = {};
   }
@@ -27,7 +27,6 @@ export const trackSpecialProgress = (
   if (prevStats) {
     const subjects: Array<keyof SchoolGrades> = ['math', 'science', 'language'];
     subjects.forEach(subject => {
-      const prevGrade = prevStats ? 0 : 0; // Would need previous grades tracking
       if (gameState.schoolGrades[subject] >= 90) {
         newGameState.achievementProgress['comeback_kid'] = 1;
       }
@@ -37,13 +36,13 @@ export const trackSpecialProgress = (
   // Track "spender" - cumulative spending
   if (prevStats && prevStats.money > stats.money) {
     const spent = prevStats.money - stats.money;
-    newGameState.achievementProgress['spender'] = 
+    newGameState.achievementProgress['spender'] =
       (newGameState.achievementProgress['spender'] || 0) + spent;
   }
 
   // Track "heartbreaker" - partner changes
   if (prevStats && gameState.npcs.some(n => n.role === 'PARTNER')) {
-    newGameState.achievementProgress['heartbreaker'] = 
+    newGameState.achievementProgress['heartbreaker'] =
       (newGameState.achievementProgress['heartbreaker'] || 0) + 1;
   }
 
@@ -56,11 +55,12 @@ export const autoCheckAchievements = async (
   gameState: GameState,
   skills: Skills,
   grades: SchoolGrades,
-  onNewUnlock?: (achievementIds: string[]) => void
+  onNewUnlock?: (achievementIds: string[]) => void,
+  showFloatingText?: (text: string, x: number, y: number, color: string, options?: any) => void
 ): Promise<void> => {
   try {
     const unlockedAchievements = gameState.unlockedAchievements || [];
-    
+
     // Non-blocking check
     setTimeout(async () => {
       const newlyUnlocked = await checkAllAchievements(
@@ -68,7 +68,8 @@ export const autoCheckAchievements = async (
         gameState,
         skills,
         grades,
-        unlockedAchievements
+        unlockedAchievements,
+        showFloatingText
       );
 
       if (newlyUnlocked.length > 0 && onNewUnlock) {
@@ -89,13 +90,14 @@ export const debouncedAchievementCheck = (
   skills: Skills,
   grades: SchoolGrades,
   onNewUnlock?: (achievementIds: string[]) => void,
-  delay: number = 500
+  delay: number = 500,
+  showFloatingText?: (text: string, x: number, y: number, color: string, options?: any) => void
 ): void => {
   if (checkTimeout) {
     clearTimeout(checkTimeout);
   }
 
   checkTimeout = setTimeout(() => {
-    autoCheckAchievements(stats, gameState, skills, grades, onNewUnlock);
+    autoCheckAchievements(stats, gameState, skills, grades, onNewUnlock, showFloatingText);
   }, delay);
 };

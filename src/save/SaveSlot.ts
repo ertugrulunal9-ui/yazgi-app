@@ -55,6 +55,7 @@ export interface SaveManagerState {
   lastAutoSave: number;
   cloudSync: CloudSyncState;
   isPremiumUnlocked: boolean;
+  adsDisabled: boolean;
 }
 
 export const EMPTY_SLOT_METADATA: Omit<SaveSlotMetadata, 'slotId' | 'isPremium'> = {

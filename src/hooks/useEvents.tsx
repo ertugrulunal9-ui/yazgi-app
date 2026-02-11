@@ -1,50 +1,36 @@
 import { useCallback } from 'react';
 import { useGame } from '../context/GameContext';
-import { Choice, EventContext, GameEvent, LogEntry, Stats } from '../types';
+import { Choice, EventContext, GameEvent, ExamSubject, ALL_EXAM_SUBJECTS } from '../types';
 import { EVENTS, FALLBACK_EVENT } from '../data/events';
 import {
-  checkTraitFormation,
   shouldAgeUp,
   shouldGenerateReportCard,
-  updateStats as updateStatsWithCaps,
-  calculateCareerResult
+  calculateCareerResult,
+  getMaxEnergy,
+  getRestedEnergy
 } from '../utils/gameUtils';
 import { calculateSchoolReport } from '../utils/schoolLogic';
+import { TurnMediator } from '../systems/TurnMediator';
+import { getDueScheduledEvents, pickScheduledEvent, tickScheduledEvents } from '../utils/scheduledEvents';
+import { handleEventChoice as logEventChoice, logTurnProgress, logGameEnding, logTraitFormed } from '../utils/analyticsEvents';
+import { selectEventWithAdaptivePacing, getRecencyWindowSize } from '../utils/eventSelection';
+import { getEventChoiceSet } from '../utils/gameStateAdapter';
+import { naturalStressRecovery } from '../utils/personalitySystem';
+import {
+  DEFAULT_FAMILY_EVOLUTION_STATE,
+  getFamilyThought,
+  updateFamilyEvolutionOnAgeUp,
+} from '../utils/familyNarrative';
+import { STORY_ARCS } from '../data/storyArcs';
+import { selectStoryArcEvent, syncActiveArcsWithSelectedEvent } from '../utils/storyArcSelection';
+import { buildMemoryAwareEventText } from '../utils/memoryLogic';
 
-const selectEvent = (context: EventContext, recentEventIds: string[]): GameEvent => {
-  const candidateEvents = EVENTS.filter(evt => {
-    if (evt.minAge > context.age || evt.maxAge < context.age) return false;
-    if (evt.reqStats) {
-      for (const [key, value] of Object.entries(evt.reqStats)) {
-        if (context.stats[key as keyof typeof context.stats] < value) return false;
-      }
-    }
-    if (evt.reqTraits && !evt.reqTraits.every(t => context.traits?.includes(t))) return false;
-    if (evt.reqNoItem && evt.reqNoItem.some(itemId => context.inventory?.includes(itemId))) return false;
-    if (!evt.isRepeatable && recentEventIds.includes(evt.id)) return false;
-    return true;
-  });
-
-  if (candidateEvents.length === 0) return FALLBACK_EVENT;
-
-  const weighted = candidateEvents.map(e => ({
-    event: e,
-    weight: (e.rarity === 'RARE' ? 5 : e.rarity === 'UNCOMMON' ? 25 : 70),
-  }));
-
-  const totalWeight = weighted.reduce((acc, w) => acc + w.weight, 0);
-  let rand = Math.random() * totalWeight;
-
-  for (const { event, weight } of weighted) {
-    rand -= weight;
-    if (rand <= 0) return event;
-  }
-
-  return FALLBACK_EVENT;
-};
+const getEventById = (eventId: string): GameEvent | undefined =>
+  EVENTS.find(evt => evt.id === eventId);
+const turnMediator = new TurnMediator();
 
 export const useEvents = () => {
-  const { gameState, stats, advanceTurnInContext, updateGameState } = useGame();
+  const { gameState, stats, advanceTurnInContext, updateGameState, setStats } = useGame();
 
   const buildEventContext = useCallback((): EventContext => ({
     age: gameState.age,
@@ -55,107 +41,302 @@ export const useEvents = () => {
     npcs: gameState.npcs,
     inventory: gameState.inventory,
     memories: gameState.memories,
+    personality: gameState.personality,
+    stress: gameState.stress,
+    grades: gameState.schoolGrades,
+    skills: gameState.skills,
   }), [gameState, stats]);
 
   const resolveEventText = useCallback((evt: GameEvent): string => {
     const ctx = buildEventContext();
-    return typeof evt.text === 'function' ? evt.text(ctx) : evt.text;
+    let baseText: string;
+
+    if (typeof evt.text === 'function') {
+      try {
+        baseText = evt.text(ctx);
+      } catch (err) {
+        console.error('Error resolving dynamic event text:', err);
+        baseText = typeof evt.text === 'string' ? evt.text : '...';
+      }
+    } else {
+      baseText = evt.text;
+    }
+
+    return buildMemoryAwareEventText(baseText, ctx.memories, {
+      eventId: evt.id,
+      personalityCategory: evt.personalityCategory,
+      currentAge: ctx.age,
+      currentTurn: ctx.gameState?.turn ?? 0,
+    });
   }, [buildEventContext]);
 
   const resolveChoice = useCallback((choice: Choice | ((ctx: EventContext) => Choice)): Choice => {
-    const ctx = buildEventContext();
-    return typeof choice === 'function' ? choice(ctx) : choice;
+    if (typeof choice === 'function') {
+      try {
+        const ctx = buildEventContext();
+        return choice(ctx);
+      } catch (err) {
+        console.error('Error resolving dynamic choice:', err);
+        // Return a safe fallback if execution fails
+        return { text: "Devam Et", effect: {}, feedback: "Bir hata olu\u015Ftu ama devam ediyorsun." };
+      }
+    }
+    return choice;
   }, [buildEventContext]);
 
   const selectNewEvent = useCallback(() => {
     const ctx = buildEventContext();
-    const evt = selectEvent(ctx, gameState.recentEvents);
+    const scheduledEvents = gameState.scheduledEvents || [];
+    const dueScheduled = getDueScheduledEvents(scheduledEvents, gameState.age);
+    const allSeenEvents = getEventChoiceSet(gameState);
+    const currentActiveArcs = gameState.activeArcs || [];
+
+    if (dueScheduled.length > 0) {
+      const scheduled = pickScheduledEvent(dueScheduled);
+      if (scheduled) {
+        const evt = getEventById(scheduled.eventId);
+        const remainingScheduled = scheduledEvents.filter(e => e.id !== scheduled.id);
+        if (evt) {
+          const nextActiveArcs = syncActiveArcsWithSelectedEvent(
+            currentActiveArcs,
+            STORY_ARCS,
+            evt.id,
+            ctx
+          );
+          const windowSize = getRecencyWindowSize(gameState.age);
+          const updatedFrequency = {
+            ...gameState.eventFrequency,
+            [evt.id]: {
+              count: ((gameState.eventFrequency ?? {})[evt.id]?.count ?? 0) + 1,
+              lastSeenTurn: gameState.turn,
+            },
+          };
+          updateGameState({
+            currentEvent: evt,
+            phase: 'EVENT',
+            recentEvents: [...gameState.recentEvents, evt.id].slice(-windowSize),
+            scheduledEvents: remainingScheduled,
+            activeArcs: nextActiveArcs,
+            eventFrequency: updatedFrequency,
+          });
+          return;
+        }
+        updateGameState({ scheduledEvents: remainingScheduled });
+      }
+    }
+
+    const arcSelection = selectStoryArcEvent({
+      arcs: STORY_ARCS,
+      activeArcs: currentActiveArcs,
+      events: EVENTS,
+      context: ctx,
+      recentEventIds: gameState.recentEvents,
+      allSeenEvents,
+    });
+    const randomEvent = selectEventWithAdaptivePacing(
+      EVENTS,
+      ctx,
+      gameState.recentEvents,
+      allSeenEvents,
+      {
+        fallbackEvent: FALLBACK_EVENT,
+        adaptivePacingStreak: gameState.adaptivePacingStreak,
+        eventFrequency: gameState.eventFrequency,
+        currentTurn: gameState.turn,
+      }
+    );
+    const evt = arcSelection.event ?? randomEvent;
+    const nextActiveArcs = arcSelection.event
+      ? arcSelection.activeArcs
+      : syncActiveArcsWithSelectedEvent(currentActiveArcs, STORY_ARCS, evt.id, ctx);
+
+    const windowSize = getRecencyWindowSize(gameState.age);
+    const updatedFrequency = {
+      ...gameState.eventFrequency,
+      [evt.id]: {
+        count: ((gameState.eventFrequency ?? {})[evt.id]?.count ?? 0) + 1,
+        lastSeenTurn: gameState.turn,
+      },
+    };
     updateGameState({
       currentEvent: evt,
       phase: 'EVENT',
-      recentEvents: [...gameState.recentEvents, evt.id].slice(-6),
+      recentEvents: [...gameState.recentEvents, evt.id].slice(-windowSize),
+      activeArcs: nextActiveArcs,
+      eventFrequency: updatedFrequency,
     });
-  }, [gameState.recentEvents, buildEventContext, updateGameState]);
+  }, [buildEventContext, gameState, updateGameState]);
 
-  const handleEventChoice = useCallback((choice: Choice | ((ctx: EventContext) => Choice)) => {
+  const handleEventChoice = useCallback((choice: Choice | ((ctx: EventContext) => Choice), choiceIndex?: number) => {
     const resolved = resolveChoice(choice);
-    const eventId = gameState.currentEvent?.id || '';
 
-    const newActionCounts = { ...gameState.actionCounts };
-    const newEventHistory = [...gameState.eventChoiceHistory];
-    if (eventId) newEventHistory.push(eventId);
+    const turnResult = turnMediator.processEventChoice({
+      choice: resolved,
+      choiceIndex,
+      gameState,
+      stats,
+    });
 
-    let statChanges: Partial<Stats> = resolved.effect || {};
-    
-    let gradeUpdates = resolved.gradeUpdates || {};
-    let skillUpdates = resolved.skillUpdates || {};
-    
-    if (Object.keys(statChanges).length > 0) {
-      statChanges = updateStatsWithCaps(
-        stats,
-        statChanges,
+    if (turnResult.newStats !== stats) {
+      setStats(turnResult.newStats);
+    }
+
+    updateGameState(turnResult.gameStateUpdates);
+
+    if (turnResult.eventId) {
+      const eventName = typeof gameState.currentEvent?.text === 'string'
+        ? gameState.currentEvent.text
+        : turnResult.eventId;
+      const eventType = gameState.currentEvent?.personalityCategory ?? 'event';
+      const eventEnergyCost = Math.max(0, -(resolved.effect?.energy ?? 0));
+      void logEventChoice(
+        {
+          id: turnResult.eventId,
+          name: eventName,
+          type: eventType,
+          rarity: gameState.currentEvent?.rarity,
+        },
+        {
+          index: turnResult.choiceIndexForAnalytics,
+          text: resolved.text,
+          energyCost: eventEnergyCost,
+        },
         gameState.age,
-        gameState.family,
-        gameState.traits
+        {
+          turn: gameState.turn,
+          totalTurns: gameState.totalTurns || 0,
+          currentEnergy: stats.energy,
+          maxEnergy: gameState.maxEnergy,
+        }
       );
     }
 
-    const traitResult = checkTraitFormation(
-      null,
-      eventId,
-      gameState,
-      stats
-    );
-    const newTraits = [...gameState.traits, ...traitResult.newTraits];
-
-    const historyEntry: LogEntry = {
-      id: `log_${Date.now()}`,
-      age: gameState.age,
-      message: resolved.feedback,
-      type: (resolved.effect?.health ?? 0) > 0 ? 'positive' : 'negative',
-      eventId,
-    };
-
-    updateGameState({
-      phase: 'RESULT',
-      lastResult: {
-        feedback: resolved.feedback,
-        changes: statChanges,
-      },
-      historyLog: [...gameState.historyLog, historyEntry],
-      actionCounts: newActionCounts,
-      eventChoiceHistory: newEventHistory,
-      traits: newTraits,
-      traitProgress: traitResult.updatedProgress,
-      schoolGrades: { ...gameState.schoolGrades, ...gradeUpdates },
-      skills: { ...gameState.skills, ...skillUpdates },
-    });
-  }, [gameState, stats, updateGameState, resolveChoice]);
+    if (turnResult.newTraits.length > 0) {
+      turnResult.newTraits.forEach(traitId => {
+        void logTraitFormed(traitId, gameState.age);
+      });
+    }
+  }, [gameState, stats, updateGameState, resolveChoice, setStats]);
 
   const advanceTurn = useCallback(() => {
     const newTurn = gameState.turn + 1;
+    const newTotalTurns = (gameState.totalTurns || 0) + 1;
     let newAge = gameState.age;
-    if (shouldAgeUp(gameState.age, newTurn)) {
+    const didAgeUp = shouldAgeUp(gameState.age, newTurn);
+    if (didAgeUp) {
       newAge = gameState.age + 1;
     }
-    
-    let pendingReportCard = gameState.pendingReportCard;
-    let newGrades = gameState.schoolGrades;
-    if (shouldGenerateReportCard(newAge, newTurn)) {
-      newGrades = calculateSchoolReport(stats, gameState);
-      pendingReportCard = true;
+    const moneyAfterAllowance = stats.money;
+    const stressAfterRecovery = naturalStressRecovery(gameState.stress, gameState.personality);
+    const currentActiveArcs = gameState.activeArcs || [];
+
+    // NPC ya\u015Fland\u0131rma - oyuncu ya\u015Fland\u0131\u011F\u0131nda NPC'ler de ya\u015Flan\u0131r
+    let updatedNPCs = gameState.npcs;
+    if (didAgeUp && updatedNPCs.length > 0) {
+      updatedNPCs = updatedNPCs.map(npc => ({
+        ...npc,
+        age: npc.age + 1,
+      }));
     }
-    
+
+    const scheduledTick = tickScheduledEvents(gameState.scheduledEvents || [], newAge);
+    let dueScheduledEvents = [...scheduledTick.due];
+    const pendingScheduledEvents = [...scheduledTick.pending];
+
+    let nextFamilyEvolution = gameState.familyEvolution || { ...DEFAULT_FAMILY_EVOLUTION_STATE };
+    if (didAgeUp) {
+      const evolutionUpdate = updateFamilyEvolutionOnAgeUp({
+        previousState: nextFamilyEvolution,
+        family: gameState.family,
+        familyRelation: stats.familyRelation,
+        age: newAge,
+      });
+      nextFamilyEvolution = evolutionUpdate.nextState;
+      if (evolutionUpdate.scheduledEvents.length > 0) {
+        dueScheduledEvents = [...dueScheduledEvents, ...evolutionUpdate.scheduledEvents];
+      }
+    }
+
+    // S\u0131nav takip sistemi - KARNE KONTROL\u00DCNDEN \u00D6NCE s\u0131f\u0131rlama yapma!
+    // S\u0131navlar sadece karne g\u00F6sterildikten sonra s\u0131f\u0131rlanmal\u0131
+    let examsTakenThisYear = gameState.examsTakenThisYear || [];
+    let pendingReportCard = gameState.pendingReportCard;
+    let isExamPeriod = gameState.isExamPeriod || false;
+    let newGrades = gameState.schoolGrades;
+    let shouldResetExamsAfterReportCard = false;
+
+    // Karne zaman\u0131 geldi mi kontrol et
+    if (shouldGenerateReportCard(newAge, newTurn)) {
+      // Okul \u00E7a\u011F\u0131nda m\u0131y\u0131z?
+      if (newAge >= 7 && newAge < 18) {
+        // T\u00FCm s\u0131navlara girildi mi?
+        const allExamsTaken = ALL_EXAM_SUBJECTS.every(subject =>
+          examsTakenThisYear.includes(subject)
+        );
+
+        if (allExamsTaken) {
+          // T\u00FCm s\u0131navlar tamam, karne g\u00F6ster
+          newGrades = calculateSchoolReport(stats, gameState);
+          pendingReportCard = true;
+          isExamPeriod = false;
+          shouldResetExamsAfterReportCard = true; // Karne sonras\u0131 s\u0131f\u0131rla
+        } else {
+          // S\u0131navlar eksik, s\u0131nav d\u00F6nemine gir
+          isExamPeriod = true;
+          pendingReportCard = false;
+        }
+      } else {
+        // Okul \u00E7a\u011F\u0131nda de\u011Filse direkt karne
+        newGrades = calculateSchoolReport(stats, gameState);
+        pendingReportCard = true;
+      }
+    }
+
+    // S\u0131navlar\u0131 s\u0131f\u0131rla (sadece karne g\u00F6sterilecekse)
+    if (shouldResetExamsAfterReportCard) {
+      examsTakenThisYear = [];
+    }
+
+    const familyThought = getFamilyThought({
+      family: gameState.family,
+      familyRelation: stats.familyRelation,
+      age: newAge,
+      turn: newTurn,
+      evolution: nextFamilyEvolution,
+    });
+    const nextInnerThought = familyThought ?? gameState.innerThought;
+
     if (newAge >= 18) {
       const careerResult = calculateCareerResult(gameState, stats);
+      void logGameEnding({
+        age: newAge,
+        stats: {
+          health: stats.health,
+          intelligence: stats.intelligence,
+          charisma: stats.charisma,
+          discipline: stats.discipline,
+          money: stats.money,
+          energy: stats.energy,
+        },
+        playtimeMinutes: Math.max(0, Math.round(newTotalTurns * 5)),
+        endingType: careerResult.type,
+      });
       advanceTurnInContext({
-        newStats: {},
+        newStats: didAgeUp ? { money: moneyAfterAllowance } : {},
         newGameState: {
           phase: 'GAME_OVER',
           age: newAge,
           turn: newTurn,
+          totalTurns: newTotalTurns,
           schoolGrades: newGrades,
           pendingReportCard,
+          isExamPeriod: false,
+          examsTakenThisYear: [],
+          maxEnergy: getMaxEnergy(newAge, gameState.family, gameState.traits),
+          stress: stressAfterRecovery,
+          activeArcs: currentActiveArcs,
+          familyEvolution: nextFamilyEvolution,
+          innerThought: nextInnerThought,
           lastResult: {
             feedback: careerResult.description,
             changes: {},
@@ -164,25 +345,215 @@ export const useEvents = () => {
       });
       return;
     }
-    
-    const newEnergy = gameState.maxEnergy;
-    const ctx = buildEventContext();
-    const evt = selectEvent(ctx, gameState.recentEvents);
-    
+
+    const newMaxEnergy = getMaxEnergy(newAge, gameState.family, gameState.traits);
+    const newEnergy = getRestedEnergy(newMaxEnergy);
+
+    void logTurnProgress(newAge, {
+      health: stats.health,
+      intelligence: stats.intelligence,
+      charisma: stats.charisma,
+      discipline: stats.discipline,
+      money: moneyAfterAllowance,
+      energy: newEnergy,
+    }, {
+      turn: newTurn,
+      totalTurns: newTotalTurns,
+      maxEnergy: newMaxEnergy,
+      energySpent: Math.max(0, gameState.maxEnergy - stats.energy),
+    });
+
+    // S\u0131nav d\u00F6nemindeyse event y\u00FCkleme - s\u0131nav ekran\u0131 g\u00F6sterilecek
+    if (isExamPeriod) {
+      advanceTurnInContext({
+        newStats: didAgeUp ? { energy: newEnergy, money: moneyAfterAllowance } : { energy: newEnergy },
+        newGameState: {
+          age: newAge,
+          turn: newTurn,
+          totalTurns: newTotalTurns,
+          phase: 'HUB', // Event yerine hub'da kal
+          currentEvent: null,
+          schoolGrades: newGrades,
+          pendingReportCard: false,
+          isExamPeriod: true,
+          examsTakenThisYear,
+          lastResult: null,
+          npcs: updatedNPCs,
+          scheduledEvents: [...pendingScheduledEvents, ...dueScheduledEvents],
+          maxEnergy: newMaxEnergy,
+          stress: stressAfterRecovery,
+          activeArcs: currentActiveArcs,
+          familyEvolution: nextFamilyEvolution,
+          innerThought: nextInnerThought,
+        }
+      });
+      return;
+    }
+
+    const scheduledSelection = pickScheduledEvent(dueScheduledEvents);
+    const scheduledEvent = scheduledSelection ? getEventById(scheduledSelection.eventId) : null;
+    const remainingScheduledEvents = [
+      ...pendingScheduledEvents,
+      ...dueScheduledEvents
+        .filter(evt => evt.id !== scheduledSelection?.id)
+        .map(evt => ({ ...evt, remainingTurns: evt.remainingTurns ?? 0 })),
+    ];
+
+    if (scheduledEvent) {
+      const nextActiveArcs = syncActiveArcsWithSelectedEvent(
+        currentActiveArcs,
+        STORY_ARCS,
+        scheduledEvent.id,
+        {
+          ...buildEventContext(),
+          age: newAge,
+          stress: stressAfterRecovery,
+          npcs: updatedNPCs,
+          stats: {
+            ...stats,
+            energy: newEnergy,
+            money: moneyAfterAllowance,
+          },
+        }
+      );
+      const schedWindowSize = getRecencyWindowSize(newAge);
+      const schedFrequency = {
+        ...gameState.eventFrequency,
+        [scheduledEvent.id]: {
+          count: ((gameState.eventFrequency ?? {})[scheduledEvent.id]?.count ?? 0) + 1,
+          lastSeenTurn: newTurn,
+        },
+      };
+      advanceTurnInContext({
+        newStats: didAgeUp ? { energy: newEnergy, money: moneyAfterAllowance } : { energy: newEnergy },
+        newGameState: {
+          age: newAge,
+          turn: newTurn,
+          totalTurns: newTotalTurns,
+          phase: 'EVENT',
+          currentEvent: scheduledEvent,
+          recentEvents: [...gameState.recentEvents, scheduledEvent.id].slice(-schedWindowSize),
+          schoolGrades: newGrades,
+          pendingReportCard,
+          isExamPeriod: false,
+          examsTakenThisYear,
+          lastResult: null,
+          npcs: updatedNPCs,
+          scheduledEvents: remainingScheduledEvents,
+          maxEnergy: newMaxEnergy,
+          stress: stressAfterRecovery,
+          activeArcs: nextActiveArcs,
+          familyEvolution: nextFamilyEvolution,
+          innerThought: nextInnerThought,
+          eventFrequency: schedFrequency,
+        }
+      });
+      return;
+    }
+
+    const scheduledEventsForRandom = scheduledSelection
+      ? remainingScheduledEvents
+      : [...pendingScheduledEvents, ...dueScheduledEvents];
+
+    // Normal ak\u0131\u015F - event y\u00FCkle
+    const ctx: EventContext = {
+      ...buildEventContext(),
+      age: newAge,
+      stress: stressAfterRecovery,
+      npcs: updatedNPCs,
+      stats: {
+        ...stats,
+        energy: newEnergy,
+        money: moneyAfterAllowance,
+      },
+    };
+    const allSeenEvents = getEventChoiceSet(gameState);
+    const arcSelection = selectStoryArcEvent({
+      arcs: STORY_ARCS,
+      activeArcs: currentActiveArcs,
+      events: EVENTS,
+      context: ctx,
+      recentEventIds: gameState.recentEvents,
+      allSeenEvents,
+    });
+    const randomEvent = selectEventWithAdaptivePacing(
+      EVENTS,
+      ctx,
+      gameState.recentEvents,
+      allSeenEvents,
+      {
+        fallbackEvent: FALLBACK_EVENT,
+        adaptivePacingStreak: gameState.adaptivePacingStreak,
+        eventFrequency: gameState.eventFrequency,
+        currentTurn: newTurn,
+      }
+    );
+    const evt = arcSelection.event ?? randomEvent;
+    const nextActiveArcs = arcSelection.event
+      ? arcSelection.activeArcs
+      : syncActiveArcsWithSelectedEvent(currentActiveArcs, STORY_ARCS, evt.id, ctx);
+
+    const advWindowSize = getRecencyWindowSize(newAge);
+    const advFrequency = {
+      ...gameState.eventFrequency,
+      [evt.id]: {
+        count: ((gameState.eventFrequency ?? {})[evt.id]?.count ?? 0) + 1,
+        lastSeenTurn: newTurn,
+      },
+    };
     advanceTurnInContext({
-      newStats: { energy: newEnergy },
+      newStats: didAgeUp ? { energy: newEnergy, money: moneyAfterAllowance } : { energy: newEnergy },
       newGameState: {
         age: newAge,
         turn: newTurn,
+        totalTurns: newTotalTurns,
         phase: 'EVENT',
         currentEvent: evt,
-        recentEvents: [...gameState.recentEvents, evt.id].slice(-6),
+        recentEvents: [...gameState.recentEvents, evt.id].slice(-advWindowSize),
         schoolGrades: newGrades,
         pendingReportCard,
+        isExamPeriod: false,
+        examsTakenThisYear,
         lastResult: null,
+        npcs: updatedNPCs,
+        scheduledEvents: scheduledEventsForRandom,
+        maxEnergy: newMaxEnergy,
+        stress: stressAfterRecovery,
+        activeArcs: nextActiveArcs,
+        familyEvolution: nextFamilyEvolution,
+        innerThought: nextInnerThought,
+        eventFrequency: advFrequency,
       }
     });
   }, [gameState, stats, advanceTurnInContext, buildEventContext]);
+
+  // S\u0131nav tamamland\u0131\u011F\u0131nda \u00E7a\u011Fr\u0131l\u0131r
+  const markExamTaken = useCallback((subject: ExamSubject) => {
+    const currentExams = gameState.examsTakenThisYear || [];
+    if (currentExams.includes(subject)) return; // Zaten al\u0131nm\u0131\u015F
+
+    const newExamsTaken = [...currentExams, subject];
+    const allExamsTaken = ALL_EXAM_SUBJECTS.every(s => newExamsTaken.includes(s));
+
+    updateGameState({
+      examsTakenThisYear: newExamsTaken,
+      // T\u00FCm s\u0131navlar tamamland\u0131ysa s\u0131nav d\u00F6nemi biter, karne a\u00E7\u0131l\u0131r
+      ...(allExamsTaken && gameState.isExamPeriod ? {
+        isExamPeriod: false,
+        pendingReportCard: true,
+        schoolGrades: calculateSchoolReport(stats, gameState),
+      } : {}),
+    });
+  }, [gameState, stats, updateGameState]);
+
+  // S\u0131nav d\u00F6nemini manuel bitir (t\u00FCm s\u0131navlar tamamland\u0131\u011F\u0131nda ExamPeriodModal'dan \u00E7a\u011Fr\u0131l\u0131r)
+  const completeExamPeriod = useCallback(() => {
+    updateGameState({
+      isExamPeriod: false,
+      pendingReportCard: true,
+      schoolGrades: calculateSchoolReport(stats, gameState),
+    });
+  }, [gameState, stats, updateGameState]);
 
   return {
     currentEvent: gameState.currentEvent,
@@ -191,5 +562,8 @@ export const useEvents = () => {
     resolveChoice,
     resolveEventText,
     advanceTurn,
+    markExamTaken,
+    completeExamPeriod,
   };
 };
+

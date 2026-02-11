@@ -24,6 +24,9 @@ interface AnimatedButtonProps {
   style?: ViewStyle;
   animationType?: ButtonAnimationType;
   scaleAmount?: number;
+  accessibilityRole?: 'button' | 'link' | 'none';
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }
 
 /**
@@ -38,9 +41,36 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = React.memo(({
   style,
   animationType = 'pressScale',
   scaleAmount = 0.95,
+  accessibilityRole,
+  accessibilityLabel,
+  accessibilityHint,
 }) => {
   const [scale, setScale] = React.useState(1);
   const [opacity, setOpacity] = React.useState(1);
+  const [translateX, setTranslateX] = React.useState(0);
+  const shakeTimersRef = React.useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const clearShakeTimers = React.useCallback(() => {
+    shakeTimersRef.current.forEach(clearTimeout);
+    shakeTimersRef.current = [];
+  }, []);
+
+  const runShakeAnimation = React.useCallback(() => {
+    clearShakeTimers();
+    triggerHaptic('error');
+
+    const sequence = [-8, 8, -6, 6, -3, 3, 0];
+    sequence.forEach((value, index) => {
+      const timer = setTimeout(() => {
+        setTranslateX(value);
+      }, index * 42);
+      shakeTimersRef.current.push(timer);
+    });
+  }, [clearShakeTimers]);
+
+  React.useEffect(() => () => {
+    clearShakeTimers();
+  }, [clearShakeTimers]);
 
   const handlePressIn = () => {
     if (disabled) return;
@@ -59,6 +89,9 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = React.memo(({
       case 'ripple':
         setOpacity(0.7);
         break;
+      case 'shake':
+        runShakeAnimation();
+        break;
     }
   };
 
@@ -73,6 +106,10 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = React.memo(({
       case 'ripple':
         setOpacity(1);
         break;
+      case 'shake':
+        clearShakeTimers();
+        setTranslateX(0);
+        break;
     }
   };
 
@@ -83,6 +120,8 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = React.memo(({
 
   if (animationType === 'pressScale' || animationType === 'bounce') {
     buttonStyle.transform = [{ scale }];
+  } else if (animationType === 'shake') {
+    buttonStyle.transform = [{ translateX }];
   }
   
   if (animationType === 'ripple') {
@@ -96,12 +135,16 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = React.memo(({
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       disabled={disabled}
+      accessibilityRole={accessibilityRole}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
       style={buttonStyle}
     >
       {children}
     </Pressable>
   );
 });
+AnimatedButton.displayName = 'AnimatedButton';
 
 /**
  * Pulse animasyonlu buton (sürekli nabız)
@@ -145,6 +188,7 @@ export const PulseButton: React.FC<AnimatedButtonProps> = React.memo(({
     </Pressable>
   );
 });
+PulseButton.displayName = 'PulseButton';
 
 /**
  * Shake animasyonlu buton (hata/uyarı için)
@@ -199,6 +243,7 @@ export const ShakeButton: React.FC<AnimatedButtonProps & { shake?: boolean }> = 
     </Pressable>
   );
 });
+ShakeButton.displayName = 'ShakeButton';
 
 /**
  * Shimmer animasyonlu buton (parlama efekti)
@@ -240,6 +285,7 @@ export const ShimmerButton: React.FC<AnimatedButtonProps> = React.memo(({
     </Pressable>
   );
 });
+ShimmerButton.displayName = 'ShimmerButton';
 
 const styles = StyleSheet.create({
   button: {

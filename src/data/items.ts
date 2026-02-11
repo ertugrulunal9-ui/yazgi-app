@@ -1,66 +1,82 @@
-import { Item } from '../types';
+import { FamilyWealth, Item } from '../types';
 
 export const ITEMS: Item[] = [
-  // --- ARAÇ GEREÇLER (PERMANENT) ---
   {
-    id: 'item_guitar',
-    name: 'Akustik Gitar',
-    price: 250, // Reduced from 500
-    description: 'Müzik pratiği yapmak için şart. Ruhunu notalarla besle.',
+    id: 'item_art_set',
+    name: 'Boyama Seti',
+    price: 30,
+    description: 'Resim calismalari icin temel set. Cizim gelisimini hizlandirir.',
     type: 'PERMANENT',
-    requiredForAction: 'music'
+    requiredForAction: 'arts_draw',
   },
   {
-    id: 'item_pc_basic',
-    name: 'Ofis Bilgisayarı',
-    price: 400, // Reduced from 2000
-    description: 'Temel kodlama öğrenmek ve ödev yapmak için gerekli.',
+    id: 'item_story_book',
+    name: 'Hikaye Kitabi',
+    price: 40,
+    description: 'Masal saatlerini daha verimli hale getirir, okuma becerisine bonus verir.',
     type: 'PERMANENT',
-    requiredForAction: 'coding_basic'
+    requiredForAction: 'study_book',
   },
   {
-    id: 'item_pc_gaming',
-    name: 'Canavar PC',
-    price: 1200, // Reduced from 5000
-    description: 'Yüksek performanslı oyun ve tasarım için. Kodlama verimini artırır.',
+    id: 'item_football',
+    name: 'Futbol Topu',
+    price: 50,
+    description: 'Futbolu daha erken yasta acmak icin gerekli.',
     type: 'PERMANENT',
-    requiredForAction: 'coding_advanced'
+    requiredForAction: 'sports_football',
   },
   {
-    id: 'item_running_shoes',
-    name: 'Koşu Ayakkabısı',
-    price: 150, // Reduced from 300
-    description: 'Parkta koşmak için gerekli. Ayak sağlığın önemli.',
+    id: 'item_bicycle',
+    name: 'Bisiklet',
+    price: 120,
+    description: 'Bisiklet surus aksiyonunu acar. Saglik ve cesarete katki verir.',
     type: 'PERMANENT',
-    requiredForAction: 'running'
-  },
-
-  // --- TÜKETİLEBİLİRLER (CONSUMABLE) ---
-  {
-    id: 'item_energy_drink',
-    name: 'Enerji İçeceği',
-    price: 15, // Reduced from 50
-    description: 'Kafein patlaması! Enerjiyi fulle ama sağlığı biraz bozar.',
-    type: 'CONSUMABLE',
-    effect: { energy: 40, health: -2 }
+    requiredForAction: 'sports_bicycle',
   },
   {
-    id: 'item_book_scifi',
-    name: 'Bilim Kurgu Romanı',
-    price: 30, // Reduced from 100
-    description: 'Hayal gücünü genişlet. Zeka ve Yaratıcılık katar.',
-    type: 'CONSUMABLE',
-    effect: { intelligence: 5 } // Yaratıcılık statı olmadığı için Zeka veriyoruz
+    id: 'item_computer',
+    name: 'Bilgisayar',
+    price: 300,
+    description: 'Kodlama ve tasarim aksiyonlarini acmak icin gerekli.',
+    type: 'PERMANENT',
+    requiredForAction: 'computer_code',
   },
   {
-    id: 'item_coffee',
-    name: 'Filtre Kahve',
-    price: 15, // Reduced from 30
-    description: 'Uykunu açar. Az miktar enerji verir.',
-    type: 'CONSUMABLE',
-    effect: { energy: 15 }
-  }
+    id: 'item_instrument',
+    name: 'Enstruman',
+    price: 250,
+    description: 'Enstruman cal aksiyonunu acmak icin gerekli.',
+    type: 'PERMANENT',
+    requiredForAction: 'arts_instrument',
+  },
+  {
+    id: 'item_sports_gear',
+    name: 'Spor Malzemesi',
+    price: 150,
+    description: 'Tum spor aksiyonlarina bonus saglar.',
+    type: 'PERMANENT',
+    requiredForAction: 'sports_run',
+  },
 ];
+
+const STARTER_ITEMS_BY_WEALTH: Record<FamilyWealth, string[]> = {
+  POOR: [],
+  MIDDLE: [],
+  RICH: ['item_art_set', 'item_bicycle', 'item_computer'],
+};
+
+export const getStarterItemsByWealth = (wealth: FamilyWealth | null | undefined): string[] => {
+  if (!wealth) return [];
+  return STARTER_ITEMS_BY_WEALTH[wealth] || [];
+};
+
+export const getEffectiveOwnedItems = (
+  inventory: string[] = [],
+  wealth: FamilyWealth | null | undefined
+): string[] => {
+  const starterItems = getStarterItemsByWealth(wealth);
+  return Array.from(new Set([...(inventory || []), ...starterItems]));
+};
 
 export const getItem = (itemId: string): Item | undefined => {
   return ITEMS.find(item => item.id === itemId);

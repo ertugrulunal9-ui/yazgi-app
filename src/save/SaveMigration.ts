@@ -85,6 +85,7 @@ const migrateV0ToV1 = (saveData: SaveSlotData): SaveSlotData => {
       ...saveData.gameState,
       unlockedAchievements: saveData.gameState.unlockedAchievements || [],
       achievementProgress: saveData.gameState.achievementProgress || {},
+      eventFrequency: saveData.gameState.eventFrequency || {},
     },
   };
 };

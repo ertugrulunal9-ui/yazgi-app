@@ -33,6 +33,17 @@ export const ReportCardScreen: React.FC<ReportCardScreenProps> = ({ theme, metri
     marginBottom: 12,
   };
 
+  const subjects = [
+    { key: 'math', label: 'Matematik' },
+    { key: 'science', label: 'Fen' },
+    { key: 'language', label: 'Dil' },
+    { key: 'turkish', label: 'Türkçe' },
+    { key: 'history', label: 'Tarih' },
+    { key: 'geography', label: 'Coğrafya' },
+    { key: 'art', label: 'Görsel Sanatlar' },
+    { key: 'music', label: 'Müzik' },
+  ] as const;
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.appBg }}>
       <ScrollView style={{ flex: 1, padding: metrics.pad }}>
@@ -42,33 +53,17 @@ export const ReportCardScreen: React.FC<ReportCardScreenProps> = ({ theme, metri
           </FadeInDownView>
 
           <View style={{ gap: 8, marginBottom: 16 }}>
-            <FadeInUpView delay={100}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 }}>
-                <Text style={{ color: theme.textSecondary }}>Matematik</Text>
-                <CountUpText
-                  value={gameState.schoolGrades.math}
-                  style={{ color: theme.accentGrade, fontWeight: '700', fontSize: 16 }}
-                />
-              </View>
-            </FadeInUpView>
-            <FadeInUpView delay={200}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 }}>
-                <Text style={{ color: theme.textSecondary }}>Fen</Text>
-                <CountUpText
-                  value={gameState.schoolGrades.science}
-                  style={{ color: theme.accentGrade, fontWeight: '700', fontSize: 16 }}
-                />
-              </View>
-            </FadeInUpView>
-            <FadeInUpView delay={300}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 }}>
-                <Text style={{ color: theme.textSecondary }}>Dil</Text>
-                <CountUpText
-                  value={gameState.schoolGrades.language}
-                  style={{ color: theme.accentGrade, fontWeight: '700', fontSize: 16 }}
-                />
-              </View>
-            </FadeInUpView>
+            {subjects.map((subject, index) => (
+              <FadeInUpView key={subject.key} delay={100 + index * 60}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 }}>
+                  <Text style={{ color: theme.textSecondary }}>{subject.label}</Text>
+                  <CountUpText
+                    value={gameState.schoolGrades[subject.key]}
+                    style={{ color: theme.accentGrade, fontWeight: '700', fontSize: 16 }}
+                  />
+                </View>
+              </FadeInUpView>
+            ))}
           </View>
 
           <FadeInUpView delay={400}>

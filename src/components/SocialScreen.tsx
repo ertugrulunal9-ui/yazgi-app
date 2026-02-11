@@ -1,0 +1,600 @@
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { NPC, Skills } from '../types';
+import { getThemeTokens, getDensityMetrics } from '../utils/themeUtils';
+import { selectionHaptic, buttonPress } from '../animations/HapticFeedback';
+import { applySkillsToSocialCost } from '../utils/gameUtils';
+import {
+  isInteractionAvailable,
+  InteractionType,
+} from '../constants/interactionRestrictions';
+import { ensureTextContrast } from '../utils/colorContrast';
+
+interface SocialScreenProps {
+  npcs: NPC[];
+  currentEnergy: number;
+  currentMoney: number;
+  playerAge: number;
+  playerPersonality: { openness: number; empathy: number; courage: number; conformity: number };
+  skills?: Skills;
+  onBack: () => void;
+  onInteract: (
+    npcId: string,
+    actionType: 'CHAT' | 'HANGOUT' | 'GIFT' | 'STUDY' | 'FLIRT' | 'HELP' | 'COMPETE' | 'GOSSIP'
+  ) => { success: boolean; message: string; cost?: { energy: number; money: number } };
+  onMeetNew: () => { success: boolean; npc?: NPC };
+  theme?: ReturnType<typeof getThemeTokens>;
+  metrics?: ReturnType<typeof getDensityMetrics>;
+}
+
+interface SocialHeaderProps {
+  onBack: () => void;
+  theme: ReturnType<typeof getThemeTokens>;
+}
+
+interface SocialResourceBarProps {
+  currentEnergy: number;
+  currentMoney: number;
+  theme: ReturnType<typeof getThemeTokens>;
+}
+
+interface SocialNPCCardProps {
+  npc: NPC;
+  selected: boolean;
+  roleConfig: { emoji: string; color: string; name: string };
+  theme: ReturnType<typeof getThemeTokens>;
+  getRelationshipColor: (value: number) => string;
+  onSelect: (npc: NPC) => void;
+  availableInteractions: typeof INTERACTION_OPTIONS;
+  canAfford: (energy: number, money: number) => boolean;
+  skills?: Skills;
+  onInteract: (type: InteractionType) => void;
+}
+
+const ROLE_CONFIG: Record<string, { emoji: string; color: string; name: string }> = {
+  ACQUAINTANCE: { emoji: '👤', color: '#64748b', name: 'Tanidik' },
+  FRIEND: { emoji: '🤝', color: '#047857', name: 'Arkadas' },
+  BEST_FRIEND: { emoji: '💎', color: '#2563eb', name: 'En Iyi Arkadas' },
+  CRUSH: { emoji: '💕', color: '#be185d', name: 'Hoslandigin' },
+  PARTNER: { emoji: '❤️', color: '#dc2626', name: 'Sevgili' },
+  RIVAL: { emoji: '⚔️', color: '#b45309', name: 'Rakip' },
+  ENEMY: { emoji: '😡', color: '#b91c1c', name: 'Dusman' },
+};
+
+const PERSONALITY_EMOJI: Record<string, string> = {
+  FRIENDLY: '😊',
+  SHY: '😳',
+  AGGRESSIVE: '😤',
+  POPULAR: '⭐',
+  NERDY: '🤓',
+  ARTISTIC: '🎨',
+  ATHLETIC: '💪',
+};
+
+const INTERACTION_OPTIONS = [
+  { type: 'CHAT' as const, icon: '💬', label: 'Sohbet Et', energy: 10, money: 0, desc: 'Dostca sohbet' },
+  { type: 'HANGOUT' as const, icon: '🎉', label: 'Takil', energy: 15, money: 0, desc: 'Birlikte vakit gecir' },
+  { type: 'GIFT' as const, icon: '🎁', label: 'Hediye Ver', energy: 5, money: 50, desc: 'Ozel hediye' },
+  { type: 'STUDY' as const, icon: '📚', label: 'Ders Calis', energy: 20, money: 0, desc: 'Birlikte ders' },
+  { type: 'FLIRT' as const, icon: '😘', label: 'Flort Et', energy: 12, money: 0, desc: 'Romantik ilgi' },
+  { type: 'HELP' as const, icon: '🤝', label: 'Yardim Et', energy: 18, money: 0, desc: 'Ihtiyacinda yardim' },
+  { type: 'COMPETE' as const, icon: '🏆', label: 'Yaris', energy: 15, money: 0, desc: 'Rekabet et' },
+  { type: 'GOSSIP' as const, icon: '🗣️', label: 'Dedikodu', energy: 8, money: 0, desc: 'Baskalari hakkinda' },
+];
+
+const SocialHeader: React.FC<SocialHeaderProps> = ({ onBack, theme }) => (
+  <View style={styles.header}>
+    <TouchableOpacity
+      onPress={onBack}
+      style={[
+        styles.backButton,
+        {
+          backgroundColor: theme.surfaceRaised,
+          borderColor: theme.border,
+        },
+      ]}
+      accessibilityRole="button"
+      accessibilityLabel="Hub ekranina don"
+      accessibilityHint="Sosyal ekrandan cikarak ana oyun ekranina doner"
+    >
+      <Text style={[styles.backButtonText, { color: theme.textPrimary }]}>← Geri</Text>
+    </TouchableOpacity>
+
+    <View style={styles.titleContainer}>
+      <LinearGradient
+        colors={['#10b981', '#2563eb']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.titleGradient}
+      >
+        <Text style={styles.titleText}>👥 Sosyal Cevre</Text>
+      </LinearGradient>
+    </View>
+  </View>
+);
+
+const SocialResourceBar: React.FC<SocialResourceBarProps> = ({ currentEnergy, currentMoney, theme }) => (
+  <View style={[styles.resourceBar, { backgroundColor: theme.surfaceBase, borderColor: theme.border }]}>
+    <Text style={[styles.resourceText, { color: theme.textPrimary }]}>⚡ {currentEnergy}</Text>
+    <Text style={[styles.resourceText, { color: theme.textPrimary }]}>💰 ₺{currentMoney}</Text>
+  </View>
+);
+
+const SocialNPCCard: React.FC<SocialNPCCardProps> = ({
+  npc,
+  selected,
+  roleConfig,
+  theme,
+  getRelationshipColor,
+  onSelect,
+  availableInteractions,
+  canAfford,
+  skills,
+  onInteract,
+}) => {
+  const roleColor = ensureTextContrast(roleConfig.color, theme.surfaceBase, 4.5);
+  const relationColor = ensureTextContrast(getRelationshipColor(npc.relationship), theme.surfaceBase, 4.5);
+
+  return (
+    <TouchableOpacity
+      key={npc.id}
+      style={[
+        styles.npcCard,
+        {
+          backgroundColor: theme.surfaceBase,
+          borderColor: selected ? roleColor : theme.border,
+          borderWidth: selected ? 2 : 1,
+        },
+      ]}
+      onPress={() => onSelect(npc)}
+      activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={`${npc.name}, ${roleConfig.name}`}
+      accessibilityHint={selected ? 'Kart acik, etkileşim secenekleri asagida' : 'Detaylari ve etkileşim seceneklerini acar'}
+      accessibilityState={{ selected }}
+    >
+      <View style={styles.npcHeader}>
+        <View style={styles.npcNameRow}>
+          <Text style={styles.npcEmoji}>{roleConfig.emoji}</Text>
+          <View>
+            <Text style={[styles.npcName, { color: theme.textPrimary }]}>{npc.name}</Text>
+            <Text style={[styles.npcRole, { color: roleColor }]}>{roleConfig.name}</Text>
+          </View>
+        </View>
+        <View style={styles.npcInfo}>
+          <Text style={styles.personalityEmoji}>{PERSONALITY_EMOJI[npc.personality] || '🙂'}</Text>
+          <Text style={[styles.npcAge, { color: theme.textSecondary }]}>
+            {npc.gender === 'MALE' ? '👦' : '👧'} {npc.age}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.relationRow}>
+        <Text style={[styles.relationLabel, { color: theme.textSecondary }]}>Iliski</Text>
+        <Text style={[styles.relationValue, { color: relationColor }]}>
+          {npc.relationship > 0 ? '+' : ''}{npc.relationship}
+        </Text>
+      </View>
+      <View style={[styles.relationBar, { backgroundColor: theme.border }]}>
+        <View
+          style={[
+            styles.relationFill,
+            {
+              width: `${Math.min(100, Math.abs(npc.relationship))}%`,
+              backgroundColor: relationColor,
+            },
+          ]}
+        />
+      </View>
+
+      {selected ? (
+        <View style={styles.actionButtons}>
+          <Text style={[styles.actionTitle, { color: theme.textPrimary }]}>Etkilesim Sec:</Text>
+          {availableInteractions.length === 0 ? (
+            <Text style={[styles.noInteractionsText, { color: theme.textSecondary }]}>
+              Henuz etkilesim seceneklerin yok. Biraz daha buyumelisin.
+            </Text>
+          ) : (
+            <View style={styles.actionGrid}>
+              {availableInteractions.map(option => {
+                const adjustedCost = applySkillsToSocialCost(
+                  { energy: option.energy, money: option.money },
+                  skills
+                );
+                const affordable = canAfford(option.energy, option.money);
+                const actionColor = affordable
+                  ? ensureTextContrast(roleConfig.color, theme.surfaceBase, 4.5)
+                  : theme.border;
+
+                return (
+                  <TouchableOpacity
+                    key={option.type}
+                    style={[
+                      styles.actionBtn,
+                      {
+                        backgroundColor: affordable ? `${actionColor}20` : `${theme.border}50`,
+                        borderColor: affordable ? actionColor : theme.border,
+                        opacity: affordable ? 1 : 0.5,
+                      },
+                    ]}
+                    onPress={() => onInteract(option.type)}
+                    disabled={!affordable}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${npc.name} ile ${option.label}`}
+                    accessibilityHint={
+                      affordable
+                        ? `${option.desc}. ${adjustedCost.energy > 0 ? `${adjustedCost.energy} enerji` : '0 enerji'}${adjustedCost.money > 0 ? ` ve ${adjustedCost.money} para` : ''} harcar`
+                        : 'Bu etkileşim su an kilitli, kaynaklarin yetersiz'
+                    }
+                    accessibilityState={{ disabled: !affordable }}
+                  >
+                    <Text style={styles.actionIcon}>{option.icon}</Text>
+                    <Text style={[styles.actionLabel, { color: affordable ? theme.textPrimary : theme.textSecondary }]}>
+                      {option.label}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.actionCost,
+                        { color: affordable ? theme.textSecondary : ensureTextContrast('#b91c1c', theme.surfaceBase, 4.5) },
+                      ]}
+                    >
+                      {adjustedCost.energy > 0 && `⚡${adjustedCost.energy}`}
+                      {adjustedCost.money > 0 && ` 💰₺${adjustedCost.money}`}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+        </View>
+      ) : null}
+    </TouchableOpacity>
+  );
+};
+
+const SocialScreenRoot: React.FC<SocialScreenProps> = ({
+  npcs,
+  currentEnergy,
+  currentMoney,
+  playerAge,
+  skills,
+  onBack,
+  onInteract,
+  onMeetNew,
+  theme: themeOverride,
+  metrics: metricsOverride,
+}) => {
+  const theme = themeOverride || getThemeTokens('dark');
+  const metrics = metricsOverride || getDensityMetrics('standard');
+  const [selectedNPC, setSelectedNPC] = useState<NPC | null>(null);
+
+  const availableInteractions = useMemo(
+    () => INTERACTION_OPTIONS.filter(option => isInteractionAvailable(option.type, playerAge)),
+    [playerAge]
+  );
+
+  const canAfford = useCallback((energy: number, money: number) => {
+    const adjusted = applySkillsToSocialCost({ energy, money }, skills);
+    const hasEnergy = currentEnergy >= adjusted.energy;
+    const hasMoney = adjusted.money <= 0 || currentMoney >= adjusted.money;
+    return hasEnergy && hasMoney;
+  }, [currentEnergy, currentMoney, skills]);
+
+  const getRelationshipColor = useCallback((value: number) => {
+    if (value >= 70) return '#15803d';
+    if (value >= 40) return '#2563eb';
+    if (value >= 0) return '#64748b';
+    if (value >= -40) return '#b45309';
+    return '#b91c1c';
+  }, []);
+
+  const handleNPCSelect = useCallback((npc: NPC) => {
+    selectionHaptic();
+    setSelectedNPC(prev => (prev?.id === npc.id ? null : npc));
+  }, []);
+
+  const handleInteraction = useCallback((actionType: InteractionType) => {
+    if (!selectedNPC) return;
+
+    buttonPress();
+    const result = onInteract(selectedNPC.id, actionType);
+    if (result.success) {
+      Alert.alert('Basarili', result.message);
+    } else {
+      Alert.alert('Hata', result.message);
+    }
+  }, [selectedNPC, onInteract]);
+
+  const handleMeetNew = useCallback(() => {
+    buttonPress();
+    const result = onMeetNew();
+    if (result.success && result.npc) {
+      Alert.alert('Yeni Tanisma', `${result.npc.name} ile tanistin!`);
+    }
+  }, [onMeetNew]);
+
+  const meetColor = ensureTextContrast('#047857', theme.surfaceBase, 4.5);
+
+  return (
+    <View style={[styles.container, { backgroundColor: theme.appBg }]}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[styles.contentContainer, { padding: metrics.pad }]}
+      >
+        <SocialHeader onBack={onBack} theme={theme} />
+        <SocialResourceBar currentEnergy={currentEnergy} currentMoney={currentMoney} theme={theme} />
+
+        <TouchableOpacity
+          style={[styles.meetNewButton, { backgroundColor: meetColor }]}
+          onPress={handleMeetNew}
+          disabled={currentEnergy < 12}
+          accessibilityRole="button"
+          accessibilityLabel="Yeni biri ile tanis"
+          accessibilityHint={currentEnergy < 12 ? 'Bu aksiyon icin en az 12 enerji gerekir' : 'Yeni bir NPC ile tanismani saglar'}
+          accessibilityState={{ disabled: currentEnergy < 12 }}
+        >
+          <Text style={styles.meetNewIcon}>👋</Text>
+          <View>
+            <Text style={styles.meetNewText}>Yeni Biri ile Tanis</Text>
+            <Text style={styles.meetNewCost}>⚡12 enerji</Text>
+          </View>
+        </TouchableOpacity>
+
+        {npcs.length === 0 ? (
+          <View style={[styles.emptyState, { backgroundColor: theme.surfaceBase }]}>
+            <Text style={styles.emptyEmoji}>👥</Text>
+            <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>
+              Henuz kimseyi tanimiyorsun
+            </Text>
+            <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
+              "Yeni Biri ile Tanis" butonuna tikla.
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.npcList}>
+            {npcs.map(npc => {
+              const roleConfig = ROLE_CONFIG[npc.role] || ROLE_CONFIG.ACQUAINTANCE;
+              const isSelected = selectedNPC?.id === npc.id;
+
+              return (
+                <SocialNPCCard
+                  key={npc.id}
+                  npc={npc}
+                  selected={isSelected}
+                  roleConfig={roleConfig}
+                  theme={theme}
+                  getRelationshipColor={getRelationshipColor}
+                  onSelect={handleNPCSelect}
+                  availableInteractions={availableInteractions}
+                  canAfford={canAfford}
+                  skills={skills}
+                  onInteract={handleInteraction}
+                />
+              );
+            })}
+          </View>
+        )}
+      </ScrollView>
+    </View>
+  );
+};
+
+type SocialScreenCompound = React.MemoExoticComponent<React.FC<SocialScreenProps>> & {
+  Header: React.FC<SocialHeaderProps>;
+  ResourceBar: React.FC<SocialResourceBarProps>;
+  NPCCard: React.FC<SocialNPCCardProps>;
+};
+
+const SocialScreenComponent = React.memo(SocialScreenRoot);
+
+export const SocialScreen = Object.assign(SocialScreenComponent, {
+  Header: SocialHeader,
+  ResourceBar: SocialResourceBar,
+  NPCCard: SocialNPCCard,
+}) as SocialScreenCompound;
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  contentContainer: {
+    paddingBottom: 40,
+  },
+  header: {
+    marginBottom: 20,
+    position: 'relative',
+    alignItems: 'center',
+  },
+  backButton: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    zIndex: 10,
+  },
+  backButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  titleContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  titleGradient: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  titleText: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#ffffff',
+    textAlign: 'center',
+  },
+  resourceBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  resourceText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  meetNewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  meetNewIcon: {
+    fontSize: 32,
+  },
+  meetNewText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  meetNewCost: {
+    fontSize: 12,
+    color: '#d1fae5',
+  },
+  emptyState: {
+    alignItems: 'center',
+    padding: 40,
+    borderRadius: 16,
+  },
+  emptyEmoji: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  npcList: {
+    gap: 12,
+  },
+  npcCard: {
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+  },
+  npcHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  npcNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  npcEmoji: {
+    fontSize: 28,
+  },
+  npcName: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  npcRole: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  npcInfo: {
+    alignItems: 'flex-end',
+  },
+  personalityEmoji: {
+    fontSize: 20,
+  },
+  npcAge: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  relationRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  relationLabel: {
+    fontSize: 11,
+    textTransform: 'uppercase',
+  },
+  relationValue: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  relationBar: {
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  relationFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  actionButtons: {
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.1)',
+  },
+  actionTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 10,
+    textTransform: 'uppercase',
+  },
+  actionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  actionBtn: {
+    flex: 1,
+    minWidth: '45%',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  actionIcon: {
+    fontSize: 24,
+    marginBottom: 4,
+  },
+  actionLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  actionCost: {
+    fontSize: 10,
+    marginTop: 2,
+  },
+  noInteractionsText: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingVertical: 12,
+  },
+});
+
+export default SocialScreen;
+

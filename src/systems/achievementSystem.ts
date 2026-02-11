@@ -26,13 +26,13 @@ export const loadAchievements = async (): Promise<UnlockedAchievement[]> => {
       const data = localStorage.getItem(STORAGE_KEY);
       return data ? JSON.parse(data) : [];
     }
-    
+
     const AsyncStorage = await getAsyncStorage();
     if (AsyncStorage) {
       const data = await AsyncStorage.getItem(STORAGE_KEY);
       return data ? JSON.parse(data) : [];
     }
-    
+
     return [];
   } catch (error) {
     console.error('Failed to load achievements:', error);
@@ -43,12 +43,12 @@ export const loadAchievements = async (): Promise<UnlockedAchievement[]> => {
 export const saveAchievements = async (achievements: UnlockedAchievement[]): Promise<void> => {
   try {
     const data = JSON.stringify(achievements);
-    
+
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(STORAGE_KEY, data);
       return;
     }
-    
+
     const AsyncStorage = await getAsyncStorage();
     if (AsyncStorage) {
       await AsyncStorage.setItem(STORAGE_KEY, data);
@@ -67,7 +67,8 @@ export const isAchievementUnlocked = (achievementId: string, unlockedAchievement
 export const unlockAchievement = async (
   achievement: Achievement,
   gameState: GameState,
-  unlockedAchievements: UnlockedAchievement[]
+  unlockedAchievements: UnlockedAchievement[],
+  showFloatingText?: (text: string, x: number, y: number, color: string, options?: any) => void
 ): Promise<{ unlocked: UnlockedAchievement; reward: Achievement['reward'] } | null> => {
   // Already unlocked
   if (isAchievementUnlocked(achievement.id, unlockedAchievements)) {
@@ -94,6 +95,17 @@ export const unlockAchievement = async (
 
   console.log(`🏆 Achievement Unlocked: ${achievement.name}`);
 
+  // Floating Text Feedback
+  if (showFloatingText) {
+    showFloatingText(
+      `🏆 ${achievement.name}`,
+      100 + Math.random() * 100, // Center-ish
+      100, // Top area
+      '#fbbf24', // Gold
+      { animationType: 'bounce', duration: 3000 }
+    );
+  }
+
   return { unlocked, reward: achievement.reward };
 };
 
@@ -119,24 +131,26 @@ export const checkAllAchievements = async (
   gameState: GameState,
   skills: Skills,
   grades: SchoolGrades,
-  unlockedAchievements: UnlockedAchievement[]
+  unlockedAchievements: UnlockedAchievement[],
+  showFloatingText?: (text: string, x: number, y: number, color: string, options?: any) => void
 ): Promise<UnlockedAchievement[]> => {
   const newlyUnlocked: UnlockedAchievement[] = [];
+  const currentUnlocked = [...unlockedAchievements];
 
   for (const achievement of ACHIEVEMENTS) {
     // Skip already unlocked
-    if (isAchievementUnlocked(achievement.id, unlockedAchievements)) {
+    if (isAchievementUnlocked(achievement.id, currentUnlocked)) {
       continue;
     }
 
     const result = checkAchievement(achievement, stats, gameState, skills, grades);
-    
+
     // Boolean result (unlocked)
     if (result === true) {
-      const unlock = await unlockAchievement(achievement, gameState, unlockedAchievements);
+      const unlock = await unlockAchievement(achievement, gameState, currentUnlocked, showFloatingText);
       if (unlock) {
         newlyUnlocked.push(unlock.unlocked);
-        unlockedAchievements.push(unlock.unlocked);
+        currentUnlocked.push(unlock.unlocked);
       }
     }
   }
@@ -153,15 +167,15 @@ export const getAchievementProgress = (
   grades: SchoolGrades
 ): number => {
   const result = checkAchievement(achievement, stats, gameState, skills, grades);
-  
+
   if (typeof result === 'boolean') {
     return result ? 100 : 0;
   }
-  
+
   if (result && typeof result === 'object' && 'current' in result && 'target' in result) {
     return Math.min(100, (result.current / result.target) * 100);
   }
-  
+
   return 0;
 };
 
@@ -227,10 +241,10 @@ export const getAchievementStats = (unlockedAchievements: UnlockedAchievement[])
 export const shareAchievement = (achievement: Achievement): string => {
   const text = `🏆 Yazgı'da "${achievement.name}" başarısını açtım! ${achievement.icon}`;
   const hashtags = ['Yazgı', 'Achievement', 'LifeSimulator'];
-  
+
   // Twitter share URL
   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&hashtags=${hashtags.join(',')}`;
-  
+
   return twitterUrl;
 };
 
@@ -240,12 +254,12 @@ export const resetAchievements = async (): Promise<void> => {
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem(STORAGE_KEY);
     }
-    
+
     const AsyncStorage = await getAsyncStorage();
     if (AsyncStorage) {
       await AsyncStorage.removeItem(STORAGE_KEY);
     }
-    
+
     console.log('✅ Achievements reset');
   } catch (error) {
     console.error('Failed to reset achievements:', error);

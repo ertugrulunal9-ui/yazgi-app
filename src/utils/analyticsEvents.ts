@@ -1,9 +1,13 @@
 /**
- * Firebase Analytics Usage Examples
- * Yazgı Game Integration Patterns
+ * Analytics event helpers.
  */
 
 import { analyticsService } from '../services/analytics';
+import { EventRarity } from '../types';
+import {
+  buildProgressionCohortSnapshot,
+  shouldLogRetentionCheckpoint,
+} from './progressionAnalytics';
 
 // ============================================================================
 // 1. GAME START
@@ -15,7 +19,7 @@ export const handleGameStart = async (characterName: string, difficulty: 'easy' 
     difficulty,
   });
 
-  console.log('🎮 Game started - logged to Firebase');
+  console.log('[analytics] game_started');
 };
 
 // ============================================================================
@@ -38,32 +42,53 @@ export const handleCharacterCreation = async (character: CharacterData) => {
     familyType: character.familyType,
   });
 
-  // Also set user properties for segmentation
   await analyticsService.setUserProperty('character_name', character.name);
   await analyticsService.setUserProperty('starting_wealth', character.wealth);
 
-  console.log('👤 Character created - analytics logged');
+  console.log('[analytics] character_created');
 };
 
 // ============================================================================
-// 3. EVENT COMPLETION (Most frequent event)
+// 3. EVENT COMPLETION
 // ============================================================================
 
 interface GameEvent {
   id: string;
   name: string;
   type: string;
+  rarity?: EventRarity;
 }
 
 interface Choice {
   index: number;
   text: string;
+  energyCost?: number;
+}
+
+interface ProgressionMeta {
+  turn: number;
+  totalTurns: number;
+  currentEnergy: number;
+  maxEnergy: number;
+}
+
+interface TurnProgressMeta {
+  turn: number;
+  totalTurns: number;
+  maxEnergy: number;
+  energySpent: number;
+}
+
+interface SessionProgressMeta extends ProgressionMeta {
+  age: number;
+  eventChoices: number;
 }
 
 export const handleEventChoice = async (
   event: GameEvent,
   choice: Choice,
-  playerAge: number
+  playerAge: number,
+  progression?: ProgressionMeta
 ) => {
   await analyticsService.logEventCompleted({
     eventId: event.id,
@@ -72,11 +97,40 @@ export const handleEventChoice = async (
     eventType: event.type,
   });
 
-  console.log(`📖 Event "${event.name}" completed with choice ${choice.index}`);
+  if (progression) {
+    const snapshot = await buildProgressionCohortSnapshot({
+      eventRarity: event.rarity,
+      energyCost: choice.energyCost ?? 0,
+      age: playerAge,
+      turn: progression.turn,
+      totalTurns: progression.totalTurns,
+      currentEnergy: progression.currentEnergy,
+      maxEnergy: progression.maxEnergy,
+    });
+
+    await analyticsService.logProgressionEconomy({
+      source: 'event_choice',
+      eventId: event.id,
+      eventRarity: snapshot.eventRarity,
+      energyCost: choice.energyCost ?? 0,
+      energyCostBucket: snapshot.energyCostBucket,
+      age: playerAge,
+      agePacing: snapshot.agePacingBucket,
+      turn: progression.turn,
+      totalTurns: progression.totalTurns,
+      currentEnergy: progression.currentEnergy,
+      maxEnergy: progression.maxEnergy,
+      daySinceInstall: snapshot.daySinceInstall,
+      retentionCheckpoint: snapshot.retentionCheckpoint,
+      cohortKey: snapshot.cohortKey,
+    });
+  }
+
+  console.log(`[analytics] event_completed: ${event.name} choice=${choice.index}`);
 };
 
 // ============================================================================
-// 4. HUB ACTIONS (Study, Sports, Work, etc.)
+// 4. HUB ACTIONS
 // ============================================================================
 
 export const logStudyAction = async (
@@ -86,7 +140,7 @@ export const logStudyAction = async (
 ) => {
   await analyticsService.logHubAction({
     actionType: `study_${subject}`,
-    cost: 20, // Energy cost
+    cost: 20,
     age: playerAge,
     skillGain,
   });
@@ -104,6 +158,48 @@ export const logSportsAction = async (
   });
 };
 
+export const logHubAction = async (
+  actionType: string,
+  energyCost: number,
+  playerAge: number,
+  skillGain: number = 0,
+  progression?: ProgressionMeta
+) => {
+  await analyticsService.logHubAction({
+    actionType,
+    cost: energyCost,
+    age: playerAge,
+    skillGain,
+  });
+
+  if (progression) {
+    const snapshot = await buildProgressionCohortSnapshot({
+      energyCost,
+      age: playerAge,
+      turn: progression.turn,
+      totalTurns: progression.totalTurns,
+      currentEnergy: progression.currentEnergy,
+      maxEnergy: progression.maxEnergy,
+    });
+
+    await analyticsService.logProgressionEconomy({
+      source: 'hub_action',
+      eventRarity: snapshot.eventRarity,
+      energyCost,
+      energyCostBucket: snapshot.energyCostBucket,
+      age: playerAge,
+      agePacing: snapshot.agePacingBucket,
+      turn: progression.turn,
+      totalTurns: progression.totalTurns,
+      currentEnergy: progression.currentEnergy,
+      maxEnergy: progression.maxEnergy,
+      daySinceInstall: snapshot.daySinceInstall,
+      retentionCheckpoint: snapshot.retentionCheckpoint,
+      cohortKey: snapshot.cohortKey,
+    });
+  }
+};
+
 export const logWorkAction = async (
   jobType: string,
   playerAge: number,
@@ -118,7 +214,7 @@ export const logWorkAction = async (
     actionType: `work_${jobType}`,
     cost: 30,
     age: playerAge,
-    skillGain: moneyGain, // Can track money gained
+    skillGain: moneyGain,
   });
 };
 
@@ -134,7 +230,7 @@ export const logSocialAction = async (
 };
 
 // ============================================================================
-// 5. TURN ADVANCEMENT (Track stats progression)
+// 5. TURN ADVANCEMENT
 // ============================================================================
 
 interface PlayerStats {
@@ -148,9 +244,9 @@ interface PlayerStats {
 
 export const logTurnProgress = async (
   playerAge: number,
-  stats: PlayerStats
+  stats: PlayerStats,
+  meta?: TurnProgressMeta
 ) => {
-  // Log every 5 turns to reduce data volume
   if (playerAge % 5 === 0) {
     await analyticsService.logTurnAdvanced({
       age: playerAge,
@@ -159,6 +255,33 @@ export const logTurnProgress = async (
       energy: stats.energy,
     });
   }
+
+  if (!meta) return;
+
+  const snapshot = await buildProgressionCohortSnapshot({
+    energyCost: meta.energySpent,
+    age: playerAge,
+    turn: meta.turn,
+    totalTurns: meta.totalTurns,
+    currentEnergy: stats.energy,
+    maxEnergy: meta.maxEnergy,
+  });
+
+  await analyticsService.logProgressionEconomy({
+    source: 'turn_progress',
+    eventRarity: snapshot.eventRarity,
+    energyCost: meta.energySpent,
+    energyCostBucket: snapshot.energyCostBucket,
+    age: playerAge,
+    agePacing: snapshot.agePacingBucket,
+    turn: meta.turn,
+    totalTurns: meta.totalTurns,
+    currentEnergy: stats.energy,
+    maxEnergy: meta.maxEnergy,
+    daySinceInstall: snapshot.daySinceInstall,
+    retentionCheckpoint: snapshot.retentionCheckpoint,
+    cohortKey: snapshot.cohortKey,
+  });
 };
 
 // ============================================================================
@@ -186,15 +309,14 @@ export const logGameEnding = async (data: GameEndingData) => {
     endingType: data.endingType,
   });
 
-  // Set final stats as user properties
   await analyticsService.setUserProperty('final_age', data.age);
   await analyticsService.setUserProperty('playtime_minutes', data.playtimeMinutes);
 
-  console.log('🏁 Game ended - final stats logged');
+  console.log('[analytics] game_ended');
 };
 
 // ============================================================================
-// 7. PURCHASES (In-app monetization)
+// 7. PURCHASES
 // ============================================================================
 
 export const logPurchase = async (
@@ -209,7 +331,7 @@ export const logPurchase = async (
     category: category || 'general',
   });
 
-  console.log(`💳 Purchase logged: ${productId} - $${price}`);
+  console.log(`[analytics] purchase_made: ${productId} $${price}`);
 };
 
 // ============================================================================
@@ -223,7 +345,12 @@ export const logCustomEvent = async (eventName: string, data?: Record<string, an
   });
 };
 
-// Examples:
+export const logTutorialTooltipShown = async (stepId: string) => {
+  await logCustomEvent('tutorial_tooltip_shown', {
+    step_id: stepId,
+  });
+};
+
 export const logTutorialCompleted = async () => {
   await logCustomEvent('tutorial_completed', {
     tutorial_type: 'onboarding',
@@ -243,6 +370,104 @@ export const logTraitFormed = async (traitName: string, age: number) => {
   });
 };
 
+interface OnboardingCohortGuidanceMeta {
+  sessionCount: number;
+  cohort: string;
+  objective: string;
+  age: number;
+  totalTurns: number;
+}
+
+export const logOnboardingCohortGuidance = async (meta: OnboardingCohortGuidanceMeta) => {
+  await logCustomEvent('onboarding_cohort_guidance', {
+    session_count: meta.sessionCount,
+    cohort: meta.cohort,
+    objective: meta.objective,
+    age: meta.age,
+    total_turns: meta.totalTurns,
+  });
+};
+
+export const logSessionRetentionSnapshot = async (meta: SessionProgressMeta) => {
+  const snapshot = await buildProgressionCohortSnapshot({
+    energyCost: 0,
+    age: meta.age,
+    turn: meta.turn,
+    totalTurns: meta.totalTurns,
+    currentEnergy: meta.currentEnergy,
+    maxEnergy: meta.maxEnergy,
+  });
+
+  await analyticsService.logProgressionEconomy({
+    source: 'session_start',
+    eventRarity: snapshot.eventRarity,
+    energyCost: 0,
+    energyCostBucket: snapshot.energyCostBucket,
+    age: meta.age,
+    agePacing: snapshot.agePacingBucket,
+    turn: meta.turn,
+    totalTurns: meta.totalTurns,
+    currentEnergy: meta.currentEnergy,
+    maxEnergy: meta.maxEnergy,
+    daySinceInstall: snapshot.daySinceInstall,
+    retentionCheckpoint: snapshot.retentionCheckpoint,
+    cohortKey: snapshot.cohortKey,
+  });
+
+  const shouldLog = await shouldLogRetentionCheckpoint(snapshot.retentionCheckpoint);
+  if (!shouldLog) return;
+  if (snapshot.retentionCheckpoint !== 'D1' && snapshot.retentionCheckpoint !== 'D3') return;
+
+  await analyticsService.logRetentionCheckpoint({
+    checkpoint: snapshot.retentionCheckpoint,
+    daySinceInstall: snapshot.daySinceInstall,
+    age: meta.age,
+    turn: meta.turn,
+    totalTurns: meta.totalTurns,
+    eventChoices: meta.eventChoices,
+    cohortKey: snapshot.cohortKey,
+  });
+};
+
+export const logSessionDropAnchor = async (meta: SessionProgressMeta) => {
+  const snapshot = await buildProgressionCohortSnapshot({
+    energyCost: 0,
+    age: meta.age,
+    turn: meta.turn,
+    totalTurns: meta.totalTurns,
+    currentEnergy: meta.currentEnergy,
+    maxEnergy: meta.maxEnergy,
+  });
+
+  await analyticsService.logProgressionEconomy({
+    source: 'session_end',
+    eventRarity: snapshot.eventRarity,
+    energyCost: 0,
+    energyCostBucket: snapshot.energyCostBucket,
+    age: meta.age,
+    agePacing: snapshot.agePacingBucket,
+    turn: meta.turn,
+    totalTurns: meta.totalTurns,
+    currentEnergy: meta.currentEnergy,
+    maxEnergy: meta.maxEnergy,
+    daySinceInstall: snapshot.daySinceInstall,
+    retentionCheckpoint: snapshot.retentionCheckpoint,
+    cohortKey: snapshot.cohortKey,
+  });
+
+  await analyticsService.logCustomEvent('retention_drop_anchor', {
+    day_since_install: snapshot.daySinceInstall,
+    retention_checkpoint: snapshot.retentionCheckpoint,
+    cohort_key: snapshot.cohortKey,
+    age: meta.age,
+    turn: meta.turn,
+    total_turns: meta.totalTurns,
+    event_choices: meta.eventChoices,
+    current_energy: meta.currentEnergy,
+    max_energy: meta.maxEnergy,
+  });
+};
+
 // ============================================================================
 // 9. USER SEGMENTATION
 // ============================================================================
@@ -253,44 +478,3 @@ export const setupUserSegmentation = async (userId: string, gameVersion: string)
   await analyticsService.setUserProperty('platform', 'mobile');
   await analyticsService.setUserProperty('install_date', new Date().toISOString());
 };
-
-// ============================================================================
-// 10. INTEGRATION WITH APP.TSX
-// ============================================================================
-
-/**
- * Example App.tsx integration:
- * 
- * import React, { useEffect } from 'react';
- * import { NavigationContainer } from '@react-navigation/native';
- * import { analyticsService } from './services/analytics';
- * import * as Analytics from './utils/analyticsEvents';
- * 
- * export default function App() {
- *   useEffect(() => {
- *     // Initialize analytics
- *     Analytics.setupUserSegmentation('user-123', '1.0.0');
- *   }, []);
- * 
- *   const handleStartGame = async () => {
- *     await Analytics.handleGameStart('PlayerName', 'normal');
- *     // Navigate to game...
- *   };
- * 
- *   const handleGameEnd = async (gameData) => {
- *     await Analytics.logGameEnding({
- *       age: gameData.age,
- *       stats: gameData.stats,
- *       playtimeMinutes: gameData.playtime,
- *       endingType: gameData.ending,
- *     });
- *     // Navigate to end screen...
- *   };
- * 
- *   return (
- *     <NavigationContainer>
- *       // Your app UI...
- *     </NavigationContainer>
- *   );
- * }
- */

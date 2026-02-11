@@ -1,8 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { GameState, Stats } from '../types';
 import { calculateCareerResult, getSocialEndResult } from '../utils/gameUtils';
 import { getTrait } from '../data/traits';
 import { monetizationService } from '../services/monetization';
+import { buildLifeReflection, KeyDecision } from '../utils/memoryLogic';
+import { getPersonalityArchetype, getArchetypeDescription } from '../utils/personalitySystem';
 
 interface EndScreenProps {
   stats: Stats;
@@ -14,6 +16,12 @@ interface EndScreenProps {
 export const EndScreen: React.FC<EndScreenProps> = ({ stats, gameState, playerName, onRestart }) => {
   const result = calculateCareerResult(gameState, stats);
   const socialResult = getSocialEndResult(gameState.npcs);
+  const lifeReflection = useMemo(() =>
+    buildLifeReflection(gameState.memories ?? [], gameState.personality),
+    [gameState.memories, gameState.personality]
+  );
+  const archetype = useMemo(() => getPersonalityArchetype(gameState.personality), [gameState.personality]);
+  const archetypeDesc = useMemo(() => getArchetypeDescription(archetype), [archetype]);
 
   // Show interstitial ad on game over (if not premium)
   useEffect(() => {
@@ -51,6 +59,16 @@ export const EndScreen: React.FC<EndScreenProps> = ({ stats, gameState, playerNa
            <p className="text-lg md:text-xl opacity-90 font-medium max-w-2xl mx-auto leading-relaxed">
              {result.description}
            </p>
+           {result.personalityNarrative && (
+             <p className="text-base opacity-75 mt-3 max-w-xl mx-auto italic">
+               {result.personalityNarrative}
+             </p>
+           )}
+           {result.memoryInfluence && (
+             <p className="text-sm opacity-60 mt-2 max-w-xl mx-auto">
+               {result.memoryInfluence}
+             </p>
+           )}
         </div>
 
            <div className="surface-overlay p-6 border-b border-default text-center">
@@ -59,6 +77,38 @@ export const EndScreen: React.FC<EndScreenProps> = ({ stats, gameState, playerNa
             </h3>
             <p className="text-purple-200 font-medium">{socialResult || "Kimseyle derin bir bağ kuramadan mezun oldun."}</p>
         </div>
+
+        {/* KİM OLDUN? - Kişilik Arketipi */}
+        <div className="surface-overlay p-6 border-b border-default">
+            <h3 className="text-xs font-bold text-secondary uppercase tracking-widest mb-3 flex items-center gap-2">
+                <span>🪞</span> Kim Oldun?
+            </h3>
+            <p className="font-medium mb-3">{archetypeDesc}</p>
+            <div className="grid grid-cols-5 gap-2">
+                <PersonalityBar label="Açıklık" value={gameState.personality.openness} />
+                <PersonalityBar label="Cesaret" value={gameState.personality.courage} />
+                <PersonalityBar label="Empati" value={gameState.personality.empathy} />
+                <PersonalityBar label="Sabır" value={gameState.personality.patience} />
+                <PersonalityBar label="Uyum" value={gameState.personality.conformity} />
+            </div>
+        </div>
+
+        {/* HAYAT YOLCULUĞUN - Timeline */}
+        {lifeReflection.keyDecisions.length > 0 && (
+        <div className="surface-overlay p-6 border-b border-default">
+            <h3 className="text-xs font-bold text-secondary uppercase tracking-widest mb-4 flex items-center gap-2">
+                <span>📖</span> Hayat Yolculuğun
+            </h3>
+            <div className="space-y-3">
+                {lifeReflection.keyDecisions.map((decision, index) => (
+                    <TimelineItem key={`${decision.eventId}-${index}`} decision={decision} />
+                ))}
+            </div>
+            <p className="mt-4 text-secondary italic text-sm text-center">
+                {lifeReflection.summaryNarrative}
+            </p>
+        </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
             
@@ -73,6 +123,20 @@ export const EndScreen: React.FC<EndScreenProps> = ({ stats, gameState, playerNa
                         <span className="absolute -bottom-6 -right-2 text-4xl text-secondary opacity-50">"</span>
                     </div>
                 </div>
+                {result.influences?.length ? (
+                    <div className="mb-8">
+                        <h3 className="text-sm font-bold text-secondary uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <span>{String.fromCodePoint(0x1F393)}</span> Akademik Etki
+                        </h3>
+                        <div className="space-y-2">
+                            {result.influences.map((item, index) => (
+                                <div key={`${item}-${index}`} className="surface-raised p-3 rounded-xl border border-default text-sm text-secondary">
+                                    {item}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ) : null}
 
                 <div>
                     <h3 className="text-sm font-bold text-secondary uppercase tracking-widest mb-4 flex items-center gap-2">
@@ -146,6 +210,44 @@ const StatRow = ({ label, value, color, isCurrency }: any) => (
             {Math.round(value)}{isCurrency && ' TL'}
         </span>
     </div>
+);
+
+const EMOTION_ICONS: Record<string, string> = {
+  PRIDE: '⭐',
+  SATISFACTION: '😊',
+  REGRET: '😔',
+  GUILT: '😞',
+  NEUTRAL: '🔹',
+};
+
+const EMOTION_COLORS: Record<string, string> = {
+  PRIDE: 'border-amber-500',
+  SATISFACTION: 'border-emerald-500',
+  REGRET: 'border-blue-500',
+  GUILT: 'border-rose-500',
+  NEUTRAL: 'border-gray-500',
+};
+
+const TimelineItem = ({ decision }: { decision: KeyDecision }) => (
+  <div className={`flex items-start gap-3 pl-3 border-l-2 ${EMOTION_COLORS[decision.emotion] ?? 'border-gray-500'}`}>
+    <div className="flex-shrink-0 text-lg">{EMOTION_ICONS[decision.emotion] ?? '🔹'}</div>
+    <div>
+      <div className="text-xs text-secondary font-bold">{decision.age} Yaşında</div>
+      <div className="text-sm font-medium">{decision.narrativeLine}</div>
+    </div>
+  </div>
+);
+
+const PersonalityBar = ({ label, value }: { label: string; value: number }) => (
+  <div className="text-center">
+    <div className="text-xs text-secondary mb-1">{label}</div>
+    <div className="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
+      <div
+        className={`h-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all w-[${value}%]`}
+      />
+    </div>
+    <div className="text-xs font-mono mt-1">{value}</div>
+  </div>
 );
 
 export default EndScreen;

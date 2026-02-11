@@ -1,42 +1,100 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Yazgi (Expo React Native)
 
-# Run and deploy your AI Studio app
+Yazgi, Expo tabanlı bir mobil yaşam simülasyonu oyunudur.
 
-This contains everything you need to run your app locally.
+## Gereksinimler
 
-View your app in AI Studio: https://ai.studio/apps/drive/1CZtfHvYt1U5bKKDNVdnDGfGrKY_kz6Sn
+- Node.js 18+ (LTS önerilir)
+- npm
+- Expo Go (fiziksel cihazda test için)
+- Android Studio (Android emulator için, opsiyonel)
+- Xcode (iOS simulator için, sadece macOS)
 
-## Run Locally
+## Kurulum
 
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
-
-## Error Logging (Console-Based)
-
-Firebase has been removed for stability. Error logging now uses localStorage and console.
-
-### Debug Commands (in browser console or React Native Debugger):
-
-```javascript
-// View all logged errors
-window.errorLogger.viewLogs()
-
-// Get raw error logs
-window.errorLogger.getLogs()
-
-// Clear error logs
-window.errorLogger.clearLogs()
-
-// Manually log an error
-window.errorLogger.logError(new Error('Test error'), { context: 'test' })
+```bash
+npm install
 ```
 
-Errors are automatically saved to localStorage with a 50-error limit.
+Notlar:
+
+- Bu proje için `GEMINI_API_KEY` gerekmiyor.
+- Geliştirme için `npm run dev` yerine Expo komutları kullanılır.
+
+## Geliştirme (Expo)
+
+Metro/Expo sunucusunu başlat:
+
+```bash
+npm start
+```
+
+Kısayollar:
+
+- `a`: Android emulator aç
+- `i`: iOS simulator aç (macOS)
+- `w`: Web preview (opsiyonel)
+
+Native build ile cihaz/emulator çalıştır:
+
+```bash
+npm run android
+npm run ios
+```
+
+## Cihazda Test Adımları
+
+1. `npm start` çalıştır.
+2. Telefonda Expo Go aç.
+3. Terminaldeki QR kodu tara.
+4. Oyun akışlarını cihaz üzerinde doğrula:
+   - Yeni oyun başlangıcı
+   - Event seçimleri ve stat değişimleri
+   - Save/load
+   - Sınav mini-game’leri
+
+## Test ve Kalite
+
+```bash
+npm test
+npm run test:coverage
+npm run lint
+```
+
+## Build / Prod (EAS)
+
+EAS ile build:
+
+```bash
+npx eas login
+npx eas build --platform android --profile development
+npx eas build --platform android --profile preview
+npx eas build --platform android --profile production
+```
+
+EAS profilleri `eas.json` içinde tanımlıdır. Şu an Android tarafında `apk` üretiliyor.
+
+Store gönderimi gerekiyorsa:
+
+```bash
+npx eas submit --platform android --profile production
+```
+
+## Single Source of Truth
+
+Gameplay balansı ve başlangıç state’i için referans **kod**dur, GDD değil.
+
+Yetkili kaynaklar:
+
+- `src/utils/gameUtils.ts`
+  - `getInitialStats`
+  - `getInitialGameState`
+  - `getStatCap`
+  - `calculateEnergyCost`
+  - `updateStats`
+- `src/constants/gameConstants.ts` (oyun sabitleri)
+
+Kural:
+
+- GDD/dokümanlar açıklayıcıdır.
+- Test beklentileri dokümandan değil, runtime kod davranışından türetilmelidir.

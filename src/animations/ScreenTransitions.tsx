@@ -98,8 +98,9 @@ export const ScreenTransition: React.FC<ScreenTransitionProps> = React.memo(({
 
 /**
  * Fade In Down animasyonu
+ * NOT: children her zaman yeniden render edilmeli, memo kaldırıldı
  */
-export const FadeInDownView: React.FC<{ children: ReactNode; delay?: number }> = React.memo(({
+export const FadeInDownView: React.FC<{ children: ReactNode; delay?: number }> = ({
   children,
   delay = 0,
 }) => {
@@ -117,14 +118,13 @@ export const FadeInDownView: React.FC<{ children: ReactNode; delay?: number }> =
       {children}
     </View>
   );
-}, (prevProps, nextProps) => {
-  return prevProps.delay === nextProps.delay;
-});
+};
 
 /**
  * Fade In Up animasyonu
+ * NOT: children her zaman yeniden render edilmeli, memo kaldırıldı
  */
-export const FadeInUpView: React.FC<{ children: ReactNode; delay?: number }> = React.memo(({
+export const FadeInUpView: React.FC<{ children: ReactNode; delay?: number }> = ({
   children,
   delay = 0,
 }) => {
@@ -142,9 +142,7 @@ export const FadeInUpView: React.FC<{ children: ReactNode; delay?: number }> = R
       {children}
     </View>
   );
-}, (prevProps, nextProps) => {
-  return prevProps.delay === nextProps.delay;
-});
+};
 
 /**
  * Fade In Left animasyonu

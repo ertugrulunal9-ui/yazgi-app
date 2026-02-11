@@ -3,6 +3,9 @@
  * Yazgı - Life Simulation Game
  */
 
+import { Platform } from 'react-native';
+import SaveManager from '../save/SaveManager';
+
 export type ProductId = 
   | 'premium_traits'
   | 'save_slots_premium'
@@ -36,6 +39,50 @@ export interface RewardedAdResult {
   };
   error?: string;
 }
+
+const STORAGE_PRODUCTS_KEY = '@yazgi/owned_products';
+const STORAGE_AD_COUNT_KEY = '@yazgi/ad_count';
+const hasLocalStorage = typeof localStorage !== 'undefined';
+let asyncStorageModule: any = null;
+
+const getAsyncStorage = async () => {
+  if (asyncStorageModule) return asyncStorageModule;
+  try {
+    const mod = await import('@react-native-async-storage/async-storage');
+    asyncStorageModule = (mod as any).default ?? mod;
+    return asyncStorageModule;
+  } catch {
+    return null;
+  }
+};
+
+const readStorageItem = async (key: string): Promise<string | null> => {
+  if (hasLocalStorage) return localStorage.getItem(key);
+  const AsyncStorage = await getAsyncStorage();
+  if (AsyncStorage) return AsyncStorage.getItem(key);
+  return null;
+};
+
+const writeStorageItem = async (key: string, value: string): Promise<void> => {
+  if (hasLocalStorage) {
+    localStorage.setItem(key, value);
+    return;
+  }
+  const AsyncStorage = await getAsyncStorage();
+  if (AsyncStorage) {
+    await AsyncStorage.setItem(key, value);
+  }
+};
+
+const optionalRequire = (moduleName: string): any => {
+  try {
+    // Avoid Metro trying to resolve optional deps at bundle time
+    const req = eval('require');
+    return req(moduleName);
+  } catch {
+    return null;
+  }
+};
 
 // Mock product catalog (replace with actual RevenueCat/Expo IAP in production)
 const PRODUCTS: Record<ProductId, Product> = {
@@ -89,6 +136,15 @@ const PRODUCTS: Record<ProductId, Product> = {
   }
 };
 
+const PRODUCT_SKUS: Record<ProductId, { ios: string; android: string }> = {
+  premium_traits: { ios: 'premium_traits', android: 'premium_traits' },
+  save_slots_premium: { ios: 'save_slots_premium', android: 'save_slots_premium' },
+  cosmetics_pack: { ios: 'cosmetics_pack', android: 'cosmetics_pack' },
+  energy_refill: { ios: 'energy_refill', android: 'energy_refill' },
+  season_pass: { ios: 'season_pass', android: 'season_pass' },
+  remove_ads: { ios: 'remove_ads', android: 'remove_ads' },
+};
+
 class MonetizationService {
   private isInitialized = false;
   private ownedProducts: Set<ProductId> = new Set();
@@ -97,6 +153,8 @@ class MonetizationService {
   private rewardedAdCount = 0;
   private dailyAdLimit = 5;
   private lastAdResetDate: string | null = null;
+  private iapProvider: 'expo-iap' | 'mock' = 'mock';
+  private iapModule: any = null;
 
   /**
    * Reset service state (for testing)
@@ -117,13 +175,13 @@ class MonetizationService {
 
     try {
       console.log('🛒 Initializing Monetization Service...');
-      
-      // In production:
-      // await Purchases.configure({ apiKey: REVENUECAT_API_KEY });
-      // await AdMob.initialize();
+
+      await this.initializeIap();
       
       // Load owned products from storage
       await this.loadOwnedProducts();
+      await this.loadAdCount();
+      await this.syncEntitlements();
       
       // Reset daily ad counter if needed
       this.resetDailyAdCountIfNeeded();
@@ -132,7 +190,7 @@ class MonetizationService {
       console.log(`✅ Monetization Service initialized (provider: ${this.adProvider})`);
     } catch (error) {
       console.error('❌ Monetization initialization failed:', error);
-      throw error;
+      this.isInitialized = false;
     }
   }
 
@@ -141,11 +199,30 @@ class MonetizationService {
    */
   async getProducts(): Promise<Product[]> {
     if (!this.isInitialized) await this.initialize();
-    
-    // In production: fetch from store
-    // const offerings = await Purchases.getOfferings();
-    // return offerings.current?.availablePackages || [];
-    
+
+    if (this.iapProvider === 'expo-iap' && this.iapModule?.getProductsAsync) {
+      try {
+        const skus = Object.values(PRODUCT_SKUS).map(sku => Platform.OS === 'ios' ? sku.ios : sku.android);
+        const result = await this.iapModule.getProductsAsync(skus);
+        const products = result?.products || result || [];
+        if (Array.isArray(products) && products.length > 0) {
+          return products.map((product: any) => ({
+            id: (Object.keys(PRODUCT_SKUS) as ProductId[]).find(key => {
+              const sku = Platform.OS === 'ios' ? PRODUCT_SKUS[key].ios : PRODUCT_SKUS[key].android;
+              return sku === product.productId || sku === product.productId;
+            }) || 'save_slots_premium',
+            title: product.title || product.description || 'Premium',
+            description: product.description || '',
+            price: product.price || product.localizedPrice || '',
+            localizedPrice: product.localizedPrice,
+            currencyCode: product.currencyCode,
+          }));
+        }
+      } catch (error) {
+        console.warn('IAP products fetch failed, falling back to local catalog:', error);
+      }
+    }
+
     return Object.values(PRODUCTS);
   }
 
@@ -158,15 +235,17 @@ class MonetizationService {
     try {
       console.log(`💳 Purchasing: ${productId}`);
 
-      // In production:
-      // const { customerInfo } = await Purchases.purchasePackage(package);
-      // const isPremium = customerInfo.entitlements.active[productId] !== undefined;
-      
-      // Mock purchase (always succeeds in dev)
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (this.iapProvider === 'expo-iap' && this.iapModule?.purchaseItemAsync) {
+        const sku = Platform.OS === 'ios' ? PRODUCT_SKUS[productId].ios : PRODUCT_SKUS[productId].android;
+        await this.iapModule.purchaseItemAsync(sku);
+      } else {
+        // Mock purchase (always succeeds in dev)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
       
       this.ownedProducts.add(productId);
       await this.saveOwnedProducts();
+      await this.syncEntitlements();
 
       console.log(`✅ Purchase successful: ${productId}`);
       
@@ -193,12 +272,23 @@ class MonetizationService {
     try {
       console.log('🔄 Restoring purchases...');
 
-      // In production:
-      // const customerInfo = await Purchases.restorePurchases();
-      // const activeEntitlements = Object.keys(customerInfo.entitlements.active);
-      
-      // Mock restore
-      const restored = Array.from(this.ownedProducts);
+      let restored = Array.from(this.ownedProducts);
+      if (this.iapProvider === 'expo-iap' && this.iapModule?.getAvailablePurchasesAsync) {
+        const purchases = await this.iapModule.getAvailablePurchasesAsync();
+        const restoredIds = (purchases || [])
+          .map((purchase: any) => {
+            const match = (Object.keys(PRODUCT_SKUS) as ProductId[]).find(key => {
+              const sku = Platform.OS === 'ios' ? PRODUCT_SKUS[key].ios : PRODUCT_SKUS[key].android;
+              return sku === purchase.productId;
+            });
+            return match;
+          })
+          .filter(Boolean) as ProductId[];
+        restoredIds.forEach(id => this.ownedProducts.add(id));
+        restored = Array.from(this.ownedProducts);
+      }
+      await this.saveOwnedProducts();
+      await this.syncEntitlements();
       console.log(`✅ Restored ${restored.length} purchases`);
       
       return restored;
@@ -335,12 +425,10 @@ class MonetizationService {
 
   private async loadOwnedProducts(): Promise<void> {
     try {
-      if (typeof localStorage !== 'undefined') {
-        const saved = localStorage.getItem('@yazgi/owned_products');
-        if (saved) {
-          this.ownedProducts = new Set(JSON.parse(saved));
-          console.log(`📦 Loaded ${this.ownedProducts.size} owned products`);
-        }
+      const saved = await readStorageItem(STORAGE_PRODUCTS_KEY);
+      if (saved) {
+        this.ownedProducts = new Set(JSON.parse(saved));
+        console.log(`📦 Loaded ${this.ownedProducts.size} owned products`);
       }
     } catch (error) {
       console.error('Failed to load owned products:', error);
@@ -349,11 +437,9 @@ class MonetizationService {
 
   private async saveOwnedProducts(): Promise<void> {
     try {
-      if (typeof localStorage !== 'undefined') {
-        const products = Array.from(this.ownedProducts);
-        localStorage.setItem('@yazgi/owned_products', JSON.stringify(products));
-        console.log(`💾 Saved ${products.length} owned products`);
-      }
+      const products = Array.from(this.ownedProducts);
+      await writeStorageItem(STORAGE_PRODUCTS_KEY, JSON.stringify(products));
+      console.log(`💾 Saved ${products.length} owned products`);
     } catch (error) {
       console.error('Failed to save owned products:', error);
     }
@@ -372,15 +458,54 @@ class MonetizationService {
 
   private saveAdCount(): void {
     try {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('@yazgi/ad_count', JSON.stringify({
-          count: this.rewardedAdCount,
-          date: this.lastAdResetDate
-        }));
-      }
+      void writeStorageItem(STORAGE_AD_COUNT_KEY, JSON.stringify({
+        count: this.rewardedAdCount,
+        date: this.lastAdResetDate
+      }));
     } catch (error) {
       console.error('Failed to save ad count:', error);
     }
+  }
+
+  private async loadAdCount(): Promise<void> {
+    try {
+      const raw = await readStorageItem(STORAGE_AD_COUNT_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        this.rewardedAdCount = parsed.count ?? 0;
+        this.lastAdResetDate = parsed.date ?? null;
+      }
+    } catch (error) {
+      console.error('Failed to load ad count:', error);
+    }
+  }
+
+  private async initializeIap(): Promise<void> {
+    if (Platform.OS === 'web') {
+      this.iapProvider = 'mock';
+      return;
+    }
+    try {
+      const mod = optionalRequire('expo-in-app-purchases');
+      if (mod?.connectAsync) {
+        await mod.connectAsync();
+        this.iapProvider = 'expo-iap';
+        this.iapModule = mod;
+        console.log('✅ IAP provider initialized: expo-in-app-purchases');
+        return;
+      }
+    } catch (error) {
+      console.warn('IAP provider not available, using mock.', error);
+    }
+    this.iapProvider = 'mock';
+  }
+
+  private async syncEntitlements(): Promise<void> {
+    const hasPremiumSlots = this.ownedProducts.has('save_slots_premium') || this.ownedProducts.has('season_pass');
+    const hasRemoveAds = this.ownedProducts.has('remove_ads') || this.ownedProducts.has('season_pass');
+    SaveManager.setPremiumUnlocked(hasPremiumSlots);
+    SaveManager.setAdsDisabled(hasRemoveAds);
+    this.adsEnabled = !hasRemoveAds;
   }
 }
 

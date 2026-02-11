@@ -7,7 +7,9 @@ import {
   clamp,
   getInitialStats,
   getInitialGameState,
+  getMaxEnergy,
 } from '../../src/utils/gameUtils';
+import { BALANCE_CONTRACT, calculateInitialEnergy } from '../../src/config/balanceContract';
 
 describe('gameUtils - Core Functions', () => {
   describe('clamp', () => {
@@ -38,14 +40,15 @@ describe('gameUtils - Core Functions', () => {
   describe('getInitialStats', () => {
     it('should return valid initial stats', () => {
       const stats = getInitialStats();
-      
-      expect(stats.health).toBe(70);
-      expect(stats.intelligence).toBe(0);
-      expect(stats.charisma).toBe(10);
-      expect(stats.discipline).toBe(0);
-      expect(stats.money).toBe(0);
-      expect(stats.energy).toBe(100);
-      expect(stats.familyRelation).toBe(50);
+
+      expect(stats.health).toBe(BALANCE_CONTRACT.initialStats.health);
+      expect(stats.intelligence).toBe(BALANCE_CONTRACT.initialStats.intelligence);
+      expect(stats.charisma).toBe(BALANCE_CONTRACT.initialStats.charisma);
+      expect(stats.discipline).toBe(BALANCE_CONTRACT.initialStats.discipline);
+      expect(stats.money).toBe(BALANCE_CONTRACT.initialStats.money);
+      const expectedEnergy = calculateInitialEnergy(stats.health);
+      expect(stats.energy).toBe(expectedEnergy);
+      expect(stats.familyRelation).toBe(BALANCE_CONTRACT.initialStats.familyRelation);
     });
 
     it('should return stats within valid ranges', () => {
@@ -74,15 +77,17 @@ describe('gameUtils - Core Functions', () => {
       expect(state.age).toBe(0);
       expect(state.turn).toBe(1);
       expect(state.phase).toBe('SETUP');
-      expect(state.maxEnergy).toBe(100);
+      expect(state.maxEnergy).toBe(getMaxEnergy(state.age, state.family, state.traits));
     });
 
-    it('should initialize empty arrays', () => {
+    it('should initialize arrays appropriately', () => {
       const state = getInitialGameState();
-      
-      expect(state.traits).toEqual([]);
+
+      // Genetic traits may be assigned at birth (5-15% chance each)
+      expect(Array.isArray(state.traits)).toBe(true);
       expect(state.inventory).toEqual([]);
-      expect(state.npcs).toEqual([]);
+      // NPCs are generated at start for age 0
+      expect(Array.isArray(state.npcs)).toBe(true);
       expect(state.memories).toEqual([]);
       expect(state.scheduledEvents).toEqual([]);
       expect(state.historyLog).toEqual([]);
@@ -120,13 +125,18 @@ describe('gameUtils - Core Functions', () => {
       expect(state.actionCounts).toEqual({});
     });
 
-    it('should set null for optional fields', () => {
+    it('should set appropriate values for fields', () => {
       const state = getInitialGameState();
-      
-      expect(state.family).toBeNull();
+
+      // Family is created at initialization
+      expect(state.family).toBeDefined();
+      expect(state.family?.wealth).toBeDefined();
+      expect(state.family?.dynamic).toBeDefined();
+      // These remain null until set later
       expect(state.currentEvent).toBeNull();
       expect(state.lastResult).toBeNull();
       expect(state.selectedNpcId).toBeNull();
     });
   });
 });
+

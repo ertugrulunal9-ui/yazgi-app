@@ -289,7 +289,7 @@ describe('Trait System - Extended Coverage', () => {
           if (trigger.type === 'EVENT_CHOICE') {
             expect(trigger.eventId).toBeDefined();
             expect(trigger.choice).toBeDefined();
-            expect(trigger.choice).toBeGreaterThanOrEqual(0);
+            expect(typeof trigger.choice === 'number' || typeof trigger.choice === 'string').toBe(true);
           }
         });
       });

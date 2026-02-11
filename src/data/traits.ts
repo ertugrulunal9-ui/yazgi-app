@@ -64,7 +64,7 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
     formation: {
       triggers: [
         { type: 'ACTION', actionId: 'social', count: 4, ageWindow: [3, 14] },
-        { type: 'EVENT_CHOICE', eventId: 'evt_bullying', choice: 0, ageWindow: [6, 14] }
+        { type: 'EVENT_CHOICE', eventId: 'pers_grup_zorbaligi', choice: 'zorbalik_mudahale', ageWindow: [6, 14] }
       ],
       ageWindow: [3, 18],
       pointsRequired: 4
@@ -98,7 +98,7 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
     category: 'ACQUIRED',
     formation: {
       triggers: [
-        { type: 'EVENT_CHOICE', eventId: 'evt_bullying', choice: 0, ageWindow: [6, 18] }
+        { type: 'EVENT_CHOICE', eventId: 'pers_grup_zorbaligi', choice: 'zorbalik_mudahale', ageWindow: [6, 18] }
       ],
       ageWindow: [6, 18],
       pointsRequired: 2
@@ -236,7 +236,7 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
     category: 'ACQUIRED',
     formation: {
       triggers: [
-        { type: 'EVENT_CHOICE', eventId: 'evt_exam_cheat', choice: 1, ageWindow: [7, 18] }
+        { type: 'EVENT_CHOICE', eventId: 'dilemma_kopya_satin_alma', choice: 'kopya_alma', ageWindow: [14, 18] }
       ],
       ageWindow: [7, 18],
       pointsRequired: 1
@@ -287,7 +287,7 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
     category: 'ACQUIRED',
     formation: {
       triggers: [
-        { type: 'EVENT_CHOICE', eventId: 'evt_bullying', choice: 1, ageWindow: [6, 18] }
+        { type: 'EVENT_CHOICE', eventId: 'pers_grup_zorbaligi', choice: 'zorbalik_izle', ageWindow: [6, 18] }
       ],
       ageWindow: [6, 18],
       pointsRequired: 2
@@ -304,7 +304,7 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
     category: 'ACQUIRED',
     formation: {
       triggers: [
-        { type: 'EVENT_CHOICE', eventId: 'evt_exam_cheat', choice: 0, ageWindow: [7, 18] }
+        { type: 'EVENT_CHOICE', eventId: 'dilemma_kopya_satin_alma', choice: 'kopya_al', ageWindow: [14, 18] }
       ],
       ageWindow: [7, 18],
       pointsRequired: 2
@@ -336,7 +336,7 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
     category: 'ACQUIRED',
     formation: {
       triggers: [
-        { type: 'EVENT_CHOICE', eventId: 'evt_parental_conflict', choice: 1, ageWindow: [10, 18] }
+        { type: 'EVENT_CHOICE', eventId: 'dilemma_aile_beklentisi', choice: 'follow_dreams', ageWindow: [14, 18] }
       ],
       ageWindow: [10, 18],
       pointsRequired: 2

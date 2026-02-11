@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -120,34 +120,44 @@ const styles = StyleSheet.create({
 
 export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const currentSlideRef = useRef(currentSlide);
+
+  useEffect(() => {
+    currentSlideRef.current = currentSlide;
+  }, [currentSlide]);
+
+  const nextSlide = () => {
+    if (currentSlideRef.current >= SLIDES.length - 1) {
+      handleComplete();
+      return;
+    }
+    setCurrentSlide((prev) => Math.min(prev + 1, SLIDES.length - 1));
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => Math.max(prev - 1, 0));
+  };
+
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_evt, gestureState) => {
+        const { dx, dy } = gestureState;
+        return Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy);
+      },
       onPanResponderRelease: (_evt, gestureState) => {
-        const { dx } = gestureState;
-        if (dx < -50 && currentSlide < SLIDES.length - 1) {
-          nextSlide();
-        } else if (dx > 50 && currentSlide > 0) {
-          prevSlide();
+        const { dx, dy } = gestureState;
+        if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) {
+          return;
+        }
+        if (dx < 0) {
+          setCurrentSlide((prev) => Math.min(prev + 1, SLIDES.length - 1));
+        } else if (dx > 0) {
+          setCurrentSlide((prev) => Math.max(prev - 1, 0));
         }
       },
     })
   ).current;
-
-  const nextSlide = () => {
-    if (currentSlide < SLIDES.length - 1) {
-      setCurrentSlide(currentSlide + 1);
-    } else {
-      handleComplete();
-    }
-  };
-
-  const prevSlide = () => {
-    if (currentSlide > 0) {
-      setCurrentSlide(currentSlide - 1);
-    }
-  };
 
   const handleComplete = async () => {
     try {

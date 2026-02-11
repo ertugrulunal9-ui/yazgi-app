@@ -10,6 +10,7 @@ import {
   hasProduct,
   restorePurchases
 } from '../services/monetization';
+import { logPurchase } from '../utils/analyticsEvents';
 
 interface ShopModalProps {
   isOpen: boolean;
@@ -52,6 +53,13 @@ export const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose, onPurchas
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  const parsePrice = (price?: string): number => {
+    if (!price) return 0;
+    const normalized = price.replace(/[^\d,.-]/g, '').replace(',', '.');
+    const parsed = Number.parseFloat(normalized);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
   useEffect(() => {
     if (isOpen) {
       loadProducts();
@@ -81,6 +89,14 @@ export const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose, onPurchas
       if (result.success) {
         setSuccessMessage(`${products.find(p => p.id === productId)?.title} satın alındı!`);
         onPurchaseSuccess?.(productId);
+        const product = products.find(p => p.id === productId);
+        const price = parsePrice(product?.localizedPrice || product?.price);
+        const category = productId === 'energy_refill'
+          ? 'boosts'
+          : productId === 'cosmetics_pack'
+            ? 'cosmetics'
+            : 'premium';
+        void logPurchase(productId, price, category);
         setTimeout(() => setSuccessMessage(null), 3000);
       } else {
         setError(result.error || 'Satın alma başarısız');

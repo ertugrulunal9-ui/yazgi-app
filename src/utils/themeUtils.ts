@@ -51,10 +51,10 @@ export const getThemeTokens = (theme: 'light' | 'dark'): ThemeTokens => {
       textPrimary: '#0f172a',
       textSecondary: '#475569',
       border: '#e2e8f0',
-      accentEvent: '#3b82f6',
-      accentGrade: '#10b981',
-      accentSkill: '#a855f7',
-      accentStat: '#60a5fa',
+      accentEvent: '#1d4ed8',
+      accentGrade: '#047857',
+      accentSkill: '#7e22ce',
+      accentStat: '#1e40af',
     };
   }
   return {

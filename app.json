@@ -25,18 +25,21 @@
             "newArchEnabled": true
           }
         }
-      ]
+      ],
+      "@react-native-firebase/app"
     ],
     "jsEngine": "hermes",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yazgi.app"
+      "bundleIdentifier": "com.yazgi.app",
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#121212"
       },
-      "package": "com.yazgi.app"
+      "package": "com.yazgi.app",
+      "googleServicesFile": "./google-services.json"
     },
     "extra": {
       "eas": {

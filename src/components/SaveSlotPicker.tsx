@@ -1,18 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Modal, Alert, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Modal, Alert, ActivityIndicator, StyleSheet, Pressable, Platform, BackHandler } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { SaveSlotMetadata } from '../save/SaveSlot';
+import { SaveSlotData, SaveSlotMetadata } from '../save/SaveSlot';
 import { SaveSlotCard } from './SaveSlotCard';
 import SaveManager from '../save/SaveManager';
+import { GameState, Stats } from '../types';
 
 interface SaveSlotPickerProps {
   isOpen: boolean;
   onClose: () => void;
   currentPlayerName: string;
-  currentStats: any;
-  currentGameState: any;
-  onLoadSlot: (slotId: string) => void;
+  currentStats: Stats;
+  currentGameState: GameState;
+  onLoadSlot: (slotId: string, saveData: SaveSlotData) => void;
   currentSlotId?: string;
   theme: {
     appBg: string;
@@ -46,6 +47,15 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
       loadSlots();
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || Platform.OS !== 'android') return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      onClose();
+      return true;
+    });
+    return () => sub.remove();
+  }, [isOpen, onClose]);
 
   const loadSlots = async () => {
     setIsLoading(true);
@@ -83,7 +93,7 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
     try {
       const saveData = await SaveManager.loadFromSlot(slotId);
       if (saveData) {
-        onLoadSlot(slotId);
+        onLoadSlot(slotId, saveData);
         onClose();
       }
     } catch (error) {
@@ -125,156 +135,215 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
 
   if (!isOpen) return null;
 
-  return (
-    <Modal visible={isOpen} animationType="slide" transparent>
-      <View style={[styles.overlay, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-        <View style={[styles.container, { backgroundColor: theme.surfaceBase, borderColor: theme.border }]}>
-          {/* Header */}
-          <View style={styles.header}>
+  const content = (
+    <View
+      style={[
+        styles.modalRoot,
+        {
+          paddingTop: insets.top + 16,
+          paddingBottom: insets.bottom + 16,
+        },
+      ]}
+    >
+      <View style={[styles.container, { backgroundColor: theme.surfaceBase, borderColor: theme.border }]}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Kayıt Slotları</Text>
+            <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
+              {SaveManager.getAvailableSlots()} slot kullanılabilir
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={onClose}
+            style={[styles.closeButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}
+            accessibilityLabel="Kapat"
+            accessibilityRole="button"
+          >
+            <Feather name="x" size={24} color={theme.textSecondary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Premium Banner */}
+        <View style={styles.premiumBanner}>
+          <View style={styles.premiumLeft}>
+            <Feather name="lock" size={24} color="#eab308" />
             <View>
-              <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Kayıt Slotları</Text>
-              <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
-                {SaveManager.getAvailableSlots()} slot kullanılabilir
-              </Text>
+              <Text style={styles.premiumTitle}>Premium Slotlar</Text>
+              <Text style={styles.premiumSubtitle}>3 ekstra slot aç</Text>
             </View>
-            <TouchableOpacity
-              onPress={onClose}
-              style={[styles.closeButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}
-              accessibilityLabel="Kapat"
-              accessibilityRole="button"
-            >
-              <Feather name="x" size={24} color={theme.textSecondary} />
-            </TouchableOpacity>
           </View>
+          <TouchableOpacity
+            style={styles.premiumButton}
+            accessibilityLabel="Premium slotların kilidini aç"
+            accessibilityRole="button"
+          >
+            <Text style={styles.premiumButtonText}>Kilidi Aç</Text>
+          </TouchableOpacity>
+        </View>
 
-          {/* Premium Banner */}
-          <View style={styles.premiumBanner}>
-            <View style={styles.premiumLeft}>
-              <Feather name="lock" size={24} color="#eab308" />
-              <View>
-                <Text style={styles.premiumTitle}>Premium Slotlar</Text>
-                <Text style={styles.premiumSubtitle}>3 ekstra slot aç</Text>
-              </View>
+        {/* Refresh Button */}
+        <View style={styles.refreshRow}>
+          <TouchableOpacity
+            onPress={loadSlots}
+            disabled={isLoading}
+            style={[
+              styles.refreshButton,
+              { backgroundColor: theme.surfaceRaised, borderColor: theme.border },
+              isLoading && styles.buttonDisabled,
+            ]}
+            accessibilityLabel="Yenile"
+            accessibilityRole="button"
+          >
+            <Feather name="refresh-cw" size={16} color={theme.textPrimary} />
+            <Text style={[styles.refreshButtonText, { color: theme.textPrimary }]}>Yenile</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Slots List */}
+        <ScrollView style={styles.slotsList} contentContainerStyle={styles.slotsListContent}>
+          {isLoading && slots.length === 0 ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={theme.accentEvent} />
+              <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Yükleniyor...</Text>
             </View>
-            <TouchableOpacity
-              style={styles.premiumButton}
-              accessibilityLabel="Premium slotların kilidini aç"
-              accessibilityRole="button"
-            >
-              <Text style={styles.premiumButtonText}>Kilidi Aç</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Refresh Button */}
-          <View style={styles.refreshRow}>
-            <TouchableOpacity
-              onPress={loadSlots}
-              disabled={isLoading}
-              style={[
-                styles.refreshButton,
-                { backgroundColor: theme.surfaceRaised, borderColor: theme.border },
-                isLoading && styles.buttonDisabled,
-              ]}
-              accessibilityLabel="Yenile"
-              accessibilityRole="button"
-            >
-              <Feather name="refresh-cw" size={16} color={theme.textPrimary} />
-              <Text style={[styles.refreshButtonText, { color: theme.textPrimary }]}>Yenile</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Slots List */}
-          <ScrollView style={styles.slotsList} contentContainerStyle={styles.slotsListContent}>
-            {isLoading && slots.length === 0 ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={theme.accentEvent} />
-                <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Yükleniyor...</Text>
+          ) : (
+            slots.map((metadata) => (
+              <View key={metadata.slotId} style={styles.slotCardWrapper}>
+                <SaveSlotCard
+                  metadata={metadata}
+                  onLoad={handleLoad}
+                  onSave={handleSave}
+                  onDelete={handleDelete}
+                  onExport={handleExport}
+                  isCurrentSlot={metadata.slotId === currentSlotId}
+                  isAutoSave={metadata.slotId === 'auto'}
+                  theme={theme}
+                />
               </View>
-            ) : (
-              slots.map((metadata) => (
-                <View key={metadata.slotId} style={styles.slotCardWrapper}>
-                  <SaveSlotCard
-                    metadata={metadata}
-                    onLoad={handleLoad}
-                    onSave={handleSave}
-                    onDelete={handleDelete}
-                    onExport={handleExport}
-                    isCurrentSlot={metadata.slotId === currentSlotId}
-                    isAutoSave={metadata.slotId === 'auto'}
-                    theme={theme}
-                  />
-                </View>
-              ))
-            )}
-          </ScrollView>
+            ))
+          )}
+        </ScrollView>
 
-          {/* Import Footer */}
-          <View style={[styles.footer, { backgroundColor: theme.surfaceRaised, borderTopColor: theme.border }]}>
-            <TouchableOpacity
-              onPress={() => setShowExportModal(true)}
-              style={[styles.importButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}
-              accessibilityLabel="İçe aktar"
-              accessibilityRole="button"
-            >
-              <Feather name="download" size={16} color={theme.textPrimary} />
-              <Text style={[styles.importButtonText, { color: theme.textPrimary }]}>İçe Aktar</Text>
-            </TouchableOpacity>
-          </View>
+        {/* Import Footer */}
+        <View style={[styles.footer, { backgroundColor: theme.surfaceRaised, borderTopColor: theme.border }]}>
+          <TouchableOpacity
+            onPress={() => setShowExportModal(true)}
+            style={[styles.importButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}
+            accessibilityLabel="İçe aktar"
+            accessibilityRole="button"
+          >
+            <Feather name="download" size={16} color={theme.textPrimary} />
+            <Text style={[styles.importButtonText, { color: theme.textPrimary }]}>İçe Aktar</Text>
+          </TouchableOpacity>
         </View>
       </View>
+    </View>
+  );
 
-      {/* Export Modal */}
+  const exportContent = (
+    <View style={[styles.exportContainer, { backgroundColor: theme.surfaceBase, borderColor: theme.border }]}>
+      <View style={styles.exportHeader}>
+        <Text style={[styles.exportTitle, { color: theme.textPrimary }]}>Kayıt Dışa Aktar</Text>
+        <TouchableOpacity
+          onPress={() => {
+            setShowExportModal(false);
+            setExportSlotId(null);
+          }}
+          style={[styles.closeButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}
+          accessibilityLabel="Kapat"
+          accessibilityRole="button"
+        >
+          <Feather name="x" size={20} color={theme.textSecondary} />
+        </TouchableOpacity>
+      </View>
+      <Text style={[styles.exportDescription, { color: theme.textSecondary }]}>
+        Export/import işlemleri için SaveExportModal component'i kullanılacak
+      </Text>
+      <TouchableOpacity
+        onPress={() => {
+          setShowExportModal(false);
+          setExportSlotId(null);
+        }}
+        style={[styles.exportCloseButton, { backgroundColor: theme.accentEvent }]}
+        accessibilityLabel="Kapat"
+        accessibilityRole="button"
+      >
+        <Text style={styles.exportCloseButtonText}>Kapat</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const overlay = (
+    <View style={styles.overlayRoot} pointerEvents="box-none">
+      <Pressable style={styles.backdrop} onPress={onClose} />
+      {content}
+
       {showExportModal && exportSlotId && (
-        <Modal visible={showExportModal} animationType="fade" transparent>
-          <View style={styles.exportOverlay}>
-            <View style={[styles.exportContainer, { backgroundColor: theme.surfaceBase, borderColor: theme.border }]}>
-              <View style={styles.exportHeader}>
-                <Text style={[styles.exportTitle, { color: theme.textPrimary }]}>Kayıt Dışa Aktar</Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    setShowExportModal(false);
-                    setExportSlotId(null);
-                  }}
-                  style={[styles.closeButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}
-                  accessibilityLabel="Kapat"
-                  accessibilityRole="button"
-                >
-                  <Feather name="x" size={20} color={theme.textSecondary} />
-                </TouchableOpacity>
-              </View>
-              <Text style={[styles.exportDescription, { color: theme.textSecondary }]}>
-                Export/import işlemleri için SaveExportModal component'i kullanılacak
-              </Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setShowExportModal(false);
-                  setExportSlotId(null);
-                }}
-                style={[styles.exportCloseButton, { backgroundColor: theme.accentEvent }]}
-                accessibilityLabel="Kapat"
-                accessibilityRole="button"
-              >
-                <Text style={styles.exportCloseButtonText}>Kapat</Text>
-              </TouchableOpacity>
-            </View>
+        <View style={styles.overlayRoot} pointerEvents="box-none">
+          <Pressable
+            style={styles.backdrop}
+            onPress={() => {
+              setShowExportModal(false);
+              setExportSlotId(null);
+            }}
+          />
+          <View
+            style={[
+              styles.modalRoot,
+              {
+                paddingTop: insets.top + 16,
+                paddingBottom: insets.bottom + 16,
+              },
+            ]}
+          >
+            {exportContent}
           </View>
-        </Modal>
+        </View>
       )}
+    </View>
+  );
+
+  if (Platform.OS === 'android') {
+    return overlay;
+  }
+
+  return (
+    <Modal
+      visible={isOpen}
+      animationType="fade"
+      transparent
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
+      {overlay}
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
+  overlayRoot: {
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    zIndex: 1000,
+    elevation: 1000,
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  modalRoot: {
+    flex: 1,
+    alignItems: 'stretch',
     justifyContent: 'center',
     padding: 16,
   },
   container: {
     borderRadius: 16,
     borderWidth: 1,
-    maxHeight: '90%',
+    height: '90%',
+    minHeight: 320,
+    width: '100%',
+    maxWidth: 680,
     overflow: 'hidden',
   },
   header: {
@@ -402,16 +471,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
-  exportOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    padding: 16,
-  },
   exportContainer: {
     borderRadius: 16,
     borderWidth: 1,
     padding: 20,
+    width: '100%',
+    maxWidth: 680,
   },
   exportHeader: {
     flexDirection: 'row',

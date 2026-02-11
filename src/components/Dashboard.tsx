@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { Stats, GameState } from '../types';
+import { calculateGradeAverage } from '../utils/schoolLogic';
 
 interface DashboardProps {
   stats: Stats;
@@ -52,7 +53,7 @@ export const Dashboard = React.memo<DashboardProps>(({ stats, gameState, playerN
       }
       
       if (!isBaby) {
-          const avgGrade = (schoolGrades.math + schoolGrades.science + schoolGrades.language) / 3;
+          const avgGrade = calculateGradeAverage(schoolGrades);
           if (avgGrade < 45) {
               return { text: "Okul notların tehlikeli seviyede! Ders çalışsan iyi olur.", type: 'warning' };
           }
@@ -93,10 +94,10 @@ export const Dashboard = React.memo<DashboardProps>(({ stats, gameState, playerN
 
   const styles = StyleSheet.create({
     container: {
-      flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
-      padding: 16,
+      paddingVertical: 20,
+      paddingHorizontal: 16,
     },
     avatarContainer: {
       position: 'relative',

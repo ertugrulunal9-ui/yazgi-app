@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, StyleSheet, Modal } from 'react-native';
+import React, { useState, useMemo, useCallback } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, StyleSheet, Platform, StatusBar } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ACHIEVEMENTS } from '../systems/achievementDefinitions';
@@ -7,6 +7,7 @@ import { AchievementCard } from './AchievementCard';
 import { AchievementRarity, AchievementCategory } from '../types';
 
 interface AchievementListProps {
+  visible?: boolean;
   unlockedAchievementIds: string[];
   getProgress: (achievementId: string) => number;
   onClose: () => void;
@@ -41,6 +42,7 @@ const RARITY_COUNTS = {
 };
 
 export const AchievementList: React.FC<AchievementListProps> = ({
+  visible = true,
   unlockedAchievementIds,
   getProgress,
   onClose,
@@ -49,6 +51,16 @@ export const AchievementList: React.FC<AchievementListProps> = ({
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<FilterType>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const statusBarHeight = Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0;
+
+  const safeGetProgress = useCallback((achievementId: string) => {
+    try {
+      return getProgress(achievementId);
+    } catch (error) {
+      console.error('Achievement progress failed:', achievementId, error);
+      return 0;
+    }
+  }, [getProgress]);
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -86,9 +98,21 @@ export const AchievementList: React.FC<AchievementListProps> = ({
     });
   }, [filter, searchQuery, unlockedAchievementIds]);
 
+  if (!visible) return null;
+
   return (
-    <Modal visible={true} animationType="slide" transparent>
-      <View style={[styles.overlay, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      <View style={[
+        styles.overlay,
+        {
+          paddingTop: statusBarHeight + insets.top,
+          paddingBottom: insets.bottom,
+        }
+      ]}>
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={onClose}
+        />
         <View style={[styles.container, { backgroundColor: theme.surfaceBase, borderColor: theme.border }]}>
           {/* Header */}
           <View style={styles.header}>
@@ -178,7 +202,7 @@ export const AchievementList: React.FC<AchievementListProps> = ({
                   <AchievementCard
                     achievement={achievement}
                     isUnlocked={unlockedAchievementIds.includes(achievement.id)}
-                    progress={getProgress(achievement.id)}
+                    progress={safeGetProgress(achievement.id)}
                     theme={theme}
                   />
                 </View>
@@ -209,20 +233,24 @@ export const AchievementList: React.FC<AchievementListProps> = ({
           </View>
         </View>
       </View>
-    </Modal>
   );
 };
 
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
     justifyContent: 'center',
     padding: 16,
+    zIndex: 10000,
+    elevation: 10000,
   },
   container: {
     borderRadius: 16,
     borderWidth: 1,
+    width: '100%',
+    maxWidth: 420,
+    height: '90%',
     maxHeight: '90%',
     overflow: 'hidden',
   },

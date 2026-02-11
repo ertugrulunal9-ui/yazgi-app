@@ -1,7 +1,68 @@
 import { Achievement, Stats, GameState, Skills, SchoolGrades } from '../types';
+import {
+  hasBalancedOnboardingRoutine,
+  isInOnboardingWindow,
+  meetsCohortGuidanceObjective,
+} from '../utils/onboardingGuidance';
+
+const ONBOARDING_CHAIN_IDS = {
+  step1: 'onboarding_chain_first_choice',
+  step2: 'onboarding_chain_cohort_path',
+  step3: 'onboarding_chain_routine_builder',
+} as const;
+
+const hasUnlockedAchievement = (gameState: GameState, achievementId: string): boolean => {
+  return (gameState.unlockedAchievements || []).some(entry => entry.achievementId === achievementId);
+};
 
 // 50+ Production-Ready Achievements
 export const ACHIEVEMENTS: Achievement[] = [
+  // === ONBOARDING CHAIN (FIRST 3 SESSIONS) ===
+  {
+    id: ONBOARDING_CHAIN_IDS.step1,
+    name: 'Ilk Karar',
+    description: 'Ilk 3 oturumda ilk event kararini ver',
+    category: 'EVENTS',
+    rarity: 'COMMON',
+    icon: '🧭',
+    isSecret: false,
+    reward: { money: 400 },
+    check: (_stats: Stats, gameState: GameState) => {
+      if (!isInOnboardingWindow(gameState)) return false;
+      return (gameState.eventChoiceHistory || []).length >= 1;
+    }
+  },
+  {
+    id: ONBOARDING_CHAIN_IDS.step2,
+    name: 'Kendine Uygun Yol',
+    description: 'Cohort hedefindeki ilk aksiyonu tamamla',
+    category: 'EVENTS',
+    rarity: 'RARE',
+    icon: '🧩',
+    isSecret: false,
+    reward: { money: 900, stats: { discipline: 2 } },
+    check: (_stats: Stats, gameState: GameState) => {
+      if (!isInOnboardingWindow(gameState)) return false;
+      if (!hasUnlockedAchievement(gameState, ONBOARDING_CHAIN_IDS.step1)) return false;
+      return meetsCohortGuidanceObjective(gameState);
+    }
+  },
+  {
+    id: ONBOARDING_CHAIN_IDS.step3,
+    name: 'Rutin Kurucu',
+    description: 'Ilk 3 oturumda dengeli bir rutin olustur',
+    category: 'EVENTS',
+    rarity: 'EPIC',
+    icon: '🎯',
+    isSecret: false,
+    reward: { money: 2000, stats: { energy: 10, intelligence: 2 } },
+    check: (_stats: Stats, gameState: GameState) => {
+      if (!isInOnboardingWindow(gameState)) return false;
+      if (!hasUnlockedAchievement(gameState, ONBOARDING_CHAIN_IDS.step2)) return false;
+      return hasBalancedOnboardingRoutine(gameState);
+    }
+  },
+
   // === STATS CATEGORY (15) ===
   {
     id: 'genius',

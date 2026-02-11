@@ -131,14 +131,15 @@ export const Toast: React.FC<ToastProps> = React.memo(({
     : styles.centerPosition;
 
   return (
-    <Animated.View style={[styles.toastContainer, positionStyle, animatedStyle, style]}>
+    <Animated.View style={[styles.toastContainer, positionStyle, animatedStyle, style]} pointerEvents="none">
       {children}
     </Animated.View>
   );
 }, (prevProps, nextProps) => {
   return prevProps.visible === nextProps.visible &&
          prevProps.position === nextProps.position &&
-         prevProps.animationType === nextProps.animationType;
+         prevProps.animationType === nextProps.animationType &&
+         prevProps.style === nextProps.style;
 });
 
 /**
@@ -223,11 +224,13 @@ export const MessageToast: React.FC<{
   message: string;
   type?: 'success' | 'error' | 'info' | 'warning';
   onClose?: () => void;
+  style?: ViewStyle;
 }> = React.memo(({
   visible,
   message,
   type = 'info',
   onClose,
+  style,
 }) => {
   const typeColors = {
     success: { bg: '#065f46', border: '#059669', text: '#34d399' },
@@ -250,6 +253,7 @@ export const MessageToast: React.FC<{
           backgroundColor: colors.bg,
           borderColor: colors.border,
         },
+        style,
       ])}
     >
       <Text style={[styles.messageText, { color: colors.text }]}>
@@ -260,7 +264,8 @@ export const MessageToast: React.FC<{
 }, (prevProps, nextProps) => {
   return prevProps.visible === nextProps.visible &&
          prevProps.type === nextProps.type &&
-         prevProps.message === nextProps.message;
+         prevProps.message === nextProps.message &&
+         prevProps.style === nextProps.style;
 });
 
 /**

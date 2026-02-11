@@ -4,7 +4,8 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Modal,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
@@ -19,10 +20,12 @@ interface TutorialTooltipProps {
 
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 12000,
+    elevation: 12000,
   },
   tooltipContainer: {
     backgroundColor: '#16213e',
@@ -97,34 +100,39 @@ export const TutorialTooltip: React.FC<TutorialTooltipProps> = ({
     return null;
   }
 
+  const statusBarHeight = Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0;
+
   return (
-    <Modal transparent visible={visible} animationType="fade">
-      <View style={styles.overlay}>
-        <View style={styles.tooltipContainer}>
-          <View style={styles.header}>
-            <Text style={styles.title}>{title}</Text>
-            <TouchableOpacity onPress={onDismiss} style={styles.closeButton}>
-              <Feather name="x" size={20} color="#888" />
+    <View style={[styles.overlay, { paddingTop: statusBarHeight }]}>
+      <TouchableOpacity
+        style={StyleSheet.absoluteFill}
+        activeOpacity={1}
+        onPress={onDismiss}
+      />
+      <View style={styles.tooltipContainer}>
+        <View style={styles.header}>
+          <Text style={styles.title}>{title}</Text>
+          <TouchableOpacity onPress={onDismiss} style={styles.closeButton}>
+            <Feather name="x" size={20} color="#888" />
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.message}>{message}</Text>
+
+        <View style={styles.footer}>
+          <TouchableOpacity onPress={onDismiss} style={styles.dismissButton}>
+            <Text style={styles.dismissButtonText}>Kapat</Text>
+          </TouchableOpacity>
+
+          {onNext && (
+            <TouchableOpacity onPress={onNext} style={styles.nextButton}>
+              <Text style={styles.nextButtonText}>Sonraki</Text>
+              <Feather name="chevron-right" size={14} color="#1a1a2e" />
             </TouchableOpacity>
-          </View>
-
-          <Text style={styles.message}>{message}</Text>
-
-          <View style={styles.footer}>
-            <TouchableOpacity onPress={onDismiss} style={styles.dismissButton}>
-              <Text style={styles.dismissButtonText}>Kapat</Text>
-            </TouchableOpacity>
-
-            {onNext && (
-              <TouchableOpacity onPress={onNext} style={styles.nextButton}>
-                <Text style={styles.nextButtonText}>Sonraki</Text>
-                <Feather name="chevron-right" size={14} color="#1a1a2e" />
-              </TouchableOpacity>
-            )}
-          </View>
+          )}
         </View>
       </View>
-    </Modal>
+    </View>
   );
 };
 
