@@ -6,7 +6,7 @@ Full monetization system with IAP (In-App Purchases) and Ads:
 
 - **6 Premium Products**: Traits, save slots, cosmetics, energy refill, season pass, remove ads
 - **Rewarded Ads**: 5/day limit, 3 reward types (energy/intelligence/money)
-- **Interstitial Ads**: Game over screen (bypassed with remove_ads purchase)
+- **Interstitial Ads**: Game-over flow içinde tetiklenir (remove_ads varsa atlanır)
 - **Mock Mode**: Currently active for dev/testing (no real payments)
 
 ---
@@ -20,7 +20,6 @@ src/
 ├── components/
 │   ├── ShopModal.tsx            # 200+ lines: Premium store UI
 │   └── RewardedAdButton.tsx     # 150+ lines: Rewarded ad selection
-└── components/EndScreen.tsx     # Updated: Interstitial ad on game over
 ```
 
 ---
@@ -56,7 +55,7 @@ src/
 
 ### Interstitial Ad
 - **Trigger**: Game over (age 18)
-- **Auto-shows**: 1s delay on EndScreen mount
+- **Implementation**: Game-over akışında `monetizationService.showInterstitialAd()` çağrısı
 - **Bypassed**: If player owns `remove_ads`
 
 ---
@@ -129,9 +128,9 @@ window.location.reload();
 )}
 ```
 
-### 4. Interstitial Ad (EndScreen)
+### 4. Interstitial Ad (Game-over flow)
 ```tsx
-// EndScreen.tsx line ~15
+// Game-over flow (e.g. src/screens/GameOverScreen.tsx)
 useEffect(() => {
   const hasRemoveAds = await monetizationService.hasProduct('remove_ads');
   if (!hasRemoveAds) {

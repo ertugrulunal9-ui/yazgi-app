@@ -188,7 +188,7 @@ Daha fazla performans için:
 
 1. **Lazy Loading**: 
    ```typescript
-   const EndScreen = React.lazy(() => import('./components/EndScreen'))
+   const GameOverScreen = React.lazy(() => import('./screens/GameOverScreen'))
    ```
 
 2. **Virtual Scrolling**: EventLog için react-window kullan

@@ -192,7 +192,7 @@ const progress = getProgress('millionaire'); // 0-100
 
 ## 🎮 Integration Example
 
-See `ACHIEVEMENT_SYSTEM_EXAMPLE.tsx` for full working demo.
+Use the quick integration snippet below as the current working reference.
 
 **Quick Integration:**
 

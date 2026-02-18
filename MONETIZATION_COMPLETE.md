@@ -143,7 +143,7 @@ Rewarded ad selection UI with:
 **Location**: Main HUB menu, below action grid (ages 7+)
 
 ### 3. Game Over - Interstitial Ad
-**Location**: EndScreen component (`src/components/EndScreen.tsx`)
+**Location**: Game-over akışı (tercihen `src/screens/GameOverScreen.tsx`)
 **Trigger**: `useEffect` on component mount
 **Bypass**: Checks `remove_ads` product ownership
 
@@ -329,7 +329,7 @@ if (hasSeasonPass) {
 
 ### 5. Remove Ads
 ```typescript
-// EndScreen.tsx - already implemented
+// Game-over flow integration (wire in GameOverScreen)
 const hasRemoveAds = await monetizationService.hasProduct('remove_ads');
 if (!hasRemoveAds) {
   await monetizationService.showInterstitialAd();
@@ -402,7 +402,7 @@ const [showShop, setShowShop] = useState(false); // ✅
 - [x] ShopModal UI component
 - [x] RewardedAdButton component
 - [x] App.tsx integration
-- [x] EndScreen interstitial ad
+- [x] Game-over flow interstitial integration
 - [x] Premium save slot unlock
 - [x] localStorage persistence
 - [x] Error handling & toasts

@@ -6,7 +6,6 @@
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
-    "projectRoot": "./",
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -25,20 +24,85 @@
             "newArchEnabled": true
           }
         }
-      ]
+      ],
+      "@react-native-firebase/app",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511"
+        }
+      ],
+      "expo-secure-store"
     ],
     "jsEngine": "hermes",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yazgi.app"
+      "bundleIdentifier": "com.yazgi.app",
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#121212"
       },
-      "package": "com.yazgi.app"
+      "package": "com.yazgi.app",
+      "googleServicesFile": "./google-services.json"
     },
     "extra": {
+      "revenueCat": {
+        "androidApiKey": "",
+        "iosApiKey": "",
+        "productIds": {
+          "premium_traits": {
+            "android": "premium_traits",
+            "ios": "premium_traits"
+          },
+          "save_slots_premium": {
+            "android": "save_slots_premium",
+            "ios": "save_slots_premium"
+          },
+          "cosmetics_pack": {
+            "android": "cosmetics_pack",
+            "ios": "cosmetics_pack"
+          },
+          "energy_refill": {
+            "android": "energy_refill",
+            "ios": "energy_refill"
+          },
+          "season_pass": {
+            "android": "season_pass",
+            "ios": "season_pass"
+          },
+          "remove_ads": {
+            "android": "remove_ads",
+            "ios": "remove_ads"
+          }
+        },
+        "entitlements": {
+          "premium": "save_slots_premium",
+          "premium_slots": "save_slots_premium",
+          "no_ads": "remove_ads",
+          "season_pass": "season_pass"
+        }
+      },
+      "admob": {
+        "androidRewardedUnitId": "",
+        "iosRewardedUnitId": "",
+        "androidInterstitialUnitId": "",
+        "iosInterstitialUnitId": ""
+      },
+      "monetization": {
+        "interstitialSessionLimit": 2,
+        "interstitialCooldownMs": 180000,
+        "remoteConfigUrl": "",
+        "entitlementApiBaseUrl": "",
+        "requireServerAuthority": true,
+        "entitlementRefreshOnStartup": false,
+        "entitlementRequestTimeoutMs": 2000
+      },
+      "cloudSync": {
+        "enabled": false
+      },
       "eas": {
         "projectId": "c4188d07-e11e-43ce-a21d-5f620933c449"
       }
