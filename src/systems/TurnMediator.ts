@@ -24,10 +24,13 @@ import {
   ScheduledEvent,
   SchoolGrades,
   Stats,
+  TraitChangeFeedback,
 } from '../types';
-import { applySkillUpdates, checkTraitFormation, getMaxEnergy } from '../utils/gameUtils';
+import { applySkillUpdates, checkTraitFormation, getMaxEnergy, resolveTraitChanges } from '../utils/gameUtils';
 import { calculateEndingErrorDebt } from '../utils/endingResolver';
 import { calculateOutcomeScore, updateAdaptivePacingStreak } from '../utils/eventSelection';
+import { buildTraitChangeFeedback } from '../utils/traitFeedback';
+import { PACING_CONSTANTS } from '../constants/gameConstants';
 
 export interface ChoiceContext {
   choice: Choice;
@@ -45,8 +48,16 @@ export interface TurnResult {
   gameStateUpdates: GameStateUpdate;
   appliedChanges: Partial<Stats>;
   newTraits: string[];
+  removedTraits: string[];
+  traitChanges: TraitChangeFeedback[];
   fateRoll?: FateRollResult;
   momentumFeedback?: MomentumFeedback;
+  /**
+   * True when energy hit 0 but the player had fewer than
+   * PACING_CONSTANTS.MIN_DECISIONS_PER_DAY decisions this day.
+   * The caller should inject a recovery event instead of advancing the day.
+   */
+  shouldForceRecovery: boolean;
 }
 
 export interface MomentumFeedback {
@@ -207,6 +218,7 @@ export class TurnMediator {
 
     let appliedChanges: Partial<Stats> = {};
     let statsAfterChoice = stats;
+    let statNarrativeFeedback: string[] = [];
     const burdenRisk = calculateEndingErrorDebt(gameState, stats).total;
     if (Object.keys(effectToApply).length > 0) {
       const statResult = StatEngine.applyChanges(stats, effectToApply, {
@@ -218,6 +230,7 @@ export class TurnMediator {
       });
       statsAfterChoice = statResult.newStats;
       appliedChanges = statResult.appliedChanges;
+      statNarrativeFeedback = StatEngine.getStatChangeNarrativeFeedback(statResult.details);
     }
 
     const triggerResults = TriggerManager.processChoice({
@@ -239,11 +252,26 @@ export class TurnMediator {
       gameState,
       statsAfterChoice
     );
-    const newTraits = [...gameState.traits, ...traitResult.newTraits];
-    const nextMaxEnergy = getMaxEnergy(gameState.age, gameState.family, newTraits);
+    const grantedTraits = effectiveChoice.grantTraits || [];
+    const traitResolution = resolveTraitChanges({
+      currentTraits: gameState.traits,
+      gainedTraits: [...traitResult.newTraits, ...grantedTraits],
+      removedTraits: traitResult.removedTraits,
+    });
+    const nextTraitProgress = { ...traitResult.updatedProgress };
+    [...traitResolution.gainedTraits, ...traitResolution.removedTraits].forEach(traitId => {
+      if (nextTraitProgress[traitId]) {
+        delete nextTraitProgress[traitId];
+      }
+    });
+    const nextMaxEnergy = getMaxEnergy(gameState.age, gameState.family, traitResolution.traits);
     const finalStats = statsAfterChoice.energy > nextMaxEnergy
       ? { ...statsAfterChoice, energy: nextMaxEnergy }
       : statsAfterChoice;
+    const traitChanges = buildTraitChangeFeedback(
+      traitResolution.gainedTraits,
+      traitResolution.removedTraits
+    );
 
     const newMemories = triggerResults.memoryToStore
       ? [...gameState.memories, triggerResults.memoryToStore]
@@ -277,16 +305,27 @@ export class TurnMediator {
 
     const updatedNPCs = this.updateRelationships(gameState.npcs, choice.npcRelationChange, gameState.turn);
 
-    // Set pendingCliffhanger for cliffhanger events (id starts with "cliff_")
-    const pendingCliffhanger = eventId.startsWith('cliff_') && futureEvents.length > 0
+    const continuationEventId = futureEvents[0]?.eventId ?? gameState.currentEvent?.continuationEventId;
+    const generatedPendingCliffhanger = eventId.startsWith('cliff_') && futureEvents.length > 0
       ? {
           type: 'SCHEDULED_EVENT' as const,
           title: typeof gameState.currentEvent?.text === 'function'
             ? 'Merak ediyorum...'
             : (String(gameState.currentEvent?.text || '').slice(0, 60) + '...'),
           description: effectiveChoice.feedback,
+          continuationEventId,
+          sourceEventId: eventId,
         }
-      : gameState.pendingCliffhanger;
+      : undefined;
+
+    // Clear previous cliffhanger only after its continuation event is shown and resolved.
+    const shouldClearPendingCliffhanger = (
+      !!gameState.pendingCliffhanger?.continuationEventId
+      && gameState.pendingCliffhanger.continuationEventId === eventId
+    );
+
+    const pendingCliffhanger = generatedPendingCliffhanger
+      ?? (shouldClearPendingCliffhanger ? undefined : gameState.pendingCliffhanger);
 
     const historyEntry: LogEntry = {
       id: `log_${Date.now()}`,
@@ -307,6 +346,17 @@ export class TurnMediator {
       outcomeScore
     );
 
+    const nextDecisionCount = (gameState.dailyDecisionCount ?? 0) + 1;
+    // Day ends when energy hits 0. If the player hasn't reached the minimum
+    // decision count yet, flag it so the caller can inject a recovery event.
+    const energyDepleted = finalStats.energy <= 0;
+    const shouldForceRecovery =
+      energyDepleted && nextDecisionCount < PACING_CONSTANTS.MIN_DECISIONS_PER_DAY;
+    // Reset the counter on actual day end (energy gone and minimum satisfied).
+    const nextDailyDecisionCount = energyDepleted && !shouldForceRecovery
+      ? 0
+      : nextDecisionCount;
+
     return {
       eventId,
       choice,
@@ -314,6 +364,7 @@ export class TurnMediator {
       newStats: finalStats,
       fateRoll: fateRollResult,
       momentumFeedback,
+      shouldForceRecovery,
       gameStateUpdates: {
         phase: 'RESULT',
         ...(effectiveChoice.setSelectedGoal !== undefined
@@ -325,13 +376,16 @@ export class TurnMediator {
           skillChanges: skillResult.appliedChanges,
           gradeChanges: gradeUpdates,
           traitProgressUpdates: traitResult.progressUpdates,
+          traitChanges,
           fateRoll: fateRollResult,
+          ...(statNarrativeFeedback.length > 0 ? { statNarrativeFeedback } : {}),
         },
+        dailyDecisionCount: nextDailyDecisionCount,
         historyLog: [...gameState.historyLog, historyEntry],
         actionCounts: newActionCounts,
         eventChoiceHistory: newEventHistory,
-        traits: newTraits,
-        traitProgress: traitResult.updatedProgress,
+        traits: traitResolution.traits,
+        traitProgress: nextTraitProgress,
         schoolGrades: { ...gameState.schoolGrades, ...gradeUpdates },
         skills: skillResult.newSkills,
         npcs: updatedNPCs,
@@ -348,7 +402,9 @@ export class TurnMediator {
         pendingCliffhanger,
       },
       appliedChanges,
-      newTraits: traitResult.newTraits,
+      newTraits: traitResolution.gainedTraits,
+      removedTraits: traitResolution.removedTraits,
+      traitChanges,
     };
   }
 

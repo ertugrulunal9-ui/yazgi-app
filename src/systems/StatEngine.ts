@@ -129,11 +129,68 @@ export class StatEngine {
       });
     }
 
+    // === FIRSAT MALİYETİ (Opportunity Cost) ===
+    // Para kazanımı, aile ilişkisini hafifçe düşürür — "çalışan çocuk aileyle zaman geçiremiyor"
+    // Sadece kazanım varsa ve aile ilişkisi zaten bu set'te değiştirilmiyorsa uygula
+    const moneyGain = (changes['money'] ?? 0);
+    if (moneyGain > 0 && !('familyRelation' in changes)) {
+      const opportunityCost = -Math.max(1, Math.floor(moneyGain / 80));
+      const currentFR = newStats['familyRelation'];
+      if (currentFR > 5) {
+        const newFR = Math.max(0, currentFR + opportunityCost);
+        newStats['familyRelation'] = newFR;
+        const actualFRDelta = newFR - (currentStats['familyRelation']);
+        if (actualFRDelta !== 0) {
+          appliedChanges['familyRelation'] = (appliedChanges['familyRelation'] ?? 0) + actualFRDelta;
+        }
+      }
+    }
+
     return {
       newStats,
       appliedChanges,
       details,
     };
+  }
+
+  /**
+   * Para miktarını yaşa göre 0-100 "servet skoru"na normalize eder.
+   * Dashboard gösterimi için kullanılır; ham money değeri oyun içinde değişmez.
+   */
+  static normalizeMoneyToScore(money: number, age: number): number {
+    const cap = age < 7 ? 500 : age < 12 ? 2_000 : 10_000;
+    return Math.min(100, Math.round((money / cap) * 100));
+  }
+
+  /**
+   * Stat değişim detaylarından oyuncu dostu narrative mesajlar üretir.
+   * Sayısal çarpanları gizleyerek sadece "neden" bilgisi verir.
+   */
+  static getStatChangeNarrativeFeedback(details: StatChangeDetail[]): string[] {
+    const messages: string[] = [];
+
+    for (const detail of details) {
+      if (detail.stat === 'energy' || detail.stat === 'money') continue;
+      if (detail.originalDelta <= 0) continue;
+
+      const ratio = detail.originalDelta > 0 ? detail.finalDelta / detail.originalDelta : 1;
+
+      if (detail.burdenMultiplier < 1 && ratio < 0.75) {
+        if (!messages.includes('Çok yorgunsun, kazancın azaldı.')) {
+          messages.push('Çok yorgunsun, kazancın azaldı.');
+        }
+      } else if (detail.traitMultiplier > 1.2 && detail.finalDelta > detail.originalDelta) {
+        if (!messages.includes('Yeteneklerin devreye girdi!')) {
+          messages.push('Yeteneklerin devreye girdi!');
+        }
+      } else if (detail.momentumMultiplier > 1.1) {
+        if (!messages.includes('Momentum bonusu aldın!')) {
+          messages.push('Momentum bonusu aldın!');
+        }
+      }
+    }
+
+    return messages;
   }
 
   static applyRaw(currentStats: Stats, changes: Partial<Stats>): Stats {

@@ -14,6 +14,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_ilk_adim',
+    tags: ['family', 'social'],
     text: "Ayaklarının üstünde duruyorsun. Bir adım... iki adım... YÜRÜYORSUN! Annen sevinçten ağlıyor!",
     minAge: 1, maxAge: 2, difficulty: 1, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'GROWTH',
@@ -31,6 +32,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_ilk_kelime',
+    tags: ['family', 'social'],
     text: "Ağzından bir ses çıkıyor... 'Anne!' mı 'Baba!' mı? Ev halkı nefesini tutmuş bekliyor!",
     minAge: 1, maxAge: 2, difficulty: 1, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'SOCIAL',
@@ -56,6 +58,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_kreş_ilk_gun',
+    tags: ['school', 'social'],
     text: "Bugün kreşe ilk gidişin. Annen seni bırakıp gidecek. Yabancı yüzler, garip sesler...",
     minAge: 2, maxAge: 4, difficulty: 2, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'SOCIAL',
@@ -84,6 +87,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_oyuncak_paylasim',
+    tags: ['social', 'family'],
     text: "Parkta bir çocuk senin oyuncağını istiyor. Vermek istemiyorsun ama annen bakıyor...",
     minAge: 2, maxAge: 5, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'MORAL',
@@ -114,6 +118,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_gece_korkusu',
+    tags: ['family', 'social'],
     text: "Gece karanlık çok korkunç. Yatağın altında bir şey var gibi...",
     minAge: 3, maxAge: 6, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'RISK',
@@ -143,6 +148,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_sebze_yemek',
+    tags: ['family', 'social'],
     text: "Annen tabağına brokoli koydu. Yeşil, garip görünüyor. Yemelisin ama...",
     minAge: 2, maxAge: 6, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'CONFLICT',
@@ -180,6 +186,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_tuvalet_egitimi',
+    tags: ['family', 'social'],
     text: "Artık bez yok! Tuvaleti kullanma zamanı. Lazımlık hazır...",
     minAge: 2, maxAge: 4, difficulty: 2, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'GROWTH',
@@ -197,6 +204,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_kardes_gelmis',
+    tags: ['family', 'social'],
     text: "Eve yeni bir bebek geldi. Artık tek çocuk değilsin. Annen ona çok bakıyor...",
     minAge: 2, maxAge: 5, difficulty: 2, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'MORAL',
@@ -227,6 +235,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_el_opme_zorlanma',
+    tags: ['family', 'social'],
     text: "Akraba ziyareti. Annen 'Gel hala/dayının elini öp' diyor. Ama onları pek sevmiyorsun...",
     minAge: 3, maxAge: 7, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'MORAL',
@@ -258,6 +267,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_misafir_oyuncak',
+    tags: ['social', 'family'],
     text: "Misafir geldi. Küçük bir çocuk var ve en sevdiğin oyuncağı istiyor. Annen bakıyor...",
     minAge: 3, maxAge: 6, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'MORAL',
@@ -296,6 +306,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_market_inat',
+    tags: ['family', 'social'],
     text: "Markette çikolata gördün. İSTİYORSUN! Ama annen 'Hayır' dedi. Yere yatacak mısın?",
     minAge: 2, maxAge: 6, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'CONFLICT',
@@ -334,6 +345,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_kopek_korkusu',
+    tags: ['social', 'family'],
     text: "Sokakta büyük bir köpek! Kuyruğunu sallıyor ama korkuyorsun. Babandaysa yaklaşıyor...",
     minAge: 3, maxAge: 7, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'RISK',
@@ -364,6 +376,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_abi_zorbalik',
+    tags: ['family', 'social'],
     text: "Ağabeyin/ablan yine oyuncağını aldı. Ağlıyorsun ama o gülüyor. Ne yapacaksın?",
     minAge: 3, maxAge: 7, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'CONFLICT',
@@ -402,6 +415,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_sofra_konusma',
+    tags: ['family', 'social'],
     text: "Yemek masasında büyükler konuşuyor. Söze karışmak istiyorsun ama 'Çocuklar konuşmaz' dediler...",
     minAge: 4, maxAge: 7, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'CONFLICT',
@@ -432,6 +446,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_apartman_hopla',
+    tags: ['family', 'social'],
     text: "Evde zıplamak çok eğlenceli! Ama alt komşu tavana vurdu. Annen 'Dur' diyor...",
     minAge: 3, maxAge: 7, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'CONFLICT',
@@ -461,6 +476,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_komsu_bonbon',
+    tags: ['social', 'family'],
     text: "Komşu teyze sana şeker verdi. Ama onu sevmiyorsun, hep öpüyor seni. Almak zorundasın...",
     minAge: 3, maxAge: 6, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'SOCIAL',
@@ -490,6 +506,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_kaybolma_panik',
+    tags: ['family', 'social'],
     text: "Çarşıdayken annenle gözgöze gelemedin. Etrafta yabancılar var. KAYBOLMUŞSUN!",
     minAge: 4, maxAge: 7, difficulty: 3, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'RISK',
@@ -530,6 +547,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_inat_krizi',
+    tags: ['family', 'social'],
     text: "Annen diş fırçalaman gerektiğini söylüyor. Ama sen İNAT EDİYORSUN! Kimse seni zorlayamaz!",
     minAge: 3, maxAge: 6, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'CONFLICT',
@@ -560,6 +578,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_baskasinin_oyuncak',
+    tags: ['social', 'family'],
     text: "Parkta başka çocuğun oyuncağı çok güzel. Sen de istiyorsun. O çocuk seninle oynamıyor...",
     minAge: 3, maxAge: 6, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'MORAL',
@@ -599,6 +618,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_tuvalet_acil',
+    tags: ['family', 'social'],
     text: "Parkta tuvalete çok sıkıştın! Ama tuvalet yok. Ne yapacaksın?",
     minAge: 3, maxAge: 6, difficulty: 2, rarity: 'UNCOMMON', isRepeatable: true,
     personalityCategory: 'RISK',
@@ -629,6 +649,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_tablet_sure',
+    tags: ['family', 'social'],
     text: "Çizgi film izliyorsun. Annen 'Tamam süre doldu!' diyor. Ama en heyecanlı yerindeydi!",
     minAge: 3, maxAge: 7, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'CONFLICT',
@@ -659,6 +680,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_dis_fircalama',
+    tags: ['family', 'social'],
     text: "Yatma vakti! Ama dişlerini fırçalaman lazım. Üşeniyorsun...",
     minAge: 3, maxAge: 7, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'CONFLICT',
@@ -688,6 +710,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_park_kavga',
+    tags: ['social', 'family'],
     text: "Parkta başka bir çocuk seni itti! Düştün, acıdı. O çocuk kaçıyor...",
     minAge: 4, maxAge: 7, difficulty: 3, rarity: 'UNCOMMON', isRepeatable: true,
     personalityCategory: 'CONFLICT',
@@ -728,6 +751,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_yemek_inat',
+    tags: ['family', 'social'],
     text: "Annen yemek yaptı. Ama beğenmedin! Yemeyeceksin!",
     minAge: 2, maxAge: 6, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'CONFLICT',
@@ -758,6 +782,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_oyuncak_magazasi',
+    tags: ['family', 'money'],
     text: "Oyuncak mağazasındasın! Etraf oyuncak dolu! Bir tane almak istiyorsun AMA...",
     minAge: 4, maxAge: 7, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'MORAL',
@@ -796,6 +821,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_bebek_yardim',
+    tags: ['family', 'social'],
     text: "Annen bebekle uğraşıyor, çok yorgun. Sana 'Biberon getirir misin?' diyor...",
     minAge: 4, maxAge: 7, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'MORAL',
@@ -826,6 +852,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_top_cama_vurma',
+    tags: ['family', 'social'],
     text: "Top oynuyorsun. Top kaydı ve KOMŞUNUN CAMI! CAAAAAM! Top patladı ama cam kırılmadı...",
     minAge: 5, maxAge: 7, difficulty: 3, rarity: 'UNCOMMON', isRepeatable: true,
     personalityCategory: 'MORAL',
@@ -857,6 +884,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_ev_yardimi',
+    tags: ['family', 'social'],
     text: "Annen evi topluyor. Çok yorgun görünüyor. Oyuncaklarını toplar mısın?",
     minAge: 4, maxAge: 7, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'MORAL',
@@ -891,6 +919,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_bayram_sabahi',
+    tags: ['family', 'social'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.openness < 30) {
@@ -951,6 +980,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_ramazan_iftar',
+    tags: ['family', 'social'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.empathy > 70) {
@@ -1005,6 +1035,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_kurban_bayrami',
+    tags: ['family', 'social'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.empathy > 70) {
@@ -1058,6 +1089,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_karne_gunu',
+    tags: ['karne', 'school'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       const avgGrade = ctx.grades ? Math.round((ctx.grades.math + ctx.grades.science + ctx.grades.language) / 3) : 70;
@@ -1117,6 +1149,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_lgs_hazirlik',
+    tags: ['exam', 'study', 'school', 'sinav'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.patience < 30) {
@@ -1169,6 +1202,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_yks_stresi',
+    tags: ['exam', 'study', 'school', 'yks', 'sinav'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       const stress = ctx.stress.current;
@@ -1224,6 +1258,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_akraba_sorgusu',
+    tags: ['family', 'social'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.openness < 30) {
@@ -1281,6 +1316,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_evlilik_baskisi',
+    tags: ['family', 'social'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.conformity > 70) {
@@ -1331,6 +1367,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_mahalle_futbolu',
+    tags: ['sport', 'athletic', 'match'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.openness < 30) {
@@ -1392,6 +1429,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_internet_kafe',
+    tags: ['social', 'group'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.conformity < 30) {
@@ -1455,6 +1493,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_sigara_teklifi',
+    tags: ['social', 'group'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.conformity > 70) {
@@ -1517,6 +1556,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_farkli_olmak',
+    tags: ['social', 'group'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.conformity < 30) {
@@ -1575,6 +1615,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_anne_yemegi',
+    tags: ['family', 'social'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.empathy > 70) {
@@ -1627,6 +1668,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_milli_mac',
+    tags: ['sport', 'match', 'athletic'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.openness > 70) {
@@ -1676,6 +1718,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_23_nisan',
+    tags: ['family', 'social'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.openness < 30) {
@@ -1740,6 +1783,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_oyun_parki',
+    tags: ['social', 'family'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.openness < 30) {
@@ -1783,6 +1827,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_ilk_bisiklet',
+    tags: ['sport', 'athletic'],
     text: "Baban sana bisiklet aldı! Ama binmeyi bilmiyorsun. Yardımcı tekerlekler var... takılsın mı?",
     minAge: 5, maxAge: 8, difficulty: 2, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'GROWTH',
@@ -1813,6 +1858,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_cizgi_film',
+    tags: ['creative', 'art'],
     text: (_ctx: EventContext) => {
       return "Sabah erkenden kalktın. Çizgi filmler başlıyor! Ama annen kahvaltı hazırladı...";
     },
@@ -1852,6 +1898,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_okul_ilk_gun',
+    tags: ['school', 'social'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.openness < 30) {
@@ -1897,6 +1944,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_harçlık',
+    tags: ['money', 'finance'],
     text: "Hafta sonu harçlık günü! Baban sana 20 TL verdi. Ne yapacaksın?",
     minAge: 6, maxAge: 15, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'MORAL',
@@ -1937,6 +1985,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_sabah_uyanis',
+    tags: ['family', 'social'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.patience > 60) {
@@ -1983,6 +2032,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_ev_isler',
+    tags: ['family', 'social'],
     text: (_ctx: EventContext) => {
       return "Annen senin odanı temizlemeni istiyor. Ama arkadaşların dışarıda bekliyor...";
     },
@@ -2021,6 +2071,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_bakkal',
+    tags: ['social', 'family', 'money'],
     text: "Annen seni bakkala gönderdi. Alışveriş listesi var ama fazla para da verdi...",
     minAge: 7, maxAge: 15, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'MORAL',
@@ -2058,6 +2109,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_komsu_ziyaret',
+    tags: ['social', 'family'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.openness < 30) {
@@ -2102,6 +2154,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_yagmurlu_gun',
+    tags: ['creative', 'art'],
     text: "Bugün hava yağmurlu. Dışarı çıkmak mümkün değil. Evde ne yapacaksın?",
     minAge: 9, maxAge: 15, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'GROWTH',
@@ -2145,6 +2198,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_aile_yemegi',
+    tags: ['family', 'social'],
     text: (_ctx: EventContext) => {
       return "Akşam yemeği vakti. Aile masada toplandı. Bugün ne konuşulacak?";
     },
@@ -2181,6 +2235,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_ders_calis',
+    tags: ['study', 'school'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.patience > 60) {
@@ -2227,6 +2282,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_hasta_olma',
+    tags: ['family', 'social'],
     text: "Bugün kendini iyi hissetmiyorsun. Boğazın ağrıyor, ateşin var...Okula gitmeli misin?",
     minAge: 6, maxAge: 18, difficulty: 2, rarity: 'UNCOMMON', isRepeatable: true,
     personalityCategory: 'MORAL',
@@ -2264,6 +2320,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_sinav_gunu',
+    tags: ['exam', 'study', 'school', 'sinav'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.patience > 60) {
@@ -2310,6 +2367,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_tatil_plani',
+    tags: ['family', 'social'],
     text: "Yaz tatili başlıyor! 3 ay boş zaman. Ne yapacaksın?",
     minAge: 7, maxAge: 17, difficulty: 2, rarity: 'UNCOMMON', isRepeatable: true,
     personalityCategory: 'GROWTH',
@@ -2356,6 +2414,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_kayip_esya',
+    tags: ['family', 'social'],
     text: "En sevdiğin kalemini/oyuncağını kaybettin! Ne yapacaksın?",
     minAge: 5, maxAge: 12, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'GROWTH',
@@ -2396,6 +2455,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_yeni_komsular',
+    tags: ['social', 'family'],
     text: "Yan daireye yeni komşular taşındı. Onlarla tanışacak mısın?",
     minAge: 6, maxAge: 16, difficulty: 1, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'SOCIAL',
@@ -2435,6 +2495,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_kavga_sahit',
+    tags: ['social', 'family'],
     text: (_ctx: EventContext) => {
       return "Okulda iki çocuk kavga ediyor. Sen de oradasın. Ne yapacaksın?";
     },
@@ -2477,6 +2538,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_sinif_gorev',
+    tags: ['school', 'social'],
     text: "Öğretmen sınıf başkanı/temsilci arıyor. Aday olacak mısın?",
     minAge: 8, maxAge: 16, difficulty: 2, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'SOCIAL',
@@ -2515,6 +2577,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_bos_gun',
+    tags: ['social', 'creative'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.openness > 60) {
@@ -2556,6 +2619,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_hediye_secimi',
+    tags: ['family', 'social', 'money'],
     text: "Annenin doğum günü yaklaşıyor. Bir şey almak istiyorsun ama paran az...",
     minAge: 8, maxAge: 16, difficulty: 2, rarity: 'UNCOMMON', isRepeatable: true,
     personalityCategory: 'MORAL',

@@ -58,6 +58,12 @@ const getGoalWeightMultiplier = (event: GameEvent, selectedGoal?: LifeGoal | nul
     : GOAL_EVENT_WEIGHTING.UNALIGNED_MULTIPLIER;
 };
 
+const shouldUseChaosSelection = (currentTurn?: number): boolean => (
+  typeof currentTurn === 'number'
+  && currentTurn > 0
+  && currentTurn % GOAL_EVENT_WEIGHTING.CHAOS_INTERVAL === 0
+);
+
 export const calculateGoalAlignmentScore = (
   event: GameEvent,
   selectedGoal?: LifeGoal | null
@@ -212,43 +218,146 @@ const getCategoryDiversityMultiplier = (
   return Math.max(0.4, 1 - count * 0.2);
 };
 
+// =================================================================
+// PURE WEIGHT CALCULATION LAYER (test edilebilir, yan etkisiz)
+// =================================================================
+
+/** Ağırlık hesaplamasının her bileşenini ayrı ayrı açıklar. */
+export interface EventWeightBreakdown {
+  rarityBase: number;
+  adaptivePacingMultiplier: number;
+  narrativeBonus: number;
+  freshnessMultiplier: number;
+  goalMultiplier: number;
+  categoryMultiplier: number;
+  finalWeight: number;
+}
+
+/** Ağırlığı hesaplanmış bir event kaydı. */
+export interface WeightedEvent {
+  event: GameEvent;
+  weight: number;
+  breakdown: EventWeightBreakdown;
+}
+
+/** `calculateEventWeights` için bağımsız context nesnesi. */
+export interface EventSelectionContext {
+  band: AdaptivePacingBand;
+  selectedGoal?: LifeGoal | null;
+  frequency?: EventFrequencyMap;
+  currentTurn?: number;
+  recentCategories?: string[];
+}
+
+const getAdaptivePacingMultiplier = (
+  event: GameEvent,
+  band: AdaptivePacingBand,
+): number => {
+  const difficulty = event.difficulty ?? 2;
+  const rarity = event.rarity ?? 'COMMON';
+  let m = 1;
+  if (band === 'RECOVERY') {
+    if (difficulty <= 2) m *= 1.35;
+    if (difficulty >= 4) m *= 0.6;
+    if (rarity === 'COMMON') m *= 1.2;
+  } else if (band === 'CHALLENGE') {
+    if (difficulty >= 4) m *= 1.6;
+    if (difficulty <= 2) m *= 0.7;
+    if (rarity === 'UNCOMMON') m *= 1.2;
+    if (rarity === 'RARE') m *= 1.35;
+  }
+  return m;
+};
+
+/**
+ * PURE — Yan etkisi yoktur, deterministiktir.
+ *
+ * Aday event listesini alır, her event için ağırlık + breakdown hesaplar.
+ * Analytics entegrasyonu için breakdown objesi kullanılabilir:
+ *   analytics.track('event_weight', { eventId: w.event.id, ...w.breakdown });
+ *
+ * @example
+ * const weighted = calculateEventWeights(candidates, {
+ *   band: 'CHALLENGE',
+ *   selectedGoal: 'ACADEMIC',
+ *   frequency: gameState.eventFrequency,
+ *   currentTurn: gameState.turn,
+ *   recentCategories,
+ * });
+ */
+export function calculateEventWeights(
+  candidates: GameEvent[],
+  context: EventSelectionContext,
+): WeightedEvent[] {
+  return candidates.map((event) => {
+    const rarity = event.rarity ?? 'COMMON';
+    const rarityBase = BASE_RARITY_WEIGHTS[rarity];
+
+    const adaptivePacingMultiplier = getAdaptivePacingMultiplier(event, context.band);
+    const narrativeBonus = event.reqEventIds && event.reqEventIds.length > 0 ? 1.25 : 1;
+    const freshnessMultiplier =
+      context.frequency && context.currentTurn !== undefined
+        ? getFreshnessMultiplier(event.id, context.frequency, context.currentTurn)
+        : 1;
+    const goalMultiplier = getGoalWeightMultiplier(event, context.selectedGoal);
+    const categoryMultiplier = getCategoryDiversityMultiplier(
+      event.personalityCategory,
+      context.recentCategories,
+    );
+
+    const finalWeight = Math.max(
+      1,
+      Math.round(
+        rarityBase *
+          adaptivePacingMultiplier *
+          narrativeBonus *
+          freshnessMultiplier *
+          goalMultiplier *
+          categoryMultiplier,
+      ),
+    );
+
+    return {
+      event,
+      weight: finalWeight,
+      breakdown: {
+        rarityBase,
+        adaptivePacingMultiplier,
+        narrativeBonus,
+        freshnessMultiplier,
+        goalMultiplier,
+        categoryMultiplier,
+        finalWeight,
+      },
+    };
+  });
+}
+
+/**
+ * IMPURE — Rastgele seçim yapar.
+ *
+ * Deterministic testler için `rng` parametresine sabit seed'li fonksiyon ver:
+ *   selectFromWeighted(weighted, () => 0.42)
+ */
+export function selectFromWeighted(
+  weighted: WeightedEvent[],
+  rng: () => number,
+): GameEvent | null {
+  return pickWeighted(weighted, rng);
+}
+
+// Internal — getEventWeight artık calculateEventWeights üzerinden çalışır.
 const getEventWeight = (
   event: GameEvent,
   band: AdaptivePacingBand,
   selectedGoal?: LifeGoal | null,
   frequency?: EventFrequencyMap,
   currentTurn?: number,
-  recentCategories?: string[]
-): number => {
-  const rarity = event.rarity ?? 'COMMON';
-  const baseWeight = BASE_RARITY_WEIGHTS[rarity];
-  const difficulty = event.difficulty ?? 2;
-  let multiplier = 1;
-
-  if (band === 'RECOVERY') {
-    if (difficulty <= 2) multiplier *= 1.35;
-    if (difficulty >= 4) multiplier *= 0.6;
-    if (rarity === 'COMMON') multiplier *= 1.2;
-  } else if (band === 'CHALLENGE') {
-    if (difficulty >= 4) multiplier *= 1.6;
-    if (difficulty <= 2) multiplier *= 0.7;
-    if (rarity === 'UNCOMMON') multiplier *= 1.2;
-    if (rarity === 'RARE') multiplier *= 1.35;
-  }
-
-  if (event.reqEventIds && event.reqEventIds.length > 0) {
-    multiplier *= 1.25;
-  }
-
-  if (frequency && currentTurn !== undefined) {
-    multiplier *= getFreshnessMultiplier(event.id, frequency, currentTurn);
-  }
-
-  multiplier *= getGoalWeightMultiplier(event, selectedGoal);
-  multiplier *= getCategoryDiversityMultiplier(event.personalityCategory, recentCategories);
-
-  return Math.max(1, Math.round(baseWeight * multiplier));
-};
+  recentCategories?: string[],
+): number =>
+  calculateEventWeights([event], {
+    band, selectedGoal, frequency, currentTurn, recentCategories,
+  })[0].weight;
 
 const pickWeighted = (
   weightedEvents: { event: GameEvent; weight: number }[],
@@ -265,6 +374,13 @@ const pickWeighted = (
   }
 
   return weightedEvents[weightedEvents.length - 1].event;
+};
+
+const pickChaosRandom = (candidates: GameEvent[], randomFn: () => number): GameEvent | null => {
+  if (candidates.length === 0) return null;
+  const neutralWeight = Math.max(0, GOAL_EVENT_WEIGHTING.CHAOS_MULTIPLIER);
+  const weighted = candidates.map(event => ({ event, weight: neutralWeight }));
+  return pickWeighted(weighted, randomFn);
 };
 
 export const getRecentCategories = (
@@ -294,13 +410,17 @@ export const selectEventWithAdaptivePacing = (
   const candidates = events.filter(event => isEventEligibleWithSets(event, context, recentSet, allSeenSet));
   if (candidates.length === 0) return options.fallbackEvent;
 
+  const rng = options.randomFn ?? Math.random;
+  if (shouldUseChaosSelection(options.currentTurn)) {
+    return pickChaosRandom(candidates, rng) ?? options.fallbackEvent;
+  }
+
   const recentCategories = options.recentCategories ?? getRecentCategories(events, recentEventIds);
   const band = getAdaptivePacingBand(options.adaptivePacingStreak ?? 0);
   const weighted = candidates.map(event => ({
     event,
     weight: getEventWeight(event, band, options.selectedGoal, options.eventFrequency, options.currentTurn, recentCategories),
   }));
-  const rng = options.randomFn ?? Math.random;
   return pickWeighted(weighted, rng) ?? options.fallbackEvent;
 };
 

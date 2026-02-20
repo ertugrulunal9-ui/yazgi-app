@@ -1,5 +1,6 @@
-import React, { createContext, useCallback, useContext } from 'react';
+import React, { createContext, useCallback, useContext, useState } from 'react';
 import { AppLocale, t as translate } from '../i18n/strings';
+import { FloatingText, FloatingTextAnimation } from '../types';
 import { DensityMetrics, ThemeTokens, UIPrefs } from '../utils/themeUtils';
 
 interface UIContextValue {
@@ -9,6 +10,18 @@ interface UIContextValue {
   locale: AppLocale;
   setLocale: (locale: AppLocale) => void;
   t: (key: string, params?: Record<string, string | number | boolean>, fallback?: string) => string;
+
+  // Transient UI state — not persisted, intentionally outside GameContext
+  floatingTexts: FloatingText[];
+  showFloatingText: (
+    text: string,
+    x: number,
+    y: number,
+    color: string,
+    options?: { animationType?: FloatingTextAnimation; duration?: number }
+  ) => void;
+  removeFloatingText: (id: number) => void;
+  clearFloatingTexts: () => void;
 }
 
 const UIContext = createContext<UIContextValue | undefined>(undefined);
@@ -30,11 +43,40 @@ export const UIProvider: React.FC<UIProviderProps> = ({
   setLocale,
   children,
 }) => {
+  const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
+
   const t = useCallback(
     (key: string, params?: Record<string, string | number | boolean>, fallback?: string) =>
       translate(locale, key, params, fallback),
     [locale]
   );
+
+  const showFloatingText = useCallback((
+    text: string,
+    x: number,
+    y: number,
+    color: string,
+    options?: { animationType?: FloatingTextAnimation; duration?: number }
+  ) => {
+    const newText: FloatingText = {
+      id: Date.now() + Math.random(),
+      text,
+      x,
+      y,
+      color,
+      animationType: options?.animationType ?? 'arcadeFloat',
+      duration: options?.duration ?? 2000,
+    };
+    setFloatingTexts(prev => [...prev, newText]);
+  }, []);
+
+  const removeFloatingText = useCallback((id: number) => {
+    setFloatingTexts(prev => prev.filter(item => item.id !== id));
+  }, []);
+
+  const clearFloatingTexts = useCallback(() => {
+    setFloatingTexts([]);
+  }, []);
 
   return (
     <UIContext.Provider
@@ -45,6 +87,10 @@ export const UIProvider: React.FC<UIProviderProps> = ({
         locale,
         setLocale,
         t,
+        floatingTexts,
+        showFloatingText,
+        removeFloatingText,
+        clearFloatingTexts,
       }}
     >
       {children}

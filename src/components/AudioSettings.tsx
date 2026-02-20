@@ -93,13 +93,14 @@ export const AudioSettings: React.FC<AudioSettingsProps> = ({ isOpen, onClose })
           {/* Master Volume */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-300 flex items-center gap-2">
+              <label htmlFor="master-volume" className="text-gray-300 flex items-center gap-2">
                 <Volume2 size={16} />
                 Ana Ses
-              </span>
+              </label>
               <span className="text-white font-medium">{Math.round(masterVolume * 100)}%</span>
             </div>
             <input
+              id="master-volume"
               type="range"
               min="0"
               max="1"
@@ -114,13 +115,14 @@ export const AudioSettings: React.FC<AudioSettingsProps> = ({ isOpen, onClose })
           {/* Music Volume */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-300 flex items-center gap-2">
+              <label htmlFor="music-volume" className="text-gray-300 flex items-center gap-2">
                 <Music size={16} />
                 Müzik
-              </span>
+              </label>
               <span className="text-white font-medium">{Math.round(musicVolume * 100)}%</span>
             </div>
             <input
+              id="music-volume"
               type="range"
               min="0"
               max="1"
@@ -135,13 +137,14 @@ export const AudioSettings: React.FC<AudioSettingsProps> = ({ isOpen, onClose })
           {/* SFX Volume */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-300 flex items-center gap-2">
+              <label htmlFor="sfx-volume" className="text-gray-300 flex items-center gap-2">
                 <Sparkles size={16} />
                 Efektler
-              </span>
+              </label>
               <span className="text-white font-medium">{Math.round(sfxVolume * 100)}%</span>
             </div>
             <input
+              id="sfx-volume"
               type="range"
               min="0"
               max="1"

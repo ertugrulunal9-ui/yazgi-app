@@ -3,16 +3,24 @@
  * 3+ seçenekte swipe kartlar, 1-2 seçenekte klasik buton fallback.
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 // Reanimated reserved for future card stack animations
-import { Choice, EventContext, PersonalityState } from '../types';
+import { Choice, EventContext, EventRarity, PersonalityState } from '../types';
 import { useUI } from '../context/UIContext';
 import { SwipeChoiceCard } from './SwipeChoiceCard';
 import { AnimatedButton } from '../animations/ButtonAnimations';
 import { StaggeredFadeIn, buttonPress, importantDecision } from '../animations';
 import { getMomentumDialogueTag } from '../utils/momentumDialogue';
+
+/** Raritet bazlı minimum okuma süresi (ms). Swipe bu geçmeden kilitli kalır. */
+const MIN_READ_TIME_MS: Record<EventRarity | 'BREAKDOWN', number> = {
+  COMMON: 1500,
+  UNCOMMON: 2500,
+  RARE: 4000,
+  BREAKDOWN: 3000,
+};
 
 interface SwipeChoiceDeckProps {
   choices: (Choice | ((ctx: EventContext) => Choice))[];
@@ -21,6 +29,10 @@ interface SwipeChoiceDeckProps {
   isBreakdownEvent: boolean;
   originalChoices: (Choice | ((ctx: EventContext) => Choice))[];
   personalityState?: Partial<PersonalityState>;
+  /** Mevcut event'in rarity değeri — swipe kilit süresini belirler */
+  eventRarity?: EventRarity;
+  /** Event kimliği — event değiştiğinde kilidi sıfırlar */
+  eventId?: string;
 }
 
 const BACK_CARD_SCALE = 0.95;
@@ -33,9 +45,26 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
   isBreakdownEvent,
   originalChoices,
   personalityState,
+  eventRarity,
+  eventId,
 }) => {
   const { theme, metrics } = useUI();
   const [activeIndex, setActiveIndex] = useState(0);
+
+  // RARE/BREAKDOWN event'lerde seçimi klasik butonlara düşür
+  const forceButtonFallback = isBreakdownEvent || eventRarity === 'RARE';
+
+  // Swipe kilidi: event gösterildiğinden bu yana MIN_READ_TIME geçmeden swipe kapalı
+  const [swipeLocked, setSwipeLocked] = useState(true);
+  useEffect(() => {
+    setSwipeLocked(true);
+    const rarityKey: EventRarity | 'BREAKDOWN' = isBreakdownEvent
+      ? 'BREAKDOWN'
+      : (eventRarity ?? 'COMMON');
+    const delay = MIN_READ_TIME_MS[rarityKey];
+    const timer = setTimeout(() => setSwipeLocked(false), delay);
+    return () => clearTimeout(timer);
+  }, [eventId, isBreakdownEvent, eventRarity]);
 
   const resolvedChoices = useMemo(
     () => choices.map(c => resolveChoice(c)),
@@ -54,8 +83,8 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
     );
   }, [resolvedChoices.length]);
 
-  // Fallback: 2 veya daha az seçenek → klasik butonlar
-  if (resolvedChoices.length <= 2) {
+  // Fallback: 2 veya daha az seçenek YA DA RARE/BREAKDOWN → klasik butonlar
+  if (resolvedChoices.length <= 2 || forceButtonFallback) {
     return (
       <StaggeredFadeIn>
         {choices.map((choice, index) => {
@@ -132,8 +161,8 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
                 index={activeIndex}
                 totalChoices={resolvedChoices.length}
                 isActive={isActive}
-                onSelect={() => handleSelect(index)}
-                onSkip={handleSkip}
+                onSelect={swipeLocked ? () => {} : () => handleSelect(index)}
+                onSkip={swipeLocked ? () => {} : handleSkip}
                 theme={theme}
                 metrics={metrics}
                 personalityState={personalityState}
@@ -147,18 +176,22 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
       <View style={styles.tapFallback}>
         <AnimatedButton
           onPress={() => {
+            if (swipeLocked) return;
             buttonPress();
             importantDecision();
             handleSelect(activeIndex);
           }}
           animationType="pressScale"
-          style={{ ...styles.selectButton, backgroundColor: theme.accentEvent }}
+          style={{
+            ...styles.selectButton,
+            backgroundColor: swipeLocked ? theme.border : theme.accentEvent,
+          }}
           accessibilityRole="button"
-          accessibilityLabel={`Sec: ${resolvedChoices[activeIndex]?.text}`}
+          accessibilityLabel={swipeLocked ? 'Karar vermek için bekle...' : `Sec: ${resolvedChoices[activeIndex]?.text}`}
           accessibilityHint="Bu secimi onayla"
         >
           <Text style={styles.selectButtonText}>
-            Sec
+            {swipeLocked ? '...' : 'Seç'}
           </Text>
         </AnimatedButton>
       </View>

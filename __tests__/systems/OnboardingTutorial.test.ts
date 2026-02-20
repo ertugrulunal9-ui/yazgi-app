@@ -10,22 +10,22 @@ import {
 
 describe('OnboardingTutorial', () => {
   describe('INITIAL_TUTORIAL_STATE', () => {
-    it('starts at WELCOME_HUB with no completed steps', () => {
-      expect(INITIAL_TUTORIAL_STATE.currentStep).toBe('WELCOME_HUB');
+    it('starts at GOAL_VISION with no completed steps', () => {
+      expect(INITIAL_TUTORIAL_STATE.currentStep).toBe('GOAL_VISION');
       expect(INITIAL_TUTORIAL_STATE.completedSteps).toEqual([]);
     });
   });
 
   describe('advanceTutorial', () => {
-    it('advances from WELCOME_HUB to FIRST_ACTION', () => {
+    it('advances from GOAL_VISION to WELCOME_HUB', () => {
       const next = advanceTutorial(INITIAL_TUTORIAL_STATE);
-      expect(next.currentStep).toBe('FIRST_ACTION');
-      expect(next.completedSteps).toContain('WELCOME_HUB');
+      expect(next.currentStep).toBe('WELCOME_HUB');
+      expect(next.completedSteps).toContain('GOAL_VISION');
     });
 
     it('advances through all steps to COMPLETED', () => {
       let state: TutorialState = INITIAL_TUTORIAL_STATE;
-      const steps = ['FIRST_ACTION', 'STAT_CHANGE', 'FIRST_EVENT', 'ENERGY_EXPLAIN', 'COMPLETED'];
+      const steps = ['WELCOME_HUB', 'FIRST_ACTION', 'STAT_CHANGE', 'FIRST_EVENT', 'ENERGY_EXPLAIN', 'COMPLETED'];
 
       for (const expectedStep of steps) {
         state = advanceTutorial(state);
@@ -48,6 +48,7 @@ describe('OnboardingTutorial', () => {
 
     it('marks all steps as completed', () => {
       const result = skipTutorial();
+      expect(result.completedSteps).toContain('GOAL_VISION');
       expect(result.completedSteps).toContain('WELCOME_HUB');
       expect(result.completedSteps).toContain('FIRST_ACTION');
       expect(result.completedSteps).toContain('ENERGY_EXPLAIN');
@@ -56,13 +57,21 @@ describe('OnboardingTutorial', () => {
   });
 
   describe('getTutorialContent', () => {
+    it('returns dynamic content for GOAL_VISION', () => {
+      const content = getTutorialContent('GOAL_VISION', { selectedGoal: 'ACADEMIC' });
+      expect(content).not.toBeNull();
+      expect(content!.message).toContain('Akademik');
+      expect(content!.stepNumber).toBe(1);
+      expect(content!.totalSteps).toBe(6);
+    });
+
     it('returns content for WELCOME_HUB', () => {
       const content = getTutorialContent('WELCOME_HUB');
       expect(content).not.toBeNull();
       expect(content!.title).toBeTruthy();
       expect(content!.message).toBeTruthy();
-      expect(content!.stepNumber).toBe(1);
-      expect(content!.totalSteps).toBe(5);
+      expect(content!.stepNumber).toBe(2);
+      expect(content!.totalSteps).toBe(6);
     });
 
     it('returns null for COMPLETED', () => {
@@ -70,11 +79,12 @@ describe('OnboardingTutorial', () => {
     });
 
     it('has correct step numbers for all steps', () => {
-      expect(getTutorialContent('WELCOME_HUB')!.stepNumber).toBe(1);
-      expect(getTutorialContent('FIRST_ACTION')!.stepNumber).toBe(2);
-      expect(getTutorialContent('STAT_CHANGE')!.stepNumber).toBe(3);
-      expect(getTutorialContent('FIRST_EVENT')!.stepNumber).toBe(4);
-      expect(getTutorialContent('ENERGY_EXPLAIN')!.stepNumber).toBe(5);
+      expect(getTutorialContent('GOAL_VISION')!.stepNumber).toBe(1);
+      expect(getTutorialContent('WELCOME_HUB')!.stepNumber).toBe(2);
+      expect(getTutorialContent('FIRST_ACTION')!.stepNumber).toBe(3);
+      expect(getTutorialContent('STAT_CHANGE')!.stepNumber).toBe(4);
+      expect(getTutorialContent('FIRST_EVENT')!.stepNumber).toBe(5);
+      expect(getTutorialContent('ENERGY_EXPLAIN')!.stepNumber).toBe(6);
     });
   });
 
@@ -82,11 +92,22 @@ describe('OnboardingTutorial', () => {
     const baseContext = {
       phase: 'HUB',
       turn: 1,
+      selectedGoal: 'ACADEMIC' as const,
       actionHistory: [] as string[],
       eventChoiceHistory: [] as Array<{ eventId: string }>,
       energy: 100,
       maxEnergy: 100,
     };
+
+    it('shows GOAL_VISION only on first hub turn when goal exists', () => {
+      expect(shouldShowStep('GOAL_VISION', baseContext)).toBe(true);
+      expect(shouldShowStep('GOAL_VISION', { ...baseContext, selectedGoal: null })).toBe(false);
+      expect(shouldShowStep('GOAL_VISION', { ...baseContext, turn: 2 })).toBe(false);
+    });
+
+    it('shows GOAL_VISION in SETUP phase for a new game', () => {
+      expect(shouldShowStep('GOAL_VISION', { ...baseContext, phase: 'SETUP' })).toBe(true);
+    });
 
     it('shows WELCOME_HUB on turn 1 in HUB phase', () => {
       expect(shouldShowStep('WELCOME_HUB', baseContext)).toBe(true);

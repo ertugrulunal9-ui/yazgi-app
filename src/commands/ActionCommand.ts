@@ -7,15 +7,17 @@ import {
 import { getEffectiveOwnedItems, getItem } from '../data/items';
 import { applyMomentumSignal, resolveMomentumSignal } from '../systems/PersonalityMomentumEngine';
 import { StatEngine } from '../systems/StatEngine';
-import { FamilyWealth, GameState, PersonalityShift, SchoolGrades, Skills, Stats } from '../types';
+import { FamilyWealth, GameState, PersonalityShift, SchoolGrades, Skills, Stats, TraitChangeFeedback } from '../types';
 import {
   applySkillUpdates,
   applySkillsToHubAction,
   checkTraitFormation,
   getMaxEnergy,
+  resolveTraitChanges,
 } from '../utils/gameUtils';
 import { calculateEndingErrorDebt } from '../utils/endingResolver';
 import { applyPersonalityEffects, getPersonalityAxisName, updateStress } from '../utils/personalitySystem';
+import { buildTraitChangeFeedback } from '../utils/traitFeedback';
 
 const TURN_LIMITED_ACTIONS = new Set(['baby_eat', 'baby_sleep', 'ask_allowance']);
 const MONEY_GAIN_MULTIPLIER_BY_WEALTH: Record<FamilyWealth, number> = {
@@ -50,6 +52,8 @@ export interface ActionResult {
   feedbackMessage: string;
   traitProgressUpdates: string[];
   newTraits: string[];
+  removedTraits?: string[];
+  traitChanges?: TraitChangeFeedback[];
   adjustedEnergyCost: number;
   totalSkillGain: number;
   opensExamGame?: ExamGameType;
@@ -144,6 +148,8 @@ export class HubActionCommand implements ActionCommand {
         feedbackMessage: action.feedback,
         traitProgressUpdates: [],
         newTraits: [],
+        removedTraits: [],
+        traitChanges: [],
         adjustedEnergyCost,
         totalSkillGain: 0,
         opensExamGame: action.opensExamGame,
@@ -238,11 +244,25 @@ export class HubActionCommand implements ActionCommand {
       gameState,
       statsAfterAction
     );
-    const newTraits = [...gameState.traits, ...traitResult.newTraits];
-    const nextMaxEnergy = getMaxEnergy(gameState.age, gameState.family, newTraits);
+    const traitResolution = resolveTraitChanges({
+      currentTraits: gameState.traits,
+      gainedTraits: traitResult.newTraits,
+      removedTraits: traitResult.removedTraits,
+    });
+    const nextTraitProgress = { ...traitResult.updatedProgress };
+    [...traitResolution.gainedTraits, ...traitResolution.removedTraits].forEach(traitId => {
+      if (nextTraitProgress[traitId]) {
+        delete nextTraitProgress[traitId];
+      }
+    });
+    const nextMaxEnergy = getMaxEnergy(gameState.age, gameState.family, traitResolution.traits);
     const finalStats = statsAfterAction.energy > nextMaxEnergy
       ? { ...statsAfterAction, energy: nextMaxEnergy }
       : statsAfterAction;
+    const traitChanges = buildTraitChangeFeedback(
+      traitResolution.gainedTraits,
+      traitResolution.removedTraits
+    );
 
     const historyEntry = {
       id: `log_${Date.now()}`,
@@ -312,18 +332,21 @@ export class HubActionCommand implements ActionCommand {
         actionHistory: nextActionHistory,
         skills: nextSkills,
         schoolGrades: nextGrades,
-        traits: newTraits,
-        traitProgress: traitResult.updatedProgress,
+        traits: traitResolution.traits,
+        traitProgress: nextTraitProgress,
         maxEnergy: nextMaxEnergy,
         stress: nextStress,
         personality: nextPersonality,
         personalityHistory: [...gameState.personalityHistory, ...personalityShifts],
         personalityState: momentumResult.nextState,
+        dailyDecisionCount: (gameState.dailyDecisionCount ?? 0) + 1,
         ...(action.purchaseItemId ? { inventory: nextInventory } : {}),
       },
       feedbackMessage,
       traitProgressUpdates: traitResult.progressUpdates,
-      newTraits: traitResult.newTraits,
+      newTraits: traitResolution.gainedTraits,
+      removedTraits: traitResolution.removedTraits,
+      traitChanges,
       adjustedEnergyCost,
       totalSkillGain,
     };
@@ -509,6 +532,8 @@ export class HubActionCommand implements ActionCommand {
       feedbackMessage,
       traitProgressUpdates: [],
       newTraits: [],
+      removedTraits: [],
+      traitChanges: [],
       adjustedEnergyCost,
       totalSkillGain: 0,
       errorType,

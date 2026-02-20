@@ -1,7 +1,8 @@
-import { GameState, InnerThoughtType, LifeGoal, PersonalityState, PersonalityTendency } from '../types';
+import { EventMemory, FateOutcome, GameState, InnerThoughtType, LifeGoal, PersonalityState, PersonalityTendency } from '../types';
 import { normalizePersonalityState } from '../systems/PersonalityMomentumEngine';
 import { GoalMismatchAnalysis } from './endingResolver';
 import { getTraitName } from '../data/traits';
+import { getMomentumVisibilityFromPersonalityState } from './momentumVisibility';
 
 const TENDENCIES: PersonalityTendency[] = ['HELPFUL', 'PRAGMATIC', 'AGGRESSIVE'];
 
@@ -76,15 +77,51 @@ const TRAIT_PROGRESS_TEMPLATES = [
 
 // ── Strategic Monologue Interface ─────────────────────────────────────
 
+// ── Age Milestone Monologues ──────────────────────────────────────────
+
+const AGE_MILESTONE_MONOLOGUES: Record<number, string[]> = {
+  7:  ['Artık daha büyüğüm... İlkokul bitti, yeni bir başlangıç.'],
+  10: ['Tek haneli yaşlar geride kaldı. Bir şeyler değişiyor içimde.'],
+  11: ['Az sonra 12 olacağım. Ortaokul bitiyor...'],
+  13: ['13 yaşındayım artık. Her şey daha karmaşık hissettiriyor.'],
+  15: ['15... Lise ortasındayım. Kimin olacağımı hâlâ bilmiyorum.'],
+  17: ['17 oldum. Artık sadece bir yılım var.'],
+  18: ['18... Her şeyin başlangıcı mı, yoksa sonu mu?'],
+};
+
+// ── Fate Roll Reactive Lines ──────────────────────────────────────────
+
+const FATE_REACTIVE_LINES: Record<FateOutcome, string[]> = {
+  BLESSED:   ['Bu kadar şanslı olmak... Kader bugün benim yanımda.'],
+  FORTUNATE: ['İşler beklenmedik bir şekilde yolunda gitti. Belki şans var.'],
+  NEUTRAL:   [],
+  UNLUCKY:   ['Bu kadar şanssız olmak... Kader mi bu, yoksa ben mi?'],
+  CURSED:    ['Her şey ters gitti. Bu kadar kötü bir gün olabilir mi?'],
+};
+
+// ── Memory-Based Recall Lines ─────────────────────────────────────────
+
+const MEMORY_RECALL_TEMPLATES: Record<string, string> = {
+  REGRET:       'O kararı verdiğimden bu yana... hâlâ aklımda.',
+  GUILT:        'O an yanlış bir şey yaptığımı biliyordum. Umarım telafi ederim.',
+  PRIDE:        'O anı düşününce içim ısınıyor. Doğru yaptım.',
+  SATISFACTION: 'Bazı kararlar insanı sakinleştiriyor. O öyle bir andı.',
+  NEUTRAL:      '',
+};
+
 export interface StrategicMonologueInput {
   burdenRisk: number;
   age: number;
+  turnsUntilNextAge?: number;
   selectedGoal: LifeGoal | null;
   goalMismatch: GoalMismatchAnalysis;
   traitProgress: GameState['traitProgress'];
   personalityState: Partial<PersonalityState> | undefined;
   turn: number;
   pendingCliffhanger?: { type: string; title: string; description: string };
+  lastFateOutcome?: FateOutcome;
+  recentHighWeightMemory?: EventMemory;
+  turnsSinceMemory?: number;
 }
 
 export interface StrategicMonologueResult {
@@ -105,7 +142,20 @@ const stripEmoji = (text: string): string =>
 // ── Priority Queue: Strategic Monologue ───────────────────────────────
 
 export const getStrategicMonologue = (input: StrategicMonologueInput): StrategicMonologueResult | null => {
-  const { burdenRisk, age, selectedGoal, goalMismatch, traitProgress, personalityState, turn, pendingCliffhanger } = input;
+  const {
+    burdenRisk,
+    age,
+    turnsUntilNextAge,
+    selectedGoal,
+    goalMismatch,
+    traitProgress,
+    personalityState,
+    turn,
+    pendingCliffhanger,
+    lastFateOutcome,
+    recentHighWeightMemory,
+    turnsSinceMemory,
+  } = input;
 
   // P0 — CLIFFHANGER HINT (pending event teasers)
   if (pendingCliffhanger && turn % 3 === 0) {
@@ -141,8 +191,44 @@ export const getStrategicMonologue = (input: StrategicMonologueInput): Strategic
     return { text: pickByTurn(messages, turn), type: 'MISMATCH' };
   }
 
-  // P3 — TRAIT PROGRESS (>= 50% ilerleme)
+  // P2.5 — AGE MILESTONE yaklaşıyor (3 tur içinde)
+  if (turnsUntilNextAge !== undefined && turnsUntilNextAge <= 3) {
+    const nextAge = age + 1;
+    const lines = AGE_MILESTONE_MONOLOGUES[nextAge];
+    if (lines && lines.length > 0 && turn % 2 === 0) {
+      return { text: pickByTurn(lines, turn), type: 'IDLE' };
+    }
+  }
+
+  // P2.6 — FATE ROLL tepkisi (son tur içinde, yalnızca aşırı uçlar)
+  if (lastFateOutcome && (lastFateOutcome === 'CURSED' || lastFateOutcome === 'BLESSED')) {
+    const fateLines = FATE_REACTIVE_LINES[lastFateOutcome];
+    if (fateLines.length > 0 && turn % 4 === 0) {
+      return { text: pickByTurn(fateLines, turn), type: 'MOMENTUM' };
+    }
+  }
+
+  // P2.7 — BELLEK ANISI (5-10 tur önce oluşan HIGH weight memory'ye gönderme)
+  if (
+    recentHighWeightMemory &&
+    turnsSinceMemory !== undefined &&
+    turnsSinceMemory >= 5 &&
+    turnsSinceMemory <= 10 &&
+    turn % 5 === 0
+  ) {
+    const template = MEMORY_RECALL_TEMPLATES[recentHighWeightMemory.emotion];
+    if (template) {
+      return { text: template, type: 'IDLE' };
+    }
+  }
+
+  // P3 — TRAIT PROGRESS (>= 50% ilerleme; >= 70% için daha güçlü satır)
   if (traitProgress) {
+    const TRAIT_PROGRESS_STRONG = [
+      '{traitName} artık benim bir parçam. Daha fazla değiştiremez kimse bunu.',
+      'Kitaplarla, kararlarla geçen her gün... {traitName} beni şekillendirdi.',
+    ];
+
     const progressEntries = Object.entries(traitProgress);
     for (const [traitId, progress] of progressEntries) {
       if (
@@ -153,13 +239,24 @@ export const getStrategicMonologue = (input: StrategicMonologueInput): Strategic
       ) {
         const rawName = getTraitName(traitId);
         const traitName = stripEmoji(rawName);
-        const template = pickByTurn(TRAIT_PROGRESS_TEMPLATES, turn, traitId.length);
+        const ratio = progress.points / progress.required;
+        const templates = ratio >= 0.7 ? TRAIT_PROGRESS_STRONG : TRAIT_PROGRESS_TEMPLATES;
+        const template = pickByTurn(templates, turn, traitId.length);
         return { text: template.replace('{traitName}', traitName), type: 'TRAIT' };
       }
     }
   }
 
-  // P4 — MOMENTUM HIGH (streak >= 5)
+  // P4 — MOMENTUM (narrative feedback, numeric-free)
+  const visibility = getMomentumVisibilityFromPersonalityState(personalityState);
+  if (visibility.streakLevel === 'ACTIVE') {
+    return { text: visibility.hint, type: 'MOMENTUM' };
+  }
+  if (visibility.streakLevel === 'BUILDING' && turn % 3 === 0 && visibility.hint) {
+    return { text: visibility.hint, type: 'MOMENTUM' };
+  }
+
+  // P4.1 — MOMENTUM HIGH (streak >= 5): stronger flavor line
   const normalized = normalizePersonalityState(personalityState);
   const dominant = TENDENCIES
     .slice()
@@ -170,7 +267,7 @@ export const getStrategicMonologue = (input: StrategicMonologueInput): Strategic
       return normalized[b].multiplier - normalized[a].multiplier;
     })[0];
 
-  if (dominant && normalized[dominant].streak >= 5) {
+  if (dominant && visibility.streakLevel === 'POWERFUL' && normalized[dominant].streak >= 5) {
     const entry = normalized[dominant];
     const lines = MONOLOGUE_BANK[dominant];
     const index = Math.abs(turn + entry.streak + entry.count) % lines.length;

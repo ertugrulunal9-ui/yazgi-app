@@ -34,9 +34,13 @@ export const MOMENTUM_CONSTANTS = {
 /** Goal-oriented event selection tuning */
 export const GOAL_EVENT_WEIGHTING = {
   /** Weight multiplier for events aligned with selected life goal */
-  ALIGNED_MULTIPLIER: 3.5,
+  ALIGNED_MULTIPLIER: 1.8,
   /** Weight multiplier for events not aligned with selected life goal */
-  UNALIGNED_MULTIPLIER: 0.5,
+  UNALIGNED_MULTIPLIER: 0.7,
+  /** Every N turns, force pure random selection to preserve "life happens" surprise */
+  CHAOS_INTERVAL: 5,
+  /** Chaos mode uses neutral weighting (all candidates equally likely) */
+  CHAOS_MULTIPLIER: 1.0,
 } as const;
 
 /** Burden and risk system tuning */
@@ -45,4 +49,14 @@ export const BURDEN_CONSTANTS = {
   ACTION_DEBT_MULTIPLIER: 1.2,
   /** Recent action window used for burden pressure estimation */
   ACTION_PRESSURE_WINDOW: 24,
+} as const;
+
+/** Daily pacing guard — prevents energy-cost asymmetry from starving players of decisions */
+export const PACING_CONSTANTS = {
+  /**
+   * Minimum event-choice decisions guaranteed per game-day.
+   * If energy hits 0 before this many decisions, the caller should
+   * inject a lightweight recovery event rather than advancing the day.
+   */
+  MIN_DECISIONS_PER_DAY: 3,
 } as const;

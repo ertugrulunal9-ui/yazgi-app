@@ -4,6 +4,7 @@ import {
   rollFate,
   rollFateForced,
   shouldEarnToken,
+  getEarnedTokenCount,
   earnToken,
   canSpendToken,
   spendToken,
@@ -15,6 +16,24 @@ import {
 import { FateState, ZodiacSign } from '../../src/types';
 
 describe('FateEngine', () => {
+  const buildTokenGameState = (overrides: any = {}) => ({
+    age: 10,
+    personalityState: {
+      HELPFUL: { count: 0, streak: 0, multiplier: 1 },
+      PRAGMATIC: { count: 0, streak: 0, multiplier: 1 },
+      AGGRESSIVE: { count: 0, streak: 0, multiplier: 1 },
+    },
+    fate: {
+      seed: 42,
+      tokens: 1,
+      totalRolls: 0,
+      outcomeHistory: [],
+      zodiacSign: 'KOC' as const,
+      consecutiveBadOutcomes: 0,
+    },
+    ...overrides,
+  });
+
   // ===== PRNG =====
   describe('mulberry32', () => {
     it('produces deterministic output for same seed', () => {
@@ -198,6 +217,58 @@ describe('FateEngine', () => {
     });
   });
 
+  describe('getEarnedTokenCount', () => {
+    it('earns from age milestones', () => {
+      const state = buildTokenGameState();
+      expect(getEarnedTokenCount(state as any, 8, 9)).toBe(1);
+      expect(getEarnedTokenCount(state as any, 10, 11)).toBe(0);
+    });
+
+    it('earns from momentum streak threshold', () => {
+      const state = buildTokenGameState({
+        personalityState: {
+          HELPFUL: { count: 7, streak: 5, multiplier: 1.25 },
+          PRAGMATIC: { count: 1, streak: 0, multiplier: 1 },
+          AGGRESSIVE: { count: 0, streak: 0, multiplier: 1 },
+        },
+      });
+      expect(getEarnedTokenCount(state as any, 10, 10)).toBe(1);
+    });
+
+    it('earns from consecutive bad fate rolls threshold', () => {
+      const state = buildTokenGameState({
+        fate: {
+          seed: 42,
+          tokens: 1,
+          totalRolls: 0,
+          outcomeHistory: [],
+          zodiacSign: 'KOC' as const,
+          consecutiveBadOutcomes: 4,
+        },
+      });
+      expect(getEarnedTokenCount(state as any, 10, 10)).toBe(1);
+    });
+
+    it('stacks rewards when multiple conditions are met in same turn', () => {
+      const state = buildTokenGameState({
+        personalityState: {
+          HELPFUL: { count: 7, streak: 5, multiplier: 1.25 },
+          PRAGMATIC: { count: 1, streak: 0, multiplier: 1 },
+          AGGRESSIVE: { count: 0, streak: 0, multiplier: 1 },
+        },
+        fate: {
+          seed: 42,
+          tokens: 1,
+          totalRolls: 0,
+          outcomeHistory: [],
+          zodiacSign: 'KOC' as const,
+          consecutiveBadOutcomes: 4,
+        },
+      });
+      expect(getEarnedTokenCount(state as any, 11, 12)).toBe(3);
+    });
+  });
+
   describe('token operations', () => {
     const state: FateState = {
       seed: 42,
@@ -210,6 +281,10 @@ describe('FateEngine', () => {
 
     it('earnToken increments tokens', () => {
       expect(earnToken(state).tokens).toBe(4);
+    });
+
+    it('earnToken supports batched rewards', () => {
+      expect(earnToken(state, 3).tokens).toBe(6);
     });
 
     it('canSpendToken returns true when tokens > 0', () => {

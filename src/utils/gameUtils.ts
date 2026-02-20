@@ -1108,6 +1108,63 @@ const isStatThresholdMet = (trigger: TraitTrigger, currentStats: Stats): boolean
   return false;
 };
 
+interface ResolveTraitChangesInput {
+  currentTraits: string[];
+  gainedTraits?: string[];
+  removedTraits?: string[];
+}
+
+interface ResolveTraitChangesResult {
+  traits: string[];
+  gainedTraits: string[];
+  removedTraits: string[];
+}
+
+export const resolveTraitChanges = ({
+  currentTraits,
+  gainedTraits = [],
+  removedTraits = [],
+}: ResolveTraitChangesInput): ResolveTraitChangesResult => {
+  const nextTraits = new Set(currentTraits);
+  const appliedGained: string[] = [];
+  const appliedRemoved = new Set<string>();
+
+  removedTraits.forEach(traitId => {
+    if (nextTraits.delete(traitId)) {
+      appliedRemoved.add(traitId);
+    }
+  });
+
+  gainedTraits.forEach(traitId => {
+    if (!traitId) return;
+
+    const traitDefinition = TRAIT_DEFINITIONS.find(t => t.id === traitId);
+    if (!traitDefinition) {
+      devLog.warn(`[TraitSystem] Unknown trait id ignored: ${traitId}`);
+      return;
+    }
+
+    if (traitDefinition.conflicts && traitDefinition.conflicts.length > 0) {
+      traitDefinition.conflicts.forEach(conflictId => {
+        if (nextTraits.delete(conflictId)) {
+          appliedRemoved.add(conflictId);
+        }
+      });
+    }
+
+    if (!nextTraits.has(traitId)) {
+      nextTraits.add(traitId);
+      appliedGained.push(traitId);
+    }
+  });
+
+  return {
+    traits: Array.from(nextTraits),
+    gainedTraits: appliedGained,
+    removedTraits: Array.from(appliedRemoved),
+  };
+};
+
 export const checkTraitFormation = (
   actionId: string | null,
   choiceId: string | null,
@@ -1125,6 +1182,7 @@ export const checkTraitFormation = (
   let updatedProgress = { ...state.traitProgress };
   let unlockMessage: string | undefined = undefined;
   let progressUpdates: string[] = [];
+  const hasDirectInteraction = actionId !== null || choiceId !== null;
 
   // Filter relevant ACQUIRED traits that are NOT yet owned
   const potentialTraits = TRAIT_DEFINITIONS.filter(t => t.category === 'ACQUIRED' && t.formation && !state.traits.includes(t.id));
@@ -1183,8 +1241,8 @@ export const checkTraitFormation = (
           return;
         }
 
-        // Traits that only have threshold triggers should still progress from threshold checks.
-        if (!hasActionOrChoiceTriggers) {
+        // Threshold-only traits should progress only during a direct player interaction.
+        if (!hasActionOrChoiceTriggers && hasDirectInteraction) {
           hasProgressSource = true;
           pointsToAdd += 1;
         }
@@ -1194,6 +1252,15 @@ export const checkTraitFormation = (
     // For mixed trigger traits, thresholds are prerequisites and should not generate progress by themselves.
     if (hasStatThresholdTriggers && !thresholdRequirementsMet) return;
     if (!hasProgressSource || pointsToAdd <= 0) return;
+    const cooldownTurns = formation.progressCooldownTurns ?? 0;
+    const lastProgressTurn = updatedProgress[trait.id].lastProgressTurn;
+    if (
+      cooldownTurns > 0
+      && typeof lastProgressTurn === 'number'
+      && state.turn - lastProgressTurn < cooldownTurns
+    ) {
+      return;
+    }
 
     // 3. Logic & Multipliers
     if (hasProgressSource) {
@@ -1212,6 +1279,7 @@ export const checkTraitFormation = (
 
       // Apply points
       updatedProgress[trait.id].points += pointsToAdd * multiplier;
+      updatedProgress[trait.id].lastProgressTurn = state.turn;
 
       // Add to UI feedback list (avoid duplicates)
       if (!progressUpdates.includes(trait.id)) {

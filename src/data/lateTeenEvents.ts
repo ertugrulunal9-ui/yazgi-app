@@ -3,6 +3,7 @@ import { GameEvent } from '../types';
 const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   {
     id: 'lt_exam_pomodoro_reset',
+    tags: ['exam', 'study', 'school', 'sinav'],
     text: 'Deneme haftasinda odagini toparlamak icin Pomodoro plani deniyorsun.',
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 3,
     choices: [
@@ -12,6 +13,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_exam_group_revision',
+    tags: ['exam', 'study', 'school'],
     text: 'Arkadaslarla toplu tekrar oturumu teklif edildi.',
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 3,
     choices: [
@@ -21,6 +23,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_exam_mock_recovery',
+    tags: ['exam', 'study', 'school', 'sinav'],
     text: 'Son deneme beklenenden kotu geldi, toparlanma zamani.',
     minAge: 15, maxAge: 18, rarity: 'UNCOMMON', difficulty: 4,
     choices: [
@@ -30,6 +33,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_exam_library_lockin',
+    tags: ['exam', 'study', 'library', 'school'],
     text: 'Kutuphane maratonu icin sessiz bir masa buldun.',
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 3,
     choices: [
@@ -39,6 +43,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_exam_sleep_tradeoff',
+    tags: ['exam', 'study', 'school'],
     text: 'Gece tekrar mi, erken uyku mu ikileminde kaldin.',
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 4,
     choices: [
@@ -48,6 +53,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_exam_parent_expectation',
+    tags: ['exam', 'school', 'family'],
     text: 'Ailenin beklentisi yuksek, baskiyi hissediyorsun.',
     minAge: 15, maxAge: 18, rarity: 'UNCOMMON', difficulty: 4,
     choices: [
@@ -57,6 +63,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_exam_focus_walk',
+    tags: ['exam', 'study', 'school'],
     text: 'Sinav oncesi odaklanmak icin kisa yuruyus dusunuyorsun.',
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 2,
     choices: [
@@ -66,6 +73,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_exam_last_week_plan',
+    tags: ['exam', 'study', 'school', 'sinav'],
     text: 'Sinava son bir hafta; planin da plani gerekiyor.',
     minAge: 15, maxAge: 18, rarity: 'UNCOMMON', difficulty: 4,
     choices: [
@@ -75,6 +83,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_career_shadow_day',
+    tags: ['work', 'business'],
     text: 'Bir gunlugune bir profesyoneli gozlemleme firsati buldun.',
     minAge: 15, maxAge: 18, rarity: 'UNCOMMON', difficulty: 2,
     choices: [
@@ -84,6 +93,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_career_portfolio_push',
+    tags: ['work', 'business'],
     text: 'Staj basvurusu icin kisa bir portfolyo hazirlaman gerekiyor.',
     minAge: 16, maxAge: 18, rarity: 'UNCOMMON', difficulty: 3,
     choices: [
@@ -93,6 +103,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_career_teacher_reference',
+    tags: ['work', 'school'],
     text: 'Ogretmenden referans mektubu istemeyi dusunuyorsun.',
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 2,
     choices: [
@@ -102,6 +113,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_career_networking_event',
+    tags: ['work', 'business', 'social'],
     text: 'Kampuste mini kariyer bulusmasi duzenlendi.',
     minAge: 15, maxAge: 18, rarity: 'UNCOMMON', difficulty: 3,
     choices: [
@@ -111,6 +123,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_career_internship_rejection',
+    tags: ['work', 'business'],
     text: 'Staj basvurundan red cevabi geldi.',
     minAge: 16, maxAge: 18, rarity: 'RARE', difficulty: 4,
     choices: [
@@ -120,6 +133,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_career_internship_offer',
+    tags: ['work', 'business'],
     text: 'Kucuk bir ekipten yaz staji teklifi geldi.',
     minAge: 16, maxAge: 18, rarity: 'RARE', difficulty: 4,
     choices: [
@@ -129,6 +143,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_career_public_speaking',
+    tags: ['work', 'business', 'social'],
     text: 'Sinifta meslek hedefinle ilgili kisa bir sunum yapacaksin.',
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 3,
     choices: [
@@ -138,6 +153,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_identity_value_map',
+    tags: ['growth', 'identity'],
     text: 'Kendi degerlerini yazip hayatinla karsilastirmaya karar verdin.',
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 2,
     choices: [
@@ -147,6 +163,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_identity_new_hobby',
+    tags: ['creative', 'art'],
     text: 'Yeni bir hobinin seni degistirebilecegini hissediyorsun.',
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 2,
     choices: [
@@ -156,6 +173,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_identity_role_conflict',
+    tags: ['social', 'growth'],
     text: 'Evdeki beklentilerle okuldaki hedeflerin cakisiyor.',
     minAge: 15, maxAge: 18, rarity: 'UNCOMMON', difficulty: 3,
     choices: [
@@ -165,6 +183,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_identity_journal_reflection',
+    tags: ['creative', 'yaz'],
     text: 'Aynaya bakarken yazdiklarinla yuzlesiyorsun.',
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 2,
     choices: [
@@ -174,6 +193,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_identity_social_mask',
+    tags: ['social', 'group'],
     text: 'Kalabalikta farkli, yalnizken farkli hissetmeye basladin.',
     minAge: 15, maxAge: 18, rarity: 'UNCOMMON', difficulty: 3,
     choices: [
@@ -183,6 +203,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_identity_gap_year_talk',
+    tags: ['school', 'study'],
     text: 'Mezuniyet sonrasi yolun icin farkli bir yil plani fikri dogdu.',
     minAge: 16, maxAge: 18, rarity: 'UNCOMMON', difficulty: 3,
     choices: [
@@ -192,6 +213,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_love_mixed_signals',
+    tags: ['social', 'love', 'relationship'],
     text: 'Hoslandigin kisiden karisik sinyaller aliyorsun.',
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 3,
     choices: [
@@ -201,6 +223,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_love_friend_advice',
+    tags: ['social', 'love', 'friend'],
     text: 'En yakin arkadasin iliski konusunda fikrini acikca soyluyor.',
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 2,
     choices: [
@@ -210,6 +233,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_love_boundary_talk',
+    tags: ['social', 'love', 'relationship'],
     text: 'Iliskide sinirlar ve beklentiler konusulmasi gerekiyor.',
     minAge: 15, maxAge: 18, rarity: 'UNCOMMON', difficulty: 3,
     choices: [
@@ -219,6 +243,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_love_long_text_night',
+    tags: ['social', 'love', 'relationship'],
     text: 'Gece uzun bir mesaj yazip yazmamak arasinda kaldin.',
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 2,
     choices: [
@@ -228,6 +253,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_love_reconciliation_attempt',
+    tags: ['social', 'love', 'relationship'],
     text: 'Ayrilik sonrasi yeniden konusma teklifi geldi.',
     minAge: 15, maxAge: 18, rarity: 'RARE', difficulty: 4,
     choices: [
@@ -237,6 +263,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_love_new_crush',
+    tags: ['social', 'love', 'relationship'],
     text: 'Uzun zaman sonra tekrar birine karsi heyecan hissettin.',
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 2,
     choices: [
@@ -246,6 +273,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_family_budget_meeting',
+    tags: ['family', 'money', 'finance'],
     text: 'Aile butce toplantisinda soz hakki verildi.',
     minAge: 15, maxAge: 18, rarity: 'UNCOMMON', difficulty: 3,
     choices: [
@@ -255,6 +283,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_family_house_rules_reset',
+    tags: ['family', 'social'],
     text: 'Ev kurallari mezuniyet yaklasirken yeniden yaziliyor.',
     minAge: 16, maxAge: 18, rarity: 'UNCOMMON', difficulty: 3,
     choices: [
@@ -264,6 +293,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_family_uni_city_conflict',
+    tags: ['family', 'school', 'study'],
     text: 'Universite sehri secimi ailede fikir ayriligi yaratti.',
     minAge: 16, maxAge: 18, rarity: 'UNCOMMON', difficulty: 4,
     choices: [
@@ -273,6 +303,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_family_responsibility_share',
+    tags: ['family', 'social'],
     text: 'Evde sorumluluk paylasimi yeniden dagitiliyor.',
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 2,
     choices: [
@@ -282,6 +313,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_family_weekend_argument',
+    tags: ['family', 'social'],
     text: 'Hafta sonu cikis planin yine tartismaya dondu.',
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 3,
     choices: [
@@ -291,6 +323,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_family_trust_rebuild',
+    tags: ['family', 'social'],
     text: 'Gecmis bir tartismadan sonra guveni yeniden kurma sansi dogdu.',
     minAge: 15, maxAge: 18, rarity: 'UNCOMMON', difficulty: 3,
     choices: [
@@ -300,6 +333,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_finance_first_salary_plan',
+    tags: ['money', 'work', 'finance'],
     text: 'Ilk duzenli kazancin icin 50/30/20 planini duydun.',
     minAge: 15, maxAge: 18, rarity: 'UNCOMMON', difficulty: 2,
     choices: [
@@ -309,6 +343,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_finance_emergency_fund',
+    tags: ['money', 'finance'],
     text: 'Acil durum birikimi fikri aklina yatti.',
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 2,
     choices: [
@@ -318,6 +353,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_finance_impulse_buy',
+    tags: ['money', 'finance'],
     text: 'Indirimde gereksiz ama cazip bir urun gordun.',
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 2,
     choices: [
@@ -327,6 +363,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_finance_side_hustle_start',
+    tags: ['money', 'work', 'business', 'startup'],
     text: 'Kucuk bir yan gelir fikri: online tasarim/soru cozum destegi.',
     minAge: 16, maxAge: 18, rarity: 'UNCOMMON', difficulty: 3,
     choices: [
@@ -336,6 +373,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_finance_debt_from_friend',
+    tags: ['money', 'finance', 'friend'],
     text: 'Bir arkadasin kucuk bir borc istedi.',
     minAge: 15, maxAge: 18, rarity: 'UNCOMMON', difficulty: 3,
     choices: [
@@ -345,6 +383,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_finance_savings_goal',
+    tags: ['money', 'finance'],
     text: 'Kendine 3 aylik bir birikim hedefi koydun.',
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 2,
     choices: [
@@ -354,6 +393,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_finance_scholarship_search',
+    tags: ['school', 'study', 'money'],
     text: 'Burs arama portallarinda uzun bir aksam gecirdin.',
     minAge: 15, maxAge: 18, rarity: 'UNCOMMON', difficulty: 3,
     choices: [
@@ -363,6 +403,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_finance_micro_investment',
+    tags: ['money', 'finance', 'yatirim'],
     text: 'Kucuk tutarli yatirim uygulamasi dikkatini cekti.',
     minAge: 16, maxAge: 18, rarity: 'UNCOMMON', difficulty: 3,
     choices: [
@@ -375,6 +416,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
 export const LATE_TEEN_EVENTS: GameEvent[] = [
   {
     id: 'lt_yks_trial_night',
+    tags: ['exam', 'study', 'school', 'yks', 'sinav'],
     text: 'YKS deneme sonucu beklediginden dusuk geldi. Masada sessizce tekrar programi yapiyorsun.',
     minAge: 15,
     maxAge: 18,
@@ -398,6 +440,7 @@ export const LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_lgs_mentor_offer',
+    tags: ['exam', 'school', 'study'],
     text: 'Mahalleden bir abi/abla LGS-YKS surecinde mentor olabilecegini soyluyor.',
     minAge: 15,
     maxAge: 17,
@@ -421,6 +464,7 @@ export const LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_first_internship_call',
+    tags: ['work', 'business'],
     text: 'Bir startup staj gorusmesi icin seni aradi. Heyecanla not defterine sarildin.',
     minAge: 16,
     maxAge: 18,
@@ -444,6 +488,7 @@ export const LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_identity_crisis_week',
+    tags: ['social', 'growth'],
     text: 'Herkes senden bir sey bekliyor. Sen ise ne istedigini bulmaya calisiyorsun.',
     minAge: 15,
     maxAge: 18,
@@ -467,6 +512,7 @@ export const LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_first_love_confession',
+    tags: ['social', 'love', 'relationship'],
     text: 'Uzun suredir hoslandigin kisiye mesaj yazip silmekten yoruldun.',
     minAge: 15,
     maxAge: 18,
@@ -489,6 +535,7 @@ export const LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_first_heartbreak',
+    tags: ['social', 'love', 'relationship'],
     text: 'Bir mesajla iliskinizin bittigini ogrendin. Odadaki sessizlik agirlasti.',
     minAge: 15,
     maxAge: 18,
@@ -512,6 +559,7 @@ export const LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_family_independence_argument',
+    tags: ['family', 'social'],
     text: 'Ailen eve donus saatini kisitliyor, sen ise daha fazla ozgurluk istiyorsun.',
     minAge: 15,
     maxAge: 18,
@@ -534,6 +582,7 @@ export const LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_budgeting_first_income',
+    tags: ['money', 'work', 'finance'],
     text: 'Part-time isten ilk maasin yatti. Harcamak mi biriktirmek mi?',
     minAge: 15,
     maxAge: 18,
@@ -557,6 +606,7 @@ export const LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_career_fair_day',
+    tags: ['work', 'business'],
     text: 'Okulda kariyer gunu var. Standlar, insanlar ve bir suru secenek seni bekliyor.',
     minAge: 15,
     maxAge: 18,
@@ -580,6 +630,7 @@ export const LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_exam_week_burnout_signal',
+    tags: ['exam', 'study', 'school', 'sinav'],
     text: 'Sinav haftasi ortasinda uykusuzluk ve dalginlik belirginlesmeye basladi.',
     minAge: 15,
     maxAge: 18,
@@ -603,6 +654,7 @@ export const LATE_TEEN_EVENTS: GameEvent[] = [
   },
   {
     id: 'lt_memory_echo_regret',
+    tags: ['growth', 'social'],
     text: (ctx) => {
       const regretMemory = ctx.memories
         .filter(memory => memory.emotion === 'REGRET')
@@ -644,6 +696,7 @@ export const LATE_TEEN_EVENTS: GameEvent[] = [
   // arc_exam_resilience Stage 2 - Stratejik dal (patience >= 55)
   {
     id: 'lt_exam_strategic_reset',
+    tags: ['exam', 'study', 'school', 'sinav'],
     text: 'Sinav haftasi yorucu ama sen sogukkanlisin. Planlama yaparak ilerlemen gerektigini biliyorsun.',
     minAge: 15,
     maxAge: 18,
@@ -680,6 +733,7 @@ export const LATE_TEEN_EVENTS: GameEvent[] = [
   // arc_career_launch Stage 2 - Girisimci dal (openness >= 60)
   {
     id: 'lt_career_startup_idea',
+    tags: ['work', 'business', 'startup'],
     text: 'Kariyer fuarindan sonra kafanda bir is fikri var. Staj yerine kendi projeni mi yapsan?',
     minAge: 16,
     maxAge: 18,
@@ -719,6 +773,7 @@ export const LATE_TEEN_EVENTS: GameEvent[] = [
   // arc_first_love Stage 2 - Iliskiyi derinlestirme dali (empathy >= 60)
   {
     id: 'lt_first_love_deepening',
+    tags: ['social', 'love', 'relationship'],
     text: 'Itiraf ettin ve karsilik gordun! Ama iliski yeni, kisisel sinirlar ve beklentiler hala belirsiz...',
     minAge: 15,
     maxAge: 18,
@@ -756,6 +811,7 @@ export const LATE_TEEN_EVENTS: GameEvent[] = [
   // arc_family_independence Stage 2 - Diplomatik dal (patience >= 55)
   {
     id: 'lt_family_calm_negotiation',
+    tags: ['family', 'social'],
     text: 'Aile toplantisi var. Bu kez kavga yerine sakin bir sekilde fikirlerini sunmaya karar verdin.',
     minAge: 15,
     maxAge: 18,

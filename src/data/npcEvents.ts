@@ -26,6 +26,7 @@ export const NPC_EVENTS: GameEvent[] = [
 
     {
         id: 'npc_new_classmate',
+        tags: ['social', 'friend', 'npc', 'school'],
         text: (_ctx) => {
             const genderText = Math.random() > 0.5 ? 'bir erkek' : 'bir kız';
             return `Sınıfa yeni ${genderText} öğrenci geldi. Öğretmen onu senin yanına oturmasını söyledi. İlk izlenimin nasıl olacak?`;
@@ -60,6 +61,7 @@ export const NPC_EVENTS: GameEvent[] = [
 
     {
         id: 'npc_homework_together',
+        tags: ['study', 'school', 'friend', 'npc'],
         text: (ctx) => {
             const npc = getRandomNPC(ctx, 'FRIEND') || getRandomNPC(ctx, 'ACQUAINTANCE');
             return withNPCName('{name} senden ödev konusunda yardım istedi. "Şu matematik konusunu hiç anlamadım, bana anlatır mısın?"', npc);
@@ -96,6 +98,7 @@ export const NPC_EVENTS: GameEvent[] = [
 
     {
         id: 'npc_friend_fight',
+        tags: ['social', 'friend', 'npc'],
         text: (ctx) => {
             const npc = getRandomNPC(ctx, 'FRIEND') || getRandomNPC(ctx, 'BEST_FRIEND');
             return withNPCName('{name} ile tartıştınız. Sebebi bile tam hatırlamıyorsun ama ikisini de çok kırdınız. Şimdi ne yapacaksın?', npc);
@@ -133,6 +136,7 @@ export const NPC_EVENTS: GameEvent[] = [
 
     {
         id: 'npc_secret_sharing',
+        tags: ['social', 'friend', 'npc'],
         text: (ctx) => {
             const npc = getRandomNPC(ctx, 'FRIEND') || getRandomNPC(ctx, 'BEST_FRIEND');
             return withNPCName('{name} sana bir sır verdi: "Bunu sadece sana söylüyorum, kimseye söyleme..." Başkalarına mı anlatacaksın?', npc);
@@ -173,6 +177,7 @@ export const NPC_EVENTS: GameEvent[] = [
 
     {
         id: 'npc_secret_revealed',
+        tags: ['social', 'friend', 'npc'],
         text: (ctx) => {
             const npc = getRandomNPC(ctx, 'FRIEND');
             return withNPCName('{name} senin sırrını yaydığını öğrendi. Yüzüne bile bakmıyor. "Sana nasıl güvendim?" diye bağırdı.', npc);
@@ -201,6 +206,7 @@ export const NPC_EVENTS: GameEvent[] = [
 
     {
         id: 'npc_group_formation',
+        tags: ['social', 'group', 'npc'],
         text: (ctx) => {
             const friends = (ctx.npcs || []).filter(n => n.role === 'FRIEND' || n.role === 'BEST_FRIEND');
             if (friends.length < 2) {
@@ -242,6 +248,7 @@ export const NPC_EVENTS: GameEvent[] = [
 
     {
         id: 'npc_first_crush',
+        tags: ['social', 'love', 'relationship', 'npc'],
         text: (_ctx) => {
             const gender = Math.random() > 0.5;
             const name = gender ? 'Ayşe' : 'Mehmet';
@@ -280,6 +287,7 @@ export const NPC_EVENTS: GameEvent[] = [
 
     {
         id: 'npc_love_letter_decision',
+        tags: ['social', 'love', 'relationship', 'npc'],
         text: 'Yazdığın mektup çantanda bekliyor. Vermeye cesaret edecek misin yoksa yırtacak mısın?',
         minAge: 12,
         maxAge: 18,
@@ -306,6 +314,7 @@ export const NPC_EVENTS: GameEvent[] = [
 
     {
         id: 'npc_confession',
+        tags: ['social', 'love', 'relationship', 'npc'],
         text: (ctx) => {
             const npc = getRandomNPC(ctx, 'CRUSH');
             if (!npc) {
@@ -346,6 +355,7 @@ export const NPC_EVENTS: GameEvent[] = [
 
     {
         id: 'npc_jealousy',
+        tags: ['social', 'love', 'relationship', 'npc'],
         text: (ctx) => {
             const partner = getRandomNPC(ctx, 'PARTNER') || getRandomNPC(ctx, 'CRUSH');
             if (!partner) {
@@ -385,6 +395,7 @@ export const NPC_EVENTS: GameEvent[] = [
 
     {
         id: 'npc_breakup',
+        tags: ['social', 'love', 'relationship', 'npc'],
         text: (ctx) => {
             const partner = getRandomNPC(ctx, 'PARTNER');
             if (!partner) {
@@ -431,6 +442,7 @@ export const NPC_EVENTS: GameEvent[] = [
 
     {
         id: 'npc_bully_encounter',
+        tags: ['social', 'npc', 'group'],
         text: 'Okulda bir grup seni köşeye sıkıştırdı. "Cep harçlığını ver yoksa..." diye tehdit ediyorlar.',
         minAge: 8,
         maxAge: 15,
@@ -473,6 +485,7 @@ export const NPC_EVENTS: GameEvent[] = [
 
     {
         id: 'npc_bully_return',
+        tags: ['social', 'npc', 'group'],
         text: 'Zorbalar yine karşına çıktı. "Daha fazla para istiyoruz!" diyorlar. Bu sefer daha agresifler.',
         minAge: 8,
         maxAge: 15,
@@ -499,6 +512,7 @@ export const NPC_EVENTS: GameEvent[] = [
 
     {
         id: 'npc_rivalry_start',
+        tags: ['social', 'npc', 'group'],
         text: (ctx) => {
             const acquaintance = getRandomNPC(ctx, 'ACQUAINTANCE');
             if (!acquaintance) {
@@ -538,6 +552,7 @@ export const NPC_EVENTS: GameEvent[] = [
 
     {
         id: 'npc_gossip_about_you',
+        tags: ['social', 'npc', 'friend'],
         text: (ctx) => {
             const rival = getRandomNPC(ctx, 'RIVAL') || getRandomNPC(ctx);
             if (!rival) {
@@ -581,6 +596,7 @@ export const NPC_EVENTS: GameEvent[] = [
 
     {
         id: 'npc_group_exclusion',
+        tags: ['social', 'group', 'npc'],
         text: 'Teneffüste grubun seni çağırmadan bir yere gitti. Dışlandığını hissediyorsun. Acaba bir şey mi oldu?',
         minAge: 10,
         maxAge: 18,
@@ -612,6 +628,7 @@ export const NPC_EVENTS: GameEvent[] = [
 
     {
         id: 'npc_group_leader_challenge',
+        tags: ['social', 'group', 'npc'],
         text: 'Grubun lideri olan arkadaşın son zamanlarda herkesin üzerinde baskı kuruyor. Bazıları senden "bir şey yap" bekliyor.',
         minAge: 12,
         maxAge: 18,
@@ -644,6 +661,7 @@ export const NPC_EVENTS: GameEvent[] = [
 
     {
         id: 'npc_new_friend_opportunity',
+        tags: ['social', 'friend', 'npc'],
         text: (_ctx) => {
             const hobbies = ['müzik dinlerken', 'kitap okurken', 'oyun oynarken'];
             const hobby = hobbies[Math.floor(Math.random() * hobbies.length)];
@@ -679,6 +697,7 @@ export const NPC_EVENTS: GameEvent[] = [
 
     {
         id: 'npc_friend_needs_help',
+        tags: ['social', 'friend', 'npc'],
         text: (ctx) => {
             const friend = getRandomNPC(ctx, 'FRIEND') || getRandomNPC(ctx, 'BEST_FRIEND');
             if (!friend) {

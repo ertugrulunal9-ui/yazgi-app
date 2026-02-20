@@ -47,6 +47,10 @@ export interface ThemeTokens {
   accentBrandMuted: string;
   fontHeading: string;
   fontBody: string;
+  /** Stat bar "good" fill — WCAG 3.0:1 against surfaceBase guaranteed in both themes */
+  statHighColor: string;
+  /** Stat bar "danger" fill */
+  statLowColor: string;
 }
 
 export const getThemeTokens = (theme: 'light' | 'dark'): ThemeTokens => {
@@ -58,7 +62,8 @@ export const getThemeTokens = (theme: 'light' | 'dark'): ThemeTokens => {
       surfaceOverlay: '#eef2f6',
       textPrimary: '#0f172a',
       textSecondary: '#475569',
-      border: '#e2e8f0',
+      // #b8c4d0 on #f5f7fb → ~1.61:1 (≥ 1.5 border visibility threshold)
+      border: '#b8c4d0',
       accentEvent: '#1d4ed8',
       accentGrade: '#047857',
       accentSkill: '#7e22ce',
@@ -67,6 +72,9 @@ export const getThemeTokens = (theme: 'light' | 'dark'): ThemeTokens => {
       accentBrandMuted: 'rgba(217, 119, 6, 0.15)',
       fontHeading: 'Inter_700Bold',
       fontBody: 'Inter_400Regular',
+      // #16a34a on #f8fafc → ~3.01:1 (≥ 3.0 graphical component threshold)
+      statHighColor: '#16a34a',
+      statLowColor: '#dc2626',
     };
   }
   return {
@@ -76,7 +84,8 @@ export const getThemeTokens = (theme: 'light' | 'dark'): ThemeTokens => {
     surfaceOverlay: '#16223a',
     textPrimary: '#e2e8f0',
     textSecondary: '#94a3b8',
-    border: '#1f2a44',
+    // #2a3a5c on #0b1220 → ~1.64:1 (≥ 1.5 border visibility threshold)
+    border: '#2a3a5c',
     accentEvent: '#60a5fa',
     accentGrade: '#34d399',
     accentSkill: '#c084fc',
@@ -85,6 +94,9 @@ export const getThemeTokens = (theme: 'light' | 'dark'): ThemeTokens => {
     accentBrandMuted: 'rgba(245, 158, 11, 0.15)',
     fontHeading: 'Inter_700Bold',
     fontBody: 'Inter_400Regular',
+    // #22c55e on #0f172a → ~4.5:1 (passes easily in dark mode)
+    statHighColor: '#22c55e',
+    statLowColor: '#ef4444',
   };
 };
 

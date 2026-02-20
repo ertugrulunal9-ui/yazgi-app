@@ -59,6 +59,8 @@ const RATE_LIMITS = {
   readEntitlements: { limit: 60, windowMs: 60_000 },
   refreshEntitlements: { limit: 10, windowMs: 60_000 },
   webhook: { limit: 180, windowMs: 60_000 },
+  userExport: { limit: 5, windowMs: 60 * 60_000 },
+  deleteUser: { limit: 3, windowMs: 24 * 60 * 60_000 },
 };
 
 const rateStore = new Map();
@@ -1221,6 +1223,56 @@ async function handleDeleteAll(req, res, reqId, auth) {
   writeAudit(req, reqId, 'delete_all', 'success', { userId: auth.sub, statusCode: 204, note: `affected=${affected}` });
 }
 
+async function handleUserExport(req, res, reqId, auth) {
+  if (applyRateLimitOrFail(req, res, reqId, 'userExport', auth.rateActor || auth.sub)) return;
+
+  const saves = listRecords(auth.sub).map(record => ({
+    slotId: record.slotId,
+    updatedAt: record.updatedAt,
+    createdAt: record.createdAt,
+    deletedAt: record.deletedAt || null,
+    revision: record.revision,
+    // Exclude encrypted payload — user can decrypt locally with their client
+    payloadSizeBytes: record.payload ? Buffer.byteLength(JSON.stringify(record.payload), 'utf8') : 0,
+  }));
+
+  const entitlements = getEntitlementRecord(auth.sub);
+
+  json(req, res, 200, {
+    exportedAt: nowIso(),
+    userId: auth.sub,
+    saves,
+    entitlements: entitlements ? buildEntitlementResponse(entitlements) : null,
+  }, { 'X-Request-Id': reqId });
+
+  writeAudit(req, reqId, 'user_export', 'success', { userId: auth.sub, statusCode: 200 });
+}
+
+async function handleDeleteUser(req, res, reqId, auth) {
+  if (applyRateLimitOrFail(req, res, reqId, 'deleteUser', auth.rateActor || auth.sub)) return;
+
+  // Hard delete all save records for this user (including soft-deleted)
+  const records = listRecords(auth.sub);
+  for (const record of records) {
+    deleteRecord(auth.sub, record.slotId);
+  }
+
+  // Remove entitlement record
+  entitlementStore.delete(auth.sub);
+
+  await queuePersistStore();
+
+  noContent(req, res, {
+    'X-Request-Id': reqId,
+    'X-Deleted-Saves': String(records.length),
+  });
+  writeAudit(req, reqId, 'delete_user', 'success', {
+    userId: auth.sub,
+    statusCode: 204,
+    note: `saves_deleted=${records.length}`,
+  });
+}
+
 async function handleGetEntitlements(req, res, reqId, auth) {
   if (applyRateLimitOrFail(req, res, reqId, 'readEntitlements', auth.rateActor || auth.sub)) return;
 
@@ -1529,6 +1581,16 @@ async function handleRequest(req, res) {
 
   if (pathname === '/v1/entitlements/refresh' && method === 'POST') {
     await handleRefreshEntitlements(req, res, reqId, auth);
+    return;
+  }
+
+  if (pathname === '/v1/user/export' && method === 'GET') {
+    await handleUserExport(req, res, reqId, auth);
+    return;
+  }
+
+  if (pathname === '/v1/user' && method === 'DELETE') {
+    await handleDeleteUser(req, res, reqId, auth);
     return;
   }
 

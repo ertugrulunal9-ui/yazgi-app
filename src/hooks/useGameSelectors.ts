@@ -11,8 +11,22 @@
 
 import { useContext, useMemo } from 'react';
 import { GameContext } from '../context/GameContext';
-import { SchoolGrades, Skills, GamePhase, CharacterInfo, Family } from '../types';
+import { useUI } from '../context/UIContext';
+import {
+  SchoolGrades,
+  Skills,
+  GamePhase,
+  CharacterInfo,
+  Family,
+  GameState,
+  MomentumVisibility,
+} from '../types';
 import { getAcademicState, getCharacterState, getEventState, getProgressState, getSocialState } from '../utils/gameStateAdapter';
+import { getMomentumVisibilityFromPersonalityState } from '../utils/momentumVisibility';
+
+export const getMomentumVisibility = (state: GameState): MomentumVisibility => {
+  return getMomentumVisibilityFromPersonalityState(state.personalityState);
+};
 
 // =================================================================
 // TEMEL SELECTOR HOOKS
@@ -124,6 +138,16 @@ export const usePersonality = () => {
   }), [
     character,
   ]);
+};
+
+/**
+ * Momentum durumunu oyuncuya okunabilir seviyede sunar (sayisal deger gizli kalir)
+ */
+export const useMomentumVisibility = (): MomentumVisibility => {
+  const context = useContext(GameContext);
+  if (!context) throw new Error('useMomentumVisibility must be used within GameProvider');
+
+  return useMemo(() => getMomentumVisibility(context.gameState), [context.gameState.personalityState]);
 };
 
 /**
@@ -280,17 +304,15 @@ export const useCharacterScreenData = () => {
 };
 
 /**
- * Floating text yönetimi (transient UI state)
+ * Floating text yönetimi (transient UI state — UIContext'ten gelir)
  */
 export const useFloatingTexts = () => {
-  const context = useContext(GameContext);
-  if (!context) throw new Error('useFloatingTexts must be used within GameProvider');
-
+  const { floatingTexts, showFloatingText, removeFloatingText } = useUI();
   return useMemo(() => ({
-    floatingTexts: context.floatingTexts,
-    showFloatingText: context.showFloatingText,
-    removeFloatingText: context.removeFloatingText,
-  }), [context.floatingTexts, context.showFloatingText, context.removeFloatingText]);
+    floatingTexts,
+    showFloatingText,
+    removeFloatingText,
+  }), [floatingTexts, showFloatingText, removeFloatingText]);
 };
 
 // =================================================================

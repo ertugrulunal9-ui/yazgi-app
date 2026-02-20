@@ -98,6 +98,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_ispiyoncu_damgasi',
+    tags: ['moral', 'social', 'school', 'friend'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       let base = "Sınıfta yeni bir olay oldu. Herkes sana bakıyor - 'Bu ispiyoncuya söylemeyin' diye fısıldaşıyorlar.";
@@ -155,6 +156,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_arkadaslik_testi',
+    tags: ['moral', 'social', 'friend'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       let base = "O gün kopya çekerken koruduğun arkadaşın şimdi popüler grubun lideri. Sen ise hâlâ aynı yerdesin.";
@@ -218,6 +220,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_aile_beklentisi',
+    tags: ['moral', 'family', 'school'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       const isStrict = ctx.family?.dynamic === 'STRICT';
@@ -304,6 +307,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_supressed_dreams',
+    tags: ['moral', 'family', 'growth'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       let base = "17 yaşındasın. Tıp fakültesine hazırlanıyorsun - ailenin istediği gibi.";
@@ -352,6 +356,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_family_reconciliation',
+    tags: ['moral', 'family', 'social'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       let base = "Hayallerinin peşinden gittiğin için ailen seninle soğuk. Ama annenin doğum günü yaklaşıyor.";
@@ -412,6 +417,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_kardes_hirsizlik',
+    tags: ['moral', 'family'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       let base = "Küçük kardeşinin çantasından komşunun kaybolan telefonu düştü.";
@@ -472,6 +478,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_truth_comes_out',
+    tags: ['moral', 'family'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.courage < 30) {
@@ -518,6 +525,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_yarisma_sabotaj',
+    tags: ['moral', 'social', 'group'],
     text: (ctx: EventContext) => {
       const skill = (ctx.skills?.coding ?? 0) > 50 ? 'kodlama' : (ctx.skills?.sports ?? 0) > 50 ? 'spor' : 'bilgi';
       const p = ctx.personality;
@@ -582,6 +590,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_hollow_victory',
+    tags: ['moral', 'social', 'growth'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.empathy > 50) {
@@ -628,6 +637,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_zorbalik_populer',
+    tags: ['moral', 'social', 'group'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       let base = "Sınıfın 'cool' grubu seni aralarına almak istiyor. Tek şart: Onlarla birlikte 'garip' çocukla dalga geçeceksin.";
@@ -698,6 +708,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_bully_karma',
+    tags: ['moral', 'social'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.empathy > 50) {
@@ -737,6 +748,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_outcast_friendship',
+    tags: ['moral', 'social', 'friend'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.courage > 70) {
@@ -796,6 +808,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_parti_sinav',
+    tags: ['moral', 'exam', 'school', 'social'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       let base = "Yarın büyük sınav var. Ama bu gece yılın partisi - herkes orada olacak ve hoşlandığın kişi de.";
@@ -869,6 +882,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_para_bulma',
+    tags: ['moral', 'money', 'finance'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       let base = "Okul kantininde yerde 500 TL buldun. Etrafta kimse yok.";
@@ -926,6 +940,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_freelance_etik',
+    tags: ['moral', 'work', 'money'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       let base = "Freelance iş aldın. Müşteri, rakip firmanın verilerini 'araştırmanı' istiyor. Yasal değil ama 2000 TL teklif ediyor.";
@@ -978,6 +993,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_dark_job_offer',
+    tags: ['moral', 'work', 'money'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.courage > 70) {
@@ -1029,6 +1045,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_iki_kisi',
+    tags: ['moral', 'love', 'relationship'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       let base = "İki kişi sana ilgi gösteriyor. Biri güvenilir ve sıkıcı, diğeri heyecanlı ama güvenilmez.";
@@ -1091,6 +1108,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_toxic_relationship',
+    tags: ['moral', 'love', 'relationship', 'social'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.empathy > 70) {
@@ -1138,6 +1156,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_farkli_olmak',
+    tags: ['moral', 'social', 'group'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
 
@@ -1202,6 +1221,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_kardes_firsati',
+    tags: ['moral', 'family'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       let base = "Hayalindeki yaz kampına kabul edildin! Ama aynı hafta küçük kardeşinin ameliyatı var.";
@@ -1249,6 +1269,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_arkadas_vs_basari',
+    tags: ['moral', 'social', 'friend'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       let base = "Proje grubundasın. Arkadaşın hiç çalışmadı ama sen çok çalıştın. Öğretmen 'bireysel katkıları değerlendirecek' dedi.";
@@ -1313,6 +1334,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_kayip_hayvan',
+    tags: ['moral', 'social'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       let base = "Yolda yaralı bir köpek buldun. Veteriner pahalı ve ailen hayvan istemiyor.";
@@ -1371,6 +1393,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_sinif_hirsizi',
+    tags: ['moral', 'school', 'social'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       let base = "Sınıfta hırsızlık oluyor. Sen hırsızın kim olduğunu biliyorsun - fakir bir aileden gelen, zorluk çeken bir çocuk. Çaldığı şey: yemek parası.";
@@ -1433,6 +1456,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_kirik_vazo',
+    tags: ['moral', 'family', 'social'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.empathy > 70) {
@@ -1485,6 +1509,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_vazo_gerçek',
+    tags: ['moral', 'family', 'social'],
     text: "Yıllar sonra, kardeşin hâlâ 'o vazo olayını' hatırlıyor. 'Ben kırmamıştım' diyor hep. Gerçeği söyleyecek misin?",
     minAge: 10, maxAge: 18, difficulty: 3, rarity: 'RARE',
     personalityCategory: 'MORAL',
@@ -1511,6 +1536,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_oyuncak_calma',
+    tags: ['moral', 'social'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.empathy > 70) {
@@ -1551,6 +1577,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_calinti_bulundu',
+    tags: ['moral', 'social'],
     text: "Arkadaşın oyuncağını arıyor. Annesi herkese soruyor. Şimdi ne yapacaksın?",
     minAge: 6, maxAge: 12, difficulty: 4, rarity: 'RARE',
     personalityCategory: 'MORAL',
@@ -1576,6 +1603,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_arkadaslik_sirri',
+    tags: ['moral', 'social', 'friend'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.empathy > 70) {
@@ -1624,6 +1652,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_sosyal_medya_ifsa',
+    tags: ['moral', 'social', 'group'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.empathy > 70) {
@@ -1672,6 +1701,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_kopya_satin_alma',
+    tags: ['moral', 'exam', 'school'],
     text: "Yarınki sınavın cevap anahtarı satılıyor. 100 TL. Herkes alıyor. Sen?",
     minAge: 14, maxAge: 18, difficulty: 4, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'MORAL',
@@ -1710,6 +1740,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_santaj',
+    tags: ['moral', 'social'],
     text: "O 'cevap anahtarı' satan kişi şimdi senden iyilik istiyor. 'Ödevimi yap, yoksa öğretmene söylerim.'",
     minAge: 14, maxAge: 18, difficulty: 5, rarity: 'RARE',
     personalityCategory: 'CONFLICT',
@@ -1745,6 +1776,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_yasli_komsu',
+    tags: ['moral', 'social'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.empathy > 70) {
@@ -1782,6 +1814,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_cevre_kirliligi',
+    tags: ['moral', 'social'],
     text: "Piknikte herkes çöplerini yere atıyor. Sen ne yapacaksın?",
     minAge: 8, maxAge: 18, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'MORAL',
@@ -1813,6 +1846,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_dedikodu',
+    tags: ['moral', 'social', 'friend'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.empathy > 70) {
@@ -1853,6 +1887,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_dedikodu_sonuc',
+    tags: ['moral', 'social', 'friend'],
     text: "O kişi sırrın yayıldığını öğrendi. Senin anlattığını biliyor. Yüz yüze geldiniz.",
     minAge: 10, maxAge: 18, difficulty: 4, rarity: 'RARE',
     personalityCategory: 'CONFLICT',
@@ -1878,6 +1913,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_hayvan_bulma',
+    tags: ['moral', 'social'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.empathy > 70) {
@@ -1926,6 +1962,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_yemek_paylasimi',
+    tags: ['moral', 'social'],
     text: "Okulda öğle yemeği vakti. Yanındaki çocuğun yemeği yok, parasız. Sen fazla getirdin...",
     minAge: 7, maxAge: 15, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'MORAL',
@@ -1962,6 +1999,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_romantic_jealousy_test',
+    tags: ['moral', 'love', 'relationship', 'social'],
     text: (ctx: EventContext) => {
       const partner = ctx.npcs?.find(n => n.role === 'PARTNER');
       const name = partner?.name || 'Sevgilin';
@@ -2036,6 +2074,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_caught_spying',
+    tags: ['moral', 'love', 'relationship', 'social'],
     text: (ctx: EventContext) => {
       const partner = ctx.npcs?.find(n => n.role === 'PARTNER');
       const name = partner?.name || 'Sevgilin';
@@ -2081,6 +2120,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_temptation',
+    tags: ['moral', 'love', 'relationship', 'social'],
     text: (ctx: EventContext) => {
       const partner = ctx.npcs?.find(n => n.role === 'PARTNER');
       const partnerName = partner?.name || 'Sevgilin';
@@ -2151,6 +2191,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_partner_finds_out',
+    tags: ['moral', 'love', 'relationship', 'social'],
     text: (ctx: EventContext) => {
       const partner = ctx.npcs?.find(n => n.role === 'PARTNER');
       const name = partner?.name || 'Sevgilin';
@@ -2211,6 +2252,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_loyalty_test',
+    tags: ['moral', 'love', 'relationship', 'social'],
     text: (ctx: EventContext) => {
       const partner = ctx.npcs?.find(n => n.role === 'PARTNER');
       const crush = ctx.npcs?.find(n => n.role === 'CRUSH');
@@ -2271,6 +2313,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
 
   {
     id: 'dilemma_best_friend_vs_partner',
+    tags: ['moral', 'love', 'relationship', 'friend'],
     text: (ctx: EventContext) => {
       const partner = ctx.npcs?.find(n => n.role === 'PARTNER');
       const bestFriend = ctx.npcs?.find(n => n.role === 'BEST_FRIEND');

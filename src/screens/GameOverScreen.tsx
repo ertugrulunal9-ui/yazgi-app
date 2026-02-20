@@ -1,13 +1,18 @@
-import React, { useMemo } from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import React, { useMemo, useRef, useState } from 'react';
+import { Alert, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ViewShot from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 import { useGame } from '../context/GameContext';
 import { getThemeTokens, getDensityMetrics } from '../utils/themeUtils';
 import { getTraitName } from '../data/traits';
-import { resolveEnding } from '../utils/endingResolver';
+import { calculateAllGoalScores, resolveEnding, TOTAL_ENDING_COUNT } from '../utils/endingResolver';
 import { calculateLegacyPointsForRun, createInitialMetaProgression } from '../utils/metaProgression';
 import { showInterstitialAdDetailed } from '../services/monetization';
-import { logInterstitialOpportunity, logInterstitialResult } from '../utils/analyticsEvents';
+import { logInterstitialOpportunity, logInterstitialResult, logShareEvent } from '../utils/analyticsEvents';
+import { NPC, PersonalityTendency } from '../types';
+import { normalizePersonalityState } from '../systems/PersonalityMomentumEngine';
+import { ShareCard } from '../components/ShareCard';
 import {
   FadeInDownView,
   FadeInUpView,
@@ -26,6 +31,7 @@ interface GameOverScreenProps {
   theme: ReturnType<typeof getThemeTokens>;
   metrics: ReturnType<typeof getDensityMetrics>;
   onRestart: () => void;
+  npcs?: NPC[];
 }
 
 const getTierBadgeColor = (tier: string): string => {
@@ -35,9 +41,40 @@ const getTierBadgeColor = (tier: string): string => {
   return '#ef4444';
 };
 
-export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, onRestart }) => {
+// ── Katman 1: Personality-bazlı anlatı ───────────────────────────────
+const PERSONALITY_NARRATIVES: Record<PersonalityTendency, string> = {
+  HELPFUL:    'İnsanlarla kurduğun bağlar hayatının her köşesine işledi. Veriverdin, bazen kendine bile fırsat bırakmadan.',
+  PRAGMATIC:  'Hesaplı adımlar attın. Her kararında mantık vardı; duygular geride kalırdı.',
+  AGGRESSIVE: 'Sınırlarını sert çizdin. Bu sana hem güç hem bedel getirdi.',
+};
+
+const getFarewellNarrative = (
+  personalityState: Parameters<typeof normalizePersonalityState>[0],
+  playerName: string
+): string => {
+  const normalized = normalizePersonalityState(personalityState);
+  const dominant = (['HELPFUL', 'PRAGMATIC', 'AGGRESSIVE'] as PersonalityTendency[])
+    .slice()
+    .sort((a, b) => normalized[b].multiplier - normalized[a].multiplier)[0];
+
+  const base = dominant ? PERSONALITY_NARRATIVES[dominant] : 'Kendi yolunu kendi biçiminde yürüdün.';
+  return `${playerName}... ${base}`;
+};
+
+// ── Katman 3: Alternatif yol önerisi ─────────────────────────────────
+const ALTERNATIVE_SUGGESTIONS: Record<string, string> = {
+  ACADEMIC:   '"Sanatçı" yolunu denemeyi düşündün mü hiç?',
+  CREATIVE:   '"Sporcu" ruhuyla bambaşka bir hikaye seni bekliyor.',
+  ATHLETIC:   '"Akademisyen" gözlükleriyle dünyayı nasıl görürdün acaba?',
+  SOCIAL:     '"Girişimci" modunda ne kadar farklı olurdun?',
+  ENTERPRISE: '"Sosyal" önceliklerle ne değişirdi?',
+  BALANCED:   'Bir hedefi tüm kalbinle benimseseydin?',
+};
+
+export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, onRestart, npcs: npcsProp }) => {
   const { gameState, playerName, stats, metaProgression } = useGame();
   const safeMeta = metaProgression ?? createInitialMetaProgression();
+  const npcs = npcsProp ?? gameState.npcs;
 
   const endingResolution = useMemo(() => (
     resolveEnding({
@@ -66,6 +103,71 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
       unlockedAchievementIds: (gameState.unlockedAchievements || []).map(item => item.achievementId),
     })
   ), [compatibilityScore, gameState.unlockedAchievements, tier]);
+
+  // Katman 1: Kişilik bazlı veda anlatısı
+  const farewellNarrative = useMemo(() => (
+    getFarewellNarrative(gameState.personalityState, playerName)
+  ), [gameState.personalityState, playerName]);
+
+  // Katman 3: En yüksek skorlu alternatif hedef önerisi
+  const alternativeSuggestion = useMemo(() => {
+    const allScores = calculateAllGoalScores(gameState, stats);
+    const selectedEndingGoal = endingResolution.goal;
+    const best = allScores.find(s => s.goal !== selectedEndingGoal);
+    if (!best) return null;
+    return ALTERNATIVE_SUGGESTIONS[best.goal] ?? null;
+  }, [gameState, stats, endingResolution.goal]);
+
+  const highlightedRelations = useMemo(() => {
+    const partners = npcs.filter(npc => npc.role === 'PARTNER');
+    const bestFriends = npcs.filter(npc => npc.role === 'BEST_FRIEND');
+    const enemies = npcs.filter(npc => npc.role === 'ENEMY');
+    return [...partners, ...bestFriends, ...enemies].slice(0, 4);
+  }, [npcs]);
+
+  const shareCardRef = useRef<ViewShot | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
+
+  const discoveredEndingCount = useMemo(() => {
+    const discovered = new Set(safeMeta.lifetimeEndingIds || []);
+    discovered.add(endingResolution.id);
+    return discovered.size;
+  }, [endingResolution.id, safeMeta.lifetimeEndingIds]);
+
+  const handleShareLife = async () => {
+    if (isSharing) return;
+
+    setIsSharing(true);
+    try {
+      const sharingAvailable = await Sharing.isAvailableAsync();
+      if (!sharingAvailable) {
+        Alert.alert('Paylasim kullanilamiyor', 'Bu cihazda paylasim desteklenmiyor.');
+        return;
+      }
+
+      const uri = await shareCardRef.current?.capture?.();
+      if (!uri) {
+        Alert.alert('Paylasim hazir degil', 'Kart olusturulamadi, tekrar dene.');
+        return;
+      }
+
+      await Sharing.shareAsync(uri, {
+        mimeType: 'image/png',
+        dialogTitle: 'Yazgi - Hayatimi Paylas',
+      });
+
+      void logShareEvent({
+        tier,
+        endingId: endingResolution.id,
+        legacyLevel: safeMeta.legacyLevel,
+      });
+    } catch (error) {
+      console.error('Failed to share life card:', error);
+      Alert.alert('Paylasim basarisiz', 'Kart paylasimi tamamlanamadi.');
+    } finally {
+      setIsSharing(false);
+    }
+  };
 
   const handleRestart = async () => {
     buttonPress();
@@ -120,6 +222,32 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
               Yolun Sonu
             </Text>
           </FadeInDownView>
+
+          <FadeInUpView delay={95}>
+            <Text style={{
+              color: theme.accentBrand,
+              fontFamily: theme.fontBody,
+              textAlign: 'center',
+              marginBottom: 10,
+              fontWeight: '700',
+            }}>
+              {'\u{1F5DD}\uFE0F'} {discoveredEndingCount} / {TOTAL_ENDING_COUNT} son kesfedildi
+            </Text>
+          </FadeInUpView>
+
+          {/* Katman 1 — Kişilik anlatısı */}
+          <FadeInUpView delay={110}>
+            <Text style={{
+              color: theme.textSecondary,
+              fontFamily: theme.fontBody,
+              textAlign: 'center',
+              lineHeight: 22,
+              marginBottom: 12,
+              fontStyle: 'italic',
+            }}>
+              {farewellNarrative}
+            </Text>
+          </FadeInUpView>
 
           <FadeInUpView delay={150}>
             <Text style={{ color: theme.textSecondary, fontFamily: theme.fontBody, textAlign: 'center', marginBottom: 8 }}>
@@ -236,6 +364,47 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
             </FadeInUpView>
           )}
 
+          {highlightedRelations.length > 0 && (
+            <FadeInUpView delay={440}>
+              <View style={{ marginBottom: 16 }}>
+                <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>Iliskiler</Text>
+                <View style={{ borderTopWidth: 1, borderTopColor: theme.border }}>
+                  {highlightedRelations.map((npc) => {
+                    const roleLabel = npc.role === 'PARTNER'
+                      ? 'Sevgili'
+                      : (npc.role === 'BEST_FRIEND' ? 'En Iyi Arkadas' : 'Dusman');
+                    const roleEmoji = npc.role === 'PARTNER'
+                      ? '💑'
+                      : (npc.role === 'BEST_FRIEND' ? '👥' : '⚔️');
+                    const relationLine = npc.role === 'PARTNER'
+                      ? `${npc.metAge} yasinda tanistin`
+                      : (npc.role === 'BEST_FRIEND'
+                        ? `${Math.max(1, gameState.age - npc.metAge)} yillik dostluk`
+                        : 'hic barismadin');
+
+                    return (
+                      <View
+                        key={npc.id}
+                        style={{
+                          paddingVertical: 8,
+                          borderBottomWidth: 1,
+                          borderBottomColor: theme.border,
+                        }}
+                      >
+                        <Text style={{ color: theme.textPrimary, fontWeight: '600' }}>
+                          {roleEmoji} {npc.name} ({roleLabel})
+                        </Text>
+                        <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>
+                          {relationLine}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            </FadeInUpView>
+          )}
+
           <FadeInUpView delay={460}>
             <View style={{ marginBottom: 16 }}>
               <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>Legacy</Text>
@@ -251,7 +420,53 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
             </View>
           </FadeInUpView>
 
+          {/* Katman 3 — Yeniden oynama kancası */}
+          {alternativeSuggestion && (
+            <FadeInUpView delay={480}>
+              <View style={{
+                marginBottom: 16,
+                backgroundColor: theme.surfaceOverlay,
+                borderRadius: 10,
+                padding: metrics.pad,
+                borderWidth: 1,
+                borderColor: theme.border,
+              }}>
+                <Text style={{ color: theme.textSecondary, fontSize: 11, marginBottom: 4 }}>Peki ya farklı seçseydin?</Text>
+                <Text style={{ color: theme.textPrimary, fontWeight: '600', lineHeight: 20 }}>
+                  {alternativeSuggestion}
+                </Text>
+              </View>
+            </FadeInUpView>
+          )}
+
           <FadeInUpView delay={500}>
+            <ShimmerButton
+              onPress={handleShareLife}
+              disabled={isSharing}
+              style={{
+                padding: metrics.pad,
+                borderRadius: 12,
+                alignItems: 'center',
+                overflow: 'hidden',
+                backgroundColor: theme.surfaceOverlay,
+                borderWidth: 1,
+                borderColor: theme.border,
+                marginBottom: 10,
+                opacity: isSharing ? 0.7 : 1,
+              }}
+            >
+              <Text style={{
+                color: theme.textPrimary,
+                fontWeight: '700',
+                fontFamily: theme.fontHeading,
+                fontSize: 15,
+              }}>
+                {isSharing ? 'Kart Hazirlaniyor...' : 'Hayatimi Paylas'}
+              </Text>
+            </ShimmerButton>
+          </FadeInUpView>
+
+          <FadeInUpView delay={540}>
             <ShimmerButton
               onPress={handleRestart}
               style={{
@@ -277,6 +492,24 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
         </View>
       </ScrollView>
     </SafeAreaView>
+
+    <View style={{ position: 'absolute', left: -9999, top: -9999 }}>
+      <ViewShot
+        ref={shareCardRef}
+        options={{ format: 'png', quality: 1, result: 'tmpfile' }}
+      >
+        <ShareCard
+          theme={theme}
+          playerName={playerName}
+          age={gameState.age}
+          zodiacSign={gameState.characterInfo?.zodiacSign}
+          tier={tier}
+          endingTitle={result.title}
+          traitIds={gameState.traits}
+          legacyLevel={safeMeta.legacyLevel}
+        />
+      </ViewShot>
+    </View>
     </View>
   );
 };

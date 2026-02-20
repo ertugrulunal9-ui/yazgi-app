@@ -270,6 +270,61 @@ describe('eventSelection', () => {
     expect(calculateGoalAlignmentScore(unrelatedEvent, 'ACADEMIC')).toBe(25);
   });
 
+  it('uses chaos selection every 5 turns and ignores goal alignment weights', () => {
+    const unrelatedEvent: GameEvent = {
+      id: 'chaos_social',
+      text: 'Sosyal bir gun',
+      minAge: 0,
+      maxAge: 99,
+      choices: [{ text: 'ok', effect: {}, feedback: 'ok' }],
+      rarity: 'COMMON',
+      difficulty: 2,
+      isRepeatable: true,
+      tags: ['social'],
+    };
+    const academicEvent: GameEvent = {
+      id: 'chaos_academic',
+      text: 'Kutuphane gunu',
+      minAge: 0,
+      maxAge: 99,
+      choices: [{ text: 'ok', effect: {}, feedback: 'ok' }],
+      rarity: 'COMMON',
+      difficulty: 2,
+      isRepeatable: true,
+      tags: ['study', 'exam'],
+    };
+
+    const normalPick = selectEventWithAdaptivePacing(
+      [unrelatedEvent, academicEvent],
+      baseContext,
+      [],
+      [],
+      {
+        fallbackEvent,
+        adaptivePacingStreak: 0,
+        selectedGoal: 'ACADEMIC',
+        currentTurn: 4,
+        randomFn: () => 0.3,
+      }
+    );
+    expect(normalPick.id).toBe('chaos_academic');
+
+    const chaosPick = selectEventWithAdaptivePacing(
+      [unrelatedEvent, academicEvent],
+      baseContext,
+      [],
+      [],
+      {
+        fallbackEvent,
+        adaptivePacingStreak: 0,
+        selectedGoal: 'ACADEMIC',
+        currentTurn: 5,
+        randomFn: () => 0.3,
+      }
+    );
+    expect(chaosPick.id).toBe('chaos_social');
+  });
+
   it('applies category diversity penalty for repeated categories', () => {
     const socialEvent: GameEvent = {
       id: 'social_1',

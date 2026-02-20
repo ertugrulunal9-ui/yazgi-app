@@ -16,6 +16,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
   // --- tr_bayram_sabahi çocuk varyantı (orijinal artık 10-18) ---
   {
     id: 'tr_bayram_sabahi_cocuk',
+    tags: ['family', 'social'],
     text: "Bayram sabahı! Yeni kıyafetler giydin, ev çikolata kokuyor. Büyükler elini öpeceksin, harçlık alacaksın!",
     minAge: 5, maxAge: 9, difficulty: 1, rarity: 'UNCOMMON', isRepeatable: true,
     personalityCategory: 'SOCIAL',
@@ -53,6 +54,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
   // --- tr_aile_yemegi çocuk varyantı (orijinal artık 10-18) ---
   {
     id: 'tr_aile_yemegi_cocuk',
+    tags: ['family', 'social'],
     text: "Akşam yemeği! Aile sofraya oturdu. Annen güzel yemekler yapmış ama sebze de var...",
     minAge: 5, maxAge: 9, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'SOCIAL',
@@ -89,6 +91,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
   // --- tr_ramazan_iftar çocuk varyantı (orijinal artık 12-18) ---
   {
     id: 'tr_ramazan_iftar_cocuk',
+    tags: ['family', 'social'],
     text: "Ramazan ayı! Bugün iftar var. Ev güzel kokuyor, misafirler gelecek. Annen çok çalışıyor...",
     minAge: 6, maxAge: 11, difficulty: 1, rarity: 'UNCOMMON', isRepeatable: true,
     personalityCategory: 'MORAL',
@@ -129,6 +132,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
   // --- tr_kurban_bayrami çocuk varyantı (orijinal artık 12-18) ---
   {
     id: 'tr_kurban_bayrami_cocuk',
+    tags: ['family', 'social'],
     text: "Kurban Bayramı! Kuzenler geldi, bahçede oyun var. Ama kesim de oluyor...",
     minAge: 6, maxAge: 11, difficulty: 1, rarity: 'UNCOMMON', isRepeatable: true,
     personalityCategory: 'SOCIAL',
@@ -169,6 +173,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
   // --- tr_karne_gunu çocuk varyantı (orijinal artık 12-18) ---
   {
     id: 'tr_karne_gunu_ilkokul',
+    tags: ['karne', 'school'],
     text: "Karne günü! Öğretmenin tek tek karneleri dağıtıyor. Kalbin çarpıyor...",
     minAge: 7, maxAge: 11, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'SOCIAL',
@@ -204,6 +209,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
   // --- tr_sabah_uyanis çocuk varyantı (orijinal artık 12-18) ---
   {
     id: 'tr_sabah_uyanis_cocuk',
+    tags: ['family', 'social'],
     text: "Sabah oldu! Annen 'Kalk okula geç kalacaksın!' diye sesleniyor. Yatağın çook sıcak...",
     minAge: 7, maxAge: 11, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'GROWTH',
@@ -244,6 +250,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
   // --- tr_milli_mac çocuk varyantı (orijinal artık 12-18) ---
   {
     id: 'tr_milli_mac_cocuk',
+    tags: ['sport', 'match', 'athletic'],
     text: "Türkiye maç yapıyor! Baban TV'nin karşısına geçti, mahallede bayraklar asılmış!",
     minAge: 8, maxAge: 11, difficulty: 1, rarity: 'UNCOMMON', isRepeatable: true,
     personalityCategory: 'SOCIAL',
@@ -280,6 +287,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
   // --- tr_mahalle_futbolu çocuk varyantı (orijinal artık 10-16) ---
   {
     id: 'tr_mahalle_futbolu_cocuk',
+    tags: ['sport', 'match', 'athletic'],
     text: "Mahallede büyük çocuklar futbol oynuyor! 'Küçük de alsak mı?' diye konuşuyorlar...",
     minAge: 6, maxAge: 9, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'SOCIAL',
@@ -319,6 +327,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
   // --- tr_komsu_ziyaret çocuk varyantı (orijinal artık 12-18) ---
   {
     id: 'tr_komsu_ziyaret_cocuk',
+    tags: ['social', 'family'],
     text: "Komşular geldi! Yanlarında senin yaşında bir çocuk da var. Annen 'Git oyna!' diyor.",
     minAge: 8, maxAge: 11, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'SOCIAL',
@@ -358,6 +367,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
   // --- tr_yagmurlu_gun çocuk varyantı (orijinal artık 9-15) ---
   {
     id: 'tr_yagmurlu_gun_cocuk',
+    tags: ['creative', 'art'],
     text: "Dışarıda yağmur yağıyor! Pencereden damlalara bakıyorsun. Bugün ne yapacaksın?",
     minAge: 5, maxAge: 8, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'GROWTH',
@@ -397,6 +407,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_park_salincak',
+    tags: ['social', 'family'],
     text: "Parkta salıncağa binmek istiyorsun ama başka bir çocuk sallanıyor. Sıra beklemen lazım...",
     minAge: 3, maxAge: 5, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'GROWTH',
@@ -434,6 +445,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_sokak_kedisi',
+    tags: ['social', 'family'],
     text: "Yolda küçük bir kedi görüyorsun. Miyavlıyor, aç görünüyor. Ne yapacaksın?",
     minAge: 3, maxAge: 6, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'MORAL',
@@ -473,6 +485,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_ilk_dogum_gunu',
+    tags: ['family', 'social'],
     text: "Bugün doğum günün! Pasta, balon, arkadaşlar! Ama bir çocuk sana hediye getirmemiş...",
     minAge: 3, maxAge: 6, difficulty: 1, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'SOCIAL',
@@ -502,6 +515,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_kirilan_oyuncak',
+    tags: ['family', 'social'],
     text: "En sevdiğin oyuncak kırıldı! Üzgünsün, ağlamak istiyorsun...",
     minAge: 3, maxAge: 5, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'GROWTH',
@@ -537,6 +551,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_yabanci_seker',
+    tags: ['social', 'family'],
     text: "Parkta tanımadığın bir amca sana şeker uzatıyor. 'Al bakalım, güzel çocuk' diyor...",
     minAge: 4, maxAge: 6, difficulty: 2, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'MORAL',
@@ -575,6 +590,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_doktor_asi',
+    tags: ['family', 'social'],
     text: "Bugün aşı günü! Doktora gideceksiniz. İğne... KORKUNÇ!",
     minAge: 3, maxAge: 6, difficulty: 2, rarity: 'UNCOMMON', isRepeatable: true,
     personalityCategory: 'GROWTH',
@@ -614,6 +630,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_hayali_arkadas',
+    tags: ['friend', 'social'],
     text: "Odanda kimse yok ama sen birine konuşuyorsun. 'Görünmez arkadaşım var!' diyorsun.",
     minAge: 3, maxAge: 5, difficulty: 1, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'GROWTH',
@@ -642,6 +659,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_ilk_yalan',
+    tags: ['family', 'social'],
     text: "Vazoyu kırdın ama kimse görmedi. Annen 'Kim kırdı bunu?' diye soruyor...",
     minAge: 3, maxAge: 6, difficulty: 2, rarity: 'COMMON', isRepeatable: false,
     personalityCategory: 'MORAL',
@@ -682,6 +700,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_anne_yardim_cocuk',
+    tags: ['family', 'social'],
     text: "Annen yerleri siliyor. Çok yorgun görünüyor. 'Yardım eder misin?' diye soruyor.",
     minAge: 3, maxAge: 6, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'MORAL',
@@ -710,6 +729,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_markette_kaybolma',
+    tags: ['family', 'social'],
     text: "Markette annenin elini bıraktın. Etrafına bakıyorsun... ANNEN YOK! Kaybolmuşsun!",
     minAge: 3, maxAge: 6, difficulty: 3, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'GROWTH',
@@ -748,6 +768,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_resim_yarisma',
+    tags: ['art', 'creative'],
     text: "Öğretmen en güzel resmi seçecek! Herkes çiziyor. Sen ne çizeceksin?",
     minAge: 4, maxAge: 6, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'GROWTH',
@@ -778,6 +799,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_yatmadan_hikaye',
+    tags: ['creative', 'art'],
     text: "Yatma vakti geldi. Annen 'Bir hikaye okuyayım mı?' diyor.",
     minAge: 3, maxAge: 5, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'GROWTH',
@@ -810,6 +832,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_ilk_odev',
+    tags: ['study', 'school'],
     text: "Öğretmen ev ödevi verdi! Hayatındaki ilk ödev: 10 tane toplama işlemi. Defterini açtın...",
     minAge: 6, maxAge: 8, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'GROWTH',
@@ -846,6 +869,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_yeni_arkadas',
+    tags: ['friend', 'social'],
     text: "Sınıfa yeni bir öğrenci geldi. Tek başına oturuyor, kimseyi tanımıyor...",
     minAge: 6, maxAge: 9, difficulty: 1, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'SOCIAL',
@@ -875,6 +899,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_sinav_sonucu',
+    tags: ['exam', 'school', 'karne'],
     text: "Öğretmen sınav kağıtlarını dağıtıyor! Kalbin çarpıyor... Kağıdını çevirdin...",
     minAge: 7, maxAge: 9, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'SOCIAL',
@@ -912,6 +937,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_teneffus_yalniz',
+    tags: ['social', 'friend', 'school'],
     text: "Teneffüste herkes gruplar halinde oynuyor. Sen tek başınasın...",
     minAge: 6, maxAge: 9, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'SOCIAL',
@@ -949,6 +975,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_kopya_iste',
+    tags: ['exam', 'school', 'friend'],
     text: "Sınav sırasında yanındaki arkadaşın fısıldıyor: 'Cevapları göster, lütfen!'",
     minAge: 7, maxAge: 9, difficulty: 2, rarity: 'UNCOMMON', isRepeatable: true,
     personalityCategory: 'MORAL',
@@ -980,6 +1007,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_harclik_kaybet',
+    tags: ['money', 'finance'],
     text: "Bugün okula harçlıkla gittin. Kantinden bir şey alacaktın ama... Cebindeki para yok! Düşürmüşsün!",
     minAge: 6, maxAge: 9, difficulty: 2, rarity: 'UNCOMMON', isRepeatable: true,
     personalityCategory: 'GROWTH',
@@ -1015,6 +1043,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_kardes_kavga',
+    tags: ['family', 'social'],
     text: "Kardeşin senin eşyanı aldı! Kızgınsın, kavga edeceksiniz...",
     minAge: 6, maxAge: 9, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'CONFLICT',
@@ -1052,6 +1081,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_gece_kalma',
+    tags: ['friend', 'social'],
     text: "Arkadaşın seni evine gece kalmaya davet etti! Ama daha önce hiç evden ayrı kalmadın...",
     minAge: 7, maxAge: 9, difficulty: 2, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'SOCIAL',
@@ -1085,6 +1115,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_grup_dislanma',
+    tags: ['social', 'group', 'friend'],
     text: "Sınıfta bir grup oluştu. Herkes o gruba girmek istiyor. Seni de istediler ama bir şartla: 'Şu çocukla konuşma!'",
     minAge: 9, maxAge: 11, difficulty: 3, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'MORAL',
@@ -1116,6 +1147,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_sosyal_medya_ilk',
+    tags: ['social', 'group'],
     text: "Arkadaşların hep telefonlarıyla bir şey yapıyor. 'Sen yok musun sosyal medyada?' diye soruyorlar.",
     minAge: 9, maxAge: 11, difficulty: 2, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'CONFLICT',
@@ -1155,6 +1187,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_takim_kaptan',
+    tags: ['sport', 'athletic', 'group'],
     text: "Beden eğitimi dersinde takım kaptanı seçiliyor. Seni de aday gösterdiler!",
     minAge: 9, maxAge: 11, difficulty: 2, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'SOCIAL',
@@ -1186,6 +1219,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_aile_tatili',
+    tags: ['family', 'social'],
     text: "Aile tatile gidecek! Ama arkadaşlarından bir hafta ayrı kalacaksın...",
     minAge: 9, maxAge: 11, difficulty: 1, rarity: 'UNCOMMON', isRepeatable: true,
     personalityCategory: 'SOCIAL',
@@ -1212,6 +1246,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_biriktir_harca',
+    tags: ['money', 'finance'],
     text: "Biriktirdiğin harçlıklarla istediğin oyuncağı/oyunu alabilirsin. Ama tam tutarı biriktirmek 2 hafta daha sürecek...",
     minAge: 9, maxAge: 11, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'GROWTH',
@@ -1249,6 +1284,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_ortaokul_gecis',
+    tags: ['school', 'study'],
     text: "Ortaokula geçiyorsun! Farklı sınıflar, farklı öğretmenler, sınav sistemi değişti. Her şey yeni...",
     minAge: 10, maxAge: 11, difficulty: 3, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'GROWTH',
@@ -1287,6 +1323,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_ogretmen_adaletsiz',
+    tags: ['school', 'social'],
     text: "Öğretmenin seni suçsuz yere azarladı! Sınıfın önünde utandın. Haksızlık!",
     minAge: 9, maxAge: 11, difficulty: 3, rarity: 'UNCOMMON', isRepeatable: true,
     personalityCategory: 'CONFLICT',
@@ -1326,6 +1363,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_zorbalik_tanik',
+    tags: ['social', 'school'],
     text: "Teneffüste büyük bir çocuk küçük birini itiyor, çantasını alıyor. Kimse bir şey yapmıyor...",
     minAge: 9, maxAge: 11, difficulty: 3, rarity: 'UNCOMMON', isRepeatable: true,
     personalityCategory: 'MORAL',
@@ -1366,6 +1404,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_hobi_secimi',
+    tags: ['creative', 'art'],
     text: "Okul kurs kayıtları başladı! Müzik, resim, spor, kodlama... Hangisini seçeceksin?",
     minAge: 9, maxAge: 11, difficulty: 1, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'GROWTH',
@@ -1411,6 +1450,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_telefon_isteme',
+    tags: ['family', 'social'],
     text: "Arkadaşlarının çoğunda telefon var. Sen de istiyorsun! Ama ailen 'Daha erken' diyor.",
     minAge: 9, maxAge: 11, difficulty: 2, rarity: 'COMMON', isRepeatable: false,
     personalityCategory: 'CONFLICT',
@@ -1449,6 +1489,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_ders_baskisi',
+    tags: ['study', 'school'],
     text: "Sınav haftası! Annen 'Çalış!' diyor, baban 'Notların düşüyor!' diyor. Stres çok...",
     minAge: 9, maxAge: 11, difficulty: 3, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'GROWTH',
@@ -1486,6 +1527,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_sir_saklama',
+    tags: ['friend', 'social'],
     text: "En yakın arkadaşın sana bir sır söyledi. Ama başka bir arkadaşın da bu sırrı soruyor!",
     minAge: 9, maxAge: 11, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'MORAL',
@@ -1515,6 +1557,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_okul_takim_secme',
+    tags: ['sport', 'athletic', 'group', 'school'],
     text: "Okul basketbol/futbol takımına seçmeler var! Takıma girmek istiyorsun ama rakipler çok...",
     minAge: 9, maxAge: 11, difficulty: 3, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'GROWTH',
@@ -1547,6 +1590,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_mahalle_cesaret',
+    tags: ['social', 'group'],
     text: "Mahallede çocuklar cesaret oyunu oynuyor. Sıra sende: karanlık bodruma gir!",
     minAge: 9, maxAge: 11, difficulty: 3, rarity: 'UNCOMMON', isRepeatable: true,
     personalityCategory: 'CONFLICT',
@@ -1577,6 +1621,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_kardese_bakma',
+    tags: ['family', 'social'],
     text: "Annen dışarı çıkacak. 'Kardeşine göz kulak ol, 1 saat döneceğim' diyor.",
     minAge: 9, maxAge: 11, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'MORAL',
@@ -1616,6 +1661,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_grup_projesi',
+    tags: ['study', 'school', 'group'],
     text: "Öğretmen grup projesi verdi! 4 kişi bir grup. Ama grubundakiler çalışmıyor, her şeyi sen yapıyorsun...",
     minAge: 9, maxAge: 11, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'CONFLICT',
@@ -1654,6 +1700,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_arkadas_kus',
+    tags: ['friend', 'social'],
     text: "En yakın arkadaşınla kavga ettiniz. 3 gündür konuşmuyorsunuz. Seni arıyor ama...",
     minAge: 9, maxAge: 11, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'SOCIAL',
@@ -1684,6 +1731,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_beden_degisim',
+    tags: ['social', 'growth'],
     text: "Son zamanlarda bedenin değişiyor. Boyun uzuyor, sesin farklılaşıyor. Garip hissediyorsun...",
     minAge: 10, maxAge: 11, difficulty: 2, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'GROWTH',
@@ -1720,6 +1768,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_bilim_fuari',
+    tags: ['study', 'school', 'science'],
     text: "Okulda bilim fuarı! Bir proje hazırlamak zorundasın. Ne yapacaksın?",
     minAge: 9, maxAge: 11, difficulty: 2, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'GROWTH',
@@ -1756,6 +1805,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_konser_izin',
+    tags: ['konser', 'music', 'creative'],
     text: "Çok sevdiğin şarkıcı şehrine konser verecek! Ama hafta içi ve okul var. Annenden izin istemelisin...",
     minAge: 10, maxAge: 11, difficulty: 2, rarity: 'RARE', isRepeatable: false,
     personalityCategory: 'CONFLICT',
@@ -1785,6 +1835,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
 
   {
     id: 'tr_karne_pazarlik',
+    tags: ['karne', 'school', 'family'],
     text: "Karne haftası. Baban dedi: 'Takdir getir, telefon alırız.' Notların sınırda...",
     minAge: 10, maxAge: 11, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'GROWTH',

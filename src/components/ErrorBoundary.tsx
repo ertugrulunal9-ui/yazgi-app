@@ -1,6 +1,6 @@
 import React, { ReactNode, Component, ErrorInfo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-// import { crashReportingService } from '../services/crashReporting';
+import { crashReportingService } from '../services/crashReporting';
 
 interface Props {
   children: ReactNode;
@@ -111,10 +111,10 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     this.setState({ errorInfo });
 
-    // crashReportingService.logError(error, {
-    //   phase: 'ErrorBoundary',
-    //   action: 'Component crashed',
-    // });
+    void crashReportingService.logError(error, {
+      phase: 'ErrorBoundary',
+      action: 'Component crashed',
+    });
 
     console.error('ErrorBoundary caught:', error);
     console.error('Component stack:', errorInfo.componentStack);

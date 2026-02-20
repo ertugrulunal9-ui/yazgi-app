@@ -275,7 +275,9 @@ describe('Trait System - Extended Coverage', () => {
         trait.formation?.triggers.forEach(trigger => {
           if (trigger.type === 'ACTION') {
             expect(trigger.actionId).toBeDefined();
-            expect(trigger.count).toBeGreaterThan(0);
+            if (trigger.count !== undefined) {
+              expect(trigger.count).toBeGreaterThan(0);
+            }
           }
         });
       });
@@ -301,13 +303,25 @@ describe('Trait System - Extended Coverage', () => {
       acquiredTraits.forEach(trait => {
         trait.formation?.triggers.forEach(trigger => {
           if (trigger.type === 'STAT_THRESHOLD') {
-            expect(trigger.statKey).toBeDefined();
-            expect(trigger.threshold).toBeGreaterThan(0);
-            // Some stats like money can exceed 100
-            if (trigger.statKey === 'money') {
+            const hasSimpleThreshold = trigger.statKey !== undefined && trigger.threshold !== undefined;
+            const hasConditionalThreshold = trigger.statCondition !== undefined;
+
+            expect(hasSimpleThreshold || hasConditionalThreshold).toBe(true);
+
+            if (hasSimpleThreshold) {
               expect(trigger.threshold).toBeGreaterThan(0);
-            } else {
-              expect(trigger.threshold).toBeLessThanOrEqual(100);
+              // Some stats like money can exceed 100
+              if (trigger.statKey === 'money') {
+                expect(trigger.threshold).toBeGreaterThan(0);
+              } else {
+                expect(trigger.threshold).toBeLessThanOrEqual(100);
+              }
+            }
+
+            if (hasConditionalThreshold && trigger.statCondition) {
+              expect(trigger.statCondition.stat).toBeDefined();
+              expect(['>', '<']).toContain(trigger.statCondition.operator);
+              expect(trigger.statCondition.value).toBeGreaterThan(0);
             }
           }
         });

@@ -4,7 +4,7 @@
  * Tüm fonksiyonlar pure — side-effect yok.
  */
 
-import { FateOutcome, FateRollResult, FateState, Stats, ZodiacSign } from '../types';
+import { FateOutcome, FateRollResult, FateState, GameState, Stats, ZodiacSign } from '../types';
 
 // ===== MULBERRY32 SEEDED PRNG =====
 
@@ -25,6 +25,53 @@ const FATE_THRESHOLDS = {
 } as const;
 
 const TOKEN_EARN_AGES = new Set([0, 3, 6, 9, 12, 15, 18]);
+
+interface TokenEarnContext {
+  previousAge: number;
+  newAge: number;
+  dominantMomentumStreak: number;
+  consecutiveBadRolls: number;
+}
+
+interface TokenEarnCondition {
+  type: 'age_milestone' | 'achievement' | 'streak_reward';
+  condition: (context: TokenEarnContext) => boolean;
+  reward: number;
+}
+
+const crossesAnyMilestone = (previousAge: number, newAge: number): boolean => {
+  for (let age = previousAge + 1; age <= newAge; age++) {
+    if (TOKEN_EARN_AGES.has(age)) return true;
+  }
+  return false;
+};
+
+const getDominantMomentumStreak = (state: GameState): number => {
+  const momentum = state.personalityState;
+  return Math.max(
+    momentum.HELPFUL?.streak ?? 0,
+    momentum.PRAGMATIC?.streak ?? 0,
+    momentum.AGGRESSIVE?.streak ?? 0,
+  );
+};
+
+const TOKEN_EARN_CONDITIONS: TokenEarnCondition[] = [
+  {
+    type: 'age_milestone',
+    condition: ({ previousAge, newAge }) => crossesAnyMilestone(previousAge, newAge),
+    reward: 1,
+  },
+  {
+    type: 'streak_reward',
+    condition: ({ dominantMomentumStreak }) => dominantMomentumStreak === 5,
+    reward: 1,
+  },
+  {
+    type: 'achievement',
+    condition: ({ consecutiveBadRolls }) => consecutiveBadRolls === 4,
+    reward: 1,
+  },
+];
 
 const FATE_MULTIPLIERS: Record<FateOutcome, { positive: number; negative: number }> = {
   BLESSED:   { positive: 1.5,  negative: 0.5 },
@@ -165,15 +212,30 @@ export const rollFateForced = (
 // ===== JETON YÖNETİMİ =====
 
 export const shouldEarnToken = (previousAge: number, newAge: number): boolean => {
-  for (let age = previousAge + 1; age <= newAge; age++) {
-    if (TOKEN_EARN_AGES.has(age)) return true;
-  }
-  return false;
+  return crossesAnyMilestone(previousAge, newAge);
 };
 
-export const earnToken = (state: FateState): FateState => ({
+export const getEarnedTokenCount = (
+  state: GameState,
+  previousAge: number,
+  newAge: number,
+): number => {
+  const context: TokenEarnContext = {
+    previousAge,
+    newAge,
+    dominantMomentumStreak: getDominantMomentumStreak(state),
+    consecutiveBadRolls: state.fate?.consecutiveBadOutcomes ?? 0,
+  };
+
+  return TOKEN_EARN_CONDITIONS.reduce((sum, earnCondition) => {
+    if (!earnCondition.condition(context)) return sum;
+    return sum + earnCondition.reward;
+  }, 0);
+};
+
+export const earnToken = (state: FateState, amount: number = 1): FateState => ({
   ...state,
-  tokens: state.tokens + 1,
+  tokens: state.tokens + Math.max(0, Math.floor(amount)),
 });
 
 export const canSpendToken = (state: FateState): boolean => state.tokens > 0;

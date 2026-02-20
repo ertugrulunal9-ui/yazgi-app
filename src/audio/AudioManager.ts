@@ -1,4 +1,4 @@
-import { Audio, AVPlaybackStatus } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync, AudioPlayer } from 'expo-audio';
 import { SoundDefinition, ALL_SOUNDS, getSoundDefinition } from './soundDefinitions';
 
 const STORAGE_KEY = '@yazgi/audio_settings/v1';
@@ -12,15 +12,16 @@ interface AudioSettings {
 }
 
 interface SoundInstance {
-  sound: Audio.Sound;
+  sound: AudioPlayer;
   definition: SoundDefinition;
   isPlaying: boolean;
   lastPlayedAt: number;
+  subscription: { remove: () => void } | null;
 }
 
 class AudioManager {
   private static instance: AudioManager;
-  
+
   private settings: AudioSettings = {
     masterVolume: 0.7,
     musicVolume: 0.8,
@@ -29,8 +30,9 @@ class AudioManager {
   };
 
   private soundPool: Map<string, SoundInstance[]> = new Map();
-  private activeSounds: Set<Audio.Sound> = new Set();
+  private activeSounds: Set<AudioPlayer> = new Set();
   private initialized: boolean = false;
+  private initializePromise: Promise<void> | null = null;
 
   private constructor() {}
 
@@ -44,34 +46,43 @@ class AudioManager {
   // Initialize audio system
   async initialize(): Promise<void> {
     if (this.initialized) return;
-
-    try {
-      // Configure audio mode
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: true,
-        shouldDuckAndroid: true,
-        playThroughEarpieceAndroid: false,
-      });
-
-      // Load settings
-      await this.loadSettings();
-
-      // Preload sounds
-      await this.preloadSounds();
-
-      this.initialized = true;
-      console.log('🔊 Audio Manager initialized');
-    } catch (error) {
-      console.error('Audio initialization failed:', error);
+    if (this.initializePromise) {
+      await this.initializePromise;
+      return;
     }
+
+    this.initializePromise = (async () => {
+      try {
+        // Configure audio mode
+        await setAudioModeAsync({
+          playsInSilentMode: true,
+          shouldPlayInBackground: true,
+          interruptionMode: 'duckOthers',
+          shouldRouteThroughEarpiece: false,
+        });
+
+        // Load settings
+        await this.loadSettings();
+
+        // Preload sounds
+        await this.preloadSounds();
+
+        this.initialized = true;
+        console.log('Audio Manager initialized');
+      } catch (error) {
+        console.error('Audio initialization failed:', error);
+      } finally {
+        this.initializePromise = null;
+      }
+    })();
+
+    await this.initializePromise;
   }
 
   // Preload essential sounds
   private async preloadSounds(): Promise<void> {
     const toPreload = ALL_SOUNDS.filter(s => s.preload);
-    
+
     const promises = toPreload.map(async (def) => {
       try {
         await this.loadSound(def);
@@ -84,27 +95,23 @@ class AudioManager {
   }
 
   // Load sound into pool
-  private async loadSound(definition: SoundDefinition): Promise<Audio.Sound> {
+  private async loadSound(definition: SoundDefinition): Promise<AudioPlayer> {
     try {
       // Check if sound path is null or undefined
       if (!definition.path) {
         throw new Error(`Sound path is null for: ${definition.id}`);
       }
 
-      const { sound } = await Audio.Sound.createAsync(
-        definition.path,
-        {
-          volume: this.calculateVolume(definition),
-          isLooping: definition.loop || false,
-          shouldPlay: false,
-        }
-      );
+      const player = createAudioPlayer(definition.path);
+      player.volume = this.calculateVolume(definition);
+      player.loop = definition.loop || false;
 
       const instance: SoundInstance = {
-        sound,
+        sound: player,
         definition,
         isPlaying: false,
         lastPlayedAt: 0,
+        subscription: null,
       };
 
       // Add to pool
@@ -112,7 +119,7 @@ class AudioManager {
       pool.push(instance);
       this.soundPool.set(definition.id, pool);
 
-      return sound;
+      return player;
     } catch (error) {
       // Silent fail - sound files may not exist yet
       throw error;
@@ -128,7 +135,7 @@ class AudioManager {
 
     // Get from pool
     let pool = this.soundPool.get(soundId) || [];
-    
+
     // Find available instance
     let instance = pool.find(i => !i.isPlaying);
 
@@ -148,11 +155,11 @@ class AudioManager {
       if (pool.length === 0) {
         return null;
       }
-      instance = pool.reduce((oldest, current) => 
+      instance = pool.reduce((oldest, current) =>
         current.lastPlayedAt < oldest.lastPlayedAt ? current : oldest
       );
-      await instance.sound.stopAsync();
-      await instance.sound.setPositionAsync(0);
+      instance.sound.pause();
+      await instance.sound.seekTo(0);
     }
 
     return instance;
@@ -163,8 +170,8 @@ class AudioManager {
     if (this.settings.muted) return 0;
 
     const baseVolume = definition.volume ?? 1;
-    const categoryVolume = definition.category === 'music' 
-      ? this.settings.musicVolume 
+    const categoryVolume = definition.category === 'music'
+      ? this.settings.musicVolume
       : this.settings.sfxVolume;
 
     return baseVolume * categoryVolume * this.settings.masterVolume;
@@ -184,24 +191,34 @@ class AudioManager {
     if (!instance) return;
 
     try {
-      // Update volume
-      await instance.sound.setVolumeAsync(this.calculateVolume(instance.definition));
-      
-      // Reset to start
-      await instance.sound.setPositionAsync(0);
-      
+      // Update volume (sync setter)
+      instance.sound.volume = this.calculateVolume(instance.definition);
+
+      // Reset to start (async, in seconds)
+      await instance.sound.seekTo(0);
+
       // Play
-      await instance.sound.playAsync();
-      
+      instance.sound.play();
+
       instance.isPlaying = true;
       instance.lastPlayedAt = Date.now();
       this.activeSounds.add(instance.sound);
 
+      // Remove any existing listener to avoid duplicates
+      if (instance.subscription) {
+        instance.subscription.remove();
+        instance.subscription = null;
+      }
+
       // Auto-cleanup on finish
-      instance.sound.setOnPlaybackStatusUpdate((status: AVPlaybackStatus) => {
-        if (status.isLoaded && status.didJustFinish) {
+      instance.subscription = instance.sound.addListener('playbackStatusUpdate', (status) => {
+        if (status.didJustFinish) {
           instance.isPlaying = false;
           this.activeSounds.delete(instance.sound);
+          if (instance.subscription) {
+            instance.subscription.remove();
+            instance.subscription = null;
+          }
         }
       });
     } catch {
@@ -209,44 +226,37 @@ class AudioManager {
     }
   }
 
-  // Update volume for all active sounds
-  private async updateAllVolumes(): Promise<void> {
-    const updatePromises: Promise<any>[] = [];
-
+  // Update volume for all active sounds (now synchronous)
+  private updateAllVolumes(): void {
     this.soundPool.forEach((instances) => {
       instances.forEach((instance) => {
-        const promise = instance.sound.setVolumeAsync(
-          this.calculateVolume(instance.definition)
-        );
-        updatePromises.push(promise);
+        instance.sound.volume = this.calculateVolume(instance.definition);
       });
     });
-
-    await Promise.allSettled(updatePromises);
   }
 
   // Settings management
   async setMasterVolume(volume: number): Promise<void> {
     this.settings.masterVolume = Math.max(0, Math.min(1, volume));
-    await this.updateAllVolumes();
+    this.updateAllVolumes();
     await this.saveSettings();
   }
 
   async setMusicVolume(volume: number): Promise<void> {
     this.settings.musicVolume = Math.max(0, Math.min(1, volume));
-    await this.updateAllVolumes();
+    this.updateAllVolumes();
     await this.saveSettings();
   }
 
   async setSFXVolume(volume: number): Promise<void> {
     this.settings.sfxVolume = Math.max(0, Math.min(1, volume));
-    await this.updateAllVolumes();
+    this.updateAllVolumes();
     await this.saveSettings();
   }
 
   async setMuted(muted: boolean): Promise<void> {
     this.settings.muted = muted;
-    await this.updateAllVolumes();
+    this.updateAllVolumes();
     await this.saveSettings();
   }
 
@@ -302,24 +312,29 @@ class AudioManager {
 
   // Cleanup
   async dispose(): Promise<void> {
-    const disposePromises: Promise<any>[] = [];
+    this.initializePromise = null;
 
     this.soundPool.forEach((instances) => {
       instances.forEach((instance) => {
-        disposePromises.push(
-          instance.sound.unloadAsync().catch(() => {})
-        );
+        if (instance.subscription) {
+          instance.subscription.remove();
+          instance.subscription = null;
+        }
+        try {
+          instance.sound.remove();
+        } catch {
+          // ignore
+        }
       });
     });
 
-    await Promise.allSettled(disposePromises);
-    
     this.soundPool.clear();
     this.activeSounds.clear();
     this.initialized = false;
-    
-    console.log('🔇 Audio Manager disposed');
+
+    console.log('Audio Manager disposed');
   }
 }
 
 export const audioManager = AudioManager.getInstance();
+

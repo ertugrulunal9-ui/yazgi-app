@@ -11,6 +11,112 @@ import { BURDEN_CONSTANTS } from '../constants/gameConstants';
 
 export type EndingGoal = 'ACADEMIC' | 'CREATIVE' | 'ATHLETIC' | 'SOCIAL' | 'ENTERPRISE' | 'BALANCED';
 
+export interface EndingCatalogEntry {
+  id: string;
+  title: string;
+  icon: string;
+  goal: EndingGoal | 'MYSTERY';
+  tier: CareerResult['type'] | 'MISMATCH' | 'SECRET';
+}
+
+const GOAL_ENDING_CATALOG: {
+  goal: EndingGoal;
+  prefix: string;
+  label: string;
+  icon: string;
+}[] = [
+  { goal: 'ACADEMIC', prefix: 'academic', label: 'Akademik Yol', icon: '\u{1F393}' },
+  { goal: 'CREATIVE', prefix: 'creative', label: 'Yaratici Yol', icon: '\u{1F3A8}' },
+  { goal: 'ATHLETIC', prefix: 'athletic', label: 'Atletik Yol', icon: '\u{1F3C3}' },
+  { goal: 'SOCIAL', prefix: 'social', label: 'Sosyal Yol', icon: '\u{1F91D}' },
+  { goal: 'ENTERPRISE', prefix: 'enterprise', label: 'Girisim Yolu', icon: '\u{1F4BC}' },
+  { goal: 'BALANCED', prefix: 'balanced', label: 'Dengeli Yol', icon: '\u2696\uFE0F' },
+];
+
+const TIER_ENDING_CATALOG: { tier: CareerResult['type']; label: string }[] = [
+  { tier: 'FAILURE', label: 'Zor Son' },
+  { tier: 'NORMAL', label: 'Dengeli Son' },
+  { tier: 'SUCCESS', label: 'Basari Sonu' },
+  { tier: 'LEGENDARY', label: 'Efsane Son' },
+];
+
+const generatedTierEndings: EndingCatalogEntry[] = GOAL_ENDING_CATALOG.flatMap(
+  ({ goal, prefix, label, icon }) => (
+    TIER_ENDING_CATALOG.map(({ tier, label: tierLabel }) => ({
+      id: `${prefix}_${tier.toLowerCase()}`,
+      title: `${label} - ${tierLabel}`,
+      icon,
+      goal,
+      tier,
+    }))
+  )
+);
+
+const generatedMismatchEndings: EndingCatalogEntry[] = GOAL_ENDING_CATALOG.map(
+  ({ goal, prefix, label, icon }) => ({
+    id: `${prefix}_mismatch_failure`,
+    title: `${label} - Rota Sapmasi`,
+    icon,
+    goal,
+    tier: 'MISMATCH',
+  })
+);
+
+const SECRET_ENDING_CATALOG: EndingCatalogEntry[] = [
+  {
+    id: 'secret_family_legacy',
+    title: 'Aile Mirasini Geri Kazan',
+    icon: '\u{1F3DB}\uFE0F',
+    goal: 'MYSTERY',
+    tier: 'SECRET',
+  },
+  {
+    id: 'secret_true_balance',
+    title: 'Gercek Denge Ustasi',
+    icon: '\u{1F31F}',
+    goal: 'MYSTERY',
+    tier: 'SECRET',
+  },
+  {
+    id: 'secret_fate_breaker',
+    title: 'Kader Kirici',
+    icon: '\u2694\uFE0F',
+    goal: 'MYSTERY',
+    tier: 'SECRET',
+  },
+  {
+    id: 'secret_love_and_glory',
+    title: 'Ask ve Zafer',
+    icon: '\u{1F497}',
+    goal: 'MYSTERY',
+    tier: 'SECRET',
+  },
+  {
+    id: 'secret_silent_legend',
+    title: 'Sessiz Efsane',
+    icon: '\u{1F52E}',
+    goal: 'MYSTERY',
+    tier: 'SECRET',
+  },
+];
+
+const ENDING_CATALOG = [
+  ...generatedTierEndings,
+  ...generatedMismatchEndings,
+  ...SECRET_ENDING_CATALOG,
+];
+
+export const ENDING_ID_LOOKUP: Record<string, EndingCatalogEntry> = ENDING_CATALOG.reduce(
+  (acc, entry) => {
+    acc[entry.id] = entry;
+    return acc;
+  },
+  {} as Record<string, EndingCatalogEntry>
+);
+
+export const ENDING_ID_LIST: string[] = ENDING_CATALOG.map(entry => entry.id);
+export const TOTAL_ENDING_COUNT = ENDING_ID_LIST.length;
+
 export interface EndingErrorDebt {
   health: number;
   discipline: number;

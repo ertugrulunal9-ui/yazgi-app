@@ -44,6 +44,7 @@ export const createInitialMetaProgression = (timestamp: number = Date.now()): Me
   highestCompatibilityScore: 0,
   highestAgeReached: 0,
   lifetimeAchievementIds: [],
+  lifetimeEndingIds: [],
   recentRuns: [],
   updatedAt: timestamp,
 });
@@ -84,6 +85,10 @@ export const applyRunToMetaProgression = (
     ...(current.lifetimeAchievementIds || []),
     ...run.unlockedAchievementIds,
   ]);
+  const uniqueEndingIds = new Set([
+    ...(current.lifetimeEndingIds || []),
+    run.endingId,
+  ]);
 
   const totalLegacyPoints = Math.max(0, current.totalLegacyPoints + pointsEarned);
   const nextMeta: MetaProgression = {
@@ -96,6 +101,7 @@ export const applyRunToMetaProgression = (
     highestCompatibilityScore: Math.max(current.highestCompatibilityScore || 0, Math.round(run.compatibilityScore)),
     highestAgeReached: Math.max(current.highestAgeReached || 0, run.age),
     lifetimeAchievementIds: Array.from(uniqueAchievementIds),
+    lifetimeEndingIds: Array.from(uniqueEndingIds),
     recentRuns: [runSummary, ...(current.recentRuns || [])].slice(0, MAX_RECENT_RUNS),
     updatedAt: Date.now(),
   };

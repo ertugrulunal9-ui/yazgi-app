@@ -6,6 +6,7 @@
 import React, { ReactNode } from 'react';
 import { renderHook, act } from '@testing-library/react-native';
 import { GameProvider, GameContext, GameContextType } from '../../src/context/GameContext';
+import { getMomentumVisibility } from '../../src/hooks/useGameSelectors';
 
 // Mock initial values
 const mockStats = {
@@ -444,5 +445,45 @@ describe('Edge Cases', () => {
       const debtStats = { ...mockStats, money: -200 };
       expect(debtStats.money).toBe(-200);
     });
+  });
+});
+
+describe('Momentum visibility selector', () => {
+  it('returns NONE when momentum has not started', () => {
+    const visibility = getMomentumVisibility(mockGameState as any);
+    expect(visibility.dominantTendency).toBeNull();
+    expect(visibility.streakLevel).toBe('NONE');
+    expect(visibility.hint).toBe('');
+  });
+
+  it('returns ACTIVE with hint for ongoing streak', () => {
+    const gameState = {
+      ...mockGameState,
+      personalityState: {
+        HELPFUL: { count: 4, streak: 3, multiplier: 1.1 },
+        PRAGMATIC: { count: 0, streak: 0, multiplier: 1 },
+        AGGRESSIVE: { count: 0, streak: 0, multiplier: 1 },
+      },
+    };
+
+    const visibility = getMomentumVisibility(gameState as any);
+    expect(visibility.dominantTendency).toBe('HELPFUL');
+    expect(visibility.streakLevel).toBe('ACTIVE');
+    expect(visibility.hint.length).toBeGreaterThan(0);
+  });
+
+  it('returns POWERFUL for high streak momentum', () => {
+    const gameState = {
+      ...mockGameState,
+      personalityState: {
+        HELPFUL: { count: 7, streak: 6, multiplier: 1.3 },
+        PRAGMATIC: { count: 1, streak: 1, multiplier: 1 },
+        AGGRESSIVE: { count: 0, streak: 0, multiplier: 1 },
+      },
+    };
+
+    const visibility = getMomentumVisibility(gameState as any);
+    expect(visibility.dominantTendency).toBe('HELPFUL');
+    expect(visibility.streakLevel).toBe('POWERFUL');
   });
 });

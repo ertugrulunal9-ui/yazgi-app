@@ -1,4 +1,9 @@
 import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
+
+/** Bir turda oyuncuya garanti edilen minimum karar sayısı */
+const MIN_DECISIONS_PER_DAY = 3;
+/** Bu enerji altına düşünce recovery tetiklenebilir */
+const RECOVERY_ENERGY_THRESHOLD = 5;
 import { View, Text, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGame } from '../context/GameContext';
@@ -8,7 +13,7 @@ import { useEvents } from '../hooks/useEvents';
 import { useNPCs } from '../hooks/useNPCs';
 import { useExamHandler } from '../hooks/useExamHandler';
 import { useFloatingTexts, useGameActions } from '../hooks/useGameSelectors';
-import { AppTab, Stats } from '../types';
+import { AppTab, Stats, TraitChangeFeedback } from '../types';
 import {
   FadeInUpView,
   achievementUnlock,
@@ -40,10 +45,12 @@ import { AchievementToast } from '../components/AchievementToast';
 import { RewardedAdButton } from '../components/RewardedAdButton';
 import ShopModal from '../components/ShopModal';
 import { useAchievements } from '../hooks/useAchievements';
-import { logAchievementUnlocked, logHubAction, logTraitFormed } from '../utils/analyticsEvents';
+import { logAchievementUnlocked, logHubAction, logTraitChanges, logTraitFormed } from '../utils/analyticsEvents';
 import { HubActionCommand } from '../commands/ActionCommand';
 import { TabContent } from '../components/ui';
 import { calculateEndingErrorDebt, calculateSelectedGoalStatProgress } from '../utils/endingResolver';
+import { checkTraitFormation, getMaxEnergy, resolveTraitChanges } from '../utils/gameUtils';
+import { buildTraitChangeFeedback } from '../utils/traitFeedback';
 import {
   MiniGameContainer,
   MathExamGame,
@@ -143,6 +150,13 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
       setToasts(prev => prev.filter(item => item.id !== id));
     }, toastDurationMs + toastDismissDelayMs);
   }, [toastDurationMs, toastDismissDelayMs]);
+  const buildTraitToastMessage = useCallback((traitChanges: TraitChangeFeedback[]): string | null => {
+    if (!traitChanges || traitChanges.length === 0) return null;
+
+    const summary = traitChanges.map(change => change.summary).join(' ');
+    const guidance = traitChanges.find(change => !!change.guidance)?.guidance;
+    return guidance ? `${summary}\nIpuclari: ${guidance}` : summary;
+  }, []);
 
   const monetizationTheme = useMemo(() => ({
     appBg: theme.appBg,
@@ -355,7 +369,22 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
       } else if (moneyDelta < 0) {
         moneyLoss();
       }
-      setStats(result.newStats);
+
+      // === MİNİMUM KARAR GARANTİSİ ===
+      // Enerji ilk kez tükendiyse ama yeterince karar alınmadıysa küçük bir recovery ver
+      const energyWasOk = stats.energy > RECOVERY_ENERGY_THRESHOLD;
+      const energyNowLow = result.newStats.energy <= RECOVERY_ENERGY_THRESHOLD;
+      const newDecisionCount = (gameState.dailyDecisionCount ?? 0) + 1;
+      const needsRecovery = energyWasOk && energyNowLow && newDecisionCount < MIN_DECISIONS_PER_DAY;
+
+      if (needsRecovery) {
+        const recoveryAmount = 20;
+        const recoveredEnergy = Math.min(gameState.maxEnergy, result.newStats.energy + recoveryAmount);
+        setStats({ ...result.newStats, energy: recoveredEnergy });
+        enqueueToast('Kısa bir mola vererek enerji topladın!', 'info');
+      } else {
+        setStats(result.newStats);
+      }
     }
 
     updateGameState(result.gameStateUpdates);
@@ -377,6 +406,21 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
         void logTraitFormed(traitId, gameState.age);
       });
     }
+    if (result.traitChanges && result.traitChanges.length > 0) {
+      const traitToast = buildTraitToastMessage(result.traitChanges);
+      if (traitToast) {
+        const hasWarningSignal = result.traitChanges.some(
+          change => change.changeType === 'GAINED' && !!change.guidance
+        );
+        enqueueToast(traitToast, hasWarningSignal ? 'warning' : 'info');
+      }
+      void logTraitChanges(result.traitChanges, {
+        source: 'hub_action',
+        sourceId: action.id,
+        age: gameState.age,
+        turn: gameState.turn,
+      });
+    }
 
     enqueueToast(result.feedbackMessage, 'success');
 
@@ -388,7 +432,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     }
 
     handleCloseBottomSheet();
-  }, [gameState, stats, updateGameState, handleCloseBottomSheet, meetNewNPC, openExamGame, setStats, enqueueToast]);
+  }, [gameState, stats, updateGameState, handleCloseBottomSheet, meetNewNPC, openExamGame, setStats, enqueueToast, buildTraitToastMessage]);
 
   // Handle report card close
   const handleReportCardClose = useCallback(() => {
@@ -633,17 +677,79 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
                       gameState.skills
                     );
                     if (result.success && result.cost) {
+                      const socialActionId = `social_${String(actionType).toLowerCase()}`;
+                      const energyCost = Math.max(0, result.cost.energy);
+                      const moneyCost = Math.max(0, result.cost.money);
+                      const statsAfterInteraction: Stats = {
+                        ...stats,
+                        energy: Math.max(0, stats.energy - energyCost),
+                        money: Math.max(0, stats.money - moneyCost),
+                      };
+                      const traitResult = checkTraitFormation(
+                        socialActionId,
+                        null,
+                        gameState,
+                        statsAfterInteraction
+                      );
+                      const traitResolution = resolveTraitChanges({
+                        currentTraits: gameState.traits,
+                        gainedTraits: traitResult.newTraits,
+                        removedTraits: traitResult.removedTraits,
+                      });
+                      const traitChanges = buildTraitChangeFeedback(
+                        traitResolution.gainedTraits,
+                        traitResolution.removedTraits
+                      );
+                      const nextTraitProgress = { ...traitResult.updatedProgress };
+                      [...traitResolution.gainedTraits, ...traitResolution.removedTraits].forEach(traitId => {
+                        if (nextTraitProgress[traitId]) {
+                          delete nextTraitProgress[traitId];
+                        }
+                      });
+                      const nextMaxEnergy = getMaxEnergy(gameState.age, gameState.family, traitResolution.traits);
+                      const cappedEnergy = Math.min(statsAfterInteraction.energy, nextMaxEnergy);
                       const updates: Partial<Stats> = {};
-                      if (result.cost.energy > 0) {
-                        updates.energy = -result.cost.energy;
+                      const energyDelta = cappedEnergy - stats.energy;
+                      if (energyDelta !== 0) {
+                        updates.energy = energyDelta;
                       }
-                      if (result.cost.money > 0) {
-                        updates.money = -result.cost.money;
+                      if (moneyCost > 0) {
+                        updates.money = -moneyCost;
                       }
                       if (Object.keys(updates).length > 0) {
                         updateStats(updates);
                       }
-                      void logHubAction(`social_${actionType}`, result.cost.energy, gameState.age, 0, {
+                      updateGameState({
+                        traits: traitResolution.traits,
+                        traitProgress: nextTraitProgress,
+                        maxEnergy: nextMaxEnergy,
+                      });
+                      if (traitResult.progressUpdates.length > 0) {
+                        setTraitChipTraits(traitResult.progressUpdates);
+                        setTraitChipKey(prev => prev + 1);
+                        setTraitChipVisible(true);
+                      }
+                      if (traitResolution.gainedTraits.length > 0) {
+                        traitResolution.gainedTraits.forEach(traitId => {
+                          void logTraitFormed(traitId, gameState.age);
+                        });
+                      }
+                      if (traitChanges.length > 0) {
+                        const traitToast = buildTraitToastMessage(traitChanges);
+                        if (traitToast) {
+                          const hasWarningSignal = traitChanges.some(
+                            change => change.changeType === 'GAINED' && !!change.guidance
+                          );
+                          enqueueToast(traitToast, hasWarningSignal ? 'warning' : 'info');
+                        }
+                        void logTraitChanges(traitChanges, {
+                          source: 'social_action',
+                          sourceId: socialActionId,
+                          age: gameState.age,
+                          turn: gameState.turn,
+                        });
+                      }
+                      void logHubAction(socialActionId, energyCost, gameState.age, 0, {
                         turn: gameState.turn,
                         totalTurns: gameState.totalTurns || 0,
                         currentEnergy: stats.energy,

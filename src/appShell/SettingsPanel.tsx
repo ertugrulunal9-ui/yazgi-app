@@ -331,7 +331,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 </View>
                 <Switch
                   value={soundMuted}
-                  onValueChange={onSoundMuteChange}
+                  onValueChange={() => onSoundMuteChange(!soundMuted)}
                   trackColor={{ false: theme.surfaceOverlay, true: readableDangerColor }}
                   thumbColor={theme.surfaceRaised}
                   accessibilityLabel="Sesleri kapat"

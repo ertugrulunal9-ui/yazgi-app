@@ -245,7 +245,7 @@ export const ScheduledEventSchema = z.object({
   triggerAge: z.number().optional(),
   remainingTurns: z.number().optional(),
   condition: z.string().optional(),
-  priority: z.enum(['HIGH', 'NORMAL']),
+  priority: z.union([z.enum(['HIGH', 'NORMAL']), z.number().int().min(0)]),
   sourceEventId: z.string().optional(),
 });
 
@@ -283,6 +283,7 @@ export const TraitProgressSchema = z.object({
   required: z.number(),
   isLocked: z.boolean(),
   firstTriggeredAge: z.number(),
+  lastProgressTurn: z.number().optional(),
 });
 
 // Game Phase
@@ -336,6 +337,7 @@ export const MetaProgressionSchema = z.object({
   highestCompatibilityScore: z.number(),
   highestAgeReached: z.number(),
   lifetimeAchievementIds: z.array(z.string()),
+  lifetimeEndingIds: z.array(z.string()).optional().default([]),
   recentRuns: z.array(MetaRunSummarySchema),
   updatedAt: z.number(),
 });
@@ -348,6 +350,12 @@ export const LastResultSchema = z.object({
   gradeChanges: z.record(z.string(), z.number()).optional(),
   personalityChanges: z.record(z.string(), z.number()).optional(),
   traitProgressUpdates: z.array(z.string()).optional(),
+  traitChanges: z.array(z.object({
+    traitId: z.string(),
+    changeType: z.enum(['GAINED', 'REMOVED']),
+    summary: z.string(),
+    guidance: z.string().optional(),
+  })).optional(),
   fateRoll: FateRollSchema.optional(),
 }).nullable();
 
@@ -416,6 +424,14 @@ export const GameStateSchema = z.object({
 
   // Childhood Prolog
   childhood: ChildhoodStateSchema,
+
+  pendingCliffhanger: z.object({
+    type: z.enum(['SCHEDULED_EVENT', 'NPC_PROMISE', 'MILESTONE_NEAR', 'EXAM_RESULT']),
+    title: z.string(),
+    description: z.string(),
+    continuationEventId: z.string().optional(),
+    sourceEventId: z.string().optional(),
+  }).optional(),
 
   // Meta progression (cross-run)
   metaProgression: MetaProgressionSchema.optional(),

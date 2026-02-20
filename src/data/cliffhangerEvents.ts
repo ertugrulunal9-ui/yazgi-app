@@ -17,6 +17,8 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
   // ===============================================================
   {
     id: 'cliff_npc_secret_promise',
+    continuationEventId: 'cliff_npc_secret_reveal',
+    tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const friend = getFriend(ctx);
       return friend
@@ -45,6 +47,7 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
   },
   {
     id: 'cliff_npc_secret_reveal',
+    tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const friend = getFriend(ctx);
       const name = friend?.name || 'Arkadasin';
@@ -76,6 +79,8 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
   // ===============================================================
   {
     id: 'cliff_exam_tomorrow',
+    continuationEventId: 'cliff_exam_result_good',
+    tags: ['exam', 'study', 'school'],
     text: 'Yarin buyuk sinav var. Gece gec saate kadar ders mi calismalsin, yoksa dinlenip zihni tazele?',
     minAge: 7, maxAge: 18,
     rarity: 'COMMON',
@@ -97,6 +102,7 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
   },
   {
     id: 'cliff_exam_result_good',
+    tags: ['exam', 'school'],
     text: 'Sinav sonuclari aciklandi! Gece boyunca calistigi konulardan soru gelmis.',
     minAge: 7, maxAge: 18,
     rarity: 'COMMON',
@@ -112,6 +118,7 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
   },
   {
     id: 'cliff_exam_result_rested',
+    tags: ['exam', 'school'],
     text: 'Sinav sonuclari aciklandi. Dinlenmis bir kafayla girdiginde kendini iyi hissetmistin.',
     minAge: 7, maxAge: 18,
     rarity: 'COMMON',
@@ -131,6 +138,8 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
   // ===============================================================
   {
     id: 'cliff_family_announcement',
+    continuationEventId: 'cliff_family_news_reveal',
+    tags: ['family', 'social'],
     text: (ctx) => {
       const familyDynamic = ctx.gameState?.family?.dynamic;
       return familyDynamic === 'STRICT'
@@ -157,6 +166,7 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
   },
   {
     id: 'cliff_family_news_reveal',
+    tags: ['family', 'social'],
     text: 'Ailen sonunda haberi verdi: yeni bir kardes yolda! Hayatin degisecek.',
     minAge: 8, maxAge: 16,
     rarity: 'UNCOMMON',
@@ -183,6 +193,7 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
   // ===============================================================
   {
     id: 'cliff_fate_turning_point',
+    tags: ['growth', 'identity'],
     text: 'Bugun garip bir gun. Her sey normal gibi ama icinde bir his var — "yarin bir seyler degisecek." Buna hazir misin?',
     minAge: 10, maxAge: 18,
     rarity: 'RARE',
@@ -208,6 +219,8 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
   // ===============================================================
   {
     id: 'cliff_mysterious_letter',
+    continuationEventId: 'cliff_letter_meetup',
+    tags: ['social', 'friend'],
     text: 'Cantanda bir mektup buldun. Uzerinde sadece "Yarin parkta ol, saat 4" yazıyor. El yazisi tanidik ama cikaramadin.',
     minAge: 10, maxAge: 18,
     rarity: 'UNCOMMON',
@@ -230,6 +243,7 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
   },
   {
     id: 'cliff_letter_meetup',
+    tags: ['social', 'friend', 'npc'],
     text: 'Parka gittin. Bankta oturan kisiyi gordun — eski bir arkadasin! Yillardir gormemistin. "Seni bulamaya calistim" diyor.',
     minAge: 10, maxAge: 18,
     rarity: 'UNCOMMON',

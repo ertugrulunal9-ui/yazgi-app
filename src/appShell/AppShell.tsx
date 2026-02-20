@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, AppState, AppStateStatus, Text, View } from 'react-native';
+import React, { useCallback, useMemo, useEffect, useRef, useState, MutableRefObject } from 'react';
+import { Alert, Animated, AppState, AppStateStatus, Text, TouchableOpacity, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Onboarding } from '../components/Onboarding';
@@ -9,9 +9,10 @@ import { SessionEndTeaser } from '../components/SessionEndTeaser';
 import { SessionStartRecap } from '../components/SessionStartRecap';
 import { TutorialTooltip } from '../components/TutorialTooltip';
 import { GameProvider, useGame } from '../context/GameContext';
-import { UIProvider } from '../context/UIContext';
+import { UIProvider, useUI } from '../context/UIContext';
 import { useTutorial } from '../hooks/useTutorial';
 import { SaveSlotData } from '../save/SaveSlot';
+import { INITIAL_TUTORIAL_STATE } from '../systems/OnboardingTutorial';
 import { AppNavigationState } from '../types';
 import { logTutorialCompleted, logSessionStart, logSessionEnd } from '../utils/analyticsEvents';
 import { clearSlotSave, getCurrentSlotId, setCurrentSlotId } from '../utils/gameUtils';
@@ -22,8 +23,33 @@ import { SettingsPanel } from './SettingsPanel';
 import { useAppBootstrap } from './useAppBootstrap';
 
 const AUDIO_SETTINGS_KEY = '@yazgi/audio_settings/v1';
+const ONBOARDING_KEY = '@yazgi/onboarding_completed';
+const TUTORIAL_KEY = '@yazgi/tutorial_v2';
+const LEGACY_TUTORIAL_KEYS = [
+  '@yazgi/hub_tutorial_shown',
+  '@yazgi/event_tooltip_shown',
+  '@yazgi/energy_tutorial_shown',
+] as const;
 
-const AppContent: React.FC = () => {
+/**
+ * Küçük bir köprü bileşeni: UIProvider içinde render edilip
+ * clearFloatingTexts callback'ini üst katmandaki bir ref'e yazar.
+ * Bu sayede GameProvider (UIProvider'ın ebeveyni) oyun yüklendiğinde
+ * floating text'leri temizleyebilir.
+ */
+const FloatingTextBridge: React.FC<{
+  clearRef: MutableRefObject<(() => void) | undefined>;
+}> = ({ clearRef }) => {
+  const { clearFloatingTexts } = useUI();
+  clearRef.current = clearFloatingTexts;
+  return null;
+};
+
+interface AppContentProps {
+  clearFloatingTextsRef: MutableRefObject<(() => void) | undefined>;
+}
+
+const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
   const { gameState, stats, metaProgression, playerName, isLoading, resetGame, loadSavedGame, updateGameState } = useGame();
   const isTestEnv = process.env.NODE_ENV === 'test'
     || typeof (globalThis as { jest?: unknown }).jest !== 'undefined';
@@ -36,6 +62,7 @@ const AppContent: React.FC = () => {
   const [soundMuted, setSoundMuted] = useState(false);
   const [showSessionEndTeaser, setShowSessionEndTeaser] = useState(false);
   const [showSessionStartRecap, setShowSessionStartRecap] = useState(false);
+  const [showOnboardingFlow, setShowOnboardingFlow] = useState(false);
   const sessionStartRef = useRef(Date.now());
   const turnsAtStartRef = useRef(gameState.turn);
   const audioSyncRequestRef = useRef(0);
@@ -62,11 +89,12 @@ const AppContent: React.FC = () => {
 
     const syncAudioSettings = async () => {
       try {
-        const raw = await AsyncStorage.getItem(AUDIO_SETTINGS_KEY);
-        if (raw && mounted) {
-          const parsed = JSON.parse(raw) as { muted?: boolean };
-          setSoundMuted(Boolean(parsed.muted));
-        }
+        const { audioManager } = await import('../audio/AudioManager');
+        await audioManager.initialize();
+        if (!mounted) return;
+
+        const settings = audioManager.getSettings();
+        setSoundMuted(Boolean(settings.muted));
       } catch (error) {
         console.warn('Audio settings sync failed:', error);
       }
@@ -97,6 +125,11 @@ const AppContent: React.FC = () => {
 
         if (cancelled || syncRequest !== audioSyncRequestRef.current) return;
 
+        if (soundMuted) {
+          await musicPlayer.stop(0);
+          return;
+        }
+
         if (showSplash || !hasCompletedOnboarding) {
           await musicPlayer.stop(0);
           return;
@@ -120,7 +153,7 @@ const AppContent: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [appState.gameStarted, gameState.age, gameState.phase, hasCompletedOnboarding, isTestEnv, showSplash]);
+  }, [appState.gameStarted, gameState.age, gameState.phase, hasCompletedOnboarding, isTestEnv, showSplash, soundMuted]);
 
   useEffect(() => {
     if (isTestEnv) return;
@@ -146,11 +179,20 @@ const AppContent: React.FC = () => {
   const tutorialContext = useMemo(() => ({
     phase: gameState.phase,
     turn: gameState.turn,
+    selectedGoal: gameState.selectedGoal ?? null,
     actionHistory: gameState.actionHistory ?? [],
     eventChoiceHistory: gameState.eventChoiceHistory ?? [],
     energy: stats?.energy ?? 100,
     maxEnergy: gameState.maxEnergy ?? 100,
-  }), [gameState.phase, gameState.turn, gameState.actionHistory, gameState.eventChoiceHistory, stats?.energy, gameState.maxEnergy]);
+  }), [
+    gameState.phase,
+    gameState.turn,
+    gameState.selectedGoal,
+    gameState.actionHistory,
+    gameState.eventChoiceHistory,
+    stats?.energy,
+    gameState.maxEnergy,
+  ]);
 
   const tutorial = useTutorial(
     tutorialContext,
@@ -284,6 +326,41 @@ const AppContent: React.FC = () => {
     })();
   }, []);
 
+  const handleOnboardingComplete = useCallback(() => {
+    setHasCompletedOnboarding(true);
+    void logTutorialCompleted();
+  }, [setHasCompletedOnboarding]);
+
+  const prepareTutorialForNewPlayer = useCallback(async () => {
+    await AsyncStorage.setItem(TUTORIAL_KEY, JSON.stringify(INITIAL_TUTORIAL_STATE));
+    await Promise.all(LEGACY_TUTORIAL_KEYS.map(key => AsyncStorage.removeItem(key)));
+  }, []);
+
+  const handleStartOnboarding = useCallback(() => {
+    void (async () => {
+      try {
+        await prepareTutorialForNewPlayer();
+      } catch {
+        // Ignore persistence failures and continue.
+      } finally {
+        setShowOnboardingFlow(true);
+      }
+    })();
+  }, [prepareTutorialForNewPlayer]);
+
+  const handleSkipOnboarding = useCallback(() => {
+    void (async () => {
+      try {
+        await prepareTutorialForNewPlayer();
+        await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
+      } catch {
+        // Ignore persistence failures and continue to game setup.
+      } finally {
+        setHasCompletedOnboarding(true);
+      }
+    })();
+  }, [prepareTutorialForNewPlayer, setHasCompletedOnboarding]);
+
   if (showSplash) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.appBg, justifyContent: 'center', alignItems: 'center' }}>
@@ -339,14 +416,103 @@ const AppContent: React.FC = () => {
   }
 
   if (!hasCompletedOnboarding) {
+    if (!showOnboardingFlow) {
+      return (
+        <View style={{ flex: 1, backgroundColor: theme.appBg }}>
+          <SafeAreaView style={{ flex: 1 }}>
+            <View style={{
+              flex: 1,
+              justifyContent: 'center',
+              paddingHorizontal: metrics.pad * 1.5,
+            }}>
+              <View style={{
+                backgroundColor: theme.surfaceBase,
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: theme.border,
+                padding: metrics.pad * 1.4,
+              }}>
+                <Text style={{
+                  color: theme.textPrimary,
+                  fontFamily: theme.fontHeading,
+                  fontSize: 26,
+                  fontWeight: '800',
+                  textAlign: 'center',
+                }}>
+                  Tutorial
+                </Text>
+                <Text style={{
+                  color: theme.textSecondary,
+                  fontFamily: theme.fontBody,
+                  fontSize: 14,
+                  lineHeight: 21,
+                  textAlign: 'center',
+                  marginTop: 10,
+                  marginBottom: 16,
+                }}>
+                  Ilk kez oynuyorsan kisa tutorial ile mekanikleri hizlica ogrenebilirsin.
+                </Text>
+
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel="Tutorialu baslat"
+                  onPress={handleStartOnboarding}
+                  style={{
+                    minHeight: 50,
+                    borderRadius: 12,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: theme.accentBrand,
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Text style={{
+                    color: '#0b1220',
+                    fontFamily: theme.fontHeading,
+                    fontSize: 15,
+                    fontWeight: '700',
+                  }}>
+                    Tutorial'u Baslat
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel="Tutorialu atla"
+                  onPress={handleSkipOnboarding}
+                  style={{
+                    minHeight: 48,
+                    borderRadius: 12,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: theme.surfaceOverlay,
+                    borderWidth: 1,
+                    borderColor: theme.border,
+                    marginTop: 10,
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Text style={{
+                    color: theme.textPrimary,
+                    fontFamily: theme.fontBody,
+                    fontSize: 14,
+                    fontWeight: '600',
+                  }}>
+                    Skip ve Oyuna Gec
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </SafeAreaView>
+        </View>
+      );
+    }
+
     return (
       <Onboarding
         theme={theme}
         metrics={metrics}
-        onComplete={() => {
-          setHasCompletedOnboarding(true);
-          void logTutorialCompleted();
-        }}
+        onComplete={handleOnboardingComplete}
       />
     );
   }
@@ -359,6 +525,7 @@ const AppContent: React.FC = () => {
       locale={locale}
       setLocale={setLocale}
     >
+      <FloatingTextBridge clearRef={clearFloatingTextsRef} />
       <AnalyticsTracker
         gameStarted={appState.gameStarted}
         isLoading={isLoading}
@@ -457,14 +624,18 @@ const AppContent: React.FC = () => {
 
 const AppContentMemo = React.memo(AppContent);
 
-export const AppShell: React.FC = () => (
-  <SafeAreaProvider>
-    <View style={{ flex: 1 }}>
-      <GameProvider>
-        <AppContentMemo />
-      </GameProvider>
-    </View>
-  </SafeAreaProvider>
-);
+export const AppShell: React.FC = () => {
+  const clearFloatingTextsRef = useRef<(() => void) | undefined>(undefined);
+
+  return (
+    <SafeAreaProvider>
+      <View style={{ flex: 1 }}>
+        <GameProvider onLoadGame={() => clearFloatingTextsRef.current?.()}>
+          <AppContentMemo clearFloatingTextsRef={clearFloatingTextsRef} />
+        </GameProvider>
+      </View>
+    </SafeAreaProvider>
+  );
+};
 
 export default AppShell;

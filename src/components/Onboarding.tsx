@@ -9,6 +9,8 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeTokens } from '../utils/themeUtils';
 import { DensityMetrics } from '../utils/themeUtils';
+import { LifeGoal } from '../types';
+import { getLifeGoalMeta } from '../utils/lifeGoalSystem';
 
 interface OnboardingProps {
   theme: ThemeTokens;
@@ -79,6 +81,108 @@ const DemoStatBar: React.FC<{
           }),
         }} />
       </View>
+    </View>
+  );
+};
+
+const GOAL_ICONS: Record<LifeGoal, string> = {
+  ACADEMIC: '🧠',
+  ATHLETIC: '🏃',
+  CREATIVE: '🎨',
+  WEALTH: '💼',
+  SOCIAL: '🤝',
+};
+
+const GOAL_STAT_HINTS: Record<LifeGoal, string[]> = {
+  ACADEMIC: ['🧠 Zeka', '📚 Disiplin'],
+  ATHLETIC: ['💪 Saglik', '📚 Disiplin'],
+  CREATIVE: ['🎨 Yaraticilik', '🧠 Zeka'],
+  WEALTH: ['💰 Para', '📚 Disiplin'],
+  SOCIAL: ['✨ Karizma', '🏠 Aile Iliskisi'],
+};
+
+interface GoalVisionOnboardingProps {
+  theme: ThemeTokens;
+  metrics: DensityMetrics;
+  selectedGoal: LifeGoal;
+  onContinue: () => void;
+  onBack?: () => void;
+}
+
+export const GoalVisionOnboarding: React.FC<GoalVisionOnboardingProps> = ({
+  theme,
+  metrics,
+  selectedGoal,
+  onContinue,
+  onBack,
+}) => {
+  const goalMeta = getLifeGoalMeta(selectedGoal);
+  const goalLabel = goalMeta?.label ?? 'Hedef';
+  const accentColor = goalMeta?.accentColor ?? theme.accentBrand;
+  const statHints = GOAL_STAT_HINTS[selectedGoal];
+  const icon = GOAL_ICONS[selectedGoal];
+
+  return (
+    <View style={{ flex: 1, backgroundColor: theme.appBg, paddingHorizontal: metrics.pad * 1.6, justifyContent: 'center' }}>
+      <Text style={{ color: theme.textSecondary, textAlign: 'center', marginBottom: 8, fontSize: 12 }}>
+        Bu Hayatta Hayalin
+      </Text>
+
+      <View style={{
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: theme.border,
+        backgroundColor: theme.surfaceBase,
+        padding: metrics.pad * 1.4,
+      }}>
+        <Text style={{ textAlign: 'center', fontSize: 64, marginBottom: 8 }}>{icon}</Text>
+        <Text style={{ color: accentColor, textAlign: 'center', fontWeight: '800', fontSize: 24, marginBottom: 10 }}>
+          {goalLabel}
+        </Text>
+        <Text style={{ color: theme.textSecondary, textAlign: 'center', marginBottom: 12 }}>
+          Bunun icin gereken:
+        </Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
+          {statHints.map((hint) => (
+            <View
+              key={hint}
+              style={{
+                borderRadius: 999,
+                borderWidth: 1,
+                borderColor: `${accentColor}66`,
+                backgroundColor: `${accentColor}18`,
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+              }}
+            >
+              <Text style={{ color: theme.textPrimary, fontWeight: '700', fontSize: 12 }}>
+                {hint}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      <TouchableOpacity
+        onPress={onContinue}
+        style={{
+          marginTop: 14,
+          minHeight: 50,
+          borderRadius: 12,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: accentColor,
+        }}
+        activeOpacity={0.85}
+      >
+        <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: 15 }}>Devam Et</Text>
+      </TouchableOpacity>
+
+      {onBack ? (
+        <TouchableOpacity onPress={onBack} style={{ marginTop: 10, alignItems: 'center' }} activeOpacity={0.85}>
+          <Text style={{ color: theme.textSecondary, fontSize: 12 }}>Geri Don</Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 };

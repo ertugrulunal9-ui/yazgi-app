@@ -18,7 +18,13 @@
       "WebFetch(domain:kenney.nl)",
       "Bash(unzip:*)",
       "WebFetch(domain:opengameart.org)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(npm audit:*)",
+      "Bash(npm ls:*)",
+      "Bash(npm view:*)",
+      "Bash(npm run test:ci:*)",
+      "Bash(node -e:*)",
+      "Bash(wc:*)"
     ]
   }
 }

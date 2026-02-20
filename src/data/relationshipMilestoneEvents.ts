@@ -31,6 +31,7 @@ export const MILESTONE_EVENTS: GameEvent[] = [
 
   {
     id: 'milestone_new_friendship',
+    tags: ['social', 'friend', 'npc', 'relationship'],
     text: (ctx: EventContext) => {
       const friend = getRecentMilestoneNPC(ctx, 'FRIEND');
       const name = friend?.name || 'Yeni arkadaşın';
@@ -62,6 +63,7 @@ export const MILESTONE_EVENTS: GameEvent[] = [
 
   {
     id: 'milestone_best_friend_celebration',
+    tags: ['social', 'friend', 'npc', 'relationship'],
     text: (ctx: EventContext) => {
       const bestFriend = getRecentMilestoneNPC(ctx, 'BEST_FRIEND');
       const name = bestFriend?.name || 'En iyi arkadaşın';
@@ -101,6 +103,7 @@ export const MILESTONE_EVENTS: GameEvent[] = [
 
   {
     id: 'milestone_bff_promise',
+    tags: ['social', 'friend', 'npc', 'relationship'],
     text: (ctx: EventContext) => {
       const bestFriend = getRecentMilestoneNPC(ctx, 'BEST_FRIEND');
       const name = bestFriend?.name || 'En iyi arkadaşın';
@@ -136,6 +139,7 @@ export const MILESTONE_EVENTS: GameEvent[] = [
 
   {
     id: 'milestone_butterflies',
+    tags: ['social', 'love', 'relationship', 'npc'],
     text: (ctx: EventContext) => {
       const crush = getRecentMilestoneNPC(ctx, 'CRUSH');
       const name = crush?.name || 'O kişi';
@@ -173,6 +177,7 @@ export const MILESTONE_EVENTS: GameEvent[] = [
 
   {
     id: 'milestone_first_crush_feelings',
+    tags: ['social', 'love', 'relationship', 'npc'],
     text: (ctx: EventContext) => {
       const crush = getRecentMilestoneNPC(ctx, 'CRUSH');
       const name = crush?.name || 'Hoşlandığın kişi';
@@ -203,6 +208,7 @@ export const MILESTONE_EVENTS: GameEvent[] = [
 
   {
     id: 'milestone_new_relationship',
+    tags: ['social', 'love', 'relationship', 'npc'],
     text: (ctx: EventContext) => {
       const partner = getRecentMilestoneNPC(ctx, 'PARTNER');
       const name = partner?.name || 'Sevgilin';
@@ -235,6 +241,7 @@ export const MILESTONE_EVENTS: GameEvent[] = [
 
   {
     id: 'milestone_first_date',
+    tags: ['social', 'love', 'relationship', 'npc'],
     text: (ctx: EventContext) => {
       const partner = getRecentMilestoneNPC(ctx, 'PARTNER');
       const name = partner?.name || 'Sevgilin';
@@ -277,6 +284,7 @@ export const MILESTONE_EVENTS: GameEvent[] = [
 
   {
     id: 'milestone_rivalry_begins',
+    tags: ['social', 'npc', 'relationship'],
     text: (ctx: EventContext) => {
       const rival = getRecentMilestoneNPC(ctx, 'RIVAL');
       const name = rival?.name || 'O kişi';
@@ -314,6 +322,7 @@ export const MILESTONE_EVENTS: GameEvent[] = [
 
   {
     id: 'milestone_enemy_made',
+    tags: ['social', 'npc', 'relationship'],
     text: (ctx: EventContext) => {
       const enemy = getRecentMilestoneNPC(ctx, 'ENEMY');
       const name = enemy?.name || 'O kişi';
@@ -344,6 +353,7 @@ export const MILESTONE_EVENTS: GameEvent[] = [
 
   {
     id: 'milestone_friendship_lost',
+    tags: ['social', 'friend', 'npc', 'relationship'],
     text: (_ctx: EventContext) => {
       return 'Bir zamanlar arkadaşın olan kişi artık senden uzaklaşmış. Selam bile vermeden geçiyor yanından. Ne oldu böyle?';
     },
@@ -372,6 +382,7 @@ export const MILESTONE_EVENTS: GameEvent[] = [
 
   {
     id: 'milestone_heartbreak',
+    tags: ['social', 'love', 'relationship', 'npc'],
     text: (_ctx: EventContext) => {
       return 'İlişkin sona erdi. Kalbin kırık, gözlerin dolu. "Neden?" diye soruyorsun kendine. Ama cevap yok.';
     },

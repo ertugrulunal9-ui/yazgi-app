@@ -434,17 +434,17 @@ describe('gameUtils - Extended Coverage', () => {
     };
 
     it('should return empty arrays when no actions trigger traits', () => {
-      // Use very low stats to avoid STAT_THRESHOLD triggers (LAZY/LONE_WOLF check money < 50)
-      const lowStats = {
-        health: 10,
-        intelligence: 10,
-        charisma: 10,
-        discipline: 10,
-        money: 10,
+      // Keep threshold-only traits neutral (LAZY/PROCRASTINATOR/PRAGMATIC) so null action/choice yields no progress.
+      const neutralStats = {
+        health: 60,
+        intelligence: 60,
+        charisma: 60,
+        discipline: 50,
+        money: 100,
         energy: 80,
-        familyRelation: 10,
+        familyRelation: 60,
       };
-      const result = checkTraitFormation(null, null, baseGameState, lowStats);
+      const result = checkTraitFormation(null, null, baseGameState, neutralStats);
       expect(result.newTraits).toEqual([]);
       expect(result.removedTraits).toEqual([]);
     });

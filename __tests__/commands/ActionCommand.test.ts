@@ -297,4 +297,32 @@ describe('HubActionCommand', () => {
     expect(result.gameStateUpdates.personalityState?.AGGRESSIVE.count).toBe(1);
     expect(result.feedbackMessage).toContain('Cesaret +2');
   });
+
+  it('removes conflicting owned traits when a new trait is unlocked', () => {
+    const gameState = createBaseGameState();
+    gameState.traits = ['LAZY'];
+    gameState.traitProgress = {
+      DISCIPLINED: { points: 5, required: 6, firstTriggeredAge: 8, isLocked: false },
+    };
+    const stats = { ...createBaseStats(), discipline: 70, energy: 80 };
+
+    const result = command.execute({
+      action: createAction({
+        id: 'study_math',
+        text: 'Matematik Calis',
+        energyCost: 10,
+        effect: { discipline: 2, energy: -10 },
+        feedback: 'Planli calistin.',
+      }),
+      currentStats: stats,
+      gameState,
+    });
+
+    expect(result.status).toBe('success');
+    expect(result.newTraits).toContain('DISCIPLINED');
+    expect(result.removedTraits).toContain('LAZY');
+    expect(result.gameStateUpdates.traits).toContain('DISCIPLINED');
+    expect(result.gameStateUpdates.traits).not.toContain('LAZY');
+    expect(result.traitChanges?.some(change => change.changeType === 'REMOVED' && change.traitId === 'LAZY')).toBe(true);
+  });
 });

@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useGame } from '../context/GameContext';
 import { Choice, EventContext, GameEvent, ExamSubject, ALL_EXAM_SUBJECTS, GameState, Stats } from '../types';
-import { shouldEarnToken, earnToken, spendToken } from '../systems/FateEngine';
+import { earnToken, getEarnedTokenCount, spendToken } from '../systems/FateEngine';
 import { ageTransitionHaptic } from '../animations/HapticFeedback';
 import { EVENTS, FALLBACK_EVENT } from '../data/events';
 import { selectCrisisEvent } from '../data/crisisEvents';
@@ -14,7 +14,7 @@ import {
 import { analyzeGoalMismatch, calculateEndingErrorDebt, resolveEnding } from '../utils/endingResolver';
 import { calculateSchoolReport } from '../utils/schoolLogic';
 import { TurnMediator, TurnResult } from '../systems/TurnMediator';
-import { getDueScheduledEvents, pickScheduledEvent, tickScheduledEvents } from '../utils/scheduledEvents';
+import { getDueScheduledEvents, isForcedScheduledEvent, pickScheduledEvent, tickScheduledEvents } from '../utils/scheduledEvents';
 import {
   handleEventChoice as logEventChoice,
   logBurdenTrigger,
@@ -179,6 +179,49 @@ export const useEvents = () => {
     const previousBurdenRisk = gameState.lastBurdenRisk ?? 0;
     const criticalBurdenCrossed = hasCriticalBurdenCrossed(burdenRisk, previousBurdenRisk);
 
+    const applyScheduledSelection = (candidatePool: typeof dueScheduled): boolean => {
+      const scheduled = pickScheduledEvent(candidatePool);
+      if (!scheduled) return false;
+
+      const evt = getEventById(scheduled.eventId);
+      const remainingScheduled = scheduledEvents.filter(e => e.id !== scheduled.id);
+      if (!evt) {
+        updateGameState({ scheduledEvents: remainingScheduled });
+        return true;
+      }
+
+      const nextActiveArcs = syncActiveArcsWithSelectedEvent(
+        currentActiveArcs,
+        STORY_ARCS,
+        evt.id,
+        ctx
+      );
+      const windowSize = getRecencyWindowSize(gameState.age);
+      const updatedFrequency = {
+        ...gameState.eventFrequency,
+        [evt.id]: {
+          count: ((gameState.eventFrequency ?? {})[evt.id]?.count ?? 0) + 1,
+          lastSeenTurn: gameState.turn,
+        },
+      };
+      logSelectedEventAnalytics(evt, gameState.age, gameState.turn);
+      updateGameState({
+        currentEvent: evt,
+        phase: 'EVENT',
+        recentEvents: [...gameState.recentEvents, evt.id].slice(-windowSize),
+        scheduledEvents: remainingScheduled,
+        activeArcs: nextActiveArcs,
+        eventFrequency: updatedFrequency,
+        lastBurdenRisk: burdenRisk,
+      });
+      return true;
+    };
+
+    const forcedDueScheduled = dueScheduled.filter(isForcedScheduledEvent);
+    if (forcedDueScheduled.length > 0 && applyScheduledSelection(forcedDueScheduled)) {
+      return;
+    }
+
     if (criticalBurdenCrossed) {
       const crisisEvent = selectCrisisEvent(gameState.age, gameState.recentEvents);
       const nextActiveArcs = syncActiveArcsWithSelectedEvent(
@@ -242,45 +285,8 @@ export const useEvents = () => {
       return;
     }
 
-    if (dueScheduled.length > 0) {
-      const scheduled = pickScheduledEvent(dueScheduled);
-      if (scheduled) {
-        const evt = getEventById(scheduled.eventId);
-        const remainingScheduled = scheduledEvents.filter(e => e.id !== scheduled.id);
-        if (evt) {
-          const nextActiveArcs = syncActiveArcsWithSelectedEvent(
-            currentActiveArcs,
-            STORY_ARCS,
-            evt.id,
-            ctx
-          );
-          const windowSize = getRecencyWindowSize(gameState.age);
-          const updatedFrequency = {
-            ...gameState.eventFrequency,
-            [evt.id]: {
-              count: ((gameState.eventFrequency ?? {})[evt.id]?.count ?? 0) + 1,
-              lastSeenTurn: gameState.turn,
-            },
-          };
-          logSelectedEventAnalytics(evt, gameState.age, gameState.turn);
-          // Clear pendingCliffhanger when its resolution event fires
-          const clearCliffhanger = scheduled.sourceEventId?.startsWith('cliff_')
-            ? { pendingCliffhanger: undefined }
-            : {};
-          updateGameState({
-            currentEvent: evt,
-            phase: 'EVENT',
-            recentEvents: [...gameState.recentEvents, evt.id].slice(-windowSize),
-            scheduledEvents: remainingScheduled,
-            activeArcs: nextActiveArcs,
-            eventFrequency: updatedFrequency,
-            lastBurdenRisk: burdenRisk,
-            ...clearCliffhanger,
-          });
-          return;
-        }
-        updateGameState({ scheduledEvents: remainingScheduled });
-      }
+    if (dueScheduled.length > 0 && applyScheduledSelection(dueScheduled)) {
+      return;
     }
 
     const personalityGateEvent = selectMomentumGateEvent({
@@ -432,8 +438,11 @@ export const useEvents = () => {
 
     // Kader sistemi — yaş geçişinde jeton kazanımı
     let updatedFate = gameState.fate;
-    if (didAgeUp && updatedFate && shouldEarnToken(gameState.age, newAge)) {
-      updatedFate = earnToken(updatedFate);
+    if (updatedFate) {
+      const earnedTokens = getEarnedTokenCount(gameState, gameState.age, newAge);
+      if (earnedTokens > 0) {
+        updatedFate = earnToken(updatedFate, earnedTokens);
+      }
     }
 
     // NPC ya\u015Fland\u0131rma - oyuncu ya\u015Fland\u0131\u011F\u0131nda NPC'ler de ya\u015Flan\u0131r
@@ -525,6 +534,12 @@ export const useEvents = () => {
     const nextInnerThoughtType = composed.type;
     const newMaxEnergy = getMaxEnergy(newAge, gameState.family, gameState.traits);
     const newEnergy = getRestedEnergy(newMaxEnergy);
+    const buildRemainingScheduledEvents = (selectedEventId?: string) => [
+      ...pendingScheduledEvents,
+      ...dueScheduledEvents
+        .filter(evt => evt.id !== selectedEventId)
+        .map(evt => ({ ...evt, remainingTurns: evt.remainingTurns ?? 0 })),
+    ];
 
     if (newAge >= 18) {
       const endingResolution = resolveEnding({
@@ -565,6 +580,7 @@ export const useEvents = () => {
           innerThoughtType: nextInnerThoughtType,
           fate: updatedFate,
           lastBurdenRisk: burdenRisk,
+          dailyDecisionCount: 0,
           lastResult: {
             feedback: `${careerResult.title}: ${careerResult.description}`,
             changes: {},
@@ -572,6 +588,86 @@ export const useEvents = () => {
         }
       });
       return;
+    }
+
+    const forcedDueScheduledEvents = dueScheduledEvents.filter(isForcedScheduledEvent);
+    if (forcedDueScheduledEvents.length > 0) {
+      const forcedSelection = pickScheduledEvent(forcedDueScheduledEvents);
+      if (forcedSelection) {
+        const forcedEvent = getEventById(forcedSelection.eventId);
+        if (forcedEvent) {
+          const forcedContext: EventContext = {
+            ...buildEventContext(),
+            age: newAge,
+            stress: stressAfterRecovery,
+            npcs: updatedNPCs,
+            stats: {
+              ...stats,
+              energy: newEnergy,
+              money: moneyAfterAllowance,
+            },
+          };
+          const forcedActiveArcs = syncActiveArcsWithSelectedEvent(
+            currentActiveArcs,
+            STORY_ARCS,
+            forcedEvent.id,
+            forcedContext
+          );
+          const forcedWindowSize = getRecencyWindowSize(newAge);
+          const forcedFrequency = {
+            ...gameState.eventFrequency,
+            [forcedEvent.id]: {
+              count: ((gameState.eventFrequency ?? {})[forcedEvent.id]?.count ?? 0) + 1,
+              lastSeenTurn: newTurn,
+            },
+          };
+          void logTurnProgress(newAge, {
+            health: stats.health,
+            intelligence: stats.intelligence,
+            charisma: stats.charisma,
+            discipline: stats.discipline,
+            money: moneyAfterAllowance,
+            energy: newEnergy,
+          }, {
+            turn: newTurn,
+            totalTurns: newTotalTurns,
+            maxEnergy: newMaxEnergy,
+            energySpent: Math.max(0, gameState.maxEnergy - stats.energy),
+          });
+          logSelectedEventAnalytics(forcedEvent, newAge, newTurn);
+          advanceTurnInContext({
+            newStats: didAgeUp ? { energy: newEnergy, money: moneyAfterAllowance } : { energy: newEnergy },
+            newGameState: {
+              age: newAge,
+              turn: newTurn,
+              totalTurns: newTotalTurns,
+              phase: 'EVENT',
+              currentEvent: forcedEvent,
+              recentEvents: [...gameState.recentEvents, forcedEvent.id].slice(-forcedWindowSize),
+              schoolGrades: newGrades,
+              pendingReportCard,
+              isExamPeriod: false,
+              examsTakenThisYear,
+              lastResult: null,
+              npcs: updatedNPCs,
+              scheduledEvents: buildRemainingScheduledEvents(forcedSelection.id),
+              maxEnergy: newMaxEnergy,
+              stress: stressAfterRecovery,
+              activeArcs: forcedActiveArcs,
+              familyEvolution: nextFamilyEvolution,
+              innerThought: nextInnerThought,
+              innerThoughtType: nextInnerThoughtType,
+              eventFrequency: forcedFrequency,
+              fate: updatedFate,
+              lastBurdenRisk: burdenRisk,
+              dailyDecisionCount: 0,
+            }
+          });
+          return;
+        }
+
+        dueScheduledEvents = dueScheduledEvents.filter(evt => evt.id !== forcedSelection.id);
+      }
     }
 
     if (criticalBurdenCrossed) {
@@ -646,6 +742,7 @@ export const useEvents = () => {
           eventFrequency: crisisFrequency,
           fate: updatedFate,
           lastBurdenRisk: burdenRisk,
+          dailyDecisionCount: 0,
         }
       });
       return;
@@ -717,6 +814,7 @@ export const useEvents = () => {
           eventFrequency: goalFrequency,
           fate: updatedFate,
           lastBurdenRisk: burdenRisk,
+          dailyDecisionCount: 0,
         }
       });
       return;
@@ -761,6 +859,7 @@ export const useEvents = () => {
           innerThoughtType: nextInnerThoughtType,
           fate: updatedFate,
           lastBurdenRisk: burdenRisk,
+          dailyDecisionCount: 0,
         }
       });
       return;
@@ -768,12 +867,7 @@ export const useEvents = () => {
 
     const scheduledSelection = pickScheduledEvent(dueScheduledEvents);
     const scheduledEvent = scheduledSelection ? getEventById(scheduledSelection.eventId) : null;
-    const remainingScheduledEvents = [
-      ...pendingScheduledEvents,
-      ...dueScheduledEvents
-        .filter(evt => evt.id !== scheduledSelection?.id)
-        .map(evt => ({ ...evt, remainingTurns: evt.remainingTurns ?? 0 })),
-    ];
+    const remainingScheduledEvents = buildRemainingScheduledEvents(scheduledSelection?.id);
 
     if (scheduledEvent) {
       const nextActiveArcs = syncActiveArcsWithSelectedEvent(
@@ -826,6 +920,7 @@ export const useEvents = () => {
           eventFrequency: schedFrequency,
           fate: updatedFate,
           lastBurdenRisk: burdenRisk,
+          dailyDecisionCount: 0,
         }
       });
       return;
@@ -896,6 +991,7 @@ export const useEvents = () => {
           eventFrequency: advFrequency,
           fate: updatedFate,
           lastBurdenRisk: burdenRisk,
+          dailyDecisionCount: 0,
         }
       });
       return;
@@ -961,6 +1057,7 @@ export const useEvents = () => {
         eventFrequency: advFrequency,
         fate: updatedFate,
         lastBurdenRisk: burdenRisk,
+        dailyDecisionCount: 0,
       }
     });
   }, [advanceTurnInContext, buildEventContext, gameState, getBurdenRisk, logSelectedEventAnalytics, stats]);

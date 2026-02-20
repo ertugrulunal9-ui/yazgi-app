@@ -4,7 +4,7 @@
 
 import { devLog } from './devLogger';
 import { analyticsService } from '../services/analytics';
-import { EventRarity } from '../types';
+import { EventRarity, TraitChangeFeedback } from '../types';
 import {
   buildProgressionCohortSnapshot,
   shouldLogRetentionCheckpoint,
@@ -588,6 +588,20 @@ export const logTutorialCompleted = async () => {
   });
 };
 
+export const logTutorialStepAdvanced = async (stepId: string, stepNumber: number) => {
+  await logCustomEvent('tutorial_step_advanced', {
+    step_id: stepId,
+    step_number: stepNumber,
+  });
+};
+
+export const logTutorialSkipped = async (atStepId: string, atStepNumber: number) => {
+  await logCustomEvent('tutorial_skipped', {
+    at_step_id: atStepId,
+    at_step_number: atStepNumber,
+  });
+};
+
 export const logAchievementUnlocked = async (achievementId: string) => {
   await logCustomEvent('achievement_unlocked', {
     achievement_id: achievementId,
@@ -599,6 +613,35 @@ export const logTraitFormed = async (traitName: string, age: number) => {
     trait_name: traitName,
     age_when_formed: age,
   });
+};
+
+type TraitChangeSource = 'event_choice' | 'hub_action' | 'social_action';
+
+interface TraitChangeAnalyticsMeta {
+  source: TraitChangeSource;
+  sourceId?: string;
+  age: number;
+  turn?: number;
+}
+
+export const logTraitChanges = async (
+  changes: TraitChangeFeedback[],
+  meta: TraitChangeAnalyticsMeta
+) => {
+  if (!changes || changes.length === 0) return;
+
+  await Promise.all(
+    changes.map(change => logCustomEvent('trait_change', {
+      trait_id: change.traitId,
+      change_type: change.changeType.toLowerCase(),
+      source: meta.source,
+      source_id: meta.sourceId ?? 'unknown',
+      age: meta.age,
+      turn: meta.turn ?? -1,
+      guidance_shown: Boolean(change.guidance),
+      conflict_resolved: change.changeType === 'REMOVED' && change.summary.includes('cakisma'),
+    }))
+  );
 };
 
 interface OnboardingCohortGuidanceMeta {
@@ -696,6 +739,20 @@ export const logSessionDropAnchor = async (meta: SessionProgressMeta) => {
     event_choices: meta.eventChoices,
     current_energy: meta.currentEnergy,
     max_energy: meta.maxEnergy,
+  });
+};
+
+interface ShareEventMeta {
+  tier: 'FAILURE' | 'NORMAL' | 'SUCCESS' | 'LEGENDARY';
+  endingId: string;
+  legacyLevel: number;
+}
+
+export const logShareEvent = async (meta: ShareEventMeta) => {
+  await logCustomEvent('life_share_card', {
+    tier: meta.tier,
+    ending_id: meta.endingId,
+    legacy_level: meta.legacyLevel,
   });
 };
 

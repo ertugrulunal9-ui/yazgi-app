@@ -107,6 +107,16 @@ describe('getStrategicMonologue — Priority Queue', () => {
     expect(result!.type).toBe('MOMENTUM');
   });
 
+  it('returns MOMENTUM hint for active streaks before powerful tier', () => {
+    const personalityState = {
+      ...createInitialPersonalityState(),
+      PRAGMATIC: { count: 4, streak: 3, multiplier: 1.1 },
+    };
+    const result = getStrategicMonologue(buildInput({ personalityState }));
+    expect(result).not.toBeNull();
+    expect(result!.type).toBe('MOMENTUM');
+  });
+
   it('returns null (IDLE) when no conditions met', () => {
     const result = getStrategicMonologue(buildInput());
     expect(result).toBeNull();

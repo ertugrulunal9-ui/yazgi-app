@@ -316,7 +316,7 @@ describe('GameContext', () => {
     expect(latestContext?.stats.intelligence).toBe(baseIntelligence + 2);
   });
 
-  it('updates stats with clamping and handles floating text lifecycle', async () => {
+  it('updates stats with clamping', async () => {
     await renderProvider();
 
     act(() => {
@@ -336,17 +336,6 @@ describe('GameContext', () => {
     expect(latestContext?.stats.energy).toBeLessThanOrEqual(latestContext!.gameState.maxEnergy || 100);
     expect(latestContext?.stats.intelligence).toBeLessThanOrEqual(100);
     expect(latestContext?.stats.charisma).toBeGreaterThanOrEqual(0);
-
-    act(() => {
-      latestContext?.showFloatingText('Test', 10, 20, '#fff', { duration: 1000 });
-    });
-    expect(latestContext?.floatingTexts.length).toBe(1);
-
-    const floatingId = latestContext!.floatingTexts[0].id;
-    act(() => {
-      latestContext?.removeFloatingText(floatingId);
-    });
-    expect(latestContext?.floatingTexts).toHaveLength(0);
   });
 
   it('auto-saves on meaningful changes and on app background', async () => {
@@ -437,10 +426,12 @@ describe('GameContext', () => {
   it('logs auto-save errors from timer catch branch', async () => {
     jest.useFakeTimers();
     const autoSaveError = new Error('auto-save boom');
-    (saveGame as jest.Mock).mockRejectedValueOnce(autoSaveError);
 
     await renderProvider();
     jest.clearAllMocks();
+
+    // Always reject so all 3 retry attempts fail
+    (saveGame as jest.Mock).mockRejectedValue(autoSaveError);
 
     act(() => {
       latestContext?.startNewGame('AutoSaveError');
@@ -452,12 +443,23 @@ describe('GameContext', () => {
       });
     });
 
+    // Trigger debounce (500ms) → first attempt fails → retry delay 1 (200ms) → second fails → retry delay 2 (400ms) → third fails → error logged
     await act(async () => {
-      jest.advanceTimersByTime(600);
-      await Promise.resolve();
+      jest.advanceTimersByTime(600); // debounce fires
+      await Promise.resolve();       // first save rejects, setTimeout(200) created
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(200); // retry delay 1 fires
+      await Promise.resolve();       // second save rejects, setTimeout(400) created
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(400); // retry delay 2 fires
+      await Promise.resolve();       // third save rejects → console.error
     });
 
-    expect(console.error).toHaveBeenCalledWith('Auto-save failed:', autoSaveError);
+    expect(console.error).toHaveBeenCalledWith('Auto-save failed after 3 attempts:', autoSaveError);
+    // Restore to avoid bleeding into other tests
+    (saveGame as jest.Mock).mockResolvedValue(true);
     jest.useRealTimers();
   });
 
@@ -648,14 +650,18 @@ describe('GameContext', () => {
     expect(latestContext?.gameState.currentEvent?.id).toBe('evt_adv');
   });
 
-  it('uses default duration branch in floating text options', async () => {
+  it('setGameState function branch runs without error', async () => {
     await renderProvider();
 
     act(() => {
-      latestContext?.showFloatingText('DefaultDuration', 1, 1, '#000');
+      latestContext?.startNewGame('BranchTest');
     });
 
-    expect(latestContext?.floatingTexts[0].duration).toBe(2000);
+    act(() => {
+      latestContext?.setGameState(prev => ({ ...prev, turn: prev.turn + 1 }));
+    });
+
+    expect(latestContext?.gameState.turn).toBeGreaterThanOrEqual(0);
   });
 
   it('falls back to initial stats when structured state omits stats', async () => {

@@ -239,6 +239,67 @@ describe('Trait Formation System', () => {
       expect(correctChoiceHighCharisma.updatedProgress['LONE_WOLF']?.points ?? 0).toBe(0);
     });
 
+    it('should progress social action traits from social_* actions', () => {
+      const state = createMockGameState({ age: 12 });
+      const stats = createMockStats();
+
+      const result = checkTraitFormation('social_chat', null, state, stats);
+
+      expect(result.updatedProgress['EMPATHETIC']?.points ?? 0).toBeGreaterThan(0);
+      expect(result.updatedProgress['SOCIAL_BUTTERFLY']?.points ?? 0).toBeGreaterThan(0);
+      expect(result.progressUpdates).toContain('EMPATHETIC');
+      expect(result.progressUpdates).toContain('SOCIAL_BUTTERFLY');
+    });
+
+    it('should only trigger LAZY and PROCRASTINATOR at low discipline', () => {
+      const state = createMockGameState({ age: 10 });
+      const lowDiscipline = createMockStats({ discipline: 10 });
+      const highDiscipline = createMockStats({ discipline: 60 });
+
+      const lowResult = checkTraitFormation('study_math', null, state, lowDiscipline);
+      const highResult = checkTraitFormation('study_math', null, state, highDiscipline);
+
+      expect(lowResult.newTraits).not.toContain('LAZY');
+      expect(lowResult.updatedProgress['LAZY']?.points ?? 0).toBeGreaterThan(0);
+      expect(lowResult.updatedProgress['PROCRASTINATOR']?.points ?? 0).toBeGreaterThan(0);
+      expect(highResult.updatedProgress['LAZY']?.points ?? 0).toBe(0);
+      expect(highResult.updatedProgress['PROCRASTINATOR']?.points ?? 0).toBe(0);
+    });
+
+    it('should apply cooldown pacing for threshold-only negative traits', () => {
+      const lowDiscipline = createMockStats({ discipline: 10 });
+      const baseState = createMockGameState({ age: 10, turn: 30 });
+
+      const first = checkTraitFormation('study_math', null, baseState, lowDiscipline);
+      const firstLazyPoints = first.updatedProgress['LAZY']?.points ?? 0;
+      const sameTurnState = {
+        ...baseState,
+        traitProgress: JSON.parse(JSON.stringify(first.updatedProgress)),
+      };
+      const secondSameTurn = checkTraitFormation('study_math', null, sameTurnState, lowDiscipline);
+      const secondLazyPoints = secondSameTurn.updatedProgress['LAZY']?.points ?? 0;
+      const postCooldownState = {
+        ...sameTurnState,
+        turn: 32,
+        traitProgress: JSON.parse(JSON.stringify(secondSameTurn.updatedProgress)),
+      };
+      const thirdAfterCooldown = checkTraitFormation('study_math', null, postCooldownState, lowDiscipline);
+
+      expect(firstLazyPoints).toBe(1);
+      expect(secondLazyPoints).toBe(1);
+      expect(thirdAfterCooldown.newTraits).toContain('LAZY');
+    });
+
+    it('should not progress threshold-only traits without action or choice context', () => {
+      const lowDiscipline = createMockStats({ discipline: 10 });
+      const state = createMockGameState({ age: 10, turn: 30 });
+
+      const result = checkTraitFormation(null, null, state, lowDiscipline);
+
+      expect(result.updatedProgress['LAZY']?.points ?? 0).toBe(0);
+      expect(result.updatedProgress['PROCRASTINATOR']?.points ?? 0).toBe(0);
+    });
+
     it('should handle conflicts between traits', () => {
       // Some traits conflict with each other
       const disciplinedTrait = TRAIT_DEFINITIONS.find(t => t.id === 'DISCIPLINED');

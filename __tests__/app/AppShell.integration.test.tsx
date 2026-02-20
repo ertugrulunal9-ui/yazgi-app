@@ -1,5 +1,6 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppShell from '../../src/appShell/AppShell';
 import { logTutorialCompleted } from '../../src/utils/analyticsEvents';
 
@@ -234,6 +235,14 @@ describe('AppShell integration', () => {
     await act(async () => {
       tree = renderer.create(<AppShell />);
     });
+    const startTutorialButton = tree.root.findByProps({ accessibilityLabel: 'Tutorialu baslat' });
+
+    await act(async () => {
+      startTutorialButton.props.onPress();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
     const onboarding = tree.root.findByType('MockOnboarding');
 
     await act(async () => {
@@ -242,6 +251,52 @@ describe('AppShell integration', () => {
 
     expect(mockSetHasCompletedOnboarding).toHaveBeenCalledWith(true);
     expect(logTutorialCompleted).toHaveBeenCalledTimes(1);
+    tree.unmount();
+  });
+
+  it('allows first-time users to skip tutorial and continue', async () => {
+    mockUseAppBootstrap.mockReturnValue(
+      createBootstrapState({
+        showSplash: false,
+        hasCompletedOnboarding: false,
+      })
+    );
+
+    let tree!: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<AppShell />);
+    });
+
+    const skipTutorialButton = tree.root.findByProps({ accessibilityLabel: 'Tutorialu atla' });
+
+    await act(async () => {
+      skipTutorialButton.props.onPress();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mockSetHasCompletedOnboarding).toHaveBeenCalledWith(true);
+    expect(logTutorialCompleted).not.toHaveBeenCalled();
+    const tutorialStateCall = (AsyncStorage.setItem as jest.Mock).mock.calls.find(
+      ([key]) => key === '@yazgi/tutorial_v2'
+    );
+    expect(tutorialStateCall).toBeDefined();
+    expect(JSON.parse(tutorialStateCall?.[1] as string)).toMatchObject({
+      currentStep: 'GOAL_VISION',
+    });
+    expect((AsyncStorage.setItem as jest.Mock).mock.calls).toEqual(
+      expect.arrayContaining([
+        ['@yazgi/onboarding_completed', 'true'],
+      ])
+    );
+    expect((AsyncStorage.removeItem as jest.Mock).mock.calls).toEqual(
+      expect.arrayContaining([
+        ['@yazgi/hub_tutorial_shown'],
+        ['@yazgi/event_tooltip_shown'],
+        ['@yazgi/energy_tutorial_shown'],
+      ])
+    );
+
     tree.unmount();
   });
 

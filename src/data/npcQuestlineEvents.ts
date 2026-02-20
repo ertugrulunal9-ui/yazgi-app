@@ -27,6 +27,7 @@ const n = (npc: NPC | null): string => npc?.name || 'Arkadasin';
 const friendshipEvents: GameEvent[] = [
   {
     id: 'npcq_friend_secret_share',
+    tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'BEST_FRIEND']);
       return `${n(npc)} seni kenara cekiyor. Gozleri ciddi. "Sana bir sey soyleyecegim ama kimseye anlatmayacagina soz ver..." Ailesiyle ilgili zor bir durumu anlatmaya basliyor.`;
@@ -62,6 +63,7 @@ const friendshipEvents: GameEvent[] = [
   },
   {
     id: 'npcq_friend_family_visit',
+    tags: ['social', 'friend', 'npc', 'family'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'BEST_FRIEND']);
       return `${n(npc)} seni evine davet etti. Ailesiyle tanisacaksin. Kapidan girer girmez sicak yemek kokusu ve kahkaha sesleri duyuyorsun.`;
@@ -90,6 +92,7 @@ const friendshipEvents: GameEvent[] = [
   },
   {
     id: 'npcq_friend_casual_hangout',
+    tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND']);
       return `${n(npc)} ile okuldan sonra parka gittiniz. "Bugun sadece takilalim, hic bir sey dusunmeden" diyor.`;
@@ -115,6 +118,7 @@ const friendshipEvents: GameEvent[] = [
   },
   {
     id: 'npcq_friend_shared_crisis',
+    tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'BEST_FRIEND']);
       return `Okulda buyuk bir kavga cikti. Birisi ${n(npc)}'a iftira atiyor — ogretmenler de inaniyor. ${n(npc)} yardim istiyor gibi sana bakiyor.`;
@@ -151,6 +155,7 @@ const friendshipEvents: GameEvent[] = [
   },
   {
     id: 'npcq_friend_adventure',
+    tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'BEST_FRIEND']);
       return `${n(npc)} ile birlikte "yasak bolge"ye — mahallenin terk edilmis deposuna — girmeye karar verdiniz. Soylentilere gore icerde eski bir hazine var.`;
@@ -179,6 +184,7 @@ const friendshipEvents: GameEvent[] = [
   },
   {
     id: 'npcq_friend_loyalty_test',
+    tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'BEST_FRIEND']);
       return `Okuldaki populer grubun lideri sana yaklasti: "Bizimle takilmak istersen ${n(npc)}'i birak. O seni asagi cekiyor." Populer grup seni kabul edecek ama...`;
@@ -215,6 +221,7 @@ const friendshipEvents: GameEvent[] = [
   },
   {
     id: 'npcq_friend_final_bond',
+    tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'BEST_FRIEND']);
       return `${n(npc)} ile yillarin biriktigi bir aksam. Damlarin ustunde oturmus sehri izliyorsunuz. "Sen benim en yakin arkadasimsin" diyor sessizce.`;
@@ -237,6 +244,7 @@ const friendshipEvents: GameEvent[] = [
   },
   {
     id: 'npcq_friend_drift_apart',
+    tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'ACQUAINTANCE']);
       return `${n(npc)} ile artik eskisi gibi konusamiyorsunuz. Mesajlarina gec cevap veriyor, planlari surekli iptal ediyor. Bir seyler degisti.`;
@@ -271,6 +279,7 @@ const friendshipEvents: GameEvent[] = [
 const romanceEvents: GameEvent[] = [
   {
     id: 'npcq_romance_first_spark',
+    tags: ['social', 'love', 'relationship', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['CRUSH']);
       return `${n(npc)} ile gorusleriniz kesisti — bir an icin hic kimse yokmus gibi hissettin. Kalbin hizlandi. Bu his... yeni bir sey.`;
@@ -298,6 +307,7 @@ const romanceEvents: GameEvent[] = [
   },
   {
     id: 'npcq_romance_confession',
+    tags: ['social', 'love', 'relationship', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['CRUSH']);
       return `Okuldan sonra ${n(npc)} ile bas basasiniz. Icinden bir ses "soyle" diyor. Diger ses "dur, ya reddederse?"`;
@@ -332,6 +342,7 @@ const romanceEvents: GameEvent[] = [
   },
   {
     id: 'npcq_romance_first_date',
+    tags: ['social', 'love', 'relationship', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['CRUSH', 'PARTNER']);
       return `${n(npc)} ile ilk kez bas basa disari cikiyorsunuz. "Nereye gidelim?" diye soruyor.`;
@@ -366,6 +377,7 @@ const romanceEvents: GameEvent[] = [
   },
   {
     id: 'npcq_romance_jealousy_jealous',
+    tags: ['social', 'love', 'relationship', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['CRUSH', 'PARTNER']);
       return `${n(npc)} baskasiyala komustugun icin sinirli. "O kim? Neden surekli konusuyorsunuz?" Sesi sert, gozleri kirgin.`;
@@ -399,6 +411,7 @@ const romanceEvents: GameEvent[] = [
   },
   {
     id: 'npcq_romance_jealousy_loyal',
+    tags: ['social', 'love', 'relationship', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['CRUSH', 'PARTNER']);
       return `${n(npc)} fark ettin ki son zamanlarda biraz mesafeli. Bir gun sonunda soruyorsun: "Bir sorun mu var?"`;
@@ -424,6 +437,7 @@ const romanceEvents: GameEvent[] = [
   },
   {
     id: 'npcq_romance_family_reaction',
+    tags: ['social', 'love', 'relationship', 'family', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['CRUSH', 'PARTNER']);
       return `Ailen ${n(npc)}'i duydu. ${ctx.gameState?.family?.dynamic === 'STRICT' ? 'Baban sert bir sesle sordu: "Kim bu? Derslerin ne olacak?"' : 'Annen merakla sordu: "Anlat bakalim, nasil biri?"'}`;
@@ -455,6 +469,7 @@ const romanceEvents: GameEvent[] = [
   },
   {
     id: 'npcq_romance_commitment',
+    tags: ['social', 'love', 'relationship', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['PARTNER', 'CRUSH']);
       return `${n(npc)} ile ozel bir aksam. "Biz... resmi miyiz?" diye soruyor yumusak bir sesle.`;
@@ -476,6 +491,7 @@ const romanceEvents: GameEvent[] = [
   },
   {
     id: 'npcq_romance_mature_breakup',
+    tags: ['social', 'love', 'relationship', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['CRUSH', 'PARTNER']);
       return `${n(npc)} ile bir seyler degisti. Ikiniz de biliyorsunuz ama kimse soyleyemiyor. Sonunda bir aksam konusuyorsunuz.`;
@@ -511,6 +527,7 @@ const romanceEvents: GameEvent[] = [
 const rivalryEvents: GameEvent[] = [
   {
     id: 'npcq_rival_first_challenge',
+    tags: ['social', 'npc', 'group'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['RIVAL']);
       return `${n(npc)} sinifin ortasinda sana meydan okudu: "Bahse girerim bu sinavi benden iyi yapamazsin." Herkes size bakiyor.`;
@@ -539,6 +556,7 @@ const rivalryEvents: GameEvent[] = [
   },
   {
     id: 'npcq_rival_group_sides',
+    tags: ['social', 'npc', 'group'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['RIVAL']);
       return `Arkadaslarin ikiye bolundu. Bazilari senin tarafinda, bazilari ${n(npc)} tarafinda. Okul koridorunda gerilim hissediliyor.`;
@@ -565,6 +583,7 @@ const rivalryEvents: GameEvent[] = [
   },
   {
     id: 'npcq_rival_showdown',
+    tags: ['social', 'npc', 'group'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['RIVAL']);
       return `Gun geldi. ${n(npc)} ile son karsilasma: spor turnuvasi, sinav sonucu veya sahne performansi — kim daha iyi?`;
@@ -593,6 +612,7 @@ const rivalryEvents: GameEvent[] = [
   },
   {
     id: 'npcq_rival_aftermath',
+    tags: ['social', 'npc', 'group'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['RIVAL']);
       return `Yarisma bitti. ${n(npc)} ile koridorda karsilastiniz. Ikiniznin de yuzunde yorgunluk var. Bir an sessizlik.`;
@@ -618,6 +638,7 @@ const rivalryEvents: GameEvent[] = [
   },
   {
     id: 'npcq_rival_peace_offer',
+    tags: ['social', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['RIVAL']);
       return `${n(npc)} sana yaklasti. "Belki... surekli kavga etmek yerine birlikte calisabiliriz?" Samimi gorunuyor.`;
@@ -644,6 +665,7 @@ const rivalryEvents: GameEvent[] = [
   },
   {
     id: 'npcq_rival_escalation',
+    tags: ['social', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['RIVAL']);
       return `${n(npc)} arkadaslarindan birine seni kotulemis. Herkes duydu. Bu artik yarisma degil — kisisel.`;
@@ -670,6 +692,7 @@ const rivalryEvents: GameEvent[] = [
   },
   {
     id: 'npcq_rival_respect',
+    tags: ['social', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['RIVAL']);
       return `Yillar sonra ${n(npc)} ile karsilastiniz. "Seni hep saygiyla hatirlayacagim" diyor. Gercekten oyle gorunuyor.`;
@@ -691,6 +714,7 @@ const rivalryEvents: GameEvent[] = [
   },
   {
     id: 'npcq_rival_enemy',
+    tags: ['social', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['RIVAL', 'ENEMY']);
       return `${n(npc)} ile araniz tamamen bozuldu. Ayni ortamda bile nefes almak zor. Bu nefret seni icten icte yiyor.`;
@@ -725,6 +749,7 @@ const rivalryEvents: GameEvent[] = [
 const betrayalEvents: GameEvent[] = [
   {
     id: 'npcq_betray_first_doubt',
+    tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'BEST_FRIEND']);
       return `${n(npc)}'in soyledikleriyle yaptiklari tutmuyor. Bir gun plana gel dedi, gelmedi. Sonra baska biriyile goruldugu soyleniyor.`;
@@ -750,6 +775,7 @@ const betrayalEvents: GameEvent[] = [
   },
   {
     id: 'npcq_betray_gossip_heard',
+    tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'BEST_FRIEND']);
       return `Biri sana yaklasti: "${n(npc)} herkese senin sirrini anlatti. Hem de guluyordu." Midena bir sey oturdu.`;
@@ -781,6 +807,7 @@ const betrayalEvents: GameEvent[] = [
   },
   {
     id: 'npcq_betray_investigation',
+    tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'BEST_FRIEND']);
       return `${n(npc)}'in mesajlarini, davranislarini, ortak arkadaslarin soylediklerini birlestiriyorsun. Resim netlesiyor. Ya gercekten ihanet ettiyse?`;
@@ -805,6 +832,7 @@ const betrayalEvents: GameEvent[] = [
   },
   {
     id: 'npcq_betray_confrontation',
+    tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'BEST_FRIEND']);
       return `${n(npc)} ile yuz yuzesin. "Sirrimi neden anlattín?" Sessizlik. Sonra gozlerini kaciriyor.`;
@@ -832,6 +860,7 @@ const betrayalEvents: GameEvent[] = [
   },
   {
     id: 'npcq_betray_reaction_manipulative',
+    tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'BEST_FRIEND', 'ACQUAINTANCE']);
       return `${n(npc)} inkar ediyor: "Ben oyle bir sey soylemedim, sana yalan soyluyorlar. Belki de gercek arkadaslarin onlar degil!" Masumiyetini savunuyor.`;
@@ -858,6 +887,7 @@ const betrayalEvents: GameEvent[] = [
   },
   {
     id: 'npcq_betray_reaction_regret',
+    tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'BEST_FRIEND', 'ACQUAINTANCE']);
       return `${n(npc)}'in gozleri dolu: "Yanliş yaptım. Neden yaptigimi bile bilmiyorum. Lutfen..." Samimi gorunuyor.`;
@@ -884,6 +914,7 @@ const betrayalEvents: GameEvent[] = [
   },
   {
     id: 'npcq_betray_forgive',
+    tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'ACQUAINTANCE']);
       return `Haftalar gecti. ${n(npc)} surekli uzaktan bakiyor, mesaj atiyor, kucuk jestler yapiyor. Belki gercekten degismistir.`;
@@ -905,6 +936,7 @@ const betrayalEvents: GameEvent[] = [
   },
   {
     id: 'npcq_betray_distance',
+    tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'ACQUAINTANCE']);
       return `${n(npc)} ile artik arkadas degilsiniz. Ama duysman da degil. Koridorda kibar bir selam, o kadar.`;
@@ -923,6 +955,7 @@ const betrayalEvents: GameEvent[] = [
   },
   {
     id: 'npcq_betray_cut_off',
+    tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'ACQUAINTANCE']);
       return `${n(npc)} ile butun ipleri kopardín. Numarasini sildin, ortak gruplari biraktin. Temiz bir kesim.`;

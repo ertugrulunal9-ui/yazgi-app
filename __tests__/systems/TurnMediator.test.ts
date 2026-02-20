@@ -216,4 +216,54 @@ describe('TurnMediator', () => {
 
     expect(result.gameStateUpdates.selectedGoal).toBe('ACADEMIC');
   });
+
+  it('applies grantTraits from event choices', () => {
+    const gameState = createBaseGameState();
+    const stats = createBaseStats();
+    const choice: Choice = {
+      id: 'ch_trait_grant',
+      text: 'Cesur adim',
+      effect: {},
+      feedback: 'Cesur bir karar verdin.',
+      grantTraits: ['BRAVE'],
+    };
+
+    const result = mediator.processEventChoice({
+      choice,
+      gameState,
+      stats,
+      choiceIndex: 0,
+    });
+
+    expect(result.newTraits).toContain('BRAVE');
+    expect(result.removedTraits).toEqual([]);
+    expect(result.gameStateUpdates.traits).toContain('BRAVE');
+    expect(result.gameStateUpdates.lastResult?.traitChanges?.some(change => change.changeType === 'GAINED' && change.traitId === 'BRAVE')).toBe(true);
+  });
+
+  it('removes conflicting traits when grantTraits gives a conflicting trait', () => {
+    const gameState = createBaseGameState();
+    gameState.traits = ['LAZY'];
+    const stats = createBaseStats();
+    const choice: Choice = {
+      id: 'ch_trait_conflict',
+      text: 'Disiplin sec',
+      effect: {},
+      feedback: 'Sistemli bir yol sectin.',
+      grantTraits: ['DISCIPLINED'],
+    };
+
+    const result = mediator.processEventChoice({
+      choice,
+      gameState,
+      stats,
+      choiceIndex: 0,
+    });
+
+    expect(result.newTraits).toContain('DISCIPLINED');
+    expect(result.removedTraits).toContain('LAZY');
+    expect(result.gameStateUpdates.traits).toContain('DISCIPLINED');
+    expect(result.gameStateUpdates.traits).not.toContain('LAZY');
+    expect(result.gameStateUpdates.lastResult?.traitChanges?.some(change => change.changeType === 'REMOVED' && change.traitId === 'LAZY')).toBe(true);
+  });
 });

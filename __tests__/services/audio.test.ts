@@ -64,24 +64,21 @@ jest.mock('../../src/audio/soundDefinitions', () => ({
 
 import { audioManager } from '../../src/audio/AudioManager';
 
-// Mock expo-av
-const mockSound = {
-  loadAsync: jest.fn().mockResolvedValue(undefined),
-  playAsync: jest.fn().mockResolvedValue(undefined),
-  stopAsync: jest.fn().mockResolvedValue(undefined),
-  unloadAsync: jest.fn().mockResolvedValue(undefined),
-  setVolumeAsync: jest.fn().mockResolvedValue(undefined),
-  setIsLoopingAsync: jest.fn().mockResolvedValue(undefined),
-  getStatusAsync: jest.fn().mockResolvedValue({ isLoaded: true, isPlaying: false }),
-};
-
-jest.mock('expo-av', () => ({
-  Audio: {
-    Sound: {
-      createAsync: jest.fn(() => Promise.resolve({ sound: mockSound })),
-    },
-    setAudioModeAsync: jest.fn().mockResolvedValue(undefined),
-  },
+jest.mock('expo-audio', () => ({
+  createAudioPlayer: jest.fn().mockReturnValue({
+    play: jest.fn(),
+    pause: jest.fn(),
+    seekTo: jest.fn().mockResolvedValue(undefined),
+    remove: jest.fn(),
+    addListener: jest.fn().mockReturnValue({ remove: jest.fn() }),
+    volume: 1,
+    loop: false,
+    playing: false,
+    isLoaded: true,
+    currentTime: 0,
+    duration: 0,
+  }),
+  setAudioModeAsync: jest.fn().mockResolvedValue(undefined),
 }));
 
 describe('AudioManager', () => {

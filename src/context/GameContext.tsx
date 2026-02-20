@@ -1,17 +1,16 @@
 import React, { createContext, useCallback, useEffect, useRef, useState, ReactNode } from 'react';
-import { AppState, AppStateStatus } from 'react-native';
-import { CharacterInfo, FloatingText, FloatingTextAnimation, GameState, GameStateUpdate, MetaProgression, Stats } from '../types';
+import { CharacterInfo, GameState, GameStateUpdate, MetaProgression, ScheduledEvent, Stats } from '../types';
 import { createInitialFateState } from '../systems/FateEngine';
-import { getInitialGameState, getInitialStats, initializeSaveSystem, loadGame, saveGame, setCurrentSlotId } from '../utils/gameUtils';
+import { getInitialGameState, getInitialStats, initializeSaveSystem, loadGame, setCurrentSlotId } from '../utils/gameUtils';
 import { trackSpecialProgress } from '../utils/achievementChecker';
 import SaveManager from '../save/SaveManager';
 import { SaveSlotData } from '../save/SaveSlot';
+import { useAutoSave } from '../hooks/useAutoSave';
+import { useMetaRunRecorder } from '../hooks/useMetaRunRecorder';
 import { ensureStructuredGameState, mergeGameStateUpdate, stripRuntimeGameStateCaches } from '../utils/gameStateAdapter';
 import { DEFAULT_FAMILY_EVOLUTION_STATE } from '../utils/familyNarrative';
-import { resolveEnding } from '../utils/endingResolver';
 import {
   applyLegacyBonusesToStats,
-  applyRunToMetaProgression,
   createInitialMetaProgression,
 } from '../utils/metaProgression';
 import { devLog } from '../utils/devLogger';
@@ -22,9 +21,6 @@ export interface GameContextType {
   metaProgression: MetaProgression;
   playerName: string;
   isLoading: boolean;
-
-  // Transient UI state (not persisted, does not trigger auto-save)
-  floatingTexts: FloatingText[];
 
   // Game lifecycle
   startNewGame: (name: string, characterInfo?: CharacterInfo) => void;
@@ -47,18 +43,14 @@ export interface GameContextType {
     newGameState: GameStateUpdate;
   }) => void;
 
-  // FloatingText helpers
-  showFloatingText: (text: string, x: number, y: number, color: string, options?: {
-    animationType?: FloatingTextAnimation;
-    duration?: number;
-  }) => void;
-  removeFloatingText: (id: number) => void;
 }
 
 export const GameContext = createContext<GameContextType | undefined>(undefined);
 
 interface GameProviderProps {
   children: ReactNode;
+  /** Called after a saved game is loaded — use to clear transient UI state (e.g. floating texts) */
+  onLoadGame?: () => void;
 }
 
 const buildInitialState = (initialStats: Stats): GameState =>
@@ -78,7 +70,40 @@ const prepareStateForPersistence = (state: GameState): GameState => ({
   floatingTexts: [],
 });
 
-export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
+const CLIFFHANGER_CONTINUATION_PRIORITY = 999;
+
+const getScheduledPriorityValue = (priority: ScheduledEvent['priority']): number => {
+  if (typeof priority === 'number') return priority;
+  return priority === 'HIGH' ? 100 : 0;
+};
+
+const withForcedCliffhangerContinuation = (state: GameState): GameState => {
+  const continuationEventId = state.pendingCliffhanger?.continuationEventId;
+  if (!continuationEventId) return state;
+
+  const scheduledEvents = state.scheduledEvents || [];
+  const hasForcedContinuation = scheduledEvents.some(evt => (
+    evt.eventId === continuationEventId && getScheduledPriorityValue(evt.priority) > 900
+  ));
+  if (hasForcedContinuation) return state;
+
+  const filteredScheduledEvents = scheduledEvents.filter(evt => evt.eventId !== continuationEventId);
+
+  const forcedContinuationEvent: ScheduledEvent = {
+    id: `scheduled_cliff_resume_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    eventId: continuationEventId,
+    remainingTurns: 0,
+    priority: CLIFFHANGER_CONTINUATION_PRIORITY,
+    sourceEventId: state.pendingCliffhanger?.sourceEventId ?? `cliff_resume_${continuationEventId}`,
+  };
+
+  return {
+    ...state,
+    scheduledEvents: [forcedContinuationEvent, ...filteredScheduledEvents],
+  };
+};
+
+export const GameProvider: React.FC<GameProviderProps> = ({ children, onLoadGame }) => {
   const initialStatsRef = useRef<Stats>(getInitialStats());
   const [gameState, setGameStateInternal] = useState<GameState>(() => buildInitialState(initialStatsRef.current));
   const stats = gameState.stats ?? initialStatsRef.current;
@@ -86,10 +111,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const [playerName, setPlayerName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
-  // FloatingTexts are transient and do not persist.
-  const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
-
-  // Keep refs fresh for async callbacks.
+  // Refs for async callbacks — updated inline each render (safe: only read after event loop tick).
   const gameStateRef = useRef(gameState);
   const statsRef = useRef(stats);
   const playerNameRef = useRef(playerName);
@@ -97,32 +119,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const metaProgressionRef = useRef(metaProgression);
   const hasLoadedOnceRef = useRef(false);
   const prevStatsRef = useRef(stats);
-  const recordingMetaRunRef = useRef(false);
 
-  // Save queue guards.
-  const isSavingRef = useRef(false);
-  const pendingSaveRef = useRef(false);
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    gameStateRef.current = gameState;
-  }, [gameState]);
-
-  useEffect(() => {
-    statsRef.current = stats;
-  }, [stats]);
-
-  useEffect(() => {
-    playerNameRef.current = playerName;
-  }, [playerName]);
-
-  useEffect(() => {
-    isLoadingRef.current = isLoading;
-  }, [isLoading]);
-
-  useEffect(() => {
-    metaProgressionRef.current = metaProgression;
-  }, [metaProgression]);
+  gameStateRef.current = gameState;
+  statsRef.current = stats;
+  playerNameRef.current = playerName;
+  isLoadingRef.current = isLoading;
+  metaProgressionRef.current = metaProgression;
 
   useEffect(() => {
     if (isLoading) {
@@ -158,73 +160,18 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     }
   }, []);
 
-  useEffect(() => {
-    SaveManager.registerAutoSaveCallback(() => {
-      if (isLoadingRef.current || !hasLoadedOnceRef.current || !playerNameRef.current) {
-        return null;
-      }
-
-      return {
-        playerName: playerNameRef.current,
-        stats: statsRef.current,
-        gameState: prepareStateForPersistence(gameStateRef.current),
-      };
-    });
-
-    return () => {
-      SaveManager.unregisterAutoSaveCallback();
-    };
-  }, []);
-
-  // Auto-save on meaningful changes only.
-  useEffect(() => {
-    if (isLoading || !hasLoadedOnceRef.current || !playerName) return;
-
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    saveTimeoutRef.current = setTimeout(async () => {
-      if (isSavingRef.current) {
-        pendingSaveRef.current = true;
-        return;
-      }
-
-      isSavingRef.current = true;
-      try {
-        const stateToSave = prepareStateForPersistence(gameStateRef.current);
-        await saveGame({ gameState: stateToSave, stats: statsRef.current, playerName: playerNameRef.current });
-      } catch (error) {
-        console.error('Auto-save failed:', error);
-      } finally {
-        isSavingRef.current = false;
-
-        if (pendingSaveRef.current) {
-          pendingSaveRef.current = false;
-          const stateToSave = prepareStateForPersistence(gameStateRef.current);
-          void saveGame({ gameState: stateToSave, stats: statsRef.current, playerName: playerNameRef.current });
-        }
-      }
-    }, 500);
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, [gameState.turn, gameState.age, playerName, isLoading]);
-
-  // Save on app background (catch stats changes between turn boundaries).
-  useEffect(() => {
-    const handleAppState = (nextState: AppStateStatus) => {
-      if (nextState === 'background' && hasLoadedOnceRef.current && playerNameRef.current) {
-        const stateToSave = prepareStateForPersistence(gameStateRef.current);
-        void saveGame({ gameState: stateToSave, stats: statsRef.current, playerName: playerNameRef.current });
-      }
-    };
-    const sub = AppState.addEventListener('change', handleAppState);
-    return () => sub.remove();
-  }, []);
+  useAutoSave({
+    gameStateRef,
+    statsRef,
+    playerNameRef,
+    isLoadingRef,
+    hasLoadedOnceRef,
+    turn: gameState.turn,
+    age: gameState.age,
+    playerName,
+    isLoading,
+    prepareState: prepareStateForPersistence,
+  });
 
   const applySavedGame = useCallback((saved: SaveSlotData) => {
     const initial = getInitialGameState();
@@ -232,11 +179,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     const resolvedStats = savedState?.stats ?? saved.stats ?? initialStatsRef.current;
 
     initialStatsRef.current = resolvedStats;
-    setFloatingTexts([]);
+    onLoadGame?.();
 
     setGameStateInternal(prev =>
       ensureStructuredGameState(
-        {
+        withForcedCliffhangerContinuation({
           ...initial,
           ...(savedState || {}),
           schoolGrades: { ...initial.schoolGrades, ...(savedState?.schoolGrades || {}) },
@@ -280,14 +227,14 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
           metaProgression: metaProgressionRef.current,
           metaRunRecorded: savedState?.metaRunRecorded ?? false,
           stats: resolvedStats,
-        },
+        }),
         prev,
         resolvedStats
       )
     );
 
     setPlayerName(saved.playerName || '');
-  }, []);
+  }, [onLoadGame]);
 
   const loadSavedGame = useCallback(async (slotId?: string, saveData?: SaveSlotData): Promise<boolean> => {
     setIsLoading(true);
@@ -329,65 +276,27 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   }, [loadSavedGame, refreshMetaProgression]);
 
   useEffect(() => {
-    if (
-      isLoading
-      || gameState.phase !== 'GAME_OVER'
-      || gameState.metaRunRecorded
-      || recordingMetaRunRef.current
-    ) {
-      return;
-    }
+    if (isLoading) return;
 
-    recordingMetaRunRef.current = true;
+    setGameStateInternal(prev => {
+      const nextState = withForcedCliffhangerContinuation(prev);
+      if (nextState === prev) return prev;
+      return ensureStructuredGameState(nextState, prev, prev.stats ?? initialStatsRef.current);
+    });
+  }, [isLoading]);
 
-    const persistRunMeta = async () => {
-      try {
-        const ending = resolveEnding({
-          gameState,
-          stats,
-          achievements: gameState.unlockedAchievements,
-        });
-        const unlockedAchievementIds = (gameState.unlockedAchievements || []).map(item => item.achievementId);
-        const runId = `${gameState.totalTurns}_${gameState.turn}_${gameState.age}_${ending.id}`;
-        const { nextMeta } = applyRunToMetaProgression(metaProgressionRef.current, {
-          runId,
-          age: gameState.age,
-          endingId: ending.id,
-          endingTitle: ending.result.title,
-          tier: ending.tier,
-          compatibilityScore: ending.compatibilityScore,
-          selectedGoal: ending.selectedGoal,
-          unlockedAchievementIds,
-        });
-
-        await SaveManager.setMetaProgression(nextMeta);
-        setMetaProgression(nextMeta);
-
-        const stateWithMeta = ensureStructuredGameState(
-          {
-            ...gameStateRef.current,
-            metaProgression: nextMeta,
-            metaRunRecorded: true,
-          },
-          gameStateRef.current,
-          statsRef.current
-        );
-
-        setGameStateInternal(stateWithMeta);
-        await saveGame({
-          gameState: prepareStateForPersistence(stateWithMeta),
-          stats: statsRef.current,
-          playerName: playerNameRef.current,
-        });
-      } catch (error) {
-        console.error('Failed to persist meta progression run:', error);
-      } finally {
-        recordingMetaRunRef.current = false;
-      }
-    };
-
-    void persistRunMeta();
-  }, [gameState, isLoading, stats]);
+  useMetaRunRecorder({
+    gameState,
+    stats,
+    isLoading,
+    metaProgressionRef,
+    gameStateRef,
+    statsRef,
+    playerNameRef,
+    setMetaProgression,
+    setGameStateInternal,
+    prepareState: prepareStateForPersistence,
+  });
 
   const startNewGame = useCallback((name: string, characterInfo?: CharacterInfo) => {
     setPlayerName(name);
@@ -544,34 +453,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     });
   }, []);
 
-  const showFloatingText = useCallback((text: string, x: number, y: number, color: string, options?: {
-    animationType?: FloatingTextAnimation;
-    duration?: number;
-  }) => {
-    const newText: FloatingText = {
-      id: Date.now() + Math.random(),
-      text,
-      x,
-      y,
-      color,
-      animationType: options?.animationType || 'arcadeFloat',
-      duration: options?.duration || 2000,
-    };
-
-    setFloatingTexts(prev => [...prev, newText]);
-  }, []);
-
-  const removeFloatingText = useCallback((id: number) => {
-    setFloatingTexts(prev => prev.filter(item => item.id !== id));
-  }, []);
-
   const value: GameContextType = {
     gameState,
     stats,
     metaProgression,
     playerName,
     isLoading,
-    floatingTexts,
     startNewGame,
     resetGame,
     loadSavedGame,
@@ -582,8 +469,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     updateStats,
     refreshMetaProgression,
     advanceTurnInContext,
-    showFloatingText,
-    removeFloatingText,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

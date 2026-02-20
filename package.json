@@ -8,6 +8,13 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "lint": "eslint . --quiet",
+    "doctor": "npx expo-doctor",
+    "deps:fix": "npx expo install --fix",
+    "audit:prod": "node scripts/audit-prod-gate.cjs",
+    "deps:policy": "node scripts/check-dependency-policy.cjs",
+    "deps:outdated": "npm outdated",
+    "maint:doctor": "npm run doctor",
+    "maint:weekly": "npm run deps:policy && npm run deps:fix && npm run audit:prod",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -31,7 +38,7 @@
     "crypto-js": "^4.2.0",
     "expo": "~54.0.33",
     "expo-asset": "~12.0.12",
-    "expo-av": "~16.0.8",
+    "expo-audio": "~1.1.1",
     "expo-build-properties": "~1.0.10",
     "expo-constants": "~18.0.13",
     "expo-dev-client": "~6.0.20",
@@ -43,6 +50,7 @@
     "expo-linking": "~8.0.11",
     "expo-router": "~6.0.23",
     "expo-secure-store": "~15.0.8",
+    "expo-sharing": "~14.0.8",
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
     "expo-system-ui": "~6.0.9",
@@ -58,12 +66,13 @@
     "react-native-reanimated": "~4.1.1",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
+    "react-native-svg": "15.12.1",
+    "react-native-view-shot": "4.0.3",
     "react-native-web": "^0.21.0",
     "react-native-worklets": "0.5.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@react-native-community/cli": "latest",
     "@testing-library/jest-native": "^5.4.3",
     "@testing-library/react-native": "^13.3.3",
     "@types/crypto-js": "^4.2.2",
@@ -71,6 +80,8 @@
     "@types/react": "~19.1.10",
     "eslint": "^8.57.1",
     "eslint-config-expo": "~10.0.0",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^4.6.2",
     "jest": "^29.7.0",
     "jest-expo": "~54.0.17",
@@ -79,5 +90,17 @@
     "ts-jest": "^29.1.1",
     "typescript": "~5.9.2"
   },
-  "private": true
+  "expo": {
+    "doctor": {
+      "appConfigFieldsNotSyncedCheck": {
+        "enabled": false
+      }
+    }
+  },
+  "private": true,
+  "overrides": {
+    "glob": "^10.4.5",
+    "minimatch": "^10.2.2",
+    "fast-xml-parser": "^5.3.6"
+  }
 }

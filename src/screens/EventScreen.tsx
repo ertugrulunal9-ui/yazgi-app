@@ -24,6 +24,7 @@ import { getEventChoiceSet } from '../utils/gameStateAdapter';
 import { ensureTextContrast } from '../utils/colorContrast';
 import { SwipeChoiceDeck } from '../components/SwipeChoiceDeck';
 import { FateTokenDisplay, hasNegativeOutcome } from '../components/FateTokenDisplay';
+import { buildPrimaryFeedbackMessage, EventOutcomeSummary } from '../utils/feedbackPrioritizer';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -402,6 +403,38 @@ export const EventScreen: React.FC = React.memo(() => {
     return filtered.length > 0 ? filtered : gameState.currentEvent.choices;
   }, [gameState.currentEvent, gameState.family, gameState.personality, gameState.skills, meetsEventHistory, meetsNpcRole, resolveChoice, stats]);
 
+  const priorityFeedback = useMemo(() => {
+    if (gameState.phase !== 'RESULT' || !gameState.lastResult) return null;
+    const changes = gameState.lastResult.changes ?? {};
+    const gainedTrait = gameState.lastResult.traitChanges?.find(c => c.changeType === 'GAINED');
+    const lastChoice = lastSelectedChoiceRef.current?.choice;
+
+    let primaryStatLabel: string | undefined;
+    let primaryStatDelta: number | undefined;
+    const changedStats = Object.entries(changes).filter(
+      (entry): entry is [string, number] => typeof entry[1] === 'number' && entry[1] !== 0
+    );
+    if (changedStats.length > 0) {
+      const [topKey, topVal] = changedStats.reduce((a, b) =>
+        Math.abs(a[1]) >= Math.abs(b[1]) ? a : b
+      );
+      primaryStatLabel = STAT_LABELS[topKey] ?? topKey;
+      primaryStatDelta = topVal;
+    }
+
+    const summary: EventOutcomeSummary = {
+      statChanges: changes,
+      newStats: stats,
+      newTraitId: gainedTrait?.traitId,
+      newTraitName: gainedTrait?.traitId,
+      fateOutcome: gameState.lastResult.fateRoll?.outcome,
+      npcRelationChange: lastChoice?.npcRelationChange,
+      primaryStatLabel,
+      primaryStatDelta,
+    };
+    return buildPrimaryFeedbackMessage(summary, gameState.lastResult.feedback ?? '');
+  }, [gameState.phase, gameState.lastResult, stats]);
+
   const outcomeDrivers = useMemo(() => {
     if (gameState.phase !== 'RESULT') return [];
 
@@ -510,6 +543,26 @@ export const EventScreen: React.FC = React.memo(() => {
             />
           </Card>
 
+          {priorityFeedback?.secondary && (
+            <View style={{
+              marginBottom: 12,
+              paddingVertical: 10,
+              paddingHorizontal: 14,
+              backgroundColor: stats.health < 15 || stats.energy < 10
+                ? 'rgba(239, 68, 68, 0.12)'
+                : theme.surfaceRaised,
+              borderRadius: 10,
+              borderLeftWidth: 3,
+              borderLeftColor: stats.health < 15 || stats.energy < 10
+                ? '#ef4444'
+                : theme.accentBrand,
+            }}>
+              <Text style={{ color: theme.textPrimary, fontSize: 14, fontWeight: '600' }}>
+                {priorityFeedback.secondary}
+              </Text>
+            </View>
+          )}
+
           {outcomeDrivers.length > 0 && (
             <Card style={{ marginBottom: 16, borderRadius: 14 }} padded>
               <Text style={{ color: theme.textPrimary, fontSize: 14, fontWeight: '700', marginBottom: 8 }}>
@@ -533,6 +586,32 @@ export const EventScreen: React.FC = React.memo(() => {
                 theme={theme}
               />
             </View>
+          )}
+
+          {gameState.lastResult?.traitChanges && gameState.lastResult.traitChanges.length > 0 && (
+            <Card style={{ marginBottom: 16, borderRadius: 14 }} padded>
+              <Text style={{ color: theme.textPrimary, fontSize: 14, fontWeight: '700', marginBottom: 8 }}>
+                Ozellik degisimi
+              </Text>
+              {gameState.lastResult.traitChanges.map((change, index, arr) => (
+                <View key={`${change.changeType}_${change.traitId}_${index}`} style={{ marginBottom: index === arr.length - 1 ? 0 : 10 }}>
+                  <Text
+                    style={{
+                      color: change.changeType === 'GAINED' ? theme.accentSkill : theme.accentStat,
+                      fontSize: 13,
+                      fontWeight: '600',
+                    }}
+                  >
+                    {change.summary}
+                  </Text>
+                  {change.guidance && (
+                    <Text style={{ color: theme.textSecondary, fontSize: 12, lineHeight: 17, marginTop: 3 }}>
+                      Ipuclari: {change.guidance}
+                    </Text>
+                  )}
+                </View>
+              ))}
+            </Card>
           )}
 
           <AnimatedButton
@@ -566,6 +645,16 @@ export const EventScreen: React.FC = React.memo(() => {
           )}
 
           <FadeInUpView delay={100}>
+            {gameState.lastResult?.statNarrativeFeedback && gameState.lastResult.statNarrativeFeedback.length > 0 && (
+              <View style={{ marginTop: 12, marginBottom: 4, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: theme.surfaceRaised, borderRadius: 10 }}>
+                {gameState.lastResult.statNarrativeFeedback.map((msg, i) => (
+                  <Text key={i} style={{ color: theme.textSecondary, fontSize: 12, fontStyle: 'italic' }}>
+                    {msg}
+                  </Text>
+                ))}
+              </View>
+            )}
+
             {gameState.lastResult?.changes && Object.keys(gameState.lastResult.changes).length > 0 && (
               <View style={{ marginTop: 16 }}>
                 <Text style={{ color: theme.accentStat, fontSize: 13, marginBottom: 8, fontWeight: '700' }}>
@@ -712,6 +801,8 @@ export const EventScreen: React.FC = React.memo(() => {
           isBreakdownEvent={isBreakdownEvent}
           originalChoices={evt.choices}
           personalityState={gameState.personalityState}
+          eventId={evt.id}
+          eventRarity={evt.rarity}
         />
       </ScrollView>
     </View>

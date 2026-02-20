@@ -20,6 +20,7 @@ export {
   useSchoolGrades,
   useSkills,
   usePersonality as usePersonalitySelector,
+  useMomentumVisibility,
   useTraits,
   useInventory,
   useAchievementsState,

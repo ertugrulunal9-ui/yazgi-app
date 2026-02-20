@@ -14,6 +14,7 @@ export const MEMORY_GATED_EVENTS: GameEvent[] = [
 
   {
     id: 'mem_guilt_apology',
+    tags: ['social', 'family'],
     text: (ctx: EventContext) => {
       const mem = ctx.memories.find(m => m.emotion === 'GUILT');
       return mem
@@ -49,6 +50,7 @@ export const MEMORY_GATED_EVENTS: GameEvent[] = [
 
   {
     id: 'mem_pride_confidence',
+    tags: ['growth', 'social'],
     text: (ctx: EventContext) => {
       const mem = ctx.memories.find(m => m.emotion === 'PRIDE');
       return mem
@@ -81,6 +83,7 @@ export const MEMORY_GATED_EVENTS: GameEvent[] = [
 
   {
     id: 'mem_regret_second_chance',
+    tags: ['growth', 'social'],
     text: (ctx: EventContext) => {
       const mem = ctx.memories.find(m => m.emotion === 'REGRET');
       return mem
@@ -116,6 +119,7 @@ export const MEMORY_GATED_EVENTS: GameEvent[] = [
 
   {
     id: 'mem_satisfaction_sharing',
+    tags: ['social', 'friend'],
     text: (ctx: EventContext) => {
       const mem = ctx.memories.find(m => m.emotion === 'SATISFACTION');
       return mem
@@ -148,6 +152,7 @@ export const MEMORY_GATED_EVENTS: GameEvent[] = [
 
   {
     id: 'mem_fear_overcome',
+    tags: ['growth', 'social'],
     text: (ctx: EventContext) => {
       const mem = ctx.memories.find(m => m.emotion === 'REGRET' || m.emotion === 'GUILT');
       return mem
@@ -186,6 +191,7 @@ export const MEMORY_GATED_EVENTS: GameEvent[] = [
 
   {
     id: 'mem_school_pride_challenge',
+    tags: ['study', 'school'],
     text: (ctx: EventContext) => {
       const mem = ctx.memories.find(m => m.emotion === 'PRIDE' && (m.weight === 'HIGH' || m.weight === 'MEDIUM'));
       return mem
@@ -219,6 +225,7 @@ export const MEMORY_GATED_EVENTS: GameEvent[] = [
 
   {
     id: 'mem_friendship_guilt_repair',
+    tags: ['social', 'friend'],
     text: (ctx: EventContext) => {
       const mem = ctx.memories.find(m => m.emotion === 'GUILT');
       return mem
@@ -254,6 +261,7 @@ export const MEMORY_GATED_EVENTS: GameEvent[] = [
 
   {
     id: 'mem_exam_regret_study',
+    tags: ['exam', 'study', 'school'],
     text: (ctx: EventContext) => {
       const mem = ctx.memories.find(m => m.emotion === 'REGRET');
       return mem
@@ -289,6 +297,7 @@ export const MEMORY_GATED_EVENTS: GameEvent[] = [
 
   {
     id: 'mem_bully_pride_stand',
+    tags: ['social', 'friend', 'school'],
     text: (ctx: EventContext) => {
       const mem = ctx.memories.find(m => m.emotion === 'PRIDE');
       return mem
@@ -332,6 +341,7 @@ export const MEMORY_GATED_EVENTS: GameEvent[] = [
 
   {
     id: 'mem_talent_show_fear',
+    tags: ['creative', 'art', 'music'],
     text: (ctx: EventContext) => {
       const regret = ctx.memories.find(m => m.emotion === 'REGRET');
       return regret
@@ -368,6 +378,7 @@ export const MEMORY_GATED_EVENTS: GameEvent[] = [
 
   {
     id: 'mem_honesty_reward',
+    tags: ['social', 'growth'],
     text: (ctx: EventContext) => {
       const pride = ctx.memories.find(m => m.emotion === 'PRIDE');
       return pride
@@ -401,6 +412,7 @@ export const MEMORY_GATED_EVENTS: GameEvent[] = [
 
   {
     id: 'mem_group_project_guilt',
+    tags: ['study', 'school', 'group'],
     text: (ctx: EventContext) => {
       const guilt = ctx.memories.find(m => m.emotion === 'GUILT');
       return guilt
@@ -435,6 +447,7 @@ export const MEMORY_GATED_EVENTS: GameEvent[] = [
 
   {
     id: 'mem_teacher_conflict_regret',
+    tags: ['study', 'school'],
     text: (ctx: EventContext) => {
       const regret = ctx.memories.find(m => m.emotion === 'REGRET');
       return regret
@@ -471,6 +484,7 @@ export const MEMORY_GATED_EVENTS: GameEvent[] = [
 
   {
     id: 'mem_identity_pride_path',
+    tags: ['growth', 'social'],
     text: (ctx: EventContext) => {
       const prideCount = ctx.memories.filter(m => m.emotion === 'PRIDE').length;
       return prideCount >= 3
@@ -504,6 +518,7 @@ export const MEMORY_GATED_EVENTS: GameEvent[] = [
 
   {
     id: 'mem_regret_chain_moral',
+    tags: ['growth', 'social'],
     text: (ctx: EventContext) => {
       const regrets = ctx.memories.filter(m => m.emotion === 'REGRET');
       return regrets.length >= 2
@@ -538,6 +553,7 @@ export const MEMORY_GATED_EVENTS: GameEvent[] = [
 
   {
     id: 'mem_betrayal_trust',
+    tags: ['social', 'friend', 'relationship'],
     text: (ctx: EventContext) => {
       const guilt = ctx.memories.find(m => m.emotion === 'GUILT' && m.weight === 'HIGH');
       return guilt
@@ -571,6 +587,7 @@ export const MEMORY_GATED_EVENTS: GameEvent[] = [
 
   {
     id: 'mem_leadership_echo',
+    tags: ['social', 'group'],
     text: (ctx: EventContext) => {
       const pride = ctx.memories.find(m => m.emotion === 'PRIDE' && m.weight !== 'LOW');
       return pride
@@ -605,6 +622,7 @@ export const MEMORY_GATED_EVENTS: GameEvent[] = [
 
   {
     id: 'mem_creative_expression',
+    tags: ['art', 'creative', 'sergi'],
     text: (ctx: EventContext) => {
       const satisfaction = ctx.memories.find(m => m.emotion === 'SATISFACTION');
       return satisfaction
@@ -638,6 +656,7 @@ export const MEMORY_GATED_EVENTS: GameEvent[] = [
 
   {
     id: 'mem_peer_pressure_guilt',
+    tags: ['social', 'friend', 'group'],
     text: (ctx: EventContext) => {
       const guilt = ctx.memories.find(m => m.emotion === 'GUILT');
       return guilt
@@ -672,6 +691,7 @@ export const MEMORY_GATED_EVENTS: GameEvent[] = [
 
   {
     id: 'mem_family_conflict_growth',
+    tags: ['family', 'social'],
     text: (ctx: EventContext) => {
       const regret = ctx.memories.find(m => m.emotion === 'REGRET');
       return regret
@@ -711,6 +731,7 @@ export const MEMORY_GATED_EVENTS: GameEvent[] = [
 
   {
     id: 'mem_career_pride_vision',
+    tags: ['work', 'business'],
     text: (ctx: EventContext) => {
       const prideCount = ctx.memories.filter(m => m.emotion === 'PRIDE' && m.weight !== 'LOW').length;
       return prideCount >= 3
@@ -743,6 +764,7 @@ export const MEMORY_GATED_EVENTS: GameEvent[] = [
 
   {
     id: 'mem_regret_last_chance',
+    tags: ['study', 'school'],
     text: (ctx: EventContext) => {
       const regrets = ctx.memories.filter(m => m.emotion === 'REGRET');
       const heaviest = regrets.find(m => m.weight === 'HIGH') || regrets[0];
@@ -779,6 +801,7 @@ export const MEMORY_GATED_EVENTS: GameEvent[] = [
 
   {
     id: 'mem_friendship_satisfaction_deep',
+    tags: ['social', 'friend', 'relationship'],
     text: (ctx: EventContext) => {
       const satisfaction = ctx.memories.find(m => m.emotion === 'SATISFACTION' && m.weight !== 'LOW');
       return satisfaction
@@ -813,6 +836,7 @@ export const MEMORY_GATED_EVENTS: GameEvent[] = [
 
   {
     id: 'mem_guilt_confession',
+    tags: ['social', 'friend'],
     text: (ctx: EventContext) => {
       const guilts = ctx.memories.filter(m => m.emotion === 'GUILT');
       return guilts.length >= 2
@@ -847,6 +871,7 @@ export const MEMORY_GATED_EVENTS: GameEvent[] = [
 
   {
     id: 'mem_exam_stress_pride',
+    tags: ['exam', 'study', 'school', 'yks', 'sinav'],
     text: (ctx: EventContext) => {
       const pride = ctx.memories.find(m => m.emotion === 'PRIDE' && m.weight === 'HIGH');
       return pride

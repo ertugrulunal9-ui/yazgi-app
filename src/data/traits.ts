@@ -256,10 +256,11 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
     category: 'ACQUIRED',
     formation: {
       triggers: [
-        { type: 'STAT_THRESHOLD', statKey: 'discipline', threshold: 20, ageWindow: [7, 18] }
+        { type: 'STAT_THRESHOLD', statCondition: { stat: 'discipline', operator: '<', value: 15 }, ageWindow: [7, 18] }
       ],
       ageWindow: [7, 18],
-      pointsRequired: 1
+      pointsRequired: 2,
+      progressCooldownTurns: 2
     },
     effects: {
       energyCostMultiplier: 1.2
@@ -274,10 +275,11 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
     category: 'ACQUIRED',
     formation: {
       triggers: [
-        { type: 'STAT_THRESHOLD', statKey: 'discipline', threshold: 30, ageWindow: [7, 18] }
+        { type: 'STAT_THRESHOLD', statCondition: { stat: 'discipline', operator: '<', value: 25 }, ageWindow: [7, 18] }
       ],
       ageWindow: [7, 18],
-      pointsRequired: 2
+      pointsRequired: 3,
+      progressCooldownTurns: 2
     },
     effects: {}
   },
@@ -321,13 +323,14 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
     category: 'ACQUIRED',
     formation: {
       triggers: [
-        { type: 'STAT_THRESHOLD', statCondition: { stat: 'energy', operator: '<', value: 30 }, ageWindow: [10, 18] },
-        { type: 'ACTION', actionId: 'study', ageWindow: [10, 18] },
+        { type: 'STAT_THRESHOLD', statCondition: { stat: 'energy', operator: '<', value: 25 }, ageWindow: [11, 18] },
+        { type: 'ACTION', actionId: 'study', ageWindow: [11, 18] },
         { type: 'ACTION', actionId: 'work', ageWindow: [14, 18] },
-        { type: 'ACTION', actionId: 'coding', ageWindow: [10, 18] }
+        { type: 'ACTION', actionId: 'coding', ageWindow: [11, 18] }
       ],
-      ageWindow: [10, 18],
-      pointsRequired: 3
+      ageWindow: [11, 18],
+      pointsRequired: 4,
+      progressCooldownTurns: 2
     },
     effects: {
       energyCostMultiplier: 1.15
@@ -375,11 +378,12 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
     category: 'ACQUIRED',
     formation: {
       triggers: [
-        { type: 'EVENT_CHOICE', eventId: 'pers_bir_gun_yalniz', choice: 'yalniz_rahat', ageWindow: [10, 18] },
-        { type: 'STAT_THRESHOLD', statCondition: { stat: 'charisma', operator: '<', value: 45 }, ageWindow: [10, 18] }
+        { type: 'EVENT_CHOICE', eventId: 'pers_bir_gun_yalniz', choice: 'yalniz_rahat', ageWindow: [11, 18] },
+        { type: 'STAT_THRESHOLD', statCondition: { stat: 'charisma', operator: '<', value: 35 }, ageWindow: [11, 18] }
       ],
-      ageWindow: [10, 18],
-      pointsRequired: 2
+      ageWindow: [11, 18],
+      pointsRequired: 3,
+      progressCooldownTurns: 3
     },
     effects: {}
   },

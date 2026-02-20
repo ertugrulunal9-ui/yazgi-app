@@ -31,7 +31,7 @@ jest.mock('../src/services/analytics', () =>
 );
 
 // Mock Audio
-jest.mock('expo-av', () => require('./mocks/Audio.mock'));
+jest.mock('expo-audio', () => require('./mocks/Audio.mock'));
 
 // Mock Expo modules
 jest.mock('expo-haptics', () => ({

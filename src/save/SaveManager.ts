@@ -686,6 +686,7 @@ class SaveManager {
     return {
       ...this.metaProgression,
       lifetimeAchievementIds: [...(this.metaProgression.lifetimeAchievementIds || [])],
+      lifetimeEndingIds: [...(this.metaProgression.lifetimeEndingIds || [])],
       recentRuns: [...(this.metaProgression.recentRuns || [])],
     };
   }
@@ -696,6 +697,7 @@ class SaveManager {
         ...createInitialMetaProgression(),
         ...nextMeta,
         lifetimeAchievementIds: [...(nextMeta.lifetimeAchievementIds || [])],
+        lifetimeEndingIds: [...(nextMeta.lifetimeEndingIds || [])],
         recentRuns: [...(nextMeta.recentRuns || [])],
         updatedAt: Date.now(),
       };
@@ -1242,6 +1244,7 @@ class SaveManager {
         ...createInitialMetaProgression(),
         ...parsed,
         lifetimeAchievementIds: [...(parsed.lifetimeAchievementIds || [])],
+        lifetimeEndingIds: [...(parsed.lifetimeEndingIds || [])],
         recentRuns: [...(parsed.recentRuns || [])],
       };
     } catch (error) {

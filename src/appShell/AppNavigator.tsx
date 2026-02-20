@@ -5,10 +5,10 @@ import { Z_INDEX } from '../constants/zIndex';
 import { AppNavigationState, AppTab, GameState } from '../types';
 import { getDensityMetrics, getThemeTokens } from '../utils/themeUtils';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { CharacterCreationScreen } from '../screens/CharacterCreationScreen';
 import { EventScreen } from '../screens/EventScreen';
 import { GameOverScreen } from '../screens/GameOverScreen';
 import { GameScreen } from '../screens/GameScreen';
+import { MainMenuScreen } from '../screens/MainMenuScreen';
 
 interface AppNavigatorProps {
   appState: AppNavigationState;
@@ -32,19 +32,21 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
   onToggleSettings,
 }) => {
   if (!appState.gameStarted) {
-    return <CharacterCreationScreen theme={theme} metrics={metrics} onGameStart={onGameStart} />;
+    return <MainMenuScreen theme={theme} metrics={metrics} onGameStart={onGameStart} />;
   }
 
   if (gameState.phase === 'GAME_OVER') {
-    return <GameOverScreen theme={theme} metrics={metrics} onRestart={onRestart} />;
+    return <GameOverScreen theme={theme} metrics={metrics} onRestart={onRestart} npcs={gameState.npcs} />;
   }
 
   return (
     <View style={{ flex: 1 }}>
-      <GameScreen
-        onPhaseChange={onTabChange}
-        currentTab={appState.currentTab}
-      />
+      <ErrorBoundary>
+        <GameScreen
+          onPhaseChange={onTabChange}
+          currentTab={appState.currentTab}
+        />
+      </ErrorBoundary>
 
       <ErrorBoundary>
         <EventScreen />

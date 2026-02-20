@@ -16,6 +16,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_sosyal_davet',
+    tags: ['social', 'group'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.openness < 30) {
@@ -95,6 +96,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_sinif_sunumu',
+    tags: ['school', 'social'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.openness < 30) {
@@ -161,6 +163,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_tehlikeli_teklif',
+    tags: ['social', 'group'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.courage < 30) {
@@ -234,6 +237,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_risk_consequence',
+    tags: ['social', 'growth'],
     text: "Hatırlıyor musun o inşaata girdiğinizi? Birisi polise şikayet etmiş. İsimler soruluyor.",
     minAge: 12, maxAge: 18, difficulty: 3, rarity: 'RARE',
     choices: [
@@ -259,6 +263,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_dilenci_cocuk',
+    tags: ['social', 'growth'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.empathy > 70) {
@@ -319,6 +324,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_kopya_verme',
+    tags: ['exam', 'school', 'social'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.empathy > 70) {
@@ -383,6 +389,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_uzun_kuyruk',
+    tags: ['social', 'growth'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.patience < 30) {
@@ -432,6 +439,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_ani_firsat',
+    tags: ['social', 'growth'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.patience < 30) {
@@ -490,6 +498,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_kural_ihlali',
+    tags: ['social', 'group'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.conformity > 70) {
@@ -554,6 +563,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_breakdown_warning',
+    tags: ['growth', 'social'],
     text: (ctx: EventContext) => {
       const archetype = ctx.personality.openness < 40 ? 'içe kapanık' : ctx.personality.courage > 60 ? 'hırslı' : 'normal';
       return `Son günlerde çok yıprandın. Uyuyamıyorsun, iştahın yok. ${archetype === 'içe kapanık' ? 'İnsanlardan tamamen kaçıyorsun.' : 'Her şeye sinirleniyorsun.'} Bir şeyler değişmeli.`;
@@ -586,6 +596,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_breakdown_crisis',
+    tags: ['growth', 'social'],
     text: "PATLAMA. Bugün her şey çok fazla oldu. Gözyaşları, öfke, çaresizlik... Vücudun 'dur' diyor.",
     minAge: 12, maxAge: 18, difficulty: 5, rarity: 'RARE',
     reqStress: { min: 80 },
@@ -613,6 +624,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_hospital_stress',
+    tags: ['growth', 'social'],
     text: "Sabah kalkmaya çalıştın ama vücudun izin vermedi. Ailenne haber verdin. Hastanedesin. Doktor 'aşırı stres ve tükenmişlik' diyor.",
     minAge: 12, maxAge: 18, difficulty: 5, rarity: 'RARE',
     personalityCategory: 'BREAKDOWN',
@@ -636,6 +648,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_personality_reflection',
+    tags: ['growth', 'social'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       const archetype =
@@ -678,6 +691,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_yeni_sinif',
+    tags: ['school', 'social'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.openness < 30) {
@@ -728,6 +742,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_oyun_kaybetme',
+    tags: ['social', 'growth'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.patience < 30) {
@@ -773,6 +788,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_kardesle_paylasim',
+    tags: ['family', 'social'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.empathy > 70) {
@@ -822,6 +838,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_korkunc_film',
+    tags: ['social', 'group'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.courage < 30) {
@@ -868,6 +885,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_sira_beklemek',
+    tags: ['social', 'growth'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.conformity > 70) {
@@ -914,6 +932,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_yaratici_proje',
+    tags: ['creative', 'art'],
     text: "Serbest proje ödevi var. Farklı ve cesur bir fikrin var ama riskli. Klasik yapsan güvenli not alırsın.",
     minAge: 10, maxAge: 18, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
     personalityCategory: 'GROWTH',
@@ -945,6 +964,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_yalanla_kurtulma',
+    tags: ['social', 'growth'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.empathy > 70) {
@@ -983,6 +1003,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_uyku_saati',
+    tags: ['family', 'social'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.conformity > 70) {
@@ -1028,6 +1049,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_grup_zorbaligi',
+    tags: ['social', 'group'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.empathy > 70) {
@@ -1079,6 +1101,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_bir_gun_yalniz',
+    tags: ['social', 'growth'],
     text: (ctx: EventContext) => {
       const p = ctx.personality;
       if (p.openness < 30) {
@@ -1132,6 +1155,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_balanced_mediator',
+    tags: ['social', 'group'],
     text: 'İki arkadaşın kavga ediyor. İkisini de anlıyorsun çünkü her iki tarafı da görebiliyorsun.',
     minAge: 9, maxAge: 14, difficulty: 3, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'SOCIAL',
@@ -1163,6 +1187,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_balanced_allrounder',
+    tags: ['social', 'growth'],
     text: 'Okulda proje yarışması var. Hangi alanda yarışacağını seçmelisin ama sen her konuda idare ediyorsun...',
     minAge: 10, maxAge: 14, difficulty: 2, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'GROWTH',
@@ -1193,6 +1218,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_balanced_leadership',
+    tags: ['social', 'group'],
     text: 'Grup projesinde kimse liderlik yapmak istemiyor. Sen ne yaparsın?',
     minAge: 11, maxAge: 16, difficulty: 3, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'SOCIAL',
@@ -1224,6 +1250,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_balanced_moral_gray',
+    tags: ['moral', 'social'],
     text: 'Arkadaşın kopya çekiyor. Sana da kopya veriyor. Ne doğru ne yanlış tam olarak net değil...',
     minAge: 10, maxAge: 15, difficulty: 3, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'MORAL',
@@ -1255,6 +1282,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_balanced_hobby_dilemma',
+    tags: ['creative', 'social'],
     text: 'Birden fazla hobinle ilgileniyorsun ama hepsine zaman yetmiyor. Uzmanlaşmalı mısın yoksa çeşitlilik mi korumalısın?',
     minAge: 12, maxAge: 16, difficulty: 2, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'GROWTH',
@@ -1283,6 +1311,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_balanced_family_talk',
+    tags: ['family', 'social'],
     text: 'Ailen sana "Sen ne düşünüyorsun?" diye soruyor. Genelde herkesin fikrini dinlersin...',
     minAge: 10, maxAge: 16, difficulty: 2, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'SOCIAL',
@@ -1313,6 +1342,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_balanced_new_student',
+    tags: ['school', 'social'],
     text: 'Sınıfa yeni bir öğrenci geldi. Kimse yanına gitmedi. Sen hem merak ediyorsun hem de rahatın yerinde...',
     minAge: 8, maxAge: 13, difficulty: 2, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'SOCIAL',
@@ -1344,6 +1374,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_balanced_competition',
+    tags: ['social', 'group'],
     text: 'Bir yarışmada ikincilik kazandın. Birinciye çok yakındın. Nasıl hissediyorsun?',
     minAge: 9, maxAge: 15, difficulty: 2, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'GROWTH',
@@ -1374,6 +1405,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_balanced_career_talk',
+    tags: ['work', 'business'],
     text: 'Herkes ne olmak istediğini biliyor gibi görünüyor. Sen ise birçok şeyle ilgileniyorsun...',
     minAge: 14, maxAge: 17, difficulty: 3, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'GROWTH',
@@ -1404,6 +1436,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
 
   {
     id: 'pers_balanced_conflict_resolve',
+    tags: ['social', 'group'],
     text: 'Bir tartışmada hem haklı hem haksız olduğunu hissediyorsun. İki bakış açısını da görüyorsun.',
     minAge: 12, maxAge: 18, difficulty: 3, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'MORAL',

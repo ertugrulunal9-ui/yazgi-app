@@ -3,6 +3,7 @@ import { GameEvent } from '../types';
 export const FAMILY_ARC_EVENTS: GameEvent[] = [
   {
     id: 'fam_strict_notebook_check',
+    tags: ['family', 'school'],
     text: "Baban not defterini masaya koydu: 'Tum sayfalari gormek istiyorum.'",
     minAge: 8,
     maxAge: 10,
@@ -39,6 +40,7 @@ export const FAMILY_ARC_EVENTS: GameEvent[] = [
   },
   {
     id: 'fam_strict_no_permission',
+    tags: ['family', 'social'],
     text: "Arkadaslarin disari cagiriyor ama evde cevap net: 'Izin yok.'",
     minAge: 11,
     maxAge: 14,
@@ -89,6 +91,7 @@ export const FAMILY_ARC_EVENTS: GameEvent[] = [
   },
   {
     id: 'fam_strict_university_choice',
+    tags: ['family', 'school', 'study'],
     text: "Universite tercihi masada. Baban kendi istedigi bolumu net sekilde dayatiyor.",
     minAge: 15,
     maxAge: 16,
@@ -138,6 +141,7 @@ export const FAMILY_ARC_EVENTS: GameEvent[] = [
   },
   {
     id: 'fam_chaotic_no_dinner',
+    tags: ['family', 'social'],
     text: 'Eve geldin, mutfakta yemek yok. Herkes kendi telasinda kaybolmus.',
     minAge: 8,
     maxAge: 11,
@@ -174,6 +178,7 @@ export const FAMILY_ARC_EVENTS: GameEvent[] = [
   },
   {
     id: 'fam_chaotic_parent_conflict',
+    tags: ['family', 'social'],
     text: 'Evde tartisma buyuyor. Sesler yukseldikce ortada kaldigini hissediyorsun.',
     minAge: 12,
     maxAge: 16,
@@ -218,6 +223,7 @@ export const FAMILY_ARC_EVENTS: GameEvent[] = [
   },
   {
     id: 'fam_supportive_surprise_day',
+    tags: ['family', 'social'],
     text: 'Ailen senin icin surpriz bir gun planlamis. Her sey fazla mi, yoksa tam mi?',
     minAge: 8,
     maxAge: 11,
@@ -251,6 +257,7 @@ export const FAMILY_ARC_EVENTS: GameEvent[] = [
   },
   {
     id: 'fam_supportive_failure_response',
+    tags: ['family', 'growth'],
     text: "Basarisiz oldun. Ailen 'olur boyle' diyor ama icin hala rahat degil.",
     minAge: 12,
     maxAge: 16,
@@ -284,6 +291,7 @@ export const FAMILY_ARC_EVENTS: GameEvent[] = [
   // arc_family_strict_growth Stage 2 - İsyankar dal (conformity < 45)
   {
     id: 'fam_strict_rebel_pushback',
+    tags: ['family', 'social'],
     text: 'Arkadaslarin disari ciktilar, sen evde mahkum gibi hissediyorsun. Bu kurallara daha fazla dayanamiyorsun.',
     minAge: 11,
     maxAge: 14,
@@ -323,6 +331,7 @@ export const FAMILY_ARC_EVENTS: GameEvent[] = [
   // arc_family_chaotic_growth Stage 2 - Pragmatist dal (empathy < 45)
   {
     id: 'fam_chaotic_self_reliance',
+    tags: ['family', 'growth'],
     text: 'Evde yine kavga var. Ama artik aralara girmeyi denemiyorsun. Kendi duzenini kurmaya karar verdin.',
     minAge: 12,
     maxAge: 16,
@@ -362,6 +371,7 @@ export const FAMILY_ARC_EVENTS: GameEvent[] = [
   // arc_family_supportive_growth Stage 3 - Cesur dal (courage >= 55)
   {
     id: 'fam_supportive_growth_challenge',
+    tags: ['family', 'social'],
     text: 'Ailen seni destekliyor ama sen daha fazlasini istiyorsun. Yeni bir hedef koymak istiyorsun.',
     minAge: 13,
     maxAge: 16,
@@ -402,6 +412,7 @@ export const FAMILY_ARC_EVENTS: GameEvent[] = [
   // arc_family_supportive_growth Stage 3 - Temkinli dal (courage < 55)
   {
     id: 'fam_supportive_calm_foundation',
+    tags: ['family', 'social'],
     text: "Ailen 'Seni destekliyoruz' diyor ama ne istediginden emin degilsin. Temkinli adimlar atiyorsun.",
     minAge: 13,
     maxAge: 16,
@@ -439,6 +450,7 @@ export const FAMILY_ARC_EVENTS: GameEvent[] = [
 
   {
     id: 'fam_evo_strict_softening',
+    tags: ['family', 'social'],
     text: "Baban bu kez emir vermedi. Sessizce yanina oturup mac acip 'izleyelim mi?' dedi.",
     minAge: 10,
     maxAge: 18,
@@ -471,6 +483,7 @@ export const FAMILY_ARC_EVENTS: GameEvent[] = [
   },
   {
     id: 'fam_evo_family_silence',
+    tags: ['family', 'social'],
     text: 'Evde artik kimse kimseyle konusmuyor. Sessizlik bogucu bir duvar gibi.',
     minAge: 8,
     maxAge: 18,
