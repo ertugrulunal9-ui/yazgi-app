@@ -25,7 +25,7 @@ export const trackSpecialProgress = (
 
   // Track "comeback_kid" - grade recovery
   if (prevStats) {
-    const subjects: Array<keyof SchoolGrades> = ['math', 'science', 'language'];
+    const subjects: (keyof SchoolGrades)[] = ['math', 'science', 'language'];
     subjects.forEach(subject => {
       if (gameState.schoolGrades[subject] >= 90) {
         newGameState.achievementProgress['comeback_kid'] = 1;

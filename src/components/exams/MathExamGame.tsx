@@ -148,7 +148,7 @@ const FallingBalloon: React.FC<{
         return () => {
             cancelAnimation(translateY);
         };
-    }, [isActive]);
+    }, [isActive, onMissed, speed, translateY]);
 
     const animatedStyle = useAnimatedStyle(() => ({
         transform: [
@@ -192,6 +192,7 @@ const MathExamGame: React.FC<MathExamGameProps> = ({
     const [userAnswer, setUserAnswer] = useState('');
     const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
     const [questionId, setQuestionId] = useState(0);
+    const hasInitialized = useRef(false);
 
     const inputRef = useRef<TextInput>(null);
     const shakeX = useSharedValue(0);
@@ -218,12 +219,14 @@ const MathExamGame: React.FC<MathExamGameProps> = ({
         setUserAnswer('');
         setFeedback(null);
         // Focus is handled by useEffect when feedback becomes null
-    }, [gameState.currentQuestion, gameState.totalQuestions, difficulty, age, questionId]);
+    }, [gameState.currentQuestion, gameState.totalQuestions, difficulty, age, questionId, setGameState]);
 
     // Start with first question
     useEffect(() => {
+        if (hasInitialized.current) return;
+        hasInitialized.current = true;
         generateNewQuestion();
-    }, []);
+    }, [generateNewQuestion]);
 
     // Re-focus input when feedback is cleared and we have a new question
     useEffect(() => {
@@ -299,7 +302,7 @@ const MathExamGame: React.FC<MathExamGameProps> = ({
                 setTimeout(generateNewQuestion, 1200);
             }
         }
-    }, [currentQuestion, userAnswer, gameState.streak, gameState.currentQuestion, gameState.totalQuestions, difficulty]);
+    }, [currentQuestion, userAnswer, gameState.streak, gameState.currentQuestion, gameState.totalQuestions, difficulty, feedbackScale, generateNewQuestion, setGameState, shakeX]);
 
     // Handle balloon missed (time out)
     const handleBalloonMissed = useCallback(() => {
@@ -318,7 +321,7 @@ const MathExamGame: React.FC<MathExamGameProps> = ({
         if (!isLastQuestion) {
             setTimeout(generateNewQuestion, 500);
         }
-    }, [gameState.currentQuestion, gameState.totalQuestions]);
+    }, [gameState.currentQuestion, gameState.totalQuestions, generateNewQuestion, setGameState]);
 
     const shakeAnimatedStyle = useAnimatedStyle(() => ({
         transform: [{ translateX: shakeX.value }],
@@ -350,7 +353,7 @@ const MathExamGame: React.FC<MathExamGameProps> = ({
                 />
 
                 {/* Feedback overlay */}
-                <Animated.View style={[styles.feedbackOverlay, feedbackAnimatedStyle]}>
+                <Animated.View pointerEvents="none" style={[styles.feedbackOverlay, feedbackAnimatedStyle]}>
                     <Text style={styles.feedbackEmoji}>
                         {feedback === 'correct' ? '✅' : '❌'}
                     </Text>

@@ -315,4 +315,6 @@ export const Dashboard = React.memo<DashboardProps>(({ stats, gameState, playerN
   );
 });
 
+Dashboard.displayName = 'Dashboard';
+
 export default Dashboard;

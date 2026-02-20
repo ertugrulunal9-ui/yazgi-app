@@ -1,0 +1,517 @@
+import {
+  ExamGameType,
+  SubAction,
+  getActionEffectiveMinAge,
+  resolveActionEffectForFamily,
+} from '../data/actions';
+import { getEffectiveOwnedItems, getItem } from '../data/items';
+import { applyMomentumSignal, resolveMomentumSignal } from '../systems/PersonalityMomentumEngine';
+import { StatEngine } from '../systems/StatEngine';
+import { FamilyWealth, GameState, PersonalityShift, SchoolGrades, Skills, Stats } from '../types';
+import {
+  applySkillUpdates,
+  applySkillsToHubAction,
+  checkTraitFormation,
+  getMaxEnergy,
+} from '../utils/gameUtils';
+import { calculateEndingErrorDebt } from '../utils/endingResolver';
+import { applyPersonalityEffects, getPersonalityAxisName, updateStress } from '../utils/personalitySystem';
+
+const TURN_LIMITED_ACTIONS = new Set(['baby_eat', 'baby_sleep', 'ask_allowance']);
+const MONEY_GAIN_MULTIPLIER_BY_WEALTH: Record<FamilyWealth, number> = {
+  POOR: 0.38,
+  MIDDLE: 1,
+  RICH: 1.15,
+};
+
+type ActionResultStatus = 'success' | 'blocked' | 'open_exam';
+type ActionErrorType =
+  | 'ALREADY_USED_THIS_TURN'
+  | 'NOT_ENOUGH_ENERGY'
+  | 'NOT_ENOUGH_MONEY'
+  | 'MISSING_REQUIRED_ITEM'
+  | 'ALREADY_OWNED_ITEM'
+  | 'AGE_LOCKED';
+
+export interface ActionCommand {
+  execute(context: ActionContext): ActionResult;
+}
+
+export interface ActionContext {
+  action: SubAction;
+  currentStats: Stats;
+  gameState: GameState;
+}
+
+export interface ActionResult {
+  status: ActionResultStatus;
+  newStats: Stats;
+  gameStateUpdates: Partial<GameState>;
+  feedbackMessage: string;
+  traitProgressUpdates: string[];
+  newTraits: string[];
+  adjustedEnergyCost: number;
+  totalSkillGain: number;
+  opensExamGame?: ExamGameType;
+  errorType?: ActionErrorType;
+}
+
+export class HubActionCommand implements ActionCommand {
+  execute(context: ActionContext): ActionResult {
+    const { action, currentStats, gameState } = context;
+
+    if (TURN_LIMITED_ACTIONS.has(action.id)) {
+      const alreadyUsedThisTurn = (gameState.actionHistory || []).some(
+        entry => entry.turn === gameState.turn && entry.actionId === action.id
+      );
+      if (alreadyUsedThisTurn) {
+        return this.createBlockedResult(
+          currentStats,
+          'Bu turda bu aktiviteyi zaten kullandin.',
+          'ALREADY_USED_THIS_TURN'
+        );
+      }
+    }
+
+    const ownedItems = getEffectiveOwnedItems(gameState.inventory || [], gameState.family?.wealth);
+    const requiredAge = getActionEffectiveMinAge(action, ownedItems);
+
+    if (requiredAge !== undefined && gameState.age < requiredAge) {
+      return this.createBlockedResult(
+        currentStats,
+        `Bu aksiyon ${requiredAge} yasindan sonra acilir.`,
+        'AGE_LOCKED'
+      );
+    }
+
+    const missingRequiredItem = (action.requiredItemIds || []).find(itemId => !ownedItems.includes(itemId));
+    if (missingRequiredItem) {
+      const missingItemName = getItem(missingRequiredItem)?.name || missingRequiredItem;
+      return this.createBlockedResult(
+        currentStats,
+        `${missingItemName} olmadan bu aksiyonu yapamazsin.`,
+        'MISSING_REQUIRED_ITEM'
+      );
+    }
+
+    if (action.purchaseItemId && ownedItems.includes(action.purchaseItemId)) {
+      const itemName = getItem(action.purchaseItemId)?.name || 'Bu esya';
+      return this.createBlockedResult(
+        currentStats,
+        `${itemName} zaten sende var.`,
+        'ALREADY_OWNED_ITEM'
+      );
+    }
+
+    const baseEffect = resolveActionEffectForFamily(action, gameState.family?.wealth);
+    const adjusted = applySkillsToHubAction(
+      action.id,
+      baseEffect,
+      action.energyCost,
+      action.gradeUpdates as Partial<SchoolGrades> | undefined,
+      gameState.skills
+    );
+    const adjustedEnergyCost = adjusted.energyCost;
+    const adjustedEffect = adjusted.effect;
+    const adjustedGrades = adjusted.gradeUpdates;
+
+    if (currentStats.energy < adjustedEnergyCost) {
+      return this.createBlockedResult(
+        currentStats,
+        'Yeterli enerjin yok! Gunu bitirip dinlenmelisin.',
+        'NOT_ENOUGH_ENERGY',
+        adjustedEnergyCost
+      );
+    }
+
+    const requiredMoney = adjustedEffect.money !== undefined && adjustedEffect.money < 0
+      ? Math.abs(adjustedEffect.money)
+      : 0;
+    if (requiredMoney > currentStats.money) {
+      return this.createBlockedResult(
+        currentStats,
+        `Bu aksiyon icin en az ${requiredMoney} para gerekli.`,
+        'NOT_ENOUGH_MONEY',
+        adjustedEnergyCost
+      );
+    }
+
+    if (action.opensExamGame) {
+      return {
+        status: 'open_exam',
+        newStats: currentStats,
+        gameStateUpdates: {},
+        feedbackMessage: action.feedback,
+        traitProgressUpdates: [],
+        newTraits: [],
+        adjustedEnergyCost,
+        totalSkillGain: 0,
+        opensExamGame: action.opensExamGame,
+      };
+    }
+
+    const allowanceOutcome = action.id === 'ask_allowance'
+      ? this.resolveAllowanceOutcome(currentStats, gameState)
+      : null;
+    const feedbackBase = allowanceOutcome?.feedback ?? action.feedback;
+
+    let effectiveEffect: Partial<Stats> = { ...adjustedEffect };
+    if (allowanceOutcome) {
+      effectiveEffect.money = allowanceOutcome.money;
+      if (allowanceOutcome.familyRelationDelta !== 0) {
+        effectiveEffect.familyRelation = (effectiveEffect.familyRelation ?? 0) + allowanceOutcome.familyRelationDelta;
+      }
+    }
+    if (adjustedEnergyCost > 0 && (effectiveEffect.energy === undefined || effectiveEffect.energy < 0)) {
+      effectiveEffect.energy = -adjustedEnergyCost;
+    }
+
+    const bonusAdjusted = this.applyItemBonuses(
+      action,
+      ownedItems,
+      effectiveEffect,
+      action.skillUpdates
+    );
+    effectiveEffect = bonusAdjusted.effect;
+    effectiveEffect = this.applyFamilyWealthEconomy(action.id, effectiveEffect, gameState);
+    const effectiveSkillUpdates = bonusAdjusted.skillUpdates;
+
+    const momentumResult = applyMomentumSignal(
+      gameState.personalityState,
+      resolveMomentumSignal({
+        momentumTag: action.momentumTag,
+        personalityEffects: action.personalityEffects,
+        statEffect: effectiveEffect,
+      })
+    );
+
+    let statsAfterAction = currentStats;
+    const burdenRisk = calculateEndingErrorDebt(gameState, currentStats).total;
+    if (Object.keys(effectiveEffect).length > 0) {
+      const statResult = StatEngine.applyChanges(currentStats, effectiveEffect, {
+        age: gameState.age,
+        family: gameState.family,
+        traits: gameState.traits,
+        personalityState: momentumResult.nextState,
+        burdenRisk,
+      });
+      statsAfterAction = statResult.newStats;
+    }
+
+    const skillResult = effectiveSkillUpdates
+      ? applySkillUpdates(gameState.skills, effectiveSkillUpdates, gameState.traits)
+      : { newSkills: gameState.skills, appliedChanges: {} };
+    const nextSkills = skillResult.newSkills;
+
+    const nextStress = action.stressEffect !== undefined
+      ? updateStress(gameState.stress, action.stressEffect, `Hub Action: ${action.id}`, gameState.turn)
+      : gameState.stress;
+    let nextPersonality = gameState.personality;
+    let personalityShifts: PersonalityShift[] = [];
+
+    if (action.personalityEffects && action.personalityEffects.length > 0) {
+      const personalityResult = applyPersonalityEffects(
+        gameState.personality,
+        action.personalityEffects,
+        gameState.age,
+        gameState.turn,
+        `Hub Action: ${action.id}`
+      );
+      nextPersonality = personalityResult.newPersonality;
+      personalityShifts = personalityResult.shifts;
+    }
+
+    let nextGrades = gameState.schoolGrades;
+    if (adjustedGrades) {
+      const newGrades = { ...gameState.schoolGrades };
+      Object.entries(adjustedGrades).forEach(([subject, value]) => {
+        if (typeof value !== 'number') return;
+        const key = subject as keyof SchoolGrades;
+        newGrades[key] = Math.min(100, Math.max(0, newGrades[key] + value));
+      });
+      nextGrades = newGrades;
+    }
+
+    const traitResult = checkTraitFormation(
+      action.id,
+      null,
+      gameState,
+      statsAfterAction
+    );
+    const newTraits = [...gameState.traits, ...traitResult.newTraits];
+    const nextMaxEnergy = getMaxEnergy(gameState.age, gameState.family, newTraits);
+    const finalStats = statsAfterAction.energy > nextMaxEnergy
+      ? { ...statsAfterAction, energy: nextMaxEnergy }
+      : statsAfterAction;
+
+    const historyEntry = {
+      id: `log_${Date.now()}`,
+      age: gameState.age,
+      message: feedbackBase,
+      type: (action.effect?.health ?? 0) > 0 ? 'positive' as const : 'neutral' as const,
+    };
+    const nextActionHistory = [
+      ...(gameState.actionHistory || []),
+      { actionId: action.id, age: gameState.age, turn: gameState.turn },
+    ];
+
+    const statNameMap: Record<string, string> = {
+      health: 'Saglik',
+      energy: 'Enerji',
+      intelligence: 'Zeka',
+      charisma: 'Karizma',
+      discipline: 'Disiplin',
+      money: 'Para',
+      familyRelation: 'Aile',
+    };
+
+    const statChanges: string[] = [];
+    if (Object.keys(effectiveEffect).length > 0) {
+      Object.entries(effectiveEffect).forEach(([key, value]) => {
+        if (typeof value !== 'number' || value === 0) return;
+        const displayValue = value > 0 ? `+${value}` : `${value}`;
+        const statName = statNameMap[key] || key;
+        statChanges.push(`${statName} ${displayValue}`);
+      });
+    }
+    if (action.stressEffect !== undefined && action.stressEffect !== 0) {
+      const stressText = action.stressEffect > 0
+        ? `+${action.stressEffect}`
+        : `${action.stressEffect}`;
+      statChanges.push(`Stres ${stressText}`);
+    }
+    if (personalityShifts.length > 0) {
+      personalityShifts.forEach(shift => {
+        const delta = shift.newValue - shift.oldValue;
+        if (delta === 0) return;
+        const sign = delta > 0 ? `+${delta}` : `${delta}`;
+        statChanges.push(`${getPersonalityAxisName(shift.axis)} ${sign}`);
+      });
+    }
+
+    const feedbackMessage = statChanges.length > 0
+      ? `${feedbackBase}\n\n${statChanges.join(' | ')}`
+      : feedbackBase;
+
+    const totalSkillGain = effectiveSkillUpdates
+      ? Object.values(effectiveSkillUpdates).reduce(
+        (sum, value) => sum + (typeof value === 'number' ? value : 0),
+        0
+      )
+      : 0;
+
+    const nextInventory = action.purchaseItemId
+      ? Array.from(new Set([...(gameState.inventory || []), action.purchaseItemId]))
+      : gameState.inventory;
+
+    return {
+      status: 'success',
+      newStats: finalStats,
+      gameStateUpdates: {
+        historyLog: [...gameState.historyLog, historyEntry],
+        actionHistory: nextActionHistory,
+        skills: nextSkills,
+        schoolGrades: nextGrades,
+        traits: newTraits,
+        traitProgress: traitResult.updatedProgress,
+        maxEnergy: nextMaxEnergy,
+        stress: nextStress,
+        personality: nextPersonality,
+        personalityHistory: [...gameState.personalityHistory, ...personalityShifts],
+        personalityState: momentumResult.nextState,
+        ...(action.purchaseItemId ? { inventory: nextInventory } : {}),
+      },
+      feedbackMessage,
+      traitProgressUpdates: traitResult.progressUpdates,
+      newTraits: traitResult.newTraits,
+      adjustedEnergyCost,
+      totalSkillGain,
+    };
+  }
+
+  private applyItemBonuses(
+    action: SubAction,
+    ownedItems: string[],
+    effect: Partial<Stats>,
+    skillUpdates?: Partial<Skills>
+  ): { effect: Partial<Stats>; skillUpdates?: Partial<Skills> } {
+    const nextEffect: Partial<Stats> = { ...effect };
+    const nextSkillUpdates = skillUpdates ? { ...skillUpdates } : undefined;
+
+    const scaleSkillGain = (skillKey: keyof Skills, multiplier: number) => {
+      if (!nextSkillUpdates) return;
+      const value = nextSkillUpdates[skillKey];
+      if (typeof value !== 'number' || value <= 0) return;
+      nextSkillUpdates[skillKey] = Math.ceil(value * multiplier);
+    };
+
+    if (action.id === 'arts_draw' && ownedItems.includes('item_art_set')) {
+      scaleSkillGain('art', 1.5);
+    }
+
+    if ((action.id === 'study_book' || action.id === 'family_story') && ownedItems.includes('item_story_book')) {
+      scaleSkillGain('reading', 2);
+    }
+
+    if (ownedItems.includes('item_computer')) {
+      scaleSkillGain('coding', 1.5);
+      scaleSkillGain('design', 1.5);
+    }
+
+    if (ownedItems.includes('item_instrument')) {
+      scaleSkillGain('music', 1.5);
+    }
+
+    if (action.id.startsWith('sports_') && ownedItems.includes('item_sports_gear')) {
+      Object.entries(nextEffect).forEach(([key, value]) => {
+        if (typeof value !== 'number' || value <= 0) return;
+        if (key === 'energy' || key === 'money') return;
+        nextEffect[key as keyof Stats] = Math.ceil(value * 1.2);
+      });
+
+      if (nextSkillUpdates) {
+        Object.entries(nextSkillUpdates).forEach(([key, value]) => {
+          if (typeof value !== 'number' || value <= 0) return;
+          nextSkillUpdates[key as keyof Skills] = Math.ceil(value * 1.2);
+        });
+      }
+    }
+
+    return { effect: nextEffect, skillUpdates: nextSkillUpdates };
+  }
+
+  private resolveAllowanceOutcome(
+    currentStats: Stats,
+    gameState: GameState
+  ): { money: number; familyRelationDelta: number; feedback: string } {
+    const family = gameState.family;
+    if (!family) {
+      return {
+        money: 0,
+        familyRelationDelta: 0,
+        feedback: 'Harclik isteyecek bir aile ortami yok.',
+      };
+    }
+
+    const wealthAllowanceMultiplier = family.wealth === 'POOR'
+      ? 0.4
+      : family.wealth === 'RICH'
+        ? 1.15
+        : 1;
+    const baseAllowance = Math.max(0, Math.round((family.allowance || 0) * wealthAllowanceMultiplier));
+    const charismaBonus = currentStats.charisma > 60 ? 1.2 : 1;
+    const relationPenalty = currentStats.familyRelation < 30
+      ? (family.wealth === 'POOR' ? 0.3 : 0.5)
+      : 1;
+    const roll = Math.random();
+    const hardshipRollBlocked = family.wealth === 'POOR' && roll < 0.4;
+
+    if (hardshipRollBlocked) {
+      return {
+        money: 0,
+        familyRelationDelta: -1,
+        feedback: 'Evde butce sikisti, ailen bu tur harclik veremedi.',
+      };
+    }
+
+    if (family.dynamic === 'STRICT') {
+      if (roll < (family.wealth === 'POOR' ? 0.75 : 0.5)) {
+        return {
+          money: 0,
+          familyRelationDelta: -1,
+          feedback: 'Ailen bu kez harcligi reddetti: once sorumluluklarini tamamla.',
+        };
+      }
+
+      return {
+        money: Math.max(0, Math.round(baseAllowance * 0.8 * relationPenalty)),
+        familyRelationDelta: 0,
+        feedback: 'Ailen bu kez kontrollu bir harclik verdi.',
+      };
+    }
+
+    if (family.dynamic === 'SUPPORTIVE') {
+      if (roll < 0.8) {
+        return {
+          money: Math.max(0, Math.round(baseAllowance * charismaBonus * relationPenalty)),
+          familyRelationDelta: 1,
+          feedback: 'Ailen destek oldu: biriktirmeyi de unutma dediler.',
+        };
+      }
+
+      return {
+        money: 0,
+        familyRelationDelta: 0,
+        feedback: 'Ailen bu tur para veremedi ama seni cesaretlendirdi.',
+      };
+    }
+
+    if (roll < 0.3) {
+      return {
+        money: Math.max(0, Math.round(baseAllowance * 1.5 * relationPenalty)),
+        familyRelationDelta: 0,
+        feedback: 'Kaotik bir anda beklediginden fazla harclik geldi.',
+      };
+    }
+
+    if (roll < 0.7) {
+      return {
+        money: Math.max(0, Math.round(baseAllowance * 0.5 * relationPenalty)),
+        familyRelationDelta: 0,
+        feedback: 'Ailen umursamaz bir sekilde az miktar para verdi.',
+      };
+    }
+
+    return {
+      money: 0,
+      familyRelationDelta: -1,
+      feedback: 'Ailen harclik istemeni unuttu.',
+    };
+  }
+
+  private applyFamilyWealthEconomy(
+    actionId: string,
+    effect: Partial<Stats>,
+    gameState: GameState
+  ): Partial<Stats> {
+    const family = gameState.family;
+    if (!family) return effect;
+    const baseMoneyDelta = typeof effect.money === 'number' ? effect.money : 0;
+    const upkeepCost = family.wealth === 'POOR' && actionId !== 'ask_allowance' ? 3 : 0;
+    let adjustedMoney = baseMoneyDelta - upkeepCost;
+
+    if (adjustedMoney > 0) {
+      const wealthMultiplier = MONEY_GAIN_MULTIPLIER_BY_WEALTH[family.wealth] ?? 1;
+      const sourceMultiplier = actionId.startsWith('work_') ? 1 : 0.85;
+      adjustedMoney = Math.max(1, Math.round(adjustedMoney * wealthMultiplier * sourceMultiplier));
+    }
+
+    if (typeof effect.money !== 'number' && adjustedMoney === 0) {
+      return effect;
+    }
+
+    return {
+      ...effect,
+      money: adjustedMoney,
+    };
+  }
+
+  private createBlockedResult(
+    stats: Stats,
+    feedbackMessage: string,
+    errorType: ActionErrorType,
+    adjustedEnergyCost = 0
+  ): ActionResult {
+    return {
+      status: 'blocked',
+      newStats: stats,
+      gameStateUpdates: {},
+      feedbackMessage,
+      traitProgressUpdates: [],
+      newTraits: [],
+      adjustedEnergyCost,
+      totalSkillGain: 0,
+      errorType,
+    };
+  }
+}

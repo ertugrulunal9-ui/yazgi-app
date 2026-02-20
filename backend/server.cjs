@@ -16,6 +16,7 @@ const ALLOW_DEV_TOKENS = process.env.CLOUDSYNC_ALLOW_DEV_TOKENS === 'true';
 const REQUIRE_TLS = process.env.CLOUDSYNC_REQUIRE_TLS !== 'false';
 const TRUST_PROXY = process.env.CLOUDSYNC_TRUST_PROXY !== 'false';
 const ENABLE_HSTS = process.env.CLOUDSYNC_ENABLE_HSTS !== 'false';
+const TRUSTED_PROXY_IPS = parseTrustedProxyIps(process.env.CLOUDSYNC_TRUSTED_PROXY_IPS);
 
 const JWT_HS256_SECRET = process.env.CLOUDSYNC_JWT_HS256_SECRET || '';
 const JWT_HS256_SECRETS = parseJwtSecrets(process.env.CLOUDSYNC_JWT_HS256_SECRETS, JWT_HS256_SECRET);
@@ -63,6 +64,10 @@ const RATE_LIMITS = {
 const rateStore = new Map();
 const saveStore = new Map();
 const entitlementStore = new Map();
+const processedWebhookEvents = new Map();
+
+const WEBHOOK_EVENT_CACHE_LIMIT = Number(process.env.CLOUDSYNC_WEBHOOK_EVENT_CACHE_LIMIT || 5000);
+const WEBHOOK_EVENT_TTL_MS = Number(process.env.CLOUDSYNC_WEBHOOK_EVENT_TTL_MS || 7 * 24 * 60 * 60_000);
 
 let persistQueue = Promise.resolve();
 
@@ -81,6 +86,15 @@ function assertProductionSecurity() {
   if (!REQUIRE_TLS) {
     throw new Error('CLOUDSYNC_REQUIRE_TLS must remain true in production');
   }
+  if (EXPECTED_ISSUERS.length === 0) {
+    throw new Error('CLOUDSYNC_JWT_ISSUERS must be configured in production');
+  }
+  if (EXPECTED_AUDIENCES.length === 0) {
+    throw new Error('CLOUDSYNC_JWT_AUDIENCES must be configured in production');
+  }
+  if (TRUST_PROXY && TRUSTED_PROXY_IPS.size === 0) {
+    throw new Error('CLOUDSYNC_TRUSTED_PROXY_IPS must contain at least one trusted proxy when TRUST_PROXY is enabled');
+  }
 }
 
 function splitCsv(value) {
@@ -89,6 +103,38 @@ function splitCsv(value) {
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function normalizeIp(value) {
+  if (typeof value !== 'string') return '';
+  let normalized = value.trim().toLowerCase();
+  if (!normalized) return '';
+  if (normalized.startsWith('[') && normalized.endsWith(']')) {
+    normalized = normalized.slice(1, -1);
+  }
+  const zoneIdIndex = normalized.indexOf('%');
+  if (zoneIdIndex >= 0) {
+    normalized = normalized.slice(0, zoneIdIndex);
+  }
+  return normalized;
+}
+
+function parseTrustedProxyIps(raw) {
+  const fallback = '127.0.0.1,::1,::ffff:127.0.0.1';
+  const entries = splitCsv(raw || fallback);
+  const trusted = new Set();
+  for (const entry of entries) {
+    const normalized = normalizeIp(entry);
+    if (!normalized) continue;
+    trusted.add(normalized);
+    if (normalized.startsWith('::ffff:') && normalized.includes('.')) {
+      trusted.add(normalized.slice(7));
+    }
+    if (/^\d+\.\d+\.\d+\.\d+$/.test(normalized)) {
+      trusted.add(`::ffff:${normalized}`);
+    }
+  }
+  return trusted;
 }
 
 function parseEntitlementMap(raw) {
@@ -203,12 +249,143 @@ function safeDecodeURIComponent(value) {
   }
 }
 
+function getSocketIp(req) {
+  const remoteAddress = req && req.socket && typeof req.socket.remoteAddress === 'string'
+    ? req.socket.remoteAddress
+    : '';
+  const normalized = normalizeIp(remoteAddress);
+  return normalized || 'unknown';
+}
+
+function shouldTrustForwardedHeaders(req) {
+  if (!TRUST_PROXY) return false;
+  const socketIp = getSocketIp(req);
+  if (socketIp === 'unknown') return false;
+  return TRUSTED_PROXY_IPS.has(socketIp);
+}
+
+function getClientIp(req) {
+  if (shouldTrustForwardedHeaders(req)) {
+    const forwarded = req.headers['x-forwarded-for'];
+    if (typeof forwarded === 'string' && forwarded.length > 0) {
+      const firstHop = normalizeIp(forwarded.split(',')[0] || '');
+      if (firstHop) {
+        return firstHop;
+      }
+    }
+  }
+  return getSocketIp(req);
+}
+
+function isLoopbackIp(ip) {
+  const normalized = normalizeIp(ip);
+  if (!normalized) return false;
+  if (normalized === '::1' || normalized === '127.0.0.1') return true;
+  return normalized === '::ffff:127.0.0.1';
+}
+
+function pruneWebhookEventCache(nowMs = Date.now()) {
+  for (const [eventId, seenAt] of processedWebhookEvents.entries()) {
+    if (!Number.isFinite(seenAt) || nowMs - seenAt > WEBHOOK_EVENT_TTL_MS) {
+      processedWebhookEvents.delete(eventId);
+    }
+  }
+  const maxEntries = Number.isFinite(WEBHOOK_EVENT_CACHE_LIMIT) && WEBHOOK_EVENT_CACHE_LIMIT > 0
+    ? WEBHOOK_EVENT_CACHE_LIMIT
+    : 5000;
+  if (processedWebhookEvents.size <= maxEntries) return;
+  const overflow = processedWebhookEvents.size - maxEntries;
+  let removed = 0;
+  for (const key of processedWebhookEvents.keys()) {
+    processedWebhookEvents.delete(key);
+    removed += 1;
+    if (removed >= overflow) break;
+  }
+}
+
+function hasProcessedWebhookEvent(eventId, nowMs = Date.now()) {
+  if (!eventId) return false;
+  pruneWebhookEventCache(nowMs);
+  const seenAt = processedWebhookEvents.get(eventId);
+  if (!Number.isFinite(seenAt)) return false;
+  if (nowMs - seenAt > WEBHOOK_EVENT_TTL_MS) {
+    processedWebhookEvents.delete(eventId);
+    return false;
+  }
+  return true;
+}
+
+function rememberWebhookEvent(eventId, seenAtMs = Date.now()) {
+  if (!eventId) return;
+  processedWebhookEvents.set(eventId, seenAtMs);
+  pruneWebhookEventCache(seenAtMs);
+}
+
+function shouldApplyWebhookUpdate(existingRecord, update) {
+  if (!update) {
+    return { apply: false, reason: 'missing_update' };
+  }
+  if (update.eventId && hasProcessedWebhookEvent(update.eventId)) {
+    return { apply: false, reason: 'duplicate_event_id' };
+  }
+  if (update.eventId && existingRecord && existingRecord.lastEventId === update.eventId) {
+    return { apply: false, reason: 'duplicate_last_event_id' };
+  }
+  if (
+    Number.isFinite(update.eventTimestampMs) &&
+    existingRecord &&
+    Number.isFinite(existingRecord.lastEventTimestampMs) &&
+    update.eventTimestampMs <= existingRecord.lastEventTimestampMs
+  ) {
+    return { apply: false, reason: 'stale_event_timestamp' };
+  }
+  return { apply: true, reason: 'accepted' };
+}
+
+function normalizeEventTimestampMs(value) {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    return Math.floor(value);
+  }
+  if (typeof value === 'string') {
+    const numeric = Number(value.trim());
+    if (Number.isFinite(numeric) && numeric > 0) {
+      return Math.floor(numeric);
+    }
+    const parsed = Date.parse(value);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return Math.floor(parsed);
+    }
+  }
+  return null;
+}
+
+function resolveEventTimestampMs(payload, event) {
+  const candidates = [
+    event && event.event_timestamp_ms,
+    event && event.event_timestamp,
+    event && event.purchased_at_ms,
+    event && event.purchased_at,
+    payload && payload.event_timestamp_ms,
+    payload && payload.event_timestamp,
+    payload && payload.purchased_at_ms,
+    payload && payload.purchased_at,
+  ];
+  for (const candidate of candidates) {
+    const normalized = normalizeEventTimestampMs(candidate);
+    if (normalized !== null) {
+      return normalized;
+    }
+  }
+  return null;
+}
+
 function getClientIp(req) {
   const forwarded = req.headers['x-forwarded-for'];
-  if (typeof forwarded === 'string' && forwarded.length > 0) {
-    return forwarded.split(',')[0].trim();
+  if (typeof forwarded === 'string' && forwarded.length > 0 && shouldTrustForwardedHeaders(req)) {
+    const firstHop = normalizeIp(forwarded.split(',')[0] || '');
+    if (firstHop) return firstHop;
   }
-  return req.socket.remoteAddress || 'unknown';
+  return getSocketIp(req);
 }
 
 function rateLimitCheck(bucketKey, actorKey) {
@@ -232,14 +409,14 @@ function rateLimitCheck(bucketKey, actorKey) {
 }
 
 function isLoopbackRequest(req) {
-  const ip = getClientIp(req);
+  const ip = getSocketIp(req);
   if (!ip) return false;
-  return ip === '127.0.0.1' || ip === '::1' || ip.startsWith('::ffff:127.0.0.1');
+  return isLoopbackIp(ip);
 }
 
 function isSecureTransport(req) {
   if (req.socket && req.socket.encrypted) return true;
-  if (!TRUST_PROXY) return false;
+  if (!shouldTrustForwardedHeaders(req)) return false;
   const protoHeader = req.headers['x-forwarded-proto'];
   if (typeof protoHeader !== 'string') return false;
   const proto = protoHeader.split(',')[0].trim().toLowerCase();
@@ -356,6 +533,7 @@ function defaultEntitlementRecord(userId) {
     updatedAt: nowIso(),
     revision: 0,
     lastEventId: null,
+    lastEventTimestampMs: null,
   };
 }
 
@@ -381,7 +559,7 @@ function normalizeProductCandidates(candidates) {
   return Array.from(set).sort();
 }
 
-function setEntitlementRecord(userId, products, source, lastEventId = null) {
+function setEntitlementRecord(userId, products, source, lastEventId = null, lastEventTimestampMs = null) {
   const existing = entitlementStore.get(userId) || defaultEntitlementRecord(userId);
   const normalizedProducts = normalizeProductCandidates(products);
   const next = {
@@ -392,6 +570,9 @@ function setEntitlementRecord(userId, products, source, lastEventId = null) {
     updatedAt: nowIso(),
     revision: existing.revision + 1,
     lastEventId: lastEventId || existing.lastEventId || null,
+    lastEventTimestampMs: Number.isFinite(lastEventTimestampMs)
+      ? lastEventTimestampMs
+      : existing.lastEventTimestampMs || null,
   };
   entitlementStore.set(userId, next);
   return next;
@@ -575,17 +756,26 @@ function validateClaims(payload) {
   }
 
   const nowSec = Math.floor(Date.now() / 1000);
+  if (IS_PROD && typeof payload.exp !== 'number') {
+    throw new Error('Token missing exp claim');
+  }
   if (typeof payload.exp === 'number' && nowSec >= payload.exp) {
     throw new Error('Token expired');
   }
   if (typeof payload.nbf === 'number' && nowSec < payload.nbf) {
     throw new Error('Token not active yet');
   }
+  if (IS_PROD && typeof payload.iss !== 'string') {
+    throw new Error('Token missing iss claim');
+  }
   if (
     EXPECTED_ISSUERS.length > 0 &&
     (typeof payload.iss !== 'string' || !EXPECTED_ISSUERS.includes(payload.iss))
   ) {
     throw new Error('Token issuer is not allowed');
+  }
+  if (IS_PROD && payload.aud === undefined) {
+    throw new Error('Token missing aud claim');
   }
   if (!hasExpectedAudience(payload.aud)) {
     throw new Error('Token audience is not allowed');
@@ -800,7 +990,11 @@ function loadPersistentStore() {
         updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : nowIso(),
         revision: Number.isInteger(item.revision) ? item.revision : 1,
         lastEventId: typeof item.lastEventId === 'string' ? item.lastEventId : null,
+        lastEventTimestampMs: Number.isFinite(item.lastEventTimestampMs) ? item.lastEventTimestampMs : null,
       });
+      if (typeof item.lastEventId === 'string' && item.lastEventId.trim().length > 0) {
+        rememberWebhookEvent(item.lastEventId, Number.isFinite(item.lastEventTimestampMs) ? item.lastEventTimestampMs : Date.now());
+      }
     }
 
     console.log(`[cloudsync] loaded ${saveStore.size} saves, ${entitlementStore.size} entitlement records`);
@@ -1124,7 +1318,8 @@ async function handleRefreshEntitlements(req, res, reqId, auth) {
     json(req, res, 200, buildEntitlementResponse(record), { 'X-Request-Id': reqId });
     writeAudit(req, reqId, 'refresh_entitlements', 'success', { userId: auth.sub, statusCode: 200 });
   } catch (refreshError) {
-    error(req, res, 502, 'entitlement_refresh_failed', refreshError.message, reqId);
+    console.error('[cloudsync] entitlement refresh failed', refreshError);
+    error(req, res, 502, 'entitlement_refresh_failed', 'Failed to refresh entitlements', reqId);
     writeAudit(req, reqId, 'refresh_entitlements', 'fail', {
       userId: auth.sub,
       code: 'entitlement_refresh_failed',
@@ -1138,6 +1333,7 @@ function extractWebhookUpdate(payload) {
   const candidates = [];
   let appUserId = null;
   let eventId = null;
+  const eventTimestampMs = resolveEventTimestampMs(payload, event);
 
   const collectStrings = (value) => {
     if (!value) return;
@@ -1188,6 +1384,7 @@ function extractWebhookUpdate(payload) {
   return {
     appUserId: appUserId ? String(appUserId).trim() : '',
     eventId: eventId ? String(eventId).trim() : null,
+    eventTimestampMs,
     products: normalizeProductCandidates(candidates),
   };
 }
@@ -1226,7 +1423,31 @@ async function handleRevenueCatWebhook(req, res, reqId) {
     return;
   }
 
-  const record = setEntitlementRecord(update.appUserId, update.products, 'revenuecat_webhook', update.eventId);
+  const existing = getEntitlementRecord(update.appUserId);
+  const decision = shouldApplyWebhookUpdate(existing, update);
+  if (!decision.apply) {
+    noContent(req, res, { 'X-Request-Id': reqId });
+    writeAudit(req, reqId, 'revenuecat_webhook', 'success', {
+      userId: update.appUserId,
+      statusCode: 204,
+      note: `ignored=${decision.reason}`,
+    });
+    return;
+  }
+
+  const record = setEntitlementRecord(
+    update.appUserId,
+    update.products,
+    'revenuecat_webhook',
+    update.eventId,
+    update.eventTimestampMs
+  );
+  if (update.eventId) {
+    rememberWebhookEvent(
+      update.eventId,
+      Number.isFinite(update.eventTimestampMs) ? update.eventTimestampMs : Date.now()
+    );
+  }
   await queuePersistStore();
   noContent(req, res, { 'X-Request-Id': reqId });
   writeAudit(req, reqId, 'revenuecat_webhook', 'success', {

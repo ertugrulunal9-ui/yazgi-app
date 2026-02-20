@@ -8,9 +8,8 @@
 
 ```
 src/config/
-├── gameBalance.ts          # Tüm sayısal değerlerin tanımı (Config)
-├── USAGE_EXAMPLES.ts       # Nasıl kullanacağınızı gösteren örnekler
-├── MIGRATION_GUIDE.md      # Hard-coded değerlerden geçiş rehberi
+├── gameBalance.ts          # Tum sayisal degerlerin tanimi (Config)
+├── MIGRATION_GUIDE.md      # Hard-coded degerlerden gecis rehberi
 └── README.md               # Bu dosya
 ```
 
@@ -286,7 +285,7 @@ git diff src/config/gameBalance.ts
 
 ## 📞 İletişim
 
-- **Sorular?** USAGE_EXAMPLES.ts dosyasını kontrol edin
+- **Sorular?** Bu README ve MIGRATION_GUIDE.md dosyalarini kontrol edin
 - **Migration?** MIGRATION_GUIDE.md'yi oku
 - **Yeni sistem?** Bölüm ekle ve comment yaz
 

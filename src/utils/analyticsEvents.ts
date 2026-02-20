@@ -2,6 +2,7 @@
  * Analytics event helpers.
  */
 
+import { devLog } from './devLogger';
 import { analyticsService } from '../services/analytics';
 import { EventRarity } from '../types';
 import {
@@ -19,7 +20,7 @@ export const handleGameStart = async (characterName: string, difficulty: 'easy' 
     difficulty,
   });
 
-  console.log('[analytics] game_started');
+  devLog.log('[analytics] game_started');
 };
 
 // ============================================================================
@@ -42,10 +43,9 @@ export const handleCharacterCreation = async (character: CharacterData) => {
     familyType: character.familyType,
   });
 
-  await analyticsService.setUserProperty('character_name', character.name);
   await analyticsService.setUserProperty('starting_wealth', character.wealth);
 
-  console.log('[analytics] character_created');
+  devLog.log('[analytics] character_created');
 };
 
 // ============================================================================
@@ -126,7 +126,7 @@ export const handleEventChoice = async (
     });
   }
 
-  console.log(`[analytics] event_completed: ${event.name} choice=${choice.index}`);
+  devLog.log(`[analytics] event_completed: ${event.name} choice=${choice.index}`);
 };
 
 // ============================================================================
@@ -206,7 +206,7 @@ export const logWorkAction = async (
   moneyGain: number
 ) => {
   if (playerAge < 14) {
-    console.warn('Too young for work');
+    devLog.warn('Too young for work');
     return;
   }
 
@@ -312,7 +312,7 @@ export const logGameEnding = async (data: GameEndingData) => {
   await analyticsService.setUserProperty('final_age', data.age);
   await analyticsService.setUserProperty('playtime_minutes', data.playtimeMinutes);
 
-  console.log('[analytics] game_ended');
+  devLog.log('[analytics] game_ended');
 };
 
 // ============================================================================
@@ -331,7 +331,186 @@ export const logPurchase = async (
     category: category || 'general',
   });
 
-  console.log(`[analytics] purchase_made: ${productId} $${price}`);
+  devLog.log(`[analytics] purchase_made: ${productId} $${price}`);
+};
+
+export type MonetizationPlacement =
+  | 'hub'
+  | 'save_slots'
+  | 'game_over_restart'
+  | 'settings'
+  | 'unknown';
+
+type MonetizationFunnelStep =
+  | 'view'
+  | 'click'
+  | 'purchase_attempt'
+  | 'purchase_success'
+  | 'purchase_fail';
+
+const MONETIZATION_DASHBOARD_SCHEMA = {
+  funnel: 'monetization_funnel',
+  rewarded: 'monetization_rewarded',
+  interstitial: 'monetization_interstitial',
+} as const;
+
+const toErrorCode = (errorMessage?: string | null): string => {
+  if (!errorMessage) return 'none';
+  const normalized = errorMessage
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  if (!normalized) return 'unknown';
+  return normalized.slice(0, 48);
+};
+
+const logMonetizationFunnel = async (meta: {
+  placement: MonetizationPlacement;
+  step: MonetizationFunnelStep;
+  productId?: string;
+  owned?: boolean;
+  price?: number;
+  currency?: string;
+  category?: string;
+  success?: boolean;
+  errorMessage?: string | null;
+  productCount?: number;
+}) => {
+  const payload: Record<string, unknown> = {
+    placement: meta.placement,
+    funnel_step: meta.step,
+    product_id: meta.productId ?? 'none',
+    product_count: meta.productCount ?? 0,
+    price: meta.price ?? 0,
+    currency: meta.currency ?? 'TRY',
+    category: meta.category ?? 'general',
+  };
+
+  if (typeof meta.owned === 'boolean') payload.owned = meta.owned;
+  if (typeof meta.success === 'boolean') payload.success = meta.success;
+  if (meta.errorMessage !== undefined) payload.error_code = toErrorCode(meta.errorMessage);
+
+  await logCustomEvent(MONETIZATION_DASHBOARD_SCHEMA.funnel, payload);
+};
+
+export const logShopViewed = async (meta: {
+  placement: MonetizationPlacement;
+  productCount?: number;
+}) => {
+  await logMonetizationFunnel({
+    placement: meta.placement,
+    step: 'view',
+    productCount: meta.productCount,
+  });
+};
+
+export const logShopProductClicked = async (meta: {
+  placement: MonetizationPlacement;
+  productId: string;
+  owned: boolean;
+  price?: number;
+  currency?: string;
+}) => {
+  await logMonetizationFunnel({
+    placement: meta.placement,
+    step: 'click',
+    productId: meta.productId,
+    owned: meta.owned,
+    price: meta.price,
+    currency: meta.currency,
+  });
+};
+
+export const logPurchaseAttempted = async (meta: {
+  placement: MonetizationPlacement;
+  productId: string;
+  price?: number;
+  currency?: string;
+  category?: string;
+}) => {
+  await logMonetizationFunnel({
+    placement: meta.placement,
+    step: 'purchase_attempt',
+    productId: meta.productId,
+    price: meta.price,
+    currency: meta.currency,
+    category: meta.category,
+  });
+};
+
+export const logPurchaseResult = async (meta: {
+  placement: MonetizationPlacement;
+  productId: string;
+  success: boolean;
+  price?: number;
+  currency?: string;
+  category?: string;
+  errorMessage?: string | null;
+}) => {
+  await logMonetizationFunnel({
+    placement: meta.placement,
+    step: meta.success ? 'purchase_success' : 'purchase_fail',
+    productId: meta.productId,
+    price: meta.price,
+    currency: meta.currency,
+    category: meta.category,
+    success: meta.success,
+    errorMessage: meta.errorMessage,
+  });
+};
+
+export const logRewardedAdRequested = async (meta: {
+  placement: MonetizationPlacement;
+  rewardType: 'energy' | 'intelligence' | 'money';
+  remainingBefore?: number;
+}) => {
+  await logCustomEvent(MONETIZATION_DASHBOARD_SCHEMA.rewarded, {
+    action: 'request',
+    placement: meta.placement,
+    reward_type: meta.rewardType,
+    remaining_before: meta.remainingBefore ?? -1,
+  });
+};
+
+export const logRewardedAdResult = async (meta: {
+  placement: MonetizationPlacement;
+  rewardType: 'energy' | 'intelligence' | 'money';
+  success: boolean;
+  amount?: number;
+  remainingAfter?: number;
+  errorMessage?: string | null;
+}) => {
+  await logCustomEvent(MONETIZATION_DASHBOARD_SCHEMA.rewarded, {
+    action: 'result',
+    placement: meta.placement,
+    reward_type: meta.rewardType,
+    success: meta.success,
+    amount: meta.amount ?? 0,
+    remaining_after: meta.remainingAfter ?? -1,
+    error_code: toErrorCode(meta.errorMessage),
+  });
+};
+
+export const logInterstitialOpportunity = async (meta: {
+  placement: MonetizationPlacement;
+}) => {
+  await logCustomEvent(MONETIZATION_DASHBOARD_SCHEMA.interstitial, {
+    action: 'opportunity',
+    placement: meta.placement,
+  });
+};
+
+export const logInterstitialResult = async (meta: {
+  placement: MonetizationPlacement;
+  shown: boolean;
+  reason?: string;
+}) => {
+  await logCustomEvent(MONETIZATION_DASHBOARD_SCHEMA.interstitial, {
+    action: 'result',
+    placement: meta.placement,
+    shown: meta.shown,
+    reason: meta.reason ?? 'unknown',
+  });
 };
 
 // ============================================================================
@@ -342,6 +521,58 @@ export const logCustomEvent = async (eventName: string, data?: Record<string, an
   await analyticsService.logCustomEvent(eventName, {
     ...data,
     timestamp: new Date().toISOString(),
+  });
+};
+
+interface GoalAlignmentMeta {
+  eventId: string;
+  selectedGoal?: string | null;
+  alignmentScore: number;
+  age: number;
+  turn: number;
+}
+
+export const logGoalAlignmentScore = async (meta: GoalAlignmentMeta) => {
+  await logCustomEvent('goal_alignment_score', {
+    event_id: meta.eventId,
+    selected_goal: meta.selectedGoal ?? 'NONE',
+    alignment_score: meta.alignmentScore,
+    age: meta.age,
+    turn: meta.turn,
+  });
+};
+
+interface BurdenTriggerMeta {
+  burdenRisk: number;
+  age: number;
+  turn: number;
+  selectedGoal?: string | null;
+}
+
+export const logBurdenTrigger = async (meta: BurdenTriggerMeta) => {
+  await logCustomEvent('burden_trigger', {
+    burden_risk: meta.burdenRisk,
+    age: meta.age,
+    turn: meta.turn,
+    selected_goal: meta.selectedGoal ?? 'NONE',
+  });
+};
+
+interface MilestoneMeta {
+  arcId: string;
+  stage: number;
+  selectedGoal?: string | null;
+  age: number;
+  turn: number;
+}
+
+export const logMilestoneReached = async (meta: MilestoneMeta) => {
+  await logCustomEvent('milestone_reached', {
+    arc_id: meta.arcId,
+    stage: meta.stage,
+    selected_goal: meta.selectedGoal ?? 'NONE',
+    age: meta.age,
+    turn: meta.turn,
   });
 };
 
@@ -469,7 +700,25 @@ export const logSessionDropAnchor = async (meta: SessionProgressMeta) => {
 };
 
 // ============================================================================
-// 9. USER SEGMENTATION
+// 9. SESSION TRACKING
+// ============================================================================
+
+export const logSessionStart = async (params: {
+  hoursSinceLastSession: number;
+}) => {
+  await logCustomEvent('session_start', params);
+};
+
+export const logSessionEnd = async (params: {
+  sessionDurationMinutes: number;
+  turnsPlayed: number;
+  hadCliffhanger: boolean;
+}) => {
+  await logCustomEvent('session_end', params);
+};
+
+// ============================================================================
+// 10. USER SEGMENTATION
 // ============================================================================
 
 export const setupUserSegmentation = async (userId: string, gameVersion: string) => {

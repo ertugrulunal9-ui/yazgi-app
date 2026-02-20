@@ -2,9 +2,11 @@ import React from 'react';
 import { View, Text, ViewStyle, TouchableOpacity } from 'react-native';
 import { FadeInUpView } from '../animations';
 import { getLetterGrade, calculateGradeAverage } from '../utils/schoolLogic';
-import { Family, FamilyEvolutionState, Stats, Skills, SchoolGrades } from '../types';
+import { Family, FamilyEvolutionState, PersonalityState, Stats, Skills, SchoolGrades } from '../types';
 import { ensureTextContrast } from '../utils/colorContrast';
 import { getFamilyAtmosphereLabel } from '../utils/familyNarrative';
+import { getTraitName } from '../data/traits';
+import { ProgressBonus } from '../components/ProgressBonus';
 
 interface ThemeTokens {
   textPrimary: string;
@@ -20,6 +22,7 @@ interface CharacterScreenProps {
   traits: string[];
   skills: Skills;
   schoolGrades: SchoolGrades;
+  personalityState: Partial<PersonalityState> | undefined;
   age: number;
   maxEnergy: number;
   family?: Family | null;
@@ -56,21 +59,6 @@ const STAT_CONFIG = [
   { key: 'discipline', label: 'Disiplin', emoji: '📚', color: '#0f766e', max: 100 },
   { key: 'familyRelation', label: 'Aile Iliskisi', emoji: '👨‍👩‍👧', color: '#be185d', max: 100 },
 ] as const;
-
-const SKILL_NAMES: Record<string, { label: string; emoji: string; color: string }> = {
-  coding: { label: 'Yazilim', emoji: '💻', color: '#4338ca' },
-  music: { label: 'Muzik', emoji: '🎵', color: '#b45309' },
-  sports: { label: 'Spor', emoji: '⚽', color: '#047857' },
-  design: { label: 'Tasarim', emoji: '🎨', color: '#be185d' },
-  athletics: { label: 'Atletizm', emoji: '🏃', color: '#15803d' },
-  logic: { label: 'Mantik', emoji: '🧩', color: '#0369a1' },
-  reading: { label: 'Okuma', emoji: '📚', color: '#7e22ce' },
-  teamwork: { label: 'Takim', emoji: '🤝', color: '#c2410c' },
-  art: { label: 'Sanat', emoji: '🖌️', color: '#be185d' },
-  writing: { label: 'Yazarlik', emoji: '✍️', color: '#b91c1c' },
-  work_ethic: { label: 'Caliskanlik', emoji: '💼', color: '#475569' },
-  business: { label: 'Is', emoji: '📈', color: '#0f766e' },
-};
 
 const SUBJECT_CONFIG = [
   { key: 'math', label: 'Matematik', emoji: '🔢', color: '#2563eb' },
@@ -141,6 +129,7 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
   traits,
   skills,
   schoolGrades,
+  personalityState,
   age,
   maxEnergy,
   family,
@@ -265,6 +254,17 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
         </View>
       </CharacterSection>
 
+      <CharacterSection title="Davranissal Ivme" icon=">>" cardStyle={cardStyle} theme={theme}>
+        <View style={{ gap: 10 }}>
+          <ProgressBonus personalityState={personalityState} tendency="HELPFUL" />
+          <ProgressBonus personalityState={personalityState} tendency="PRAGMATIC" />
+          <ProgressBonus personalityState={personalityState} tendency="AGGRESSIVE" />
+        </View>
+        <Text style={{ color: theme.textSecondary, fontSize: 11, marginTop: 10 }}>
+          Tutarli secimler ivme yaratir: ozel eventler ve etiketli diyalog secenekleri acilir.
+        </Text>
+      </CharacterSection>
+
       {family ? (
         <CharacterSection title="Aile Durumu" icon="🏡" cardStyle={cardStyle} theme={theme}>
           <View style={{
@@ -295,7 +295,10 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
             </View>
             <View style={{ marginTop: 2, paddingTop: 10, borderTopWidth: 1, borderTopColor: theme.border }}>
               <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
-                Yillik Harclik: {family.allowance}
+                Harclik Baz Tutari: ₺{family.allowance} / istek
+              </Text>
+              <Text style={{ color: theme.textSecondary, fontSize: 11, marginTop: 4 }}>
+                Not: Gercek miktar aile dinamikleri ve iliski puanina gore degisir.
               </Text>
             </View>
           </View>
@@ -305,8 +308,8 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
       <CharacterSection title="Ozellikler" icon="✨" cardStyle={cardStyle} theme={theme}>
         {traits.length > 0 ? (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {traits.map((trait, index) => (
-              <FadeInUpView key={trait} delay={index * 50}>
+            {traits.map((traitId, index) => (
+              <FadeInUpView key={traitId} delay={index * 50}>
                 <View style={{
                   backgroundColor: `${readableAccentEvent}20`,
                   paddingHorizontal: 12,
@@ -316,7 +319,7 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
                   borderColor: `${readableAccentEvent}45`,
                 }}>
                   <Text style={{ color: readableAccentEvent, fontWeight: '600', fontSize: 12 }}>
-                    {trait}
+                    {getTraitName(traitId)}
                   </Text>
                 </View>
               </FadeInUpView>
@@ -328,46 +331,6 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
           </Text>
         )}
       </CharacterSection>
-
-      <CharacterSection title="Beceriler" icon="🎯" cardStyle={cardStyle} theme={theme}>
-        {Object.entries(skills).map(([key, value], index) => {
-          const config = SKILL_NAMES[key] || { label: key, emoji: '📌', color: '#64748b' };
-          const percentage = Math.min(100, (value / 100) * 100);
-          const readableColor = getReadableStatColor(config.color, theme);
-
-          return (
-            <FadeInUpView key={key} delay={index * 40}>
-              <View style={{ marginBottom: 14 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Text style={{ fontSize: 16 }}>{config.emoji}</Text>
-                    <Text style={{ color: theme.textPrimary, fontWeight: '600', fontSize: 13 }}>
-                      {config.label}
-                    </Text>
-                  </View>
-                  <Text style={{ color: readableColor, fontWeight: '700', fontSize: 13 }}>
-                    Lv.{Math.round(value)}
-                  </Text>
-                </View>
-                <View style={{
-                  height: 6,
-                  backgroundColor: theme.surfaceOverlay,
-                  borderRadius: 3,
-                  overflow: 'hidden',
-                }}>
-                  <View style={{
-                    height: '100%',
-                    width: `${percentage}%`,
-                    backgroundColor: readableColor,
-                    borderRadius: 3,
-                  }} />
-                </View>
-              </View>
-            </FadeInUpView>
-          );
-        })}
-      </CharacterSection>
-
       {achievementSummary ? (
         <CharacterSection title="Basarilar" icon="🏆" cardStyle={cardStyle} theme={theme}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>

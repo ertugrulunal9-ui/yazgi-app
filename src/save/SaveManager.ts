@@ -1,11 +1,99 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SaveSlotData, SaveSlotMetadata, SaveManagerState, SaveBackup, CompressedSaveData, SAVE_VERSION, MAX_FREE_SLOTS, MAX_TOTAL_SLOTS, AUTO_SAVE_SLOT_ID, createEmptySlot, getSlotKey, getMetadataKey, getBackupKey, getManagerStateKey } from './SaveSlot';
+import { devLog } from '../utils/devLogger';
+import { MetaProgression } from '../types';
+import { createInitialMetaProgression } from '../utils/metaProgression';
+import {
+  SaveSlotData,
+  SaveSlotMetadata,
+  SaveManagerState,
+  SaveBackup,
+  CompressedSaveData,
+  SaveExportPackage,
+  SaveExportManifest,
+  SAVE_VERSION,
+  SAVE_SCHEMA_VERSION,
+  SAVE_EXPORT_VERSION,
+  MAX_BACKUP_HISTORY,
+  MAX_FREE_SLOTS,
+  MAX_TOTAL_SLOTS,
+  AUTO_SAVE_SLOT_ID,
+  createEmptySlot,
+  getSlotKey,
+  getMetadataKey,
+  getBackupKey,
+  getManagerStateKey,
+} from './SaveSlot';
 import { compressSaveData, decompressSaveData } from './SaveCompression';
 import { detectLegacySave, migrateLegacySave, migrateToVersion, createMigrationBackup } from './SaveMigration';
 import { generateChecksum, validateChecksum } from '../utils/checksum';
 import { validateSaveData } from './SaveValidation';
 
 const AUTO_SAVE_INTERVAL = 5 * 60 * 1000;
+const META_PROGRESS_KEY = '@yazgi_save/meta_progression/v1';
+const INTEGRITY_SECRET_KEY = 'yazgi_save.integrity_secret.v1';
+const ENCRYPTION_SECRET_KEY = 'yazgi_save.encryption_secret.v1';
+const INTEGRITY_SIGNATURE_PREFIX = 'yazgi_save.integrity_signature.';
+const INTEGRITY_SCHEME_VERSION = 1;
+const ENCRYPTED_STORAGE_PREFIX = 'enc:v1:';
+const ENCRYPTED_STORAGE_VERSION = 1;
+const DEVICE_ID_KEY = '@yazgi_save/device_id/v1';
+const MAX_IMPORT_PAYLOAD_BYTES = 2 * 1024 * 1024;
+const IS_DEV_RUNTIME =
+  Boolean((globalThis as { __DEV__?: boolean }).__DEV__) || process.env.NODE_ENV !== 'production';
+
+type EncryptedStoragePayload = {
+  v: number;
+  iv: string;
+  ct: string;
+};
+
+type SignatureVerificationResult =
+  | { valid: true; reason: 'disabled' | 'missing' | 'match' | 'resealed_dev_autosave' }
+  | { valid: false; reason: 'mismatch' };
+
+type CryptoLike = {
+  subtle?: {
+    digest: (algorithm: string, data: Uint8Array) => Promise<ArrayBuffer>;
+  };
+  getRandomValues?: (array: Uint8Array) => Uint8Array;
+};
+
+type SecureStoreModule = {
+  getItemAsync: (key: string) => Promise<string | null>;
+  setItemAsync: (key: string, value: string) => Promise<void>;
+  deleteItemAsync?: (key: string) => Promise<void>;
+};
+
+type CryptoJsLike = any;
+
+let secureStoreModule: SecureStoreModule | null = null;
+let secureStoreResolveAttempted = false;
+let cryptoJsModule: CryptoJsLike | null = null;
+let cryptoJsResolveAttempted = false;
+
+const getSecureStore = async (): Promise<SecureStoreModule | null> => {
+  if (secureStoreResolveAttempted) return secureStoreModule;
+  secureStoreResolveAttempted = true;
+  try {
+    const mod = await import('expo-secure-store');
+    secureStoreModule = mod as unknown as SecureStoreModule;
+  } catch {
+    secureStoreModule = null;
+  }
+  return secureStoreModule;
+};
+
+const getCryptoJs = async (): Promise<CryptoJsLike | null> => {
+  if (cryptoJsResolveAttempted) return cryptoJsModule;
+  cryptoJsResolveAttempted = true;
+  try {
+    const mod = await import('crypto-js');
+    cryptoJsModule = (mod as any).default ?? mod;
+  } catch {
+    cryptoJsModule = null;
+  }
+  return cryptoJsModule;
+};
 
 // Auto-save callback tipi - oyun state'ini döndüren fonksiyon
 type AutoSaveCallback = () => { playerName: string; stats: any; gameState: any } | null;
@@ -14,12 +102,20 @@ class SaveManager {
   private static instance: SaveManager;
   private storage: any;
   private state: SaveManagerState;
+  private metaProgression: MetaProgression;
   private autoSaveTimer: ReturnType<typeof setInterval> | null = null;
   private autoSaveCallback: AutoSaveCallback | null = null;
+  private integritySecret: string | null = null;
+  private encryptionSecret: string | null = null;
+  private deviceId: string | null = null;
+  private integrityInitAttempted = false;
+  private integrityActive = false;
+  private encryptionInitAttempted = false;
+  private encryptionActive = false;
 
   // Mutex/lock mechanism to prevent concurrent saves
   private saveLocks: Map<string, boolean> = new Map();
-  private saveQueue: Map<string, Array<() => Promise<void>>> = new Map();
+  private saveQueue: Map<string, (() => Promise<void>)[]> = new Map();
 
   private constructor() {
     this.storage = AsyncStorage;
@@ -37,6 +133,7 @@ class SaveManager {
       isPremiumUnlocked: false,
       adsDisabled: false,
     };
+    this.metaProgression = createInitialMetaProgression();
   }
 
   static getInstance(): SaveManager {
@@ -50,13 +147,506 @@ class SaveManager {
     return { playerName, stats, gameState };
   }
 
+  private generateId(prefix: string): string {
+    const randomPart = Math.random().toString(36).slice(2, 10);
+    return `${prefix}_${Date.now().toString(36)}_${randomPart}`;
+  }
+
+  private async getOrCreateDeviceId(): Promise<string> {
+    if (this.deviceId) return this.deviceId;
+
+    try {
+      const existing = await this.readProtectedStorageItem(DEVICE_ID_KEY);
+      if (existing && existing.trim().length > 0) {
+        this.deviceId = existing;
+        return existing;
+      }
+
+      const created = this.generateId('device');
+      await this.writeProtectedStorageItem(DEVICE_ID_KEY, created);
+      this.deviceId = created;
+      return created;
+    } catch {
+      const fallback = this.generateId('device_fallback');
+      this.deviceId = fallback;
+      return fallback;
+    }
+  }
+
+  private getBackupHistoryKey(slotId: string): string {
+    return `${getBackupKey(slotId)}_history`;
+  }
+
+  private async getBackupHistory(slotId: string): Promise<SaveBackup[]> {
+    try {
+      const raw = await this.readProtectedStorageItem(this.getBackupHistoryKey(slotId));
+      if (!raw) return [];
+
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+
+      return parsed
+        .filter((item: unknown): item is SaveBackup => {
+          if (!item || typeof item !== 'object') return false;
+          const candidate = item as Partial<SaveBackup>;
+          return typeof candidate.slotId === 'string'
+            && typeof candidate.timestamp === 'number'
+            && Boolean(candidate.data);
+        })
+        .sort((a, b) => b.timestamp - a.timestamp);
+    } catch {
+      return [];
+    }
+  }
+
+  private async persistBackupHistory(slotId: string, backups: SaveBackup[]): Promise<void> {
+    await this.writeProtectedStorageItem(this.getBackupHistoryKey(slotId), JSON.stringify(backups));
+  }
+
+  private async getExportBackups(slotId: string): Promise<SaveBackup[]> {
+    const history = await this.getBackupHistory(slotId);
+    if (history.length > 0) {
+      return history.slice(0, MAX_BACKUP_HISTORY);
+    }
+
+    try {
+      const rawBackup = await this.readProtectedStorageItem(getBackupKey(slotId));
+      if (!rawBackup) return [];
+
+      const parsed = JSON.parse(rawBackup) as Partial<SaveBackup>;
+      if (!parsed || typeof parsed !== 'object' || !parsed.data) return [];
+
+      return [{
+        slotId,
+        timestamp: typeof parsed.timestamp === 'number' ? parsed.timestamp : Date.now(),
+        data: parsed.data as SaveSlotData,
+      }];
+    } catch {
+      return [];
+    }
+  }
+
+  private buildExportManifest(slotId: string, saveData: SaveSlotData, backups: SaveBackup[]): SaveExportManifest {
+    const checksum = generateChecksum({
+      slotId,
+      saveChecksum: saveData.metadata.checksum,
+      backupCount: backups.length,
+      latestBackupTs: backups[0]?.timestamp ?? 0,
+    });
+
+    return {
+      manifestVersion: 1,
+      slotIds: [slotId],
+      saveCount: 1,
+      backupCount: backups.length,
+      createdAt: Date.now(),
+      checksum,
+    };
+  }
+
+  private isManifestValidForImport(
+    sourceSlotId: string,
+    saveData: SaveSlotData,
+    backups: SaveBackup[],
+    manifestCandidate: unknown
+  ): boolean {
+    if (!manifestCandidate || typeof manifestCandidate !== 'object') return true;
+
+    const manifest = manifestCandidate as Partial<SaveExportManifest>;
+    if (typeof manifest.checksum !== 'string') return true;
+
+    if (Array.isArray(manifest.slotIds) && manifest.slotIds.length > 0 && !manifest.slotIds.includes(sourceSlotId)) {
+      return false;
+    }
+
+    const expectedChecksum = this.buildExportManifest(sourceSlotId, saveData, backups).checksum;
+    return expectedChecksum === manifest.checksum;
+  }
+
+  private sanitizeImportedBackups(slotId: string, rawBackups: unknown): SaveBackup[] {
+    if (!Array.isArray(rawBackups)) return [];
+
+    const sanitized: SaveBackup[] = [];
+    for (const rawBackup of rawBackups) {
+      if (!rawBackup || typeof rawBackup !== 'object') {
+        continue;
+      }
+
+      const candidate = rawBackup as Record<string, unknown>;
+      const extractedSave = this.extractImportedSave(candidate.data ?? candidate);
+      if (!extractedSave) {
+        continue;
+      }
+
+      const validation = validateSaveData(extractedSave);
+      if (!validation.valid || !validation.data) {
+        continue;
+      }
+
+      let normalizedSave = validation.data as SaveSlotData;
+      if (normalizedSave.metadata.version < SAVE_VERSION) {
+        normalizedSave = migrateToVersion(normalizedSave, SAVE_VERSION);
+      }
+
+      const timestamp =
+        typeof candidate.timestamp === 'number' && Number.isFinite(candidate.timestamp)
+          ? candidate.timestamp
+          : Date.now();
+
+      sanitized.push({
+        slotId,
+        timestamp,
+        data: normalizedSave,
+      });
+    }
+
+    return sanitized
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, MAX_BACKUP_HISTORY);
+  }
+
+  private async mergeImportedBackups(slotId: string, importedBackups: SaveBackup[]): Promise<void> {
+    if (importedBackups.length === 0) return;
+
+    const existing = await this.getBackupHistory(slotId);
+    const normalizedImported = importedBackups.map((backup) => ({
+      slotId,
+      timestamp: backup.timestamp,
+      data: {
+        ...backup.data,
+        metadata: {
+          ...backup.data.metadata,
+          slotId,
+        },
+      },
+    }));
+
+    const combined = [...existing, ...normalizedImported].sort((a, b) => b.timestamp - a.timestamp);
+    const deduped: SaveBackup[] = [];
+    const seen = new Set<string>();
+
+    for (const backup of combined) {
+      const dedupeKey = `${backup.timestamp}:${backup.data.metadata.checksum}`;
+      if (seen.has(dedupeKey)) continue;
+      seen.add(dedupeKey);
+      deduped.push(backup);
+      if (deduped.length >= MAX_BACKUP_HISTORY) break;
+    }
+
+    await this.persistBackupHistory(slotId, deduped);
+    if (deduped[0]) {
+      await this.writeProtectedStorageItem(getBackupKey(slotId), JSON.stringify(deduped[0]));
+    }
+  }
+
+  private extractImportedSave(importData: unknown): SaveSlotData | null {
+    if (!importData || typeof importData !== 'object') return null;
+
+    const candidate = importData as Record<string, unknown>;
+
+    if (candidate.data && typeof candidate.data === 'object') {
+      return candidate.data as SaveSlotData;
+    }
+
+    if (Array.isArray(candidate.saves) && candidate.saves.length > 0) {
+      const first = candidate.saves[0];
+      if (first && typeof first === 'object') {
+        return first as SaveSlotData;
+      }
+    }
+
+    if (candidate.metadata && candidate.playerName && candidate.stats && candidate.gameState) {
+      return candidate as unknown as SaveSlotData;
+    }
+
+    return null;
+  }
+
+  private getIntegritySignatureKey(slotId: string): string {
+    const normalizedSlotId = slotId.trim().length > 0 ? slotId : 'default_slot';
+    const encodedSlotId = Array.from(normalizedSlotId)
+      .map(char => char.charCodeAt(0).toString(16).padStart(4, '0'))
+      .join('');
+    return `${INTEGRITY_SIGNATURE_PREFIX}${encodedSlotId}.v${INTEGRITY_SCHEME_VERSION}`;
+  }
+
+  private generateIntegritySecret(): string {
+    const cryptoCandidate = (globalThis as { crypto?: CryptoLike }).crypto;
+    if (cryptoCandidate?.getRandomValues) {
+      const bytes = new Uint8Array(32);
+      cryptoCandidate.getRandomValues(bytes);
+      return Array.from(bytes)
+        .map(byte => byte.toString(16).padStart(2, '0'))
+        .join('');
+    }
+
+    return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}_${Math.random().toString(36).slice(2)}`;
+  }
+
+  private async ensureIntegrityInitialized(): Promise<void> {
+    if (this.integrityInitAttempted) return;
+    this.integrityInitAttempted = true;
+
+    const secureStore = await getSecureStore();
+    if (!secureStore) {
+      this.integrityActive = false;
+      devLog.warn('SecureStore unavailable, save anti-tamper signatures are disabled.');
+      return;
+    }
+
+    try {
+      let secret = await secureStore.getItemAsync(INTEGRITY_SECRET_KEY);
+      if (!secret || secret.trim().length < 24) {
+        secret = this.generateIntegritySecret();
+        await secureStore.setItemAsync(INTEGRITY_SECRET_KEY, secret);
+      }
+      this.integritySecret = secret;
+      this.integrityActive = true;
+    } catch (error) {
+      this.integrityActive = false;
+      console.error('Failed to initialize save integrity secret:', error);
+    }
+  }
+
+  private isEncryptedStoragePayload(value: string): boolean {
+    return value.startsWith(ENCRYPTED_STORAGE_PREFIX);
+  }
+
+  private async ensureEncryptionInitialized(): Promise<void> {
+    if (this.encryptionInitAttempted) return;
+    this.encryptionInitAttempted = true;
+
+    const [secureStore, cryptoJs] = await Promise.all([getSecureStore(), getCryptoJs()]);
+    if (!secureStore || !cryptoJs) {
+      this.encryptionActive = false;
+      devLog.warn('Secure save encryption unavailable, local save payloads use plaintext storage.');
+      return;
+    }
+
+    try {
+      let secret = await secureStore.getItemAsync(ENCRYPTION_SECRET_KEY);
+      if (!secret || secret.trim().length < 24) {
+        secret = this.generateIntegritySecret();
+        await secureStore.setItemAsync(ENCRYPTION_SECRET_KEY, secret);
+      }
+      this.encryptionSecret = secret;
+      this.encryptionActive = true;
+    } catch (error) {
+      this.encryptionActive = false;
+      console.error('Failed to initialize save encryption secret:', error);
+    }
+  }
+
+  private async encryptForStorage(rawValue: string): Promise<string> {
+    await this.ensureEncryptionInitialized();
+    if (!this.encryptionActive || !this.encryptionSecret) {
+      return rawValue;
+    }
+
+    const cryptoJs = await getCryptoJs();
+    if (!cryptoJs) {
+      return rawValue;
+    }
+
+    try {
+      const key = cryptoJs.SHA256(this.encryptionSecret);
+      const iv = cryptoJs.lib.WordArray.random(16);
+      const encrypted = cryptoJs.AES.encrypt(rawValue, key, {
+        iv,
+        mode: cryptoJs.mode.CBC,
+        padding: cryptoJs.pad.Pkcs7,
+      });
+
+      const payload: EncryptedStoragePayload = {
+        v: ENCRYPTED_STORAGE_VERSION,
+        iv: iv.toString(cryptoJs.enc.Hex),
+        ct: encrypted.ciphertext.toString(cryptoJs.enc.Base64),
+      };
+
+      return `${ENCRYPTED_STORAGE_PREFIX}${JSON.stringify(payload)}`;
+    } catch (error) {
+      console.error('Save payload encryption failed:', error);
+      return rawValue;
+    }
+  }
+
+  private async decryptFromStorage(rawValue: string): Promise<string | null> {
+    if (!this.isEncryptedStoragePayload(rawValue)) {
+      return rawValue;
+    }
+
+    await this.ensureEncryptionInitialized();
+    if (!this.encryptionActive || !this.encryptionSecret) {
+      return null;
+    }
+
+    const cryptoJs = await getCryptoJs();
+    if (!cryptoJs) {
+      return null;
+    }
+
+    try {
+      const encoded = rawValue.slice(ENCRYPTED_STORAGE_PREFIX.length);
+      const payload = JSON.parse(encoded) as Partial<EncryptedStoragePayload>;
+      if (payload.v !== ENCRYPTED_STORAGE_VERSION || typeof payload.iv !== 'string' || typeof payload.ct !== 'string') {
+        return null;
+      }
+
+      const key = cryptoJs.SHA256(this.encryptionSecret);
+      const iv = cryptoJs.enc.Hex.parse(payload.iv);
+      const ciphertext = cryptoJs.enc.Base64.parse(payload.ct);
+      const cipherParams = cryptoJs.lib.CipherParams.create({ ciphertext });
+      const decrypted = cryptoJs.AES.decrypt(cipherParams, key, {
+        iv,
+        mode: cryptoJs.mode.CBC,
+        padding: cryptoJs.pad.Pkcs7,
+      });
+      const plainText = decrypted.toString(cryptoJs.enc.Utf8);
+      if (typeof plainText !== 'string') {
+        return null;
+      }
+      if (plainText.length === 0 && payload.ct.length > 0) {
+        return null;
+      }
+
+      return plainText;
+    } catch {
+      return null;
+    }
+  }
+
+  private async writeProtectedStorageItem(key: string, value: string): Promise<void> {
+    const storedValue = await this.encryptForStorage(value);
+    if (!this.isEncryptedStoragePayload(storedValue) && !IS_DEV_RUNTIME) {
+      throw new Error(`Encrypted storage required in production for key: ${key}`);
+    }
+    await this.storage.setItem(key, storedValue);
+  }
+
+  private async readProtectedStorageItem(key: string): Promise<string | null> {
+    const rawValue = await this.storage.getItem(key);
+    if (typeof rawValue !== 'string') {
+      return null;
+    }
+
+    const plainValue = await this.decryptFromStorage(rawValue);
+    if (plainValue === null) {
+      return null;
+    }
+
+    if (!this.isEncryptedStoragePayload(rawValue) && this.encryptionActive) {
+      try {
+        await this.writeProtectedStorageItem(key, plainValue);
+      } catch (error) {
+        devLog.warn(`Failed to migrate plaintext storage item to encrypted key: ${key}`, error);
+      }
+    }
+
+    return plainValue;
+  }
+
+  private async computeIntegritySignature(
+    slotId: string,
+    serializedCompressed: string,
+    compressedChecksum: string
+  ): Promise<string | null> {
+    await this.ensureIntegrityInitialized();
+    if (!this.integrityActive || !this.integritySecret) return null;
+
+    const payload = `v${INTEGRITY_SCHEME_VERSION}:${slotId}:${compressedChecksum}:${serializedCompressed}:${this.integritySecret}`;
+    const cryptoCandidate = (globalThis as { crypto?: CryptoLike }).crypto;
+    if (cryptoCandidate?.subtle?.digest && typeof TextEncoder !== 'undefined') {
+      try {
+        const digest = await cryptoCandidate.subtle.digest('SHA-256', new TextEncoder().encode(payload));
+        return Array.from(new Uint8Array(digest))
+          .map(byte => byte.toString(16).padStart(2, '0'))
+          .join('');
+      } catch {
+        // fall back below
+      }
+    }
+
+    return generateChecksum({ payload });
+  }
+
+  private async readSlotSignature(slotId: string): Promise<string | null> {
+    await this.ensureIntegrityInitialized();
+    if (!this.integrityActive) return null;
+    const secureStore = await getSecureStore();
+    if (!secureStore) return null;
+
+    try {
+      return await secureStore.getItemAsync(this.getIntegritySignatureKey(slotId));
+    } catch {
+      return null;
+    }
+  }
+
+  private async persistSlotSignature(slotId: string, signature: string | null): Promise<void> {
+    if (!signature) return;
+    await this.ensureIntegrityInitialized();
+    if (!this.integrityActive) return;
+    const secureStore = await getSecureStore();
+    if (!secureStore) return;
+
+    try {
+      await secureStore.setItemAsync(this.getIntegritySignatureKey(slotId), signature);
+    } catch (error) {
+      console.error(`Failed to persist signature for slot ${slotId}:`, error);
+    }
+  }
+
+  private async deleteSlotSignature(slotId: string): Promise<void> {
+    await this.ensureIntegrityInitialized();
+    if (!this.integrityActive) return;
+    const secureStore = await getSecureStore();
+    if (!secureStore?.deleteItemAsync) return;
+
+    try {
+      await secureStore.deleteItemAsync(this.getIntegritySignatureKey(slotId));
+    } catch (error) {
+      console.error(`Failed to delete signature for slot ${slotId}:`, error);
+    }
+  }
+
+  private async verifySlotSignature(
+    slotId: string,
+    serializedCompressed: string,
+    compressedChecksum: string
+  ): Promise<SignatureVerificationResult> {
+    const expected = await this.computeIntegritySignature(slotId, serializedCompressed, compressedChecksum);
+    if (!expected) return { valid: true, reason: 'disabled' };
+
+    const stored = await this.readSlotSignature(slotId);
+    if (!stored) {
+      // Upgrade path: existing saves from older versions get signed on first trusted read.
+      await this.persistSlotSignature(slotId, expected);
+      return { valid: true, reason: 'missing' };
+    }
+
+    if (stored === expected) {
+      return { valid: true, reason: 'match' };
+    }
+
+    // Development migration safety: autosave signature drift can occur after local secret/key changes.
+    if (IS_DEV_RUNTIME && slotId === AUTO_SAVE_SLOT_ID) {
+      await this.persistSlotSignature(slotId, expected);
+      return { valid: true, reason: 'resealed_dev_autosave' };
+    }
+
+    return { valid: false, reason: 'mismatch' };
+  }
+
   async initialize(): Promise<void> {
     try {
+      await this.ensureIntegrityInitialized();
+      await this.ensureEncryptionInitialized();
       await this.loadManagerState();
+      await this.loadMetaProgression();
 
       const hasLegacy = await detectLegacySave(this.storage);
       if (hasLegacy) {
-        console.log('Legacy save detected, migrating...');
+        devLog.log('Legacy save detected, migrating...');
         await this.migrateLegacySaveToSlot();
       }
 
@@ -88,15 +678,59 @@ class SaveManager {
     return metadata;
   }
 
-  async saveToSlot(slotId: string, playerName: string, stats: any, gameState: any): Promise<boolean> {
+  async getMetaProgression(): Promise<MetaProgression> {
+    if (!this.metaProgression) {
+      await this.loadMetaProgression();
+    }
+
+    return {
+      ...this.metaProgression,
+      lifetimeAchievementIds: [...(this.metaProgression.lifetimeAchievementIds || [])],
+      recentRuns: [...(this.metaProgression.recentRuns || [])],
+    };
+  }
+
+  async setMetaProgression(nextMeta: MetaProgression): Promise<boolean> {
+    try {
+      this.metaProgression = {
+        ...createInitialMetaProgression(),
+        ...nextMeta,
+        lifetimeAchievementIds: [...(nextMeta.lifetimeAchievementIds || [])],
+        recentRuns: [...(nextMeta.recentRuns || [])],
+        updatedAt: Date.now(),
+      };
+      await this.saveMetaProgression();
+      return true;
+    } catch (error) {
+      console.error('Failed to persist meta progression:', error);
+      return false;
+    }
+  }
+
+  async updateMetaProgression(
+    updater: (current: MetaProgression) => MetaProgression
+  ): Promise<MetaProgression> {
+    const current = await this.getMetaProgression();
+    const next = updater(current);
+    await this.setMetaProgression(next);
+    return this.getMetaProgression();
+  }
+
+  async saveToSlot(
+    slotId: string,
+    playerName: string,
+    stats: any,
+    gameState: any,
+    options?: { importedMetadata?: Partial<SaveSlotMetadata> }
+  ): Promise<boolean> {
     try {
       // Check if slot is already being saved
       if (this.saveLocks.get(slotId)) {
-        console.log(`Slot ${slotId} is locked, queueing save...`);
+        devLog.log(`Slot ${slotId} is locked, queueing save...`);
         // Queue this save to execute after current save completes
         return new Promise<boolean>((resolve) => {
           const queuedSave = async () => {
-            const result = await this.saveToSlot(slotId, playerName, stats, gameState);
+            const result = await this.saveToSlot(slotId, playerName, stats, gameState, options);
             resolve(result);
           };
 
@@ -115,7 +749,10 @@ class SaveManager {
         throw new Error('Premium slot locked');
       }
 
-      const existingMeta = this.state.metadata[slotId];
+      const existingMeta = {
+        ...(this.state.metadata[slotId] || {}),
+        ...(options?.importedMetadata || {}),
+      } as Partial<SaveSlotMetadata>;
       const now = Date.now();
       const lastPlayed = existingMeta?.lastPlayed ?? now;
       const prevPlaytime = existingMeta?.playtime ?? 0;
@@ -125,6 +762,15 @@ class SaveManager {
       const turnMinutes = turnDelta * 5;
       const timeDeltaMinutes = Math.max(0, Math.round((now - lastPlayed) / 60000));
       const playtime = prevPlaytime + (timeDeltaMinutes > 0 ? timeDeltaMinutes : turnMinutes);
+      const checksum = generateChecksum(this.buildChecksumPayload(playerName, stats, gameState));
+      const deviceId = await this.getOrCreateDeviceId();
+      const revision = (existingMeta.revision ?? 0) + 1;
+      const createdAt = existingMeta.createdAt ?? now;
+      const saveId = existingMeta.saveId ?? this.generateId('save');
+      const migrationState =
+        existingMeta.migrationState === 'conflict' || existingMeta.migrationState === 'migrated'
+          ? existingMeta.migrationState
+          : 'pending';
 
       const saveData: SaveSlotData = {
         metadata: {
@@ -134,7 +780,16 @@ class SaveManager {
           playtime,
           lastPlayed: now,
           version: SAVE_VERSION,
-          checksum: generateChecksum(this.buildChecksumPayload(playerName, stats, gameState)),
+          checksum,
+          schemaVersion: SAVE_SCHEMA_VERSION,
+          saveId,
+          deviceId,
+          revision,
+          clientRevision: revision,
+          createdAt,
+          updatedAt: now,
+          idempotencyKey: this.generateId('op'),
+          migrationState,
           status: 'active',
           isPremium,
         },
@@ -144,9 +799,16 @@ class SaveManager {
       };
 
       const compressed = compressSaveData(saveData);
+      const serializedCompressed = JSON.stringify(compressed);
+      const integritySignature = await this.computeIntegritySignature(
+        slotId,
+        serializedCompressed,
+        compressed.checksum
+      );
 
-      await this.storage.setItem(getSlotKey(slotId), JSON.stringify(compressed));
-      await this.storage.setItem(getMetadataKey(slotId), JSON.stringify(saveData.metadata));
+      await this.writeProtectedStorageItem(getSlotKey(slotId), serializedCompressed);
+      await this.writeProtectedStorageItem(getMetadataKey(slotId), JSON.stringify(saveData.metadata));
+      await this.persistSlotSignature(slotId, integritySignature);
 
       this.state.metadata[slotId] = saveData.metadata;
       this.state.slots[slotId] = saveData;
@@ -182,10 +844,23 @@ class SaveManager {
 
   async loadFromSlot(slotId: string): Promise<SaveSlotData | null> {
     try {
-      const rawData = await this.storage.getItem(getSlotKey(slotId));
+      const rawData = await this.readProtectedStorageItem(getSlotKey(slotId));
       if (!rawData) return null;
 
       const compressed = JSON.parse(rawData) as CompressedSaveData;
+      const signatureCheck = await this.verifySlotSignature(
+        slotId,
+        rawData,
+        typeof compressed?.checksum === 'string' ? compressed.checksum : ''
+      );
+      if (!signatureCheck.valid) {
+        console.error(`Slot ${slotId} integrity signature mismatch, attempting restore from backup`);
+        return await this.restoreFromBackup(slotId);
+      }
+      if (signatureCheck.reason === 'resealed_dev_autosave') {
+        devLog.warn('Autosave integrity signature drift detected and resealed in development runtime.');
+      }
+
       const saveData = decompressSaveData(compressed);
 
       if (!saveData) {
@@ -203,7 +878,7 @@ class SaveManager {
       // Use repaired data if auto-repair was applied
       let validatedData = validation.data!;
       if (validation.repaired) {
-        console.warn(`Slot ${slotId} was auto-repaired:`, validation.repairLog);
+        devLog.warn(`Slot ${slotId} was auto-repaired:`, validation.repairLog);
         // Recompute checksum for repaired data before persisting/validating
         const repairedChecksum = generateChecksum(
           this.buildChecksumPayload(validatedData.playerName, validatedData.stats, validatedData.gameState)
@@ -226,7 +901,7 @@ class SaveManager {
       }
 
       if (validatedData.metadata.version < SAVE_VERSION) {
-        console.log(`Migrating slot ${slotId} from v${validatedData.metadata.version} to v${SAVE_VERSION}`);
+        devLog.log(`Migrating slot ${slotId} from v${validatedData.metadata.version} to v${SAVE_VERSION}`);
         await createMigrationBackup(this.storage, slotId, validatedData as SaveSlotData);
         const migrated = migrateToVersion(validatedData as SaveSlotData, SAVE_VERSION);
         await this.saveToSlot(slotId, migrated.playerName, migrated.stats, migrated.gameState);
@@ -239,7 +914,7 @@ class SaveManager {
 
       if (!isValid) {
         if (slotId !== AUTO_SAVE_SLOT_ID) {
-          console.warn(`Slot ${slotId} checksum mismatch detected, attempting checksum repair`);
+          devLog.warn(`Slot ${slotId} checksum mismatch detected, attempting checksum repair`);
         }
         const repairedData: SaveSlotData = {
           ...(validatedData as SaveSlotData),
@@ -266,10 +941,28 @@ class SaveManager {
         return repairedData;
       }
 
-      this.state.slots[slotId] = validatedData as SaveSlotData;
-      this.state.metadata[slotId] = validatedData.metadata as SaveSlotMetadata;
+      const deviceId = await this.getOrCreateDeviceId();
+      const normalizedMetadata: SaveSlotMetadata = {
+        ...(validatedData.metadata as SaveSlotMetadata),
+        schemaVersion: validatedData.metadata.schemaVersion ?? SAVE_SCHEMA_VERSION,
+        saveId: validatedData.metadata.saveId ?? this.generateId('save'),
+        deviceId: validatedData.metadata.deviceId ?? deviceId,
+        revision: validatedData.metadata.revision ?? 1,
+        clientRevision: validatedData.metadata.clientRevision ?? validatedData.metadata.revision ?? 1,
+        createdAt: validatedData.metadata.createdAt ?? validatedData.metadata.lastPlayed ?? Date.now(),
+        updatedAt: validatedData.metadata.updatedAt ?? validatedData.metadata.lastPlayed ?? Date.now(),
+        migrationState: validatedData.metadata.migrationState ?? 'pending',
+      };
 
-      return validatedData as SaveSlotData;
+      const normalizedData: SaveSlotData = {
+        ...(validatedData as SaveSlotData),
+        metadata: normalizedMetadata,
+      };
+
+      this.state.slots[slotId] = normalizedData;
+      this.state.metadata[slotId] = normalizedMetadata;
+
+      return normalizedData;
     } catch (error) {
       console.error(`Load from slot ${slotId} failed:`, error);
       return await this.restoreFromBackup(slotId);
@@ -284,6 +977,9 @@ class SaveManager {
 
       await this.storage.removeItem(getSlotKey(slotId));
       await this.storage.removeItem(getMetadataKey(slotId));
+      await this.deleteSlotSignature(slotId);
+      await this.storage.removeItem(this.getBackupHistoryKey(slotId));
+      await this.storage.removeItem(getBackupKey(slotId));
 
       delete this.state.slots[slotId];
       delete this.state.metadata[slotId];
@@ -302,6 +998,8 @@ class SaveManager {
       await this.storage.removeItem(getSlotKey(slotId));
       await this.storage.removeItem(getMetadataKey(slotId));
       await this.storage.removeItem(getBackupKey(slotId));
+      await this.storage.removeItem(this.getBackupHistoryKey(slotId));
+      await this.deleteSlotSignature(slotId);
 
       delete this.state.slots[slotId];
       delete this.state.metadata[slotId];
@@ -333,10 +1031,23 @@ class SaveManager {
     try {
       const saveData = await this.loadFromSlot(slotId);
       if (!saveData) return null;
+      const backups = await this.getExportBackups(slotId);
+      const exportedAt = Date.now();
+      const manifest = this.buildExportManifest(slotId, saveData, backups);
 
-      const exportData = {
+      const exportData: SaveExportPackage & {
+        version: number;
+        exported: number;
+        data: SaveSlotData;
+      } = {
+        exportVersion: SAVE_EXPORT_VERSION,
+        appVersion: `save-v${SAVE_VERSION}`,
+        exportedAt,
+        manifest,
+        saves: [saveData],
+        backups,
         version: SAVE_VERSION,
-        exported: Date.now(),
+        exported: exportedAt,
         data: saveData,
       };
 
@@ -349,22 +1060,65 @@ class SaveManager {
 
   async importSlot(slotId: string, jsonData: string): Promise<boolean> {
     try {
-      const importData = JSON.parse(jsonData);
+      if (typeof jsonData !== 'string' || jsonData.trim().length === 0) {
+        throw new Error('Import payload is empty');
+      }
 
-      if (!importData.version || !importData.data) {
+      const payloadBytes =
+        typeof TextEncoder !== 'undefined'
+          ? new TextEncoder().encode(jsonData).length
+          : jsonData.length;
+      if (payloadBytes > MAX_IMPORT_PAYLOAD_BYTES) {
+        throw new Error(`Import payload too large (${payloadBytes} bytes)`);
+      }
+
+      const importData = JSON.parse(jsonData) as unknown;
+      const importRecord = importData as Record<string, unknown>;
+
+      const extractedSave = this.extractImportedSave(importData);
+      if (!extractedSave) {
         throw new Error('Invalid import format');
       }
 
-      let saveData = importData.data as SaveSlotData;
+      const validation = validateSaveData(extractedSave);
+      if (!validation.valid || !validation.data) {
+        throw new Error('Imported save failed validation');
+      }
 
+      if (validation.repaired) {
+        devLog.warn('Imported save was auto-repaired:', validation.repairLog);
+      }
+
+      let saveData = validation.data as SaveSlotData;
       if (saveData.metadata.version < SAVE_VERSION) {
         saveData = migrateToVersion(saveData, SAVE_VERSION);
       }
 
-      saveData.metadata.slotId = slotId;
-      saveData.metadata.lastPlayed = Date.now();
+      const importedBackups = this.sanitizeImportedBackups(slotId, importRecord.backups);
+      const sourceSlotId = saveData.metadata.slotId || slotId;
+      if (!this.isManifestValidForImport(sourceSlotId, saveData, importedBackups, importRecord.manifest)) {
+        throw new Error('Import manifest checksum mismatch');
+      }
 
-      return await this.saveToSlot(slotId, saveData.playerName, saveData.stats, saveData.gameState);
+      const importedMetadata: Partial<SaveSlotMetadata> = {
+        ...saveData.metadata,
+        schemaVersion: saveData.metadata.schemaVersion ?? SAVE_SCHEMA_VERSION,
+        migrationState: 'migrated',
+        updatedAt: Date.now(),
+      };
+
+      const saved = await this.saveToSlot(
+        slotId,
+        saveData.playerName,
+        saveData.stats,
+        saveData.gameState,
+        { importedMetadata }
+      );
+
+      if (!saved) return false;
+
+      await this.mergeImportedBackups(slotId, importedBackups);
+      return true;
     } catch (error) {
       console.error(`Import to slot ${slotId} failed:`, error);
       return false;
@@ -419,7 +1173,11 @@ class SaveManager {
         data: saveData,
       };
 
-      await this.storage.setItem(getBackupKey(slotId), JSON.stringify(backup));
+      const history = await this.getBackupHistory(slotId);
+      const nextHistory = [backup, ...history].slice(0, MAX_BACKUP_HISTORY);
+
+      await this.writeProtectedStorageItem(getBackupKey(slotId), JSON.stringify(backup));
+      await this.persistBackupHistory(slotId, nextHistory);
     } catch (error) {
       console.error(`Backup creation for slot ${slotId} failed:`, error);
     }
@@ -427,16 +1185,22 @@ class SaveManager {
 
   private async restoreFromBackup(slotId: string): Promise<SaveSlotData | null> {
     try {
-      const rawBackup = await this.storage.getItem(getBackupKey(slotId));
-      if (!rawBackup) return null;
+      const history = await this.getBackupHistory(slotId);
+      let backup: SaveBackup | null = history[0] ?? null;
 
-      const backup = JSON.parse(rawBackup) as SaveBackup;
+      if (!backup) {
+        const rawBackup = await this.readProtectedStorageItem(getBackupKey(slotId));
+        if (!rawBackup) return null;
+        backup = JSON.parse(rawBackup) as SaveBackup;
+      }
 
       if (this.state.metadata[slotId]) {
         this.state.metadata[slotId]!.status = 'corrupted';
       }
 
-      await this.saveToSlot(slotId, backup.data.playerName, backup.data.stats, backup.data.gameState);
+      await this.saveToSlot(slotId, backup.data.playerName, backup.data.stats, backup.data.gameState, {
+        importedMetadata: backup.data.metadata,
+      });
 
       return backup.data;
     } catch (error) {
@@ -447,7 +1211,7 @@ class SaveManager {
 
   private async loadManagerState(): Promise<void> {
     try {
-      const rawState = await this.storage.getItem(getManagerStateKey());
+      const rawState = await this.readProtectedStorageItem(getManagerStateKey());
       if (rawState) {
         const savedState = JSON.parse(rawState) as Partial<SaveManagerState>;
         this.state = { ...this.state, ...savedState };
@@ -459,9 +1223,38 @@ class SaveManager {
 
   private async saveManagerState(): Promise<void> {
     try {
-      await this.storage.setItem(getManagerStateKey(), JSON.stringify(this.state));
+      await this.writeProtectedStorageItem(getManagerStateKey(), JSON.stringify(this.state));
     } catch (error) {
       console.error('Failed to save manager state:', error);
+    }
+  }
+
+  private async loadMetaProgression(): Promise<void> {
+    try {
+      const rawMeta = await this.readProtectedStorageItem(META_PROGRESS_KEY);
+      if (!rawMeta) {
+        this.metaProgression = createInitialMetaProgression();
+        return;
+      }
+
+      const parsed = JSON.parse(rawMeta) as Partial<MetaProgression>;
+      this.metaProgression = {
+        ...createInitialMetaProgression(),
+        ...parsed,
+        lifetimeAchievementIds: [...(parsed.lifetimeAchievementIds || [])],
+        recentRuns: [...(parsed.recentRuns || [])],
+      };
+    } catch (error) {
+      console.error('Failed to load meta progression:', error);
+      this.metaProgression = createInitialMetaProgression();
+    }
+  }
+
+  private async saveMetaProgression(): Promise<void> {
+    try {
+      await this.writeProtectedStorageItem(META_PROGRESS_KEY, JSON.stringify(this.metaProgression));
+    } catch (error) {
+      console.error('Failed to save meta progression:', error);
     }
   }
 
@@ -471,13 +1264,13 @@ class SaveManager {
 
       for (let i = 1; i <= maxSlots; i++) {
         const slotId = i.toString();
-        const rawMeta = await this.storage.getItem(getMetadataKey(slotId));
+        const rawMeta = await this.readProtectedStorageItem(getMetadataKey(slotId));
         if (rawMeta) {
           this.state.metadata[slotId] = JSON.parse(rawMeta);
         }
       }
 
-      const autoSaveMeta = await this.storage.getItem(getMetadataKey(AUTO_SAVE_SLOT_ID));
+      const autoSaveMeta = await this.readProtectedStorageItem(getMetadataKey(AUTO_SAVE_SLOT_ID));
       if (autoSaveMeta) {
         this.state.metadata[AUTO_SAVE_SLOT_ID] = JSON.parse(autoSaveMeta);
       }
@@ -491,7 +1284,7 @@ class SaveManager {
       const legacySave = await migrateLegacySave(this.storage);
       if (legacySave) {
         await this.saveToSlot('1', legacySave.playerName, legacySave.stats, legacySave.gameState);
-        console.log('Legacy save migrated to slot 1');
+        devLog.log('Legacy save migrated to slot 1');
       }
     } catch (error) {
       console.error('Legacy save migration failed:', error);

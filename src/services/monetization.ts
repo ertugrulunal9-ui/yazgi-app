@@ -202,8 +202,20 @@ const writeStorageItem = async (key: string, value: string): Promise<void> => {
 const optionalRequire = (moduleName: string): any => {
   try {
     if (typeof require !== 'function') return null;
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require(moduleName);
+
+    switch (moduleName) {
+      case 'expo-constants':
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require('expo-constants');
+      case 'react-native-purchases':
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require('react-native-purchases');
+      case 'react-native-google-mobile-ads':
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require('react-native-google-mobile-ads');
+      default:
+        return null;
+    }
   } catch {
     return null;
   }
@@ -491,13 +503,22 @@ const getMonetizationEntitlementAuthToken = (): string | null => {
 
 const shouldRequireServerAuthority = (): boolean => {
   const envOverride = normalizeConfigBoolean(process.env.EXPO_PUBLIC_ENTITLEMENT_REQUIRE_SERVER_AUTHORITY);
-  if (envOverride !== null) return envOverride;
-
   const config = getMonetizationConfig();
   const configValue = normalizeConfigBoolean(config.requireServerAuthority);
+  if (!isDevRuntime) {
+    if (envOverride === false || configValue === false) {
+      warnMonetizationConfigOnce(
+        'require_server_authority_forced_prod',
+        '[monetization] Ignoring requireServerAuthority=false in production. Server authority is forced on.'
+      );
+    }
+    return true;
+  }
+
+  if (envOverride !== null) return envOverride;
   if (configValue !== null) return configValue;
 
-  return !isDevRuntime;
+  return false;
 };
 
 const shouldRefreshEntitlementsOnStartup = (): boolean => {
@@ -1054,6 +1075,18 @@ class MonetizationService {
   private async initializeAds(): Promise<void> {
     if (Platform.OS === 'web') {
       this.adProvider = 'mock';
+      return;
+    }
+
+    const constantsModule = optionalRequire('expo-constants');
+    const constants = constantsModule?.default ?? constantsModule;
+    const appOwnership = normalizeConfigString(constants?.appOwnership)?.toLowerCase();
+    const executionEnvironment = normalizeConfigString(constants?.executionEnvironment)?.toLowerCase();
+    const isExpoGoClient = appOwnership === 'expo' || executionEnvironment === 'storeclient';
+    if (isExpoGoClient) {
+      devLog.log('Expo Go detected. Skipping AdMob native module and using mock ads.');
+      this.adProvider = 'mock';
+      this.adMobModule = null;
       return;
     }
 

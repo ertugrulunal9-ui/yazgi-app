@@ -10,6 +10,7 @@ import Animated, {
 import * as Haptics from 'expo-haptics';
 import { Difficulty, GameState } from './MiniGameContainer';
 import seenQuestionsTracker from '../../utils/seenQuestionsTracker';
+import { balanceCorrectAnswerDistribution } from './questionOptionBalancer';
 
 type QuestionType = 'DATE' | 'PERSON' | 'EVENT' | 'PLACE' | 'ORDER';
 
@@ -256,9 +257,10 @@ const HistoryExamGame: React.FC<HistoryExamGameProps> = ({
                 pool,
                 gameState.totalQuestions
             );
-            setQuestions(selected);
-            if (selected.length > 0) {
-                setCurrentQuestion(selected[0]);
+            const balancedQuestions = balanceCorrectAnswerDistribution(selected);
+            setQuestions(balancedQuestions);
+            if (balancedQuestions.length > 0) {
+                setCurrentQuestion(balancedQuestions[0]);
                 // Seçilen soruları görüldü olarak işaretle
                 await seenQuestionsTracker.markQuestionsAsSeen(
                     'history',
@@ -423,7 +425,7 @@ const HistoryExamGame: React.FC<HistoryExamGameProps> = ({
                 </View>
             )}
 
-            <Animated.View style={[styles.feedbackOverlay, feedbackAnimatedStyle]}>
+            <Animated.View pointerEvents="none" style={[styles.feedbackOverlay, feedbackAnimatedStyle]}>
                 <Text style={styles.feedbackEmoji}>
                     {feedback === 'correct' ? '✅' : '❌'}
                 </Text>

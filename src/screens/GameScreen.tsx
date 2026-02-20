@@ -1,16 +1,26 @@
-import React, { useMemo, useCallback, useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, Platform, StyleSheet } from 'react-native';
+import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGame } from '../context/GameContext';
 import { useUI } from '../context/UIContext';
 import { useStats } from '../hooks/useStats';
 import { useEvents } from '../hooks/useEvents';
 import { useNPCs } from '../hooks/useNPCs';
 import { useExamHandler } from '../hooks/useExamHandler';
+import { useFloatingTexts, useGameActions } from '../hooks/useGameSelectors';
 import { AppTab, Stats } from '../types';
 import {
   FadeInUpView,
+  achievementUnlock,
   buttonPress,
+  gradeBad,
+  gradeGood,
+  healthCritical,
+  levelUp,
+  moneyGain,
+  moneyLoss,
   selectionHaptic,
+  turnAdvance,
 } from '../animations';
 import { MessageToast, Toast } from '../animations/ToastAnimations';
 import { TraitProgressChip } from '../components/TraitProgressChip';
@@ -27,10 +37,13 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { CharacterScreen } from './CharacterScreen';
 import { AchievementList } from '../components/AchievementList';
 import { AchievementToast } from '../components/AchievementToast';
+import { RewardedAdButton } from '../components/RewardedAdButton';
+import ShopModal from '../components/ShopModal';
 import { useAchievements } from '../hooks/useAchievements';
 import { logAchievementUnlocked, logHubAction, logTraitFormed } from '../utils/analyticsEvents';
 import { HubActionCommand } from '../commands/ActionCommand';
 import { TabContent } from '../components/ui';
+import { calculateEndingErrorDebt, calculateSelectedGoalStatProgress } from '../utils/endingResolver';
 import {
   MiniGameContainer,
   MathExamGame,
@@ -51,12 +64,17 @@ interface GameScreenProps {
 }
 
 const hubActionCommand = new HubActionCommand();
-export const GameScreen: React.FC<GameScreenProps> = React.memo(({ onPhaseChange, currentTab }) => {
+const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, currentTab }) => {
   const { theme, metrics, t } = useUI();
-  const { gameState, playerName, updateGameState, updateStats, setStats, floatingTexts, removeFloatingText } = useGame();
+  const { gameState, playerName } = useGame();
+  const { updateGameState, updateStats, setStats } = useGameActions();
+  const { floatingTexts, removeFloatingText } = useFloatingTexts();
   const { stats } = useStats();
   const { advanceTurn, markExamTaken, completeExamPeriod, selectNewEvent } = useEvents();
   const { interactWithNPC, meetNewNPC } = useNPCs();
+  const previousAgeRef = useRef(gameState.age);
+  const previousReportCardRef = useRef(gameState.pendingReportCard);
+  const previousHealthCriticalRef = useRef(stats.health <= 20);
 
   const {
     unlockedAchievements,
@@ -77,6 +95,7 @@ export const GameScreen: React.FC<GameScreenProps> = React.memo(({ onPhaseChange
       setStats({ ...rewarded, energy: cappedEnergy });
       setAchievementToastIds(achievementIds);
       setAchievementToastVisible(true);
+      achievementUnlock();
       achievementIds.forEach(id => {
         void logAchievementUnlocked(id);
       });
@@ -87,17 +106,18 @@ export const GameScreen: React.FC<GameScreenProps> = React.memo(({ onPhaseChange
   const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
 
   // Toast state for instant feedback
-  const [toasts, setToasts] = useState<Array<{
+  const [toasts, setToasts] = useState<{
     id: string;
     message: string;
     type: 'success' | 'error' | 'info' | 'warning';
-  }>>([]);
+  }[]>([]);
   const [traitChipVisible, setTraitChipVisible] = useState(false);
   const [traitChipTraits, setTraitChipTraits] = useState<string[]>([]);
   const [traitChipKey, setTraitChipKey] = useState(0);
   const [achievementToastIds, setAchievementToastIds] = useState<string[]>([]);
   const [achievementToastVisible, setAchievementToastVisible] = useState(false);
   const [achievementsOpen, setAchievementsOpen] = useState(false);
+  const [shopOpen, setShopOpen] = useState(false);
   const unlockedAchievementIds = useMemo(
     () => unlockedAchievements.map(a => a.achievementId),
     [unlockedAchievements]
@@ -124,6 +144,39 @@ export const GameScreen: React.FC<GameScreenProps> = React.memo(({ onPhaseChange
     }, toastDurationMs + toastDismissDelayMs);
   }, [toastDurationMs, toastDismissDelayMs]);
 
+  const monetizationTheme = useMemo(() => ({
+    appBg: theme.appBg,
+    surfaceBase: theme.surfaceBase,
+    surfaceRaised: theme.surfaceRaised,
+    textPrimary: theme.textPrimary,
+    textSecondary: theme.textSecondary,
+    border: theme.border,
+    accentEvent: theme.accentEvent,
+  }), [theme.appBg, theme.surfaceBase, theme.surfaceRaised, theme.textPrimary, theme.textSecondary, theme.border, theme.accentEvent]);
+
+  const handleRewardClaimed = useCallback((reward: { type: 'energy' | 'intelligence' | 'money'; amount: number }) => {
+    if (reward.type === 'energy') {
+      const clampedEnergy = Math.min(gameState.maxEnergy, stats.energy + reward.amount);
+      const delta = Math.max(0, clampedEnergy - stats.energy);
+      if (delta > 0) {
+        updateStats({ energy: delta });
+        enqueueToast(`+${delta} enerji kazandin`, 'success');
+      } else {
+        enqueueToast('Enerjin zaten dolu', 'info');
+      }
+      return;
+    }
+
+    if (reward.type === 'intelligence') {
+      updateStats({ intelligence: reward.amount });
+      enqueueToast(`+${reward.amount} zeka kazandin`, 'success');
+      return;
+    }
+
+    updateStats({ money: reward.amount });
+    enqueueToast(`+${reward.amount} para kazandin`, 'success');
+  }, [enqueueToast, gameState.maxEnergy, stats.energy, updateStats]);
+
   useEffect(() => {
     if (achievementsLoading) return;
     void checkAchievements();
@@ -147,6 +200,40 @@ export const GameScreen: React.FC<GameScreenProps> = React.memo(({ onPhaseChange
       updateGameState({ unlockedAchievements });
     }
   }, [achievementsLoading, unlockedAchievementIds, currentAchievementIds, unlockedAchievements, updateGameState]);
+
+  useEffect(() => {
+    if (gameState.age > previousAgeRef.current) {
+      levelUp();
+    }
+    previousAgeRef.current = gameState.age;
+  }, [gameState.age]);
+
+  useEffect(() => {
+    if (gameState.pendingReportCard && !previousReportCardRef.current) {
+      const gradeValues = Object.values(gameState.schoolGrades).filter(
+        (value): value is number => typeof value === 'number'
+      );
+      const averageGrade = gradeValues.length > 0
+        ? gradeValues.reduce((sum, value) => sum + value, 0) / gradeValues.length
+        : 0;
+
+      if (averageGrade >= 70) {
+        gradeGood();
+      } else {
+        gradeBad();
+      }
+    }
+
+    previousReportCardRef.current = gameState.pendingReportCard;
+  }, [gameState.pendingReportCard, gameState.schoolGrades]);
+
+  useEffect(() => {
+    const isCritical = stats.health <= 20;
+    if (isCritical && !previousHealthCriticalRef.current) {
+      healthCritical();
+    }
+    previousHealthCriticalRef.current = isCritical;
+  }, [stats.health]);
 
   // Exam handler hook
   const {
@@ -205,10 +292,17 @@ export const GameScreen: React.FC<GameScreenProps> = React.memo(({ onPhaseChange
 
   const isEventActive = gameState.phase === 'EVENT' || gameState.phase === 'RESULT' || gameState.phase === 'GAME_OVER';
   const isInteractionLocked = isEventActive;
+  const dreamProgress = useMemo(
+    () => calculateSelectedGoalStatProgress(gameState.selectedGoal ?? null, stats),
+    [gameState.selectedGoal, stats]
+  );
+  const riskPercent = useMemo(
+    () => calculateEndingErrorDebt(gameState, stats).total,
+    [gameState, stats]
+  );
 
   // Calculate available categories based on age
   const availableCategories = useMemo(() => {
-    console.log('[GameScreen] Recalculating categories for age:', gameState.age);
     return ACTION_CATEGORIES.filter(category => {
       if (category.minAge && gameState.age < category.minAge) return false;
       if (category.maxAge !== undefined && gameState.age > category.maxAge) return false;
@@ -217,12 +311,9 @@ export const GameScreen: React.FC<GameScreenProps> = React.memo(({ onPhaseChange
   }, [gameState.age]);
 
   const handleCategoryPress = useCallback((category: ActionCategory) => {
-    console.log('[GameScreen] Category pressed:', category.title);
-    console.log('[GameScreen] Opening bottom sheet...');
     selectionHaptic();
     setSelectedCategory(category);
     setBottomSheetVisible(true);
-    console.log('[GameScreen] Bottom sheet should be visible now');
   }, []);
 
   const handleCloseBottomSheet = useCallback(() => {
@@ -231,8 +322,6 @@ export const GameScreen: React.FC<GameScreenProps> = React.memo(({ onPhaseChange
   }, []);
 
   const handleActionSelect = useCallback((action: SubAction) => {
-    console.log('[GameScreen] handleActionSelect called:', action.id, action.text);
-    console.log('[GameScreen] Current energy:', stats.energy, 'Required:', action.energyCost);
     buttonPress();
     selectionHaptic();
 
@@ -260,6 +349,12 @@ export const GameScreen: React.FC<GameScreenProps> = React.memo(({ onPhaseChange
     }
 
     if (result.newStats !== stats) {
+      const moneyDelta = (result.newStats.money ?? stats.money) - stats.money;
+      if (moneyDelta > 0) {
+        moneyGain();
+      } else if (moneyDelta < 0) {
+        moneyLoss();
+      }
       setStats(result.newStats);
     }
 
@@ -314,13 +409,44 @@ export const GameScreen: React.FC<GameScreenProps> = React.memo(({ onPhaseChange
   const renderHubContent = useCallback(() => {
     return (
       <FadeInUpView>
+        <View style={{ marginBottom: 12 }}>
+          <TouchableOpacity
+            onPress={() => setShopOpen(true)}
+            style={{
+              backgroundColor: theme.surfaceRaised,
+              borderWidth: 1,
+              borderColor: theme.border,
+              borderRadius: 12,
+              paddingHorizontal: 14,
+              paddingVertical: 12,
+              marginBottom: 10,
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Premium magaza"
+            accessibilityHint="Oyun ici premium urunleri goruntuler"
+          >
+            <Text style={{ color: theme.textPrimary, fontWeight: '700', fontSize: 14 }}>
+              Premium Magaza
+            </Text>
+            <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>
+              Reklamsiz deneyim, premium slotlar ve guclendiriciler
+            </Text>
+          </TouchableOpacity>
+
+          <RewardedAdButton
+            onRewardClaimed={handleRewardClaimed}
+            currentEnergy={stats.energy}
+            theme={monetizationTheme}
+          />
+        </View>
+
         <ActionGrid
           categories={availableCategories}
           onCategoryPress={handleCategoryPress}
         />
       </FadeInUpView>
     );
-  }, [availableCategories, handleCategoryPress]);
+  }, [availableCategories, handleCategoryPress, handleRewardClaimed, monetizationTheme, stats.energy, theme.border, theme.surfaceRaised, theme.textPrimary, theme.textSecondary]);
 
   // Styles
   const safeAreaStyle = useMemo(() => ({
@@ -374,95 +500,7 @@ export const GameScreen: React.FC<GameScreenProps> = React.memo(({ onPhaseChange
     opacity: isInteractionLocked ? 0.5 : 1,
   }), [isInteractionLocked, theme.surfaceBase, theme.accentEvent, theme.border]);
 
-  const webToastContainerStyle = useMemo(() => StyleSheet.create({
-    container: {
-      position: 'absolute',
-      top: 80,
-      left: 0,
-      right: 0,
-      alignItems: 'center',
-      zIndex: 9999,
-      pointerEvents: 'none',
-    },
-    errorBox: {
-      backgroundColor: '#7f1d1d',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: '#dc2626',
-      maxWidth: 400,
-      margin: 16,
-    },
-    warningBox: {
-      backgroundColor: '#78350f',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: '#d97706',
-      maxWidth: 400,
-      margin: 16,
-    },
-    successBox: {
-      backgroundColor: '#065f46',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: '#059669',
-      maxWidth: 400,
-      margin: 16,
-    },
-    infoBox: {
-      backgroundColor: '#1e3a8a',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: '#2563eb',
-      maxWidth: 400,
-      margin: 16,
-    },
-    errorText: {
-      color: '#f87171',
-      fontSize: 14,
-      fontWeight: '600',
-      textAlign: 'center',
-    },
-    warningText: {
-      color: '#fbbf24',
-      fontSize: 14,
-      fontWeight: '600',
-      textAlign: 'center',
-    },
-    successText: {
-      color: '#34d399',
-      fontSize: 14,
-      fontWeight: '600',
-      textAlign: 'center',
-    },
-    infoText: {
-      color: '#60a5fa',
-      fontSize: 14,
-      fontWeight: '600',
-      textAlign: 'center',
-    },
-  }), []);
-
   const toastOffsetStep = 68;
-  const getWebToastStyles = (type: 'success' | 'error' | 'info' | 'warning') => {
-    switch (type) {
-      case 'error':
-        return { box: webToastContainerStyle.errorBox, text: webToastContainerStyle.errorText };
-      case 'warning':
-        return { box: webToastContainerStyle.warningBox, text: webToastContainerStyle.warningText };
-      case 'info':
-        return { box: webToastContainerStyle.infoBox, text: webToastContainerStyle.infoText };
-      default:
-        return { box: webToastContainerStyle.successBox, text: webToastContainerStyle.successText };
-    }
-  };
 
   const examOverlayStyle = useMemo(() => ({
     position: 'absolute' as const,
@@ -489,13 +527,11 @@ export const GameScreen: React.FC<GameScreenProps> = React.memo(({ onPhaseChange
   }, [onPhaseChange]);
 
   const handleEndDay = useCallback(() => {
-    console.log("Tur ilerliyor: Ad\u0131m 1 - G\u00FCn\u00FC Bitir \u00E7a\u011Fr\u0131ld\u0131.");
     buttonPress();
     selectionHaptic();
+    turnAdvance();
     try {
-      console.log("Tur ilerliyor: Ad\u0131m 2 - advanceTurn ba\u015Flat\u0131l\u0131yor.");
       advanceTurn();
-      console.log("Tur ilerliyor: Ad\u0131m 3 - advanceTurn ba\u015Far\u0131yla tamamland\u0131.");
     } catch (error) {
       console.error("Tur ilerliyor: HATA - advanceTurn s\u0131ras\u0131nda bir sorun olu\u015Ftu:", error);
     }
@@ -513,8 +549,12 @@ export const GameScreen: React.FC<GameScreenProps> = React.memo(({ onPhaseChange
               playerName={playerName}
               age={gameState.age}
               innerThought={gameState.innerThought}
+              innerThoughtType={gameState.innerThoughtType}
               stats={stats}
               maxEnergy={gameState.maxEnergy}
+              selectedGoal={gameState.selectedGoal ?? null}
+              dreamProgress={dreamProgress}
+              riskPercent={riskPercent}
               theme={theme}
             />
           </View>
@@ -522,18 +562,33 @@ export const GameScreen: React.FC<GameScreenProps> = React.memo(({ onPhaseChange
           {/* Content */}
           <TabContent activeTab={activeContentTab} keepAlive>
             <TabContent.Screen name="hub">
-              <ScrollView style={scrollViewStyle} contentContainerStyle={scrollViewContentStyle}>
+              <ScrollView
+                style={scrollViewStyle}
+                contentContainerStyle={scrollViewContentStyle}
+                keyboardShouldPersistTaps="handled"
+                nestedScrollEnabled
+                overScrollMode="never"
+                bounces={false}
+              >
                 {renderHubContent()}
               </ScrollView>
             </TabContent.Screen>
 
             <TabContent.Screen name="character">
-              <ScrollView style={scrollViewStyle} contentContainerStyle={scrollViewContentStyle}>
+              <ScrollView
+                style={scrollViewStyle}
+                contentContainerStyle={scrollViewContentStyle}
+                keyboardShouldPersistTaps="handled"
+                nestedScrollEnabled
+                overScrollMode="never"
+                bounces={false}
+              >
                 <CharacterScreen
                   stats={stats}
                   traits={gameState.traits}
                   skills={gameState.skills}
                   schoolGrades={gameState.schoolGrades}
+                  personalityState={gameState.personalityState}
                   age={gameState.age}
                   maxEnergy={gameState.maxEnergy}
                   family={gameState.family}
@@ -598,7 +653,21 @@ export const GameScreen: React.FC<GameScreenProps> = React.memo(({ onPhaseChange
                     return result;
                   }}
                   onMeetNew={() => {
+                    const meetEnergyCost = 12;
+                    if (stats.energy < meetEnergyCost) {
+                      return { success: false };
+                    }
+
                     const result = meetNewNPC();
+                    if (result.success) {
+                      updateStats({ energy: -meetEnergyCost });
+                      void logHubAction('social_meet_new', meetEnergyCost, gameState.age, 0, {
+                        turn: gameState.turn,
+                        totalTurns: gameState.totalTurns || 0,
+                        currentEnergy: stats.energy,
+                        maxEnergy: gameState.maxEnergy,
+                      });
+                    }
                     return result;
                   }}
                   theme={theme}
@@ -652,8 +721,15 @@ export const GameScreen: React.FC<GameScreenProps> = React.memo(({ onPhaseChange
         familyWealth={gameState.family?.wealth}
       />
 
-      {/* Toast - Native platforms */}
-      {Platform.OS !== 'web' && toasts.map((toast, index) => (
+      <ShopModal
+        isOpen={shopOpen}
+        onClose={() => setShopOpen(false)}
+        placement="hub"
+        theme={monetizationTheme}
+      />
+
+      {/* Toasts */}
+      {toasts.map((toast, index) => (
         <MessageToast
           key={toast.id}
           visible
@@ -663,23 +739,6 @@ export const GameScreen: React.FC<GameScreenProps> = React.memo(({ onPhaseChange
           onClose={() => setToasts(prev => prev.filter(item => item.id !== toast.id))}
         />
       ))}
-
-      {/* Toast - Web */}
-      {Platform.OS === 'web' && toasts.map((toast, index) => {
-        const toastStyles = getWebToastStyles(toast.type);
-        return (
-          <View
-            key={toast.id}
-            style={[webToastContainerStyle.container, { top: 80 + index * toastOffsetStep }]}
-          >
-            <View style={toastStyles.box}>
-              <Text style={toastStyles.text}>
-                {toast.message}
-              </Text>
-            </View>
-          </View>
-        );
-      })}
 
       <Toast
         key={traitChipKey}
@@ -692,7 +751,7 @@ export const GameScreen: React.FC<GameScreenProps> = React.memo(({ onPhaseChange
         <TraitProgressChip traits={traitChipTraits} theme={theme} />
       </Toast>
 
-      {Platform.OS === 'web' && achievementToastVisible && achievementToastIds.length > 0 && (
+      {achievementToastVisible && achievementToastIds.length > 0 && (
         <AchievementToast
           achievementIds={achievementToastIds}
           onClose={() => setAchievementToastVisible(false)}
@@ -771,7 +830,7 @@ export const GameScreen: React.FC<GameScreenProps> = React.memo(({ onPhaseChange
       />
     </View>
   );
-});
+};
 
-
-
+export const GameScreen: React.FC<GameScreenProps> = React.memo(GameScreenComponent);
+GameScreen.displayName = 'GameScreen';

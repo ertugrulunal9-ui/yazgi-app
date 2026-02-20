@@ -146,6 +146,8 @@ const ReportCard = React.memo<ReportCardProps>(({ grades, family, onClose, age, 
   );
 });
 
+ReportCard.displayName = 'ReportCard';
+
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,

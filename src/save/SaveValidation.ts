@@ -19,6 +19,12 @@ export const DEFAULT_PERSONALITY = {
   conformity: 50,
 };
 
+export const DEFAULT_PERSONALITY_STATE = {
+  HELPFUL: { count: 0, streak: 0, multiplier: 1 },
+  PRAGMATIC: { count: 0, streak: 0, multiplier: 1 },
+  AGGRESSIVE: { count: 0, streak: 0, multiplier: 1 },
+};
+
 export const DEFAULT_STRESS = {
   current: 0,
   threshold: 70,
@@ -90,6 +96,18 @@ export const PersonalityShiftSchema = z.object({
   age: z.number(),
 });
 
+export const PersonalityMomentumSchema = z.object({
+  count: z.number().min(0),
+  streak: z.number().min(0),
+  multiplier: z.number().min(1).max(3),
+});
+
+export const PersonalityStateSchema = z.object({
+  HELPFUL: PersonalityMomentumSchema,
+  PRAGMATIC: PersonalityMomentumSchema,
+  AGGRESSIVE: PersonalityMomentumSchema,
+});
+
 // Memory System
 export const EventMemorySchema = z.object({
   id: z.string(),
@@ -158,6 +176,34 @@ export const FamilyEvolutionSchema = z.object({
   yearsAtLowRelation: z.number().min(0),
   strictWarmthTriggered: z.boolean(),
   familyCrisisTriggered: z.boolean(),
+});
+
+// Character
+export const PlayerGenderSchema = z.enum(['MALE', 'FEMALE']);
+
+export const ZodiacSignSchema = z.enum([
+  'KOC',
+  'BOGA',
+  'IKIZLER',
+  'YENGEC',
+  'ASLAN',
+  'BASAK',
+  'TERAZI',
+  'AKREP',
+  'YAY',
+  'OGLAK',
+  'KOVA',
+  'BALIK',
+]);
+
+export const CharacterInfoSchema = z.object({
+  firstName: z.string(),
+  lastName: z.string(),
+  gender: PlayerGenderSchema,
+  birthMonth: z.number().min(1).max(12),
+  birthDay: z.number().min(1).max(31),
+  birthCity: z.string(),
+  zodiacSign: ZodiacSignSchema,
 });
 
 // NPC
@@ -243,6 +289,15 @@ export const TraitProgressSchema = z.object({
 export const GamePhaseSchema = z.enum([
   'SETUP',
   'HUB',
+  'HUB_STUDY',
+  'HUB_SPORTS',
+  'HUB_COMPUTER',
+  'HUB_ART',
+  'HUB_SHOP',
+  'HUB_INVENTORY',
+  'HUB_WORK',
+  'HUB_SKILLS',
+  'HUB_INTERACTION',
   'HUB_CHARACTER',
   'HUB_SKILLTREE',
   'HUB_SOCIAL',
@@ -252,6 +307,39 @@ export const GamePhaseSchema = z.enum([
   'GAME_OVER',
 ]);
 
+export const FateRollSchema = z.object({
+  outcome: z.enum(['BLESSED', 'FORTUNATE', 'NEUTRAL', 'UNLUCKY', 'CURSED']),
+  rawRoll: z.number(),
+  modifiedRoll: z.number(),
+  zodiacModifier: z.number(),
+  pityModifier: z.number(),
+});
+
+export const MetaRunSummarySchema = z.object({
+  runId: z.string(),
+  endedAt: z.number(),
+  age: z.number(),
+  endingId: z.string(),
+  endingTitle: z.string(),
+  tier: z.enum(['FAILURE', 'NORMAL', 'SUCCESS', 'LEGENDARY']),
+  pointsEarned: z.number(),
+  compatibilityScore: z.number(),
+  selectedGoal: z.enum(['ACADEMIC', 'ATHLETIC', 'CREATIVE', 'WEALTH', 'SOCIAL']).nullable(),
+});
+
+export const MetaProgressionSchema = z.object({
+  version: z.number(),
+  totalRunsCompleted: z.number(),
+  totalLegacyPoints: z.number(),
+  legacyLevel: z.number(),
+  bestTier: z.enum(['FAILURE', 'NORMAL', 'SUCCESS', 'LEGENDARY']).nullable(),
+  highestCompatibilityScore: z.number(),
+  highestAgeReached: z.number(),
+  lifetimeAchievementIds: z.array(z.string()),
+  recentRuns: z.array(MetaRunSummarySchema),
+  updatedAt: z.number(),
+});
+
 // Last Result
 export const LastResultSchema = z.object({
   feedback: z.string(),
@@ -260,6 +348,7 @@ export const LastResultSchema = z.object({
   gradeChanges: z.record(z.string(), z.number()).optional(),
   personalityChanges: z.record(z.string(), z.number()).optional(),
   traitProgressUpdates: z.array(z.string()).optional(),
+  fateRoll: FateRollSchema.optional(),
 }).nullable();
 
 // =================================================================
@@ -272,6 +361,7 @@ export const GameStateSchema = z.object({
   phase: GamePhaseSchema,
   currentEvent: z.any().nullable(),
   pendingReportCard: z.boolean(),
+  characterInfo: CharacterInfoSchema.nullable(),
   lastResult: LastResultSchema,
   historyLog: z.array(LogEntrySchema),
   family: FamilySchema,
@@ -297,6 +387,7 @@ export const GameStateSchema = z.object({
   npcs: z.array(NPCSchema),
   selectedNpcId: z.string().nullable(),
   innerThought: z.string(),
+  innerThoughtType: z.enum(['CRISIS', 'MISMATCH', 'TRAIT', 'MOMENTUM', 'CLIFFHANGER', 'IDLE']).default('IDLE'),
   floatingTexts: z.array(z.any()), // Transient, don't validate strictly
   totalTurns: z.number(),
   sessionCount: z.number().min(0),
@@ -317,6 +408,7 @@ export const GameStateSchema = z.object({
   personality: PersonalitySchema,
   stress: StressStateSchema,
   personalityHistory: z.array(PersonalityShiftSchema),
+  personalityState: PersonalityStateSchema.optional(),
 
   // Social System
   socialGroups: z.array(SocialGroupSchema),
@@ -324,6 +416,10 @@ export const GameStateSchema = z.object({
 
   // Childhood Prolog
   childhood: ChildhoodStateSchema,
+
+  // Meta progression (cross-run)
+  metaProgression: MetaProgressionSchema.optional(),
+  metaRunRecorded: z.boolean().optional(),
 }).partial(); // Make all fields optional for flexible validation
 
 // =================================================================
@@ -338,6 +434,15 @@ export const SaveSlotMetadataSchema = z.object({
   lastPlayed: z.number(),
   version: z.number(),
   checksum: z.string(),
+  schemaVersion: z.number().min(1).optional(),
+  saveId: z.string().min(1).optional(),
+  deviceId: z.string().min(1).optional(),
+  revision: z.number().min(0).optional(),
+  clientRevision: z.number().min(0).optional(),
+  createdAt: z.number().optional(),
+  updatedAt: z.number().optional(),
+  idempotencyKey: z.string().min(1).optional(),
+  migrationState: z.enum(['pending', 'migrated', 'conflict']).optional(),
   status: z.enum(['empty', 'active', 'corrupted']),
   isPremium: z.boolean().default(false),
 });
@@ -472,6 +577,12 @@ function attemptAutoRepair(
         repairLog.push(`Repaired ${path}: set to default stress`);
       }
 
+      // Missing personalityState
+      if (field === 'personalityState') {
+        gs.personalityState = DEFAULT_PERSONALITY_STATE;
+        repairLog.push(`Repaired ${path}: set to default personality momentum state`);
+      }
+
       // Missing memories
       if (field === 'memories') {
         gs.memories = [];
@@ -539,6 +650,7 @@ export default {
   validateStats,
   validateGameState,
   DEFAULT_PERSONALITY,
+  DEFAULT_PERSONALITY_STATE,
   DEFAULT_STRESS,
   DEFAULT_STATS,
 };

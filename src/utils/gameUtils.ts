@@ -1,10 +1,13 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Stats, StatKey, Family, GameState, CareerResult, NPC, FamilyWealth, FamilyDynamic, NPCPersonality, NPCTrait, ZodiacSign, PlayerGender, CharacterInfo, Skills, SchoolGrades, EventMemory, Personality } from '../types';
+import { devLog } from './devLogger';
+import { Stats, StatKey, Family, GameState, CareerResult, NPC, NPCRole, FamilyWealth, FamilyDynamic, NPCPersonality, NPCTrait, ZodiacSign, PlayerGender, CharacterInfo, Skills, SchoolGrades, EventMemory, Personality, TraitTrigger } from '../types';
 import { TRAIT_DEFINITIONS } from '../data/traits';
 import { BALANCE_CONTRACT, calculateInitialEnergy } from '../config/balanceContract';
 import { DEFAULT_FAMILY_EVOLUTION_STATE } from './familyNarrative';
 import { getPersonalityArchetype, getArchetypeDescription, PersonalityArchetype } from './personalitySystem';
+import { createInitialPersonalityState } from '../systems/PersonalityMomentumEngine';
+import { resolveEnding } from './endingResolver';
 
 export const clamp = (value: number, min: number, max: number): number => {
   return Math.min(Math.max(value, min), max);
@@ -46,16 +49,17 @@ export const createRandomFamily = (): Family => {
   }
 
   // Allowance: Wealth'e göre belirlenir
+  // POOR daha zorlayıcı, RICH daha rahat bir ekonomik başlangıç sunar.
   let allowance = 0;
   switch (wealth) {
     case 'POOR':
-      allowance = getRandomInt(5, 15);
+      allowance = getRandomInt(1, 6);
       break;
     case 'MIDDLE':
-      allowance = getRandomInt(20, 40);
+      allowance = getRandomInt(16, 32);
       break;
     case 'RICH':
-      allowance = getRandomInt(50, 100);
+      allowance = getRandomInt(65, 130);
       break;
   }
 
@@ -174,6 +178,7 @@ export const getInitialGameState = (): GameState => {
       business: 0,
     },
     talent: 'NONE',
+    selectedGoal: null,
     streak: { actionId: null, count: 0 },
     traits: geneticTraits, // Genetic traits başlangıçta atanır
     traitProgress: {},
@@ -188,6 +193,7 @@ export const getInitialGameState = (): GameState => {
     npcs, // Başlangıç NPC'leri
     selectedNpcId: null,
     innerThought: "",
+    innerThoughtType: 'IDLE' as const,
     floatingTexts: [],
     totalTurns: 0,
     sessionCount: 0,
@@ -210,6 +216,7 @@ export const getInitialGameState = (): GameState => {
       patience: 50,
       conformity: 50
     },
+    personalityState: createInitialPersonalityState(),
     stress: {
       current: 0,
       threshold: 70,
@@ -229,7 +236,10 @@ export const getInitialGameState = (): GameState => {
     },
     // Sınav sistemi
     examsTakenThisYear: [],
-    isExamPeriod: false
+    isExamPeriod: false,
+    lastBurdenRisk: 0,
+    // Kader sistemi — karakter oluşturulunca zodiacSign ile initialize edilir
+    fate: undefined,
   };
 };
 
@@ -252,7 +262,7 @@ export const getAsyncStorage = async (key: string) => {
     const jsonValue = await AsyncStorage.getItem(key);
     return jsonValue != null ? JSON.parse(jsonValue) : null;
   } catch (e) {
-    console.error('Failed to read value from async storage', e);
+    devLog.error('Failed to read value from async storage', e);
     return null;
   }
 };
@@ -269,13 +279,13 @@ export const initializeSaveSystem = async () => {
     }
     const legacyData = await getAsyncStorage(SAVE_KEY);
     if (legacyData) {
-      console.log('Legacy save data found. Migration will be handled by SaveManager.');
+      devLog.log('Legacy save data found. Migration will be handled by SaveManager.');
     }
     const SaveManager = (await import('../save/SaveManager')).default;
     await SaveManager.initialize();
     return true;
   } catch (error) {
-    console.error("Save system initialization failed:", error);
+    devLog.error("Save system initialization failed:", error);
     return false;
   }
 };
@@ -286,7 +296,7 @@ export const clearSlotSave = async (slotId: string): Promise<boolean> => {
     const success = await SaveManager.clearSlot(slotId);
     return success;
   } catch (error) {
-    console.error('Clear slot save failed:', error);
+    devLog.error('Clear slot save failed:', error);
     return false;
   }
 };
@@ -305,7 +315,7 @@ export const saveGame = async (data: { stats: Stats, gameState: GameState, playe
     );
     return success;
   } catch (error) {
-    console.error("Kaydederken hata oluştu:", error);
+    devLog.error("Kaydederken hata oluştu:", error);
     return false;
   }
 };
@@ -319,7 +329,7 @@ export const loadGame = async () => {
     const saveData = await SaveManager.loadFromSlot(currentSlotId);
     return saveData;
   } catch (error) {
-    console.error("Yüklerken hata oluştu:", error);
+    devLog.error("Yüklerken hata oluştu:", error);
     return null;
   }
 };
@@ -333,7 +343,7 @@ export const resetGameStorage = async () => {
     const success = await SaveManager.deleteSlot(currentSlotId);
     return success;
   } catch (error) {
-    console.error("Sıfırlarken hata oluştu:", error);
+    devLog.error("Sıfırlarken hata oluştu:", error);
     return false;
   }
 };
@@ -351,7 +361,7 @@ export const autoSaveGame = async (data: { stats: Stats, gameState: GameState, p
     );
     return success;
   } catch (error) {
-    console.error("Auto-save failed:", error);
+    devLog.error("Auto-save failed:", error);
     return false;
   }
 };
@@ -868,6 +878,75 @@ export const getSocialEndResult = (npcs: NPC[]): string => {
   return result;
 };
 
+// --- SOSYAL ÖZET SİSTEMİ ---
+
+const ROLE_EMOJI: Record<NPCRole, string> = {
+  PARTNER: '❤️',
+  BEST_FRIEND: '🤝',
+  FRIEND: '👥',
+  CRUSH: '💕',
+  RIVAL: '⚔️',
+  ENEMY: '🔥',
+  ACQUAINTANCE: '👋',
+};
+
+const ROLE_ORDER: NPCRole[] = ['PARTNER', 'BEST_FRIEND', 'CRUSH', 'FRIEND', 'RIVAL', 'ENEMY'];
+
+export interface NPCSummary {
+  name: string;
+  role: NPCRole;
+  relationship: number;
+  metAge: number;
+  sharedMemoryCount: number;
+  emoji: string;
+  narrativeLine: string;
+}
+
+const buildNPCNarrative = (npc: NPC): string => {
+  const yearsKnown = Math.max(0, 18 - npc.metAge);
+  const memCount = npc.sharedMemories.length;
+
+  switch (npc.role) {
+    case 'PARTNER':
+      return `${npc.name} ile ${npc.metAge} yasinda tanistin. ${yearsKnown} yil boyunca birlikte buyudunuz ve mezuniyette el ele tutuyordunuz.`;
+    case 'BEST_FRIEND':
+      return memCount > 2
+        ? `${npc.name}, ${npc.metAge} yasindan beri yaninda. ${memCount} ortak aniniz var — o senin kardesin.`
+        : `${npc.name} ile ${npc.metAge} yasindan beri birbirinize bagli kaldiniz.`;
+    case 'CRUSH':
+      return `${npc.name} ile aranizda bir seyler var ama henuz netlesmediniz.`;
+    case 'FRIEND':
+      return yearsKnown >= 5
+        ? `${npc.name} ile ${yearsKnown} yildir arkadassiniz. Iyi gunleri paylastiniz.`
+        : `${npc.name} ile ara sira takiliyorsun. Iyi bir arkadas ama derin bir bag kuramadin.`;
+    case 'RIVAL':
+      return `${npc.name} ile ${npc.metAge} yasinda yollariniz ayrildi. Hala birbirinize soguk bakiyorsunuz.`;
+    case 'ENEMY':
+      return `${npc.name} ile aran hic duzelmedi. ${Math.abs(npc.relationship)} puan nefret biriktirdiniz.`;
+    default:
+      return `${npc.name} ile yollariniz kesisti ama derin bir bag kuramadin.`;
+  }
+};
+
+export const buildSocialSummary = (npcs: NPC[]): NPCSummary[] => {
+  const significant = npcs.filter(n => ROLE_ORDER.includes(n.role));
+  const sorted = significant.sort((a, b) => {
+    const aOrder = ROLE_ORDER.indexOf(a.role);
+    const bOrder = ROLE_ORDER.indexOf(b.role);
+    return aOrder - bOrder;
+  });
+
+  return sorted.slice(0, 5).map(npc => ({
+    name: npc.name,
+    role: npc.role,
+    relationship: npc.relationship,
+    metAge: npc.metAge,
+    sharedMemoryCount: npc.sharedMemories.length,
+    emoji: ROLE_EMOJI[npc.role] ?? '👋',
+    narrativeLine: buildNPCNarrative(npc),
+  }));
+};
+
 // --- KARİYER SONUÇ SİSTEMİ (Kişilik + Hafıza Zenginleştirilmiş) ---
 
 const CAREER_PERSONALITY_NARRATIVES: Record<string, Partial<Record<PersonalityArchetype, string>>> = {
@@ -957,83 +1036,78 @@ const enrichCareerResult = (
 };
 
 export const calculateCareerResult = (gameState: GameState, stats: Stats): CareerResult => {
-  const { schoolGrades, skills, memories } = gameState;
+  const { memories } = gameState;
   const personality = gameState.personality ?? { openness: 50, courage: 50, empathy: 50, patience: 50, conformity: 50 };
-  const artGrade = schoolGrades.art ?? 0;
-  const musicGrade = schoolGrades.music ?? 0;
   const mems = memories ?? [];
 
-  let base: CareerResult;
+  const endingResolution = resolveEnding({
+    gameState,
+    stats,
+    achievements: gameState.unlockedAchievements,
+  });
 
-  if (skills.sports > 90) {
-    base = { title: "Milli Sporcu", description: "Yıllar süren antrenmanlarının karşılığını aldın. Olimpiyatlara hazırlanıyorsun!", emoji: "\u{1F947}", type: "LEGENDARY", familyReaction: "Baban: 'Benim aslan oğlum/kızım!' diyor." };
-  } else if (skills.music > 85 && musicGrade >= 70) {
-    base = {
-      title: "Rockstar / Virtüöz",
-      description: "Konservatuarı dereceyle bitirdin. Albümlerin yok satıyor.",
-      emoji: "\u{1F3B8}",
-      type: "LEGENDARY",
-      familyReaction: "Annen her konserine geliyor.",
-      influences: [`Müzik notun (${musicGrade}) konservatuar başarını destekledi.`],
-    };
-  } else if (skills.music > 85) {
-    base = {
-      title: "Sahne Müzisyeni",
-      description: "Müziğinle sahnelerde parladın ama akademik müzik notların konservatuar için yeterli olmadı.",
-      emoji: "\u{1F3A4}",
-      type: "SUCCESS",
-      familyReaction: "Ailen sahneye çıkmandan mutluluk duyuyor.",
-      influences: [`Müzik notun (${musicGrade}) akademik yolu sınırladı.`],
-    };
-  } else if (skills.writing > 85) {
-    base = { title: "Ünlü Yazar", description: "Kitapların çok satanlar listesinde. İmza günlerinde uzun kuyruklar var.", emoji: "\u{270D}\u{FE0F}", type: "LEGENDARY", familyReaction: "Ailen raflarda adını görmekten gururlu." };
-  } else if (skills.art > 85 && artGrade >= 70) {
-    base = {
-      title: "Sanatçı",
-      description: "Sergilerin kapalı gişe. Eserlerin koleksiyonerler tarafından kapışılıyor.",
-      emoji: "\u{1F3A8}",
-      type: "LEGENDARY",
-      familyReaction: "Ailen eserlerini duvarlarına asıyor.",
-      influences: [`Görsel sanatlar notun (${artGrade}) sergi ve burs kapılarını açtı.`],
-    };
-  } else if (skills.art > 85) {
-    base = {
-      title: "Atölye Sanatçısı",
-      description: "Yetenekli bir sanatçı oldun ama akademik notların prestijli okullara girişi zorlaştırdı.",
-      emoji: "\u{1F3AD}",
-      type: "SUCCESS",
-      familyReaction: "Ailen atölyene destek oluyor.",
-      influences: [`Görsel sanatlar notun (${artGrade}) akademik desteği zayıflattı.`],
-    };
-  } else if (schoolGrades.math > 80 && schoolGrades.science > 80 && stats.discipline > 60 && personality.patience >= 40) {
-    base = { title: "Tıp Fakültesi", description: "Ülkenin en prestijli Tıp Fakültesini kazandın.", emoji: "\u{1FA7A}", type: "SUCCESS", familyReaction: "Ailen herkese 'Çocuğumuz Doktor olacak' diye hava atıyor." };
-  } else if (personality.empathy >= 70 && personality.patience >= 60 && stats.intelligence > 60) {
-    base = { title: "Psikolog", description: "İnsanları anlama yeteneğin seni psikoloji yoluna taşıdı.", emoji: "\u{1F9E0}", type: "SUCCESS", familyReaction: "Ailen: 'Her zaman insanları anlardı' diyor." };
-  } else if (schoolGrades.math > 70 && skills.coding > 70) {
-    base = { title: "Yazılım Mühendisliği", description: "Kodlama yeteneğin seni teknoloji dünyasına taşıdı.", emoji: "\u{1F4BB}", type: "SUCCESS", familyReaction: "Ailen 'Bütün gün bilgisayar başındaydı ama işe yaradı' diyor." };
-  } else if (skills.business > 75 && stats.money > 1500) {
-    base = { title: "Girişimci", description: "Ticari zekanla kendi işini kurdun. Fikirlerin para ediyor.", emoji: "\u{1F4C8}", type: "SUCCESS", familyReaction: "Ailen işini merakla takip ediyor." };
-  } else if (skills.logic > 75 && schoolGrades.math > 75) {
-    base = { title: "Mühendislik", description: "Analitik düşüncen seni mühendislik yoluna taşıdı.", emoji: "\u{1F9E0}", type: "SUCCESS", familyReaction: "Ailen sayılarla olan bağını hep konuşuyordu." };
-  } else if (personality.courage >= 75 && gameState.traits.includes('BRAVE') && skills.sports > 60) {
-    base = { title: "Kurtarma Pilotu", description: "Cesaretin ve fiziksel gücün seni havacılık yoluna taşıdı.", emoji: "\u{2708}\u{FE0F}", type: "LEGENDARY", familyReaction: "Ailen: 'O her zaman cesurdu' diyor." };
-  } else if (personality.conformity >= 70 && gameState.traits.includes('DISCIPLINED') && stats.discipline > 70) {
-    base = { title: "Subay", description: "Disiplinin ve düzene saygın seni askerlik yoluna yöneltti.", emoji: "\u{1F396}\u{FE0F}", type: "SUCCESS", familyReaction: "Ailen: 'Kurallara hep saygılıydı' diyor." };
-  } else if (personality.openness >= 60 && gameState.traits.includes('CREATIVE') && skills.art > 60) {
-    base = { title: "Dijital Sanatçı", description: "Yaratıcılığın ve açık fikirliliğin dijital sanat dünyasında seni öne çıkardı.", emoji: "\u{1F3A8}", type: "SUCCESS", familyReaction: "Ailen eserlerini sosyal medyada paylaşıyor." };
-  } else if (schoolGrades.language > 80 && stats.intelligence > 70) {
-    base = { title: "Hukuk Fakültesi", description: "Keskin zekan ve hitabetinle Hukuk kazandın.", emoji: "\u{2696}\u{FE0F}", type: "SUCCESS", familyReaction: "Baban: 'Artık davalarımıza sen bakarsın' diyor." };
-  } else if (stats.money > 2000) {
-    base = { title: "Özel Üni - İşletme", description: "Notların parlak değildi ama ailenin imkanlarıyla İşletme kazandın.", emoji: "\u{1F393}", type: "NORMAL", familyReaction: "Ailen: 'Diploma diplomadır' diyor." };
-  } else if (stats.intelligence > 50 && stats.discipline > 50) {
-    base = { title: "İktisat / Kamu Yönetimi", description: "Ortalama bir puanla bir üniversite kazandın.", emoji: "\u{1F4DA}", type: "NORMAL", familyReaction: "Ailen: 'En azından bir yer kazandı' diyor." };
-  } else {
-    base = { title: "Mezuna Kaldın / İşsiz", description: "Sınav sonucun beklediğin gibi gelmedi.", emoji: "\u{1F480}", type: "FAILURE", familyReaction: "Evde derin bir sessizlik var." };
-  }
-
-  return enrichCareerResult(base, personality, mems);
+  return enrichCareerResult(endingResolution.result, personality, mems);
 };
 // --- TRAIT LOGIC ---
+const ACTION_TRIGGER_ALIASES: Record<string, string[]> = {
+  art: ['arts_', 'study_art'],
+  coding: ['computer_code', 'work_freelance'],
+};
+
+const isWithinAgeWindow = (age: number, ageWindow?: [number, number]): boolean => {
+  if (!ageWindow) return true;
+  return age >= ageWindow[0] && age <= ageWindow[1];
+};
+
+const matchesActionTrigger = (actionId: string, trigger: TraitTrigger): boolean => {
+  if (trigger.pattern && actionId.startsWith(trigger.pattern)) {
+    return true;
+  }
+
+  if (!trigger.actionId) return false;
+  if (actionId === trigger.actionId) return true;
+  if (actionId.startsWith(`${trigger.actionId}_`)) return true;
+
+  const aliases = ACTION_TRIGGER_ALIASES[trigger.actionId] || [];
+  return aliases.some(alias => actionId === alias || actionId.startsWith(alias));
+};
+
+const matchesEventChoiceTrigger = (
+  choiceId: string | null,
+  state: GameState,
+  trigger: TraitTrigger
+): boolean => {
+  if (trigger.pattern && choiceId === trigger.pattern) {
+    return true;
+  }
+
+  if (!trigger.eventId || state.currentEvent?.id !== trigger.eventId) {
+    return false;
+  }
+
+  if (trigger.choice == null) {
+    return true;
+  }
+
+  return choiceId !== null && choiceId === String(trigger.choice);
+};
+
+const isStatThresholdMet = (trigger: TraitTrigger, currentStats: Stats): boolean => {
+  if (trigger.statCondition) {
+    const statValue = currentStats[trigger.statCondition.stat as StatKey];
+    if (typeof statValue !== 'number') return false;
+    if (trigger.statCondition.operator === '>') return statValue > trigger.statCondition.value;
+    if (trigger.statCondition.operator === '<') return statValue < trigger.statCondition.value;
+    return false;
+  }
+
+  if (trigger.statKey && typeof trigger.threshold === 'number') {
+    return currentStats[trigger.statKey] >= trigger.threshold;
+  }
+
+  return false;
+};
+
 export const checkTraitFormation = (
   actionId: string | null,
   choiceId: string | null,
@@ -1059,7 +1133,9 @@ export const checkTraitFormation = (
     const formation = trait.formation!;
 
     // 1. Age Check
-    if (state.age < formation.ageWindow[0] || state.age > formation.ageWindow[1]) return;
+    if (!isWithinAgeWindow(state.age, formation.ageWindow)) return;
+    const eligibleTriggers = formation.triggers.filter(trigger => isWithinAgeWindow(state.age, trigger.ageWindow));
+    if (eligibleTriggers.length === 0) return;
 
     // Initialize progress if not exists
     if (!updatedProgress[trait.id]) {
@@ -1075,45 +1151,52 @@ export const checkTraitFormation = (
     if (updatedProgress[trait.id].isLocked) return;
 
     // 2. Check Triggers & Calculate Points
-    let triggered = false;
     let pointsToAdd = 0;
+    const hasActionOrChoiceTriggers = eligibleTriggers.some(
+      trigger => trigger.type === 'ACTION' || trigger.type === 'EVENT_CHOICE'
+    );
+    const hasStatThresholdTriggers = eligibleTriggers.some(trigger => trigger.type === 'STAT_THRESHOLD');
+    let thresholdRequirementsMet = true;
+    let hasProgressSource = false;
 
-    formation.triggers.forEach(trigger => {
-      let matched = false;
-      // Action Trigger
-      if (trigger.type === 'ACTION' && actionId) {
-        if (trigger.pattern && actionId.startsWith(trigger.pattern)) matched = true;
-        if (trigger.actionId && actionId === trigger.actionId) matched = true;
+    eligibleTriggers.forEach(trigger => {
+      if (trigger.type === 'ACTION') {
+        if (actionId && matchesActionTrigger(actionId, trigger)) {
+          hasProgressSource = true;
+          pointsToAdd += 1;
+        }
+        return;
       }
-      // Event Choice Logic
+
       if (trigger.type === 'EVENT_CHOICE') {
-        if (choiceId && trigger.pattern && choiceId === trigger.pattern) matched = true;
-        if (trigger.eventId && state.currentEvent?.id === trigger.eventId) {
-          if (trigger.choice == null || (choiceId && choiceId === String(trigger.choice))) {
-            matched = true;
-          }
+        if (matchesEventChoiceTrigger(choiceId, state, trigger)) {
+          hasProgressSource = true;
+          pointsToAdd += 1;
         }
-      }
-      // Logic for Stats (Thresholds)
-      if (trigger.type === 'STAT_THRESHOLD') {
-        if (trigger.statCondition) {
-          const statVal = currentStats[trigger.statCondition.stat as StatKey];
-          if (trigger.statCondition.operator === '>' && statVal > trigger.statCondition.value) matched = true;
-          if (trigger.statCondition.operator === '<' && statVal < trigger.statCondition.value) matched = true;
-        } else if (trigger.statKey && typeof trigger.threshold === 'number') {
-          const statVal = currentStats[trigger.statKey];
-          if (statVal >= trigger.threshold) matched = true;
-        }
+        return;
       }
 
-      if (matched) {
-        triggered = true;
-        pointsToAdd += (trigger.count || 1); // Aggregate points from all matching triggers
+      if (trigger.type === 'STAT_THRESHOLD') {
+        const thresholdMet = isStatThresholdMet(trigger, currentStats);
+        if (!thresholdMet) {
+          thresholdRequirementsMet = false;
+          return;
+        }
+
+        // Traits that only have threshold triggers should still progress from threshold checks.
+        if (!hasActionOrChoiceTriggers) {
+          hasProgressSource = true;
+          pointsToAdd += 1;
+        }
       }
     });
 
+    // For mixed trigger traits, thresholds are prerequisites and should not generate progress by themselves.
+    if (hasStatThresholdTriggers && !thresholdRequirementsMet) return;
+    if (!hasProgressSource || pointsToAdd <= 0) return;
+
     // 3. Logic & Multipliers
-    if (triggered) {
+    if (hasProgressSource) {
       let multiplier = 1.0;
 
       // Age Difficulty: Harder to change after 14
@@ -1131,8 +1214,8 @@ export const checkTraitFormation = (
       updatedProgress[trait.id].points += pointsToAdd * multiplier;
 
       // Add to UI feedback list (avoid duplicates)
-      if (!progressUpdates.includes(trait.name)) {
-        progressUpdates.push(trait.name);
+      if (!progressUpdates.includes(trait.id)) {
+        progressUpdates.push(trait.id);
       }
 
       // 4. Check Unlock
@@ -1352,8 +1435,6 @@ export const getMaxDaysInMonth = (month: number): number => {
   const maxDays = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
   return maxDays[month - 1] || 31;
 };
-
-
 
 
 

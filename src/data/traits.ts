@@ -123,7 +123,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
     },
     effects: {
       statMultipliers: { discipline: 1.3 }
-    }
+    },
+    conflicts: ['LAZY', 'PROCRASTINATOR']
   },
   {
     id: 'AMBITIOUS',
@@ -262,7 +263,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
     },
     effects: {
       energyCostMultiplier: 1.2
-    }
+    },
+    conflicts: ['DISCIPLINED', 'ORGANIZED']
   },
   {
     id: 'PROCRASTINATOR',
@@ -319,9 +321,12 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
     category: 'ACQUIRED',
     formation: {
       triggers: [
-        { type: 'STAT_THRESHOLD', statKey: 'energy', threshold: 20, ageWindow: [7, 18] }
+        { type: 'STAT_THRESHOLD', statCondition: { stat: 'energy', operator: '<', value: 30 }, ageWindow: [10, 18] },
+        { type: 'ACTION', actionId: 'study', ageWindow: [10, 18] },
+        { type: 'ACTION', actionId: 'work', ageWindow: [14, 18] },
+        { type: 'ACTION', actionId: 'coding', ageWindow: [10, 18] }
       ],
-      ageWindow: [7, 18],
+      ageWindow: [10, 18],
       pointsRequired: 3
     },
     effects: {
@@ -370,10 +375,11 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
     category: 'ACQUIRED',
     formation: {
       triggers: [
-        { type: 'STAT_THRESHOLD', statKey: 'charisma', threshold: 30, ageWindow: [7, 18] }
+        { type: 'EVENT_CHOICE', eventId: 'pers_bir_gun_yalniz', choice: 'yalniz_rahat', ageWindow: [10, 18] },
+        { type: 'STAT_THRESHOLD', statCondition: { stat: 'charisma', operator: '<', value: 45 }, ageWindow: [10, 18] }
       ],
-      ageWindow: [7, 18],
-      pointsRequired: 1
+      ageWindow: [10, 18],
+      pointsRequired: 2
     },
     effects: {}
   },
@@ -396,6 +402,10 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
 
 export const getTrait = (traitId: string): TraitDefinition | undefined => {
   return TRAIT_DEFINITIONS.find(t => t.id === traitId);
+};
+
+export const getTraitName = (traitId: string): string => {
+  return getTrait(traitId)?.name ?? traitId;
 };
 
 export const getRandomGeneticTraits = (count: number = 1): string[] => {

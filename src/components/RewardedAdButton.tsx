@@ -2,11 +2,17 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { showRewardedAd, getRemainingRewardedAds } from '../services/monetization';
+import {
+  logRewardedAdRequested,
+  logRewardedAdResult,
+} from '../utils/analyticsEvents';
+import type { MonetizationPlacement } from '../utils/analyticsEvents';
 
 interface RewardedAdButtonProps {
   onRewardClaimed: (reward: { type: 'energy' | 'intelligence' | 'money'; amount: number }) => void;
   currentEnergy: number;
   disabled?: boolean;
+  placement?: MonetizationPlacement;
   theme: {
     surfaceBase: string;
     surfaceRaised: string;
@@ -32,6 +38,7 @@ export const RewardedAdButton: React.FC<RewardedAdButtonProps> = ({
   onRewardClaimed,
   currentEnergy,
   disabled,
+  placement = 'hub',
   theme,
 }) => {
   const [showOptions, setShowOptions] = useState(false);
@@ -40,21 +47,52 @@ export const RewardedAdButton: React.FC<RewardedAdButtonProps> = ({
   const remainingAds = getRemainingRewardedAds();
 
   const handleWatchAd = async (rewardType: 'energy' | 'intelligence' | 'money') => {
+    const remainingBefore = getRemainingRewardedAds();
+
     try {
       setLoading(true);
       setError(null);
       setShowOptions(false);
+      void logRewardedAdRequested({
+        placement,
+        rewardType,
+        remainingBefore,
+      });
 
       const result = await showRewardedAd(rewardType);
+      const remainingAfter = getRemainingRewardedAds();
 
       if (result.success && result.reward) {
         onRewardClaimed(result.reward);
+        void logRewardedAdResult({
+          placement,
+          rewardType,
+          success: true,
+          amount: result.reward.amount,
+          remainingAfter,
+        });
       } else {
-        setError(result.error || 'Reklam gösterilemedi');
+        const errorMessage = result.error || 'Rewarded ad failed';
+        setError(result.error || 'Reklam gosterilemedi');
+        void logRewardedAdResult({
+          placement,
+          rewardType,
+          success: false,
+          remainingAfter,
+          errorMessage,
+        });
         setTimeout(() => setError(null), 3000);
       }
     } catch (err: any) {
-      setError(err.message || 'Bir hata oluştu');
+      const errorMessage = err?.message || 'Rewarded ad exception';
+      setError(err.message || 'Bir hata olustu');
+      void logRewardedAdResult({
+        placement,
+        rewardType,
+        success: false,
+        remainingAfter: getRemainingRewardedAds(),
+        errorMessage,
+      });
       setTimeout(() => setError(null), 3000);
     } finally {
       setLoading(false);
@@ -345,3 +383,4 @@ const styles = StyleSheet.create({
 });
 
 export default RewardedAdButton;
+

@@ -1,10 +1,13 @@
 import { GameState, Stats } from '../types';
 
 export const SAVE_VERSION = 1;
+export const SAVE_SCHEMA_VERSION = 2;
+export const SAVE_EXPORT_VERSION = 2;
 export const MAX_FREE_SLOTS = 3;
 export const MAX_PREMIUM_SLOTS = 3;
 export const MAX_TOTAL_SLOTS = MAX_FREE_SLOTS + MAX_PREMIUM_SLOTS;
 export const AUTO_SAVE_SLOT_ID = 'auto';
+export const MAX_BACKUP_HISTORY = 5;
 
 export type SlotStatus = 'empty' | 'active' | 'corrupted';
 export type SyncStatus = 'synced' | 'syncing' | 'pending' | 'error' | 'offline';
@@ -17,6 +20,15 @@ export interface SaveSlotMetadata {
   lastPlayed: number;
   version: number;
   checksum: string;
+  schemaVersion?: number;
+  saveId?: string;
+  deviceId?: string;
+  revision?: number;
+  clientRevision?: number;
+  createdAt?: number;
+  updatedAt?: number;
+  idempotencyKey?: string;
+  migrationState?: 'pending' | 'migrated' | 'conflict';
   thumbnail?: string;
   status: SlotStatus;
   isPremium: boolean;
@@ -39,6 +51,24 @@ export interface SaveBackup {
   slotId: string;
   timestamp: number;
   data: SaveSlotData;
+}
+
+export interface SaveExportManifest {
+  manifestVersion: number;
+  slotIds: string[];
+  saveCount: number;
+  backupCount: number;
+  createdAt: number;
+  checksum: string;
+}
+
+export interface SaveExportPackage {
+  exportVersion: number;
+  appVersion: string;
+  exportedAt: number;
+  manifest: SaveExportManifest;
+  saves: SaveSlotData[];
+  backups: SaveBackup[];
 }
 
 export interface CloudSyncState {

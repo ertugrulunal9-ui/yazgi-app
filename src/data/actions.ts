@@ -1,4 +1,4 @@
-import { FamilyWealth, PersonalityEffect, Stats, Skills } from '../types';
+import { FamilyWealth, PersonalityEffect, PersonalityMomentumSignal, Skills, Stats } from '../types';
 
 export type ExamGameType = 'MATH' | 'TURKISH' | 'HISTORY' | 'SCIENCE' | 'GEOGRAPHY' | 'ENGLISH' | 'ART' | 'MUSIC';
 
@@ -10,6 +10,7 @@ export interface SubAction {
   minAge?: number;
   effect: Partial<Stats>;
   personalityEffects?: PersonalityEffect[];
+  momentumTag?: PersonalityMomentumSignal;
   stressEffect?: number;
   feedback: string;
   skillUpdates?: Partial<Skills>;
@@ -225,7 +226,7 @@ export const ACTION_CATEGORIES: ActionCategory[] = [
         icon: '🧹',
         energyCost: 10,
         minAge: 4,
-        effect: { discipline: 3, familyRelation: 5, money: 15, energy: -10 },
+        effect: { discipline: 3, familyRelation: 5, money: 10, energy: -10 },
         personalityEffects: [
           { axis: 'empathy', change: 1 },
           { axis: 'conformity', change: 2 },
@@ -610,7 +611,7 @@ export const ACTION_CATEGORIES: ActionCategory[] = [
         text: 'Ev İşleri',
         icon: '🧹',
         energyCost: 15,
-        effect: { energy: -15, money: 20, familyRelation: 5, discipline: 2 },
+        effect: { energy: -15, money: 14, familyRelation: 5, discipline: 2 },
         feedback: 'Ev işlerine yardım ettin ve harçlık aldın.',
       },
       {
@@ -619,7 +620,7 @@ export const ACTION_CATEGORIES: ActionCategory[] = [
         icon: '🍔',
         energyCost: 30,
         minAge: 14,
-        effect: { energy: -30, money: 100, discipline: 4 },
+        effect: { energy: -30, money: 70, discipline: 4 },
         feedback: 'Part-time işte çalıştın ve para kazandın.',
         skillUpdates: { work_ethic: 3 },
       },
@@ -629,7 +630,7 @@ export const ACTION_CATEGORIES: ActionCategory[] = [
         icon: '💰',
         energyCost: 25,
         minAge: 13,
-        effect: { energy: -25, money: 150, intelligence: 3 },
+        effect: { energy: -25, money: 95, intelligence: 3 },
         feedback: 'Freelance iş yaptın.',
         skillUpdates: { coding: 2, design: 2 },
       },
@@ -639,7 +640,7 @@ export const ACTION_CATEGORIES: ActionCategory[] = [
         icon: '🏪',
         energyCost: 12,
         minAge: 10,
-        effect: { energy: -12, money: 50, charisma: 2 },
+        effect: { energy: -12, money: 35, charisma: 2 },
         feedback: 'Bir şeyler satıp para kazandın.',
         skillUpdates: { business: 3 },
       },
@@ -660,8 +661,8 @@ export const ACTION_CATEGORIES: ActionCategory[] = [
         energyCost: 4,
         minAge: 4,
         purchaseItemId: 'item_art_set',
-        priceByWealth: { POOR: 24, MIDDLE: 30, RICH: 36 },
-        effect: { energy: -4, money: -30 },
+        priceByWealth: { POOR: 72, MIDDLE: 55, RICH: 44 },
+        effect: { energy: -4, money: -55 },
         feedback: 'Boyama seti aldın. Resim çalışmaların artık daha verimli.',
       },
       {
@@ -671,8 +672,8 @@ export const ACTION_CATEGORIES: ActionCategory[] = [
         energyCost: 4,
         minAge: 4,
         purchaseItemId: 'item_story_book',
-        priceByWealth: { POOR: 32, MIDDLE: 40, RICH: 48 },
-        effect: { energy: -4, money: -40 },
+        priceByWealth: { POOR: 92, MIDDLE: 70, RICH: 56 },
+        effect: { energy: -4, money: -70 },
         feedback: 'Yeni bir hikaye kitabı aldın.',
       },
       {
@@ -682,8 +683,8 @@ export const ACTION_CATEGORIES: ActionCategory[] = [
         energyCost: 5,
         minAge: 4,
         purchaseItemId: 'item_football',
-        priceByWealth: { POOR: 40, MIDDLE: 50, RICH: 60 },
-        effect: { energy: -5, money: -50 },
+        priceByWealth: { POOR: 120, MIDDLE: 90, RICH: 72 },
+        effect: { energy: -5, money: -90 },
         feedback: 'Futbol topu aldın. Futbola daha erken başlayabilirsin.',
       },
       {
@@ -693,8 +694,8 @@ export const ACTION_CATEGORIES: ActionCategory[] = [
         energyCost: 8,
         minAge: 6,
         purchaseItemId: 'item_bicycle',
-        priceByWealth: { POOR: 96, MIDDLE: 120, RICH: 144 },
-        effect: { energy: -8, money: -120 },
+        priceByWealth: { POOR: 280, MIDDLE: 210, RICH: 168 },
+        effect: { energy: -8, money: -210 },
         feedback: 'Bisiklet aldın. Artık bisiklet sürüş aksiyonu açıldı.',
       },
       {
@@ -704,8 +705,8 @@ export const ACTION_CATEGORIES: ActionCategory[] = [
         energyCost: 12,
         minAge: 8,
         purchaseItemId: 'item_computer',
-        priceByWealth: { POOR: 240, MIDDLE: 300, RICH: 360 },
-        effect: { energy: -12, money: -300 },
+        priceByWealth: { POOR: 640, MIDDLE: 480, RICH: 384 },
+        effect: { energy: -12, money: -480 },
         feedback: 'Bilgisayar aldın. Kodlama aksiyonları açıldı.',
       },
       {
@@ -715,8 +716,8 @@ export const ACTION_CATEGORIES: ActionCategory[] = [
         energyCost: 8,
         minAge: 7,
         purchaseItemId: 'item_instrument',
-        priceByWealth: { POOR: 200, MIDDLE: 250, RICH: 300 },
-        effect: { energy: -8, money: -250 },
+        priceByWealth: { POOR: 520, MIDDLE: 390, RICH: 312 },
+        effect: { energy: -8, money: -390 },
         feedback: 'Enstrüman aldın. Artık enstrüman çalabilirsin.',
       },
       {
@@ -726,9 +727,50 @@ export const ACTION_CATEGORIES: ActionCategory[] = [
         energyCost: 7,
         minAge: 8,
         purchaseItemId: 'item_sports_gear',
-        priceByWealth: { POOR: 120, MIDDLE: 150, RICH: 180 },
-        effect: { energy: -7, money: -150 },
+        priceByWealth: { POOR: 320, MIDDLE: 240, RICH: 192 },
+        effect: { energy: -7, money: -240 },
         feedback: 'Spor malzemeleri aldın. Spor aksiyonlarında bonus kazandın.',
+      },
+      {
+        id: 'shopping_healthy_meal',
+        text: 'Saglikli Ogun Al',
+        icon: '🥗',
+        energyCost: 2,
+        minAge: 6,
+        priceByWealth: { POOR: 95, MIDDLE: 75, RICH: 60 },
+        effect: { energy: 8, health: 2, money: -75 },
+        feedback: 'Saglikli bir ogun aldın. Kendini daha iyi hissediyorsun.',
+      },
+      {
+        id: 'shopping_private_notes',
+        text: 'Ders Notu Paketi',
+        icon: '📝',
+        energyCost: 4,
+        minAge: 8,
+        priceByWealth: { POOR: 150, MIDDLE: 120, RICH: 96 },
+        effect: { energy: -4, intelligence: 3, discipline: 2, money: -120 },
+        feedback: 'Kaynak notlar aldın, derslerinde ilerleme hızlandı.',
+      },
+      {
+        id: 'shopping_family_gift',
+        text: 'Aileye Hediye Al',
+        icon: '🎁',
+        energyCost: 3,
+        minAge: 7,
+        priceByWealth: { POOR: 130, MIDDLE: 100, RICH: 80 },
+        effect: { energy: -3, familyRelation: 9, charisma: 1, money: -100 },
+        feedback: 'Ailene hediye aldın. Evdeki hava yumuşadı.',
+      },
+      {
+        id: 'shopping_skill_course',
+        text: 'Mini Kurs Satin Al',
+        icon: '🎓',
+        energyCost: 6,
+        minAge: 10,
+        priceByWealth: { POOR: 210, MIDDLE: 165, RICH: 132 },
+        effect: { energy: -6, intelligence: 4, discipline: 3, money: -165 },
+        feedback: 'Kısa bir kursa katıldın. Bilgini ve odagını gelistirdin.',
+        skillUpdates: { logic: 2, work_ethic: 1 },
       },
     ],
   },

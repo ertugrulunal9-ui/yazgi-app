@@ -2,15 +2,17 @@ import { useCallback, useMemo } from 'react';
 import { useGame } from '../context/GameContext';
 import { StatKey } from '../types';
 import { getTraitMultiplier } from '../utils/gameUtils';
+import { getMomentumMultiplierForStat } from '../systems/PersonalityMomentumEngine';
 
 export const calculateDeltaWithMultiplier = (
   currentValue: number,
   nextValue: number,
-  traitMultiplier: number
+  traitMultiplier: number,
+  momentumMultiplier: number = 1
 ): number => {
   const rawDelta = nextValue - currentValue;
   if (rawDelta <= 0) return rawDelta;
-  return Math.ceil(rawDelta * traitMultiplier);
+  return Math.ceil(rawDelta * traitMultiplier * momentumMultiplier);
 };
 
 export const useStats = () => {
@@ -21,11 +23,12 @@ export const useStats = () => {
     if (value === currentValue) return;
 
     const traitMultiplier = getTraitMultiplier(gameState.traits, key);
-    const adjustedDelta = calculateDeltaWithMultiplier(currentValue, value, traitMultiplier);
+    const momentumMultiplier = getMomentumMultiplierForStat(key, gameState.personalityState).multiplier;
+    const adjustedDelta = calculateDeltaWithMultiplier(currentValue, value, traitMultiplier, momentumMultiplier);
 
     const updates: Partial<Record<StatKey, number>> = { [key]: adjustedDelta };
     updateStats(updates);
-  }, [stats, gameState.traits, updateStats]);
+  }, [stats, gameState.traits, gameState.personalityState, updateStats]);
 
   const incrementStat = useCallback((key: StatKey, amount: number) => {
     const currentValue = stats[key];

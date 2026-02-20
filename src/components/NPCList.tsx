@@ -175,14 +175,8 @@ const NPCListComponent: React.FC<NPCListProps> = ({ npcs, onNPCPress, theme }) =
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
                 getItemType={getItemType}
-                estimatedItemSize={90}
                 // Performans optimizasyonları
                 drawDistance={200}
-                overrideItemLayout={(layout, item) => {
-                    if (item.type === 'summary') layout.size = 120;
-                    else if (item.type === 'header') layout.size = 40;
-                    else layout.size = 130;
-                }}
             />
         </View>
     );

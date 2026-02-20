@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { devLog } from '../utils/devLogger';
 import {
   ActionCategory,
   SubAction,
@@ -111,6 +112,7 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
     const requiredMoney = adjusted.effect.money !== undefined && adjusted.effect.money < 0
       ? Math.abs(adjusted.effect.money)
       : 0;
+    const moneyDelta = typeof adjusted.effect.money === 'number' ? adjusted.effect.money : 0;
 
     const isAgeLocked = effectiveMinAge !== undefined && currentAge < effectiveMinAge;
     const isEnergyLocked = currentEnergy < effectiveEnergyCost;
@@ -130,6 +132,7 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
       lockReason,
       missingItemName,
       requiredMoney,
+      moneyDelta,
       effectiveEnergyCost,
       effectiveMinAge,
     };
@@ -141,6 +144,7 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
     effectiveEnergyCost: number,
     effectiveMinAge?: number,
     requiredMoney?: number,
+    moneyDelta?: number,
     missingItemName?: string | null
   ): string => {
     if (action.accessibilityHint && !lockReason) {
@@ -161,15 +165,21 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
     if (lockReason === 'energy') {
       return `Bu aksiyon icin en az ${effectiveEnergyCost} enerji gerekir`;
     }
+    if (typeof moneyDelta === 'number' && moneyDelta !== 0) {
+      const moneyText = moneyDelta < 0
+        ? `${Math.abs(moneyDelta)} para harcar`
+        : `${moneyDelta} para kazandirir`;
+      return `${effectiveEnergyCost} enerji harcar, ${moneyText} ve karakterini etkiler`;
+    }
     return `${effectiveEnergyCost} enerji harcar ve karakterini etkiler`;
   }, []);
 
   // Debug log on every render
-  console.log('[ActionBottomSheet] RENDER - visible:', visible, 'category:', category?.title, 'internalVisible:', internalVisible);
+  devLog.log('[ActionBottomSheet] RENDER - visible:', visible, 'category:', category?.title, 'internalVisible:', internalVisible);
 
   // Sync internal state with props
   useEffect(() => {
-    console.log('[ActionBottomSheet] useEffect - visible changed to:', visible);
+    devLog.log('[ActionBottomSheet] useEffect - visible changed to:', visible);
     if (visible) {
       setInternalVisible(true);
       setOverlayEnabled(false);
@@ -188,7 +198,7 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
     if (!visible) return;
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      console.log('[ActionBottomSheet] Back button pressed');
+      devLog.log('[ActionBottomSheet] Back button pressed');
       onClose();
       return true;
     });
@@ -197,25 +207,25 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
   }, [visible, onClose]);
 
   const handleActionPress = useCallback((action: SubAction) => {
-    console.log('[ActionBottomSheet] ========== PRESS ==========');
-    console.log('[ActionBottomSheet] Action:', action.text);
+    devLog.log('[ActionBottomSheet] ========== PRESS ==========');
+    devLog.log('[ActionBottomSheet] Action:', action.text);
 
     const state = resolveActionState(action);
 
-    console.log('[ActionBottomSheet] Age:', currentAge, 'Required:', state.effectiveMinAge);
-    console.log('[ActionBottomSheet] Energy:', currentEnergy, 'Cost:', state.effectiveEnergyCost);
+    devLog.log('[ActionBottomSheet] Age:', currentAge, 'Required:', state.effectiveMinAge);
+    devLog.log('[ActionBottomSheet] Energy:', currentEnergy, 'Cost:', state.effectiveEnergyCost);
 
     if (!state.isLocked) {
-      console.log('[ActionBottomSheet] >>> Calling onSelectAction <<<');
+      devLog.log('[ActionBottomSheet] >>> Calling onSelectAction <<<');
       onSelectAction(action);
     } else {
-      console.log('[ActionBottomSheet] LOCKED');
+      devLog.log('[ActionBottomSheet] LOCKED');
     }
   }, [currentAge, currentEnergy, onSelectAction, resolveActionState]);
 
   // Don't render if not visible
   if (!internalVisible || !category) {
-    console.log('[ActionBottomSheet] Not rendering - internalVisible:', internalVisible, 'category:', !!category);
+    devLog.log('[ActionBottomSheet] Not rendering - internalVisible:', internalVisible, 'category:', !!category);
     return null;
   }
 
@@ -232,11 +242,18 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
             : state.lockReason === 'energy'
               ? 'Yetersiz enerji'
               : '';
+    const actionPriceLabel = state.moneyDelta < 0
+      ? `${action.text} (₺${Math.abs(state.moneyDelta)})`
+      : action.text;
+    const showMoneyBadge = state.moneyDelta !== 0;
+    const moneyBadgeColor = state.moneyDelta < 0
+      ? (state.lockReason === 'money' ? '#ef4444' : '#f59e0b')
+      : '#22c55e';
 
     return (
       <Pressable
         onPress={() => {
-          console.log('[ActionBottomSheet] Pressable onPress:', action.text);
+          devLog.log('[ActionBottomSheet] Pressable onPress:', action.text);
           handleActionPress(action);
         }}
         style={({ pressed }) => [
@@ -257,6 +274,7 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
           state.effectiveEnergyCost,
           state.effectiveMinAge,
           state.requiredMoney,
+          state.moneyDelta,
           state.missingItemName
         )}
         accessibilityState={{ disabled: state.isLocked }}
@@ -270,22 +288,35 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
               style={styles.actionIcon}
             />
             <Text style={[styles.actionText, { color: theme.textPrimary || '#fff' }]}>
-              {action.text}
+              {actionPriceLabel}
             </Text>
           </View>
-          <View style={[
-            styles.energyBadge,
-            { backgroundColor: state.isLocked ? 'rgba(239, 68, 68, 0.2)' : (theme.surfaceOverlay || '#374151') }
-          ]}>
-            <Text style={styles.energyIcon}>
-              {state.isLocked ? (state.lockReason === 'age' || state.lockReason === 'item' ? 'L' : 'E') : 'E'}
-            </Text>
-            <Text style={[
-              styles.energyCost,
-              { color: state.isLocked ? '#ef4444' : (theme.textSecondary || '#9ca3af') }
+          <View style={styles.costBadges}>
+            <View style={[
+              styles.energyBadge,
+              { backgroundColor: state.isLocked ? 'rgba(239, 68, 68, 0.2)' : (theme.surfaceOverlay || '#374151') }
             ]}>
-              {state.effectiveEnergyCost}
-            </Text>
+              <Text style={styles.energyIcon}>
+                {state.isLocked ? (state.lockReason === 'age' || state.lockReason === 'item' ? 'L' : 'E') : 'E'}
+              </Text>
+              <Text style={[
+                styles.energyCost,
+                { color: state.isLocked ? '#ef4444' : (theme.textSecondary || '#9ca3af') }
+              ]}>
+                {state.effectiveEnergyCost}
+              </Text>
+            </View>
+            {showMoneyBadge && (
+              <View style={[
+                styles.moneyBadge,
+                { backgroundColor: theme.surfaceOverlay || '#374151' }
+              ]}>
+                <Text style={[styles.moneySymbol, { color: moneyBadgeColor }]}>₺</Text>
+                <Text style={[styles.moneyAmount, { color: moneyBadgeColor }]}>
+                  {state.moneyDelta > 0 ? `+${state.moneyDelta}` : `-${Math.abs(state.moneyDelta)}`}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
         <Text style={[styles.description, { color: theme.textSecondary || '#9ca3af' }]}>
@@ -300,7 +331,7 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
     );
   };
 
-  console.log('[ActionBottomSheet] Rendering full component');
+  devLog.log('[ActionBottomSheet] Rendering full component');
 
   return (
     <View style={styles.container}>
@@ -309,7 +340,7 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
         style={styles.overlay}
         pointerEvents={overlayEnabled ? 'auto' : 'none'}
         onPress={() => {
-          console.log('[ActionBottomSheet] Overlay pressed - closing');
+          devLog.log('[ActionBottomSheet] Overlay pressed - closing');
           onClose();
         }}
         accessibilityRole="button"
@@ -346,7 +377,7 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
           </View>
           <TouchableOpacity
             onPress={() => {
-              console.log('[ActionBottomSheet] Close button pressed');
+              devLog.log('[ActionBottomSheet] Close button pressed');
               onClose();
             }}
             style={[styles.closeButton, { backgroundColor: theme.surfaceBase || '#111827' }]}
@@ -465,6 +496,11 @@ const styles = StyleSheet.create({
     gap: 8,
     flex: 1,
   },
+  costBadges: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   actionIcon: {
     marginRight: 2,
   },
@@ -487,6 +523,22 @@ const styles = StyleSheet.create({
   energyCost: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  moneyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  moneySymbol: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  moneyAmount: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   description: {
     fontSize: 12,

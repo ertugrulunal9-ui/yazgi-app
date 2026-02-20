@@ -79,7 +79,7 @@ export const FloatingNumber: React.FC<FloatingNumberProps> = ({
       clearTimeout(timer);
       hasTriggeredHaptic.current = false;
     };
-  }, [value]);
+  }, [opacity, onComplete, scale, translateY, value]);
 
   const animatedStyle = useAnimatedStyle(() => {
     const transformArray: any[] = [];
@@ -129,7 +129,7 @@ export const AnimatedStatBar: React.FC<AnimatedStatBarProps> = ({
       damping: 15,
       stiffness: 100,
     });
-  }, [value, maxValue]);
+  }, [maxValue, value, width]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     width: `${width.value}%`,
@@ -184,7 +184,7 @@ export const CountUpText: React.FC<CountUpTextProps> = React.memo(({
       animatedValue.value = withTiming(value, { duration });
       prevValueRef.current = value;
     }
-  }, [value, duration]);
+  }, [animatedValue, duration, value]);
 
   return (
     <Animated.Text style={style}>
@@ -267,7 +267,7 @@ export const FlashText: React.FC<FlashTextProps> = React.memo(({
         withSpring(1, { damping: 15, stiffness: 400 })
       );
     }
-  }, [flash]);
+  }, [flash, opacity, scale]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
@@ -285,6 +285,10 @@ export const FlashText: React.FC<FlashTextProps> = React.memo(({
          prevProps.color === nextProps.color &&
          prevProps.children === nextProps.children;
 });
+
+CountUpText.displayName = 'CountUpText';
+StatChangeIndicator.displayName = 'StatChangeIndicator';
+FlashText.displayName = 'FlashText';
 
 const styles = StyleSheet.create({
   floatingNumber: {

@@ -4,12 +4,13 @@ import { getMusicForAge, getSoundDefinition } from './soundDefinitions';
 
 class MusicPlayer {
   private static instance: MusicPlayer;
-  
+
   private currentTrack: Audio.Sound | null = null;
   private currentTrackId: string | null = null;
   private nextTrack: Audio.Sound | null = null;
   private isCrossfading: boolean = false;
-  private fadeInterval: NodeJS.Timeout | null = null;
+  private fadeInterval: ReturnType<typeof setInterval> | null = null;
+  private operationToken = 0;
 
   private constructor() {}
 
@@ -20,19 +21,52 @@ class MusicPlayer {
     return MusicPlayer.instance;
   }
 
-  // Play music track with crossfade
+  private beginOperation(): number {
+    this.operationToken += 1;
+    return this.operationToken;
+  }
+
+  private isOperationActive(token: number): boolean {
+    return token === this.operationToken;
+  }
+
+  private clearFadeInterval(): void {
+    if (this.fadeInterval) {
+      clearInterval(this.fadeInterval);
+      this.fadeInterval = null;
+    }
+  }
+
+  private isPlayerMissingError(error: unknown): boolean {
+    const message = error instanceof Error ? error.message : String(error);
+    return /player does not exist/i.test(message);
+  }
+
+  // Play music track with optional crossfade
   async playMusic(trackId: string, crossfadeDuration: number = 2000): Promise<void> {
-    // Already playing
+    const operationToken = this.beginOperation();
+
+    // Already playing this track
     if (this.currentTrackId === trackId && this.currentTrack) {
-      const status = await this.currentTrack.getStatusAsync();
-      if (status.isLoaded && status.isPlaying) {
-        return;
+      try {
+        const status = await this.currentTrack.getStatusAsync();
+        if (!this.isOperationActive(operationToken)) return;
+        if (status.isLoaded && status.isPlaying) {
+          return;
+        }
+      } catch (error) {
+        if (this.isPlayerMissingError(error)) {
+          this.currentTrack = null;
+          this.currentTrackId = null;
+        } else {
+          console.warn('Failed to inspect current music track state:', error);
+        }
       }
     }
 
-    // Stop if crossfading
     if (this.isCrossfading) {
       await this.stopCrossfade();
+      if (!this.isOperationActive(operationToken)) return;
     }
 
     const definition = getSoundDefinition(trackId);
@@ -42,94 +76,116 @@ class MusicPlayer {
     }
 
     try {
-      // Load new track
       const { sound: newTrack } = await Audio.Sound.createAsync(
         definition.path,
         {
-          volume: 0, // Start silent
+          volume: 0,
           isLooping: definition.loop || false,
           shouldPlay: true,
         }
       );
 
-      this.nextTrack = newTrack;
-
-      // Crossfade if there's current track
-      if (this.currentTrack) {
-        await this.crossfade(this.currentTrack, this.nextTrack, crossfadeDuration);
-      } else {
-        // No crossfade, just fade in
-        await this.fadeIn(this.nextTrack, crossfadeDuration / 2);
+      if (!this.isOperationActive(operationToken)) {
+        await newTrack.unloadAsync().catch(() => {});
+        return;
       }
 
-      // Swap tracks
+      this.nextTrack = newTrack;
+
+      if (this.currentTrack) {
+        await this.crossfade(this.currentTrack, newTrack, crossfadeDuration, operationToken);
+      } else {
+        await this.fadeIn(newTrack, crossfadeDuration / 2, operationToken);
+      }
+
+      if (!this.isOperationActive(operationToken)) {
+        if (this.nextTrack === newTrack) {
+          await newTrack.unloadAsync().catch(() => {});
+          this.nextTrack = null;
+        }
+        return;
+      }
+
       const oldTrack = this.currentTrack;
-      this.currentTrack = this.nextTrack;
+      this.currentTrack = newTrack;
       this.currentTrackId = trackId;
       this.nextTrack = null;
 
-      // Cleanup old track
-      if (oldTrack) {
+      if (oldTrack && oldTrack !== newTrack) {
         await oldTrack.unloadAsync().catch(() => {});
       }
-
     } catch (error) {
-      console.error(`Failed to play music: ${trackId}`, error);
+      if (!this.isPlayerMissingError(error)) {
+        console.error(`Failed to play music: ${trackId}`, error);
+      }
     }
   }
 
-  // Crossfade between two tracks
   private async crossfade(
     fromTrack: Audio.Sound,
     toTrack: Audio.Sound,
-    duration: number
+    duration: number,
+    operationToken: number
   ): Promise<void> {
     this.isCrossfading = true;
 
     const targetVolume = this.calculateMusicVolume();
     const settings = audioManager.getSettings();
 
-    // Skip crossfade if music is muted
     if (settings.muted || settings.musicVolume === 0) {
       this.isCrossfading = false;
-      return Promise.resolve();
+      return;
+    }
+
+    if (duration <= 0) {
+      try {
+        if (this.isOperationActive(operationToken)) {
+          await toTrack.setVolumeAsync(targetVolume);
+          await fromTrack.stopAsync().catch(() => {});
+        }
+      } catch (error) {
+        if (!this.isPlayerMissingError(error)) {
+          console.error('Crossfade error:', error);
+        }
+      } finally {
+        this.isCrossfading = false;
+      }
+      return;
     }
 
     const steps = 50;
-    const stepDuration = duration / steps;
+    const stepDuration = Math.max(1, Math.round(duration / steps));
 
     return new Promise((resolve) => {
       let currentStep = 0;
 
+      this.clearFadeInterval();
       this.fadeInterval = setInterval(async () => {
-        currentStep++;
+        if (!this.isOperationActive(operationToken)) {
+          this.clearFadeInterval();
+          this.isCrossfading = false;
+          resolve();
+          return;
+        }
+
+        currentStep += 1;
         const progress = currentStep / steps;
 
         try {
-          // Fade out old track
           await fromTrack.setVolumeAsync(targetVolume * (1 - progress));
-          
-          // Fade in new track
           await toTrack.setVolumeAsync(targetVolume * progress);
 
           if (currentStep >= steps) {
-            if (this.fadeInterval) {
-              clearInterval(this.fadeInterval);
-              this.fadeInterval = null;
-            }
+            this.clearFadeInterval();
             this.isCrossfading = false;
-            
-            // Stop old track
-            await fromTrack.stopAsync();
-            
+            await fromTrack.stopAsync().catch(() => {});
             resolve();
           }
         } catch (error) {
-          console.error('Crossfade error:', error);
-          if (this.fadeInterval) {
-            clearInterval(this.fadeInterval);
-            this.fadeInterval = null;
+          if (!this.isPlayerMissingError(error)) {
+            console.error('Crossfade error:', error);
           }
+          this.clearFadeInterval();
           this.isCrossfading = false;
           resolve();
         }
@@ -137,85 +193,132 @@ class MusicPlayer {
     });
   }
 
-  // Fade in track
-  private async fadeIn(track: Audio.Sound, duration: number): Promise<void> {
+  private async fadeIn(track: Audio.Sound, duration: number, operationToken: number): Promise<void> {
     const targetVolume = this.calculateMusicVolume();
+
+    if (duration <= 0) {
+      try {
+        if (this.isOperationActive(operationToken)) {
+          await track.setVolumeAsync(targetVolume);
+        }
+      } catch (error) {
+        if (!this.isPlayerMissingError(error)) {
+          console.error('Fade in error:', error);
+        }
+      }
+      return;
+    }
+
     const steps = 30;
-    const stepDuration = duration / steps;
+    const stepDuration = Math.max(1, Math.round(duration / steps));
 
     return new Promise((resolve) => {
       let currentStep = 0;
 
-      const interval = setInterval(async () => {
-        currentStep++;
+      this.clearFadeInterval();
+      this.fadeInterval = setInterval(async () => {
+        if (!this.isOperationActive(operationToken)) {
+          this.clearFadeInterval();
+          resolve();
+          return;
+        }
+
+        currentStep += 1;
         const progress = currentStep / steps;
 
         try {
           await track.setVolumeAsync(targetVolume * progress);
 
           if (currentStep >= steps) {
-            clearInterval(interval);
+            this.clearFadeInterval();
             resolve();
           }
         } catch (error) {
-          console.error('Fade in error:', error);
-          clearInterval(interval);
+          if (!this.isPlayerMissingError(error)) {
+            console.error('Fade in error:', error);
+          }
+          this.clearFadeInterval();
           resolve();
         }
       }, stepDuration);
     });
   }
 
-  // Fade out track
-  private async fadeOut(track: Audio.Sound, duration: number): Promise<void> {
-    const status = await track.getStatusAsync();
+  private async fadeOut(track: Audio.Sound, duration: number, operationToken: number): Promise<void> {
+    let status;
+    try {
+      status = await track.getStatusAsync();
+    } catch (error) {
+      if (!this.isPlayerMissingError(error)) {
+        console.error('Fade out error:', error);
+      }
+      return;
+    }
+
     if (!status.isLoaded) return;
 
     const currentVolume = status.volume || 0;
+
+    if (duration <= 0) {
+      try {
+        if (this.isOperationActive(operationToken)) {
+          await track.stopAsync().catch(() => {});
+        }
+      } catch (error) {
+        if (!this.isPlayerMissingError(error)) {
+          console.error('Fade out error:', error);
+        }
+      }
+      return;
+    }
+
     const steps = 30;
-    const stepDuration = duration / steps;
+    const stepDuration = Math.max(1, Math.round(duration / steps));
 
     return new Promise((resolve) => {
       let currentStep = 0;
 
-      const interval = setInterval(async () => {
-        currentStep++;
+      this.clearFadeInterval();
+      this.fadeInterval = setInterval(async () => {
+        if (!this.isOperationActive(operationToken)) {
+          this.clearFadeInterval();
+          resolve();
+          return;
+        }
+
+        currentStep += 1;
         const progress = currentStep / steps;
 
         try {
           await track.setVolumeAsync(currentVolume * (1 - progress));
 
           if (currentStep >= steps) {
-            clearInterval(interval);
-            await track.stopAsync();
+            this.clearFadeInterval();
+            await track.stopAsync().catch(() => {});
             resolve();
           }
         } catch (error) {
-          console.error('Fade out error:', error);
-          clearInterval(interval);
+          if (!this.isPlayerMissingError(error)) {
+            console.error('Fade out error:', error);
+          }
+          this.clearFadeInterval();
           resolve();
         }
       }, stepDuration);
     });
   }
 
-  // Stop crossfade immediately
   private async stopCrossfade(): Promise<void> {
-    if (this.fadeInterval) {
-      clearInterval(this.fadeInterval);
-      this.fadeInterval = null;
-    }
+    this.clearFadeInterval();
     this.isCrossfading = false;
   }
 
-  // Calculate music volume based on settings
   private calculateMusicVolume(): number {
     const settings = audioManager.getSettings();
     if (settings.muted) return 0;
-    return settings.masterVolume * settings.musicVolume * 0.6; // 0.6 is base music volume
+    return settings.masterVolume * settings.musicVolume * 0.6;
   }
 
-  // Update volume on settings change
   async updateVolume(): Promise<void> {
     if (!this.currentTrack) return;
 
@@ -223,78 +326,110 @@ class MusicPlayer {
       const volume = this.calculateMusicVolume();
       await this.currentTrack.setVolumeAsync(volume);
     } catch (error) {
+      if (this.isPlayerMissingError(error)) {
+        this.currentTrack = null;
+        this.currentTrackId = null;
+        return;
+      }
       console.error('Failed to update music volume:', error);
     }
   }
 
-  // Stop current music
   async stop(fadeDuration: number = 1000): Promise<void> {
-    if (!this.currentTrack) return;
+    const operationToken = this.beginOperation();
+    await this.stopCrossfade();
+
+    const activeTrack = this.currentTrack;
+    const pendingTrack = this.nextTrack;
+
+    this.currentTrack = null;
+    this.currentTrackId = null;
+    this.nextTrack = null;
+
+    if (!activeTrack && !pendingTrack) return;
 
     try {
-      if (fadeDuration > 0) {
-        await this.fadeOut(this.currentTrack, fadeDuration);
-      } else {
-        await this.currentTrack.stopAsync();
+      if (activeTrack) {
+        if (fadeDuration > 0) {
+          await this.fadeOut(activeTrack, fadeDuration, operationToken);
+        } else {
+          await activeTrack.stopAsync().catch(() => {});
+        }
+        await activeTrack.unloadAsync().catch(() => {});
       }
-      
-      await this.currentTrack.unloadAsync();
-      this.currentTrack = null;
-      this.currentTrackId = null;
+
+      if (pendingTrack && pendingTrack !== activeTrack) {
+        await pendingTrack.stopAsync().catch(() => {});
+        await pendingTrack.unloadAsync().catch(() => {});
+      }
     } catch (error) {
-      console.error('Failed to stop music:', error);
+      if (!this.isPlayerMissingError(error)) {
+        console.error('Failed to stop music:', error);
+      }
     }
   }
 
-  // Pause current music
   async pause(): Promise<void> {
     if (!this.currentTrack) return;
 
     try {
       await this.currentTrack.pauseAsync();
     } catch (error) {
+      if (this.isPlayerMissingError(error)) {
+        this.currentTrack = null;
+        this.currentTrackId = null;
+        return;
+      }
       console.error('Failed to pause music:', error);
     }
   }
 
-  // Resume current music
   async resume(): Promise<void> {
     if (!this.currentTrack) return;
 
     try {
       await this.currentTrack.playAsync();
     } catch (error) {
+      if (this.isPlayerMissingError(error)) {
+        this.currentTrack = null;
+        this.currentTrackId = null;
+        return;
+      }
       console.error('Failed to resume music:', error);
     }
   }
 
-  // Play music based on game age
   async playMusicForAge(age: number, isGameOver: boolean = false): Promise<void> {
     const trackId = getMusicForAge(age, isGameOver);
     await this.playMusic(trackId);
   }
 
-  // Get current track ID
   getCurrentTrackId(): string | null {
     return this.currentTrackId;
   }
 
-  // Cleanup
   async dispose(): Promise<void> {
+    this.beginOperation();
     await this.stopCrossfade();
-    
-    if (this.currentTrack) {
-      await this.currentTrack.unloadAsync().catch(() => {});
-      this.currentTrack = null;
-      this.currentTrackId = null;
+
+    const activeTrack = this.currentTrack;
+    const pendingTrack = this.nextTrack;
+
+    this.currentTrack = null;
+    this.currentTrackId = null;
+    this.nextTrack = null;
+
+    if (activeTrack) {
+      await activeTrack.stopAsync().catch(() => {});
+      await activeTrack.unloadAsync().catch(() => {});
     }
 
-    if (this.nextTrack) {
-      await this.nextTrack.unloadAsync().catch(() => {});
-      this.nextTrack = null;
+    if (pendingTrack && pendingTrack !== activeTrack) {
+      await pendingTrack.stopAsync().catch(() => {});
+      await pendingTrack.unloadAsync().catch(() => {});
     }
 
-    console.log('🎵 Music Player disposed');
+    console.log('Music Player disposed');
   }
 }
 

@@ -296,6 +296,64 @@ describe('MonetizationService', () => {
       // Should return false when user has remove_ads
       expect(result).toBe(false);
     });
+
+    it('should apply interstitial runtime config from env vars', async () => {
+      process.env.EXPO_PUBLIC_INTERSTITIAL_SESSION_CAP = '1';
+      process.env.EXPO_PUBLIC_INTERSTITIAL_COOLDOWN_MS = '0';
+      try {
+        (monetizationService as any).__reset__();
+        await monetizationService.initialize();
+
+        const first = await monetizationService.showInterstitialAdDetailed();
+        const second = await monetizationService.showInterstitialAdDetailed();
+
+        expect(first.shown).toBe(true);
+        expect(second.shown).toBe(false);
+        expect(second.reason).toBe('session_cap');
+      } finally {
+        delete process.env.EXPO_PUBLIC_INTERSTITIAL_SESSION_CAP;
+        delete process.env.EXPO_PUBLIC_INTERSTITIAL_COOLDOWN_MS;
+      }
+    });
+
+    it('should apply interstitial runtime config from remote config endpoint', async () => {
+      const originalFetch = (globalThis as any).fetch;
+      (globalThis as any).fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          interstitialSessionLimit: 1,
+          interstitialCooldownMs: 0,
+        }),
+      });
+
+      process.env.EXPO_PUBLIC_MONETIZATION_REMOTE_CONFIG_URL = 'https://example.com/monetization.json';
+      try {
+        (monetizationService as any).__reset__();
+        await monetizationService.initialize();
+
+        const first = await monetizationService.showInterstitialAdDetailed();
+        const second = await monetizationService.showInterstitialAdDetailed();
+
+        expect((globalThis as any).fetch).toHaveBeenCalledWith(
+          'https://example.com/monetization.json',
+          expect.objectContaining({
+            method: 'GET',
+            headers: expect.objectContaining({ Accept: 'application/json' }),
+          })
+        );
+        expect(first.shown).toBe(true);
+        expect(second.shown).toBe(false);
+        expect(second.reason).toBe('session_cap');
+      } finally {
+        delete process.env.EXPO_PUBLIC_MONETIZATION_REMOTE_CONFIG_URL;
+        if (originalFetch) {
+          (globalThis as any).fetch = originalFetch;
+        } else {
+          delete (globalThis as any).fetch;
+        }
+      }
+    });
   });
 
   describe('Edge Cases', () => {

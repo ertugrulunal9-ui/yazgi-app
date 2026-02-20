@@ -6,7 +6,19 @@
       "Bash(gh pr list:*)",
       "Bash(npm test:*)",
       "Bash(done)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(npx jest:*)",
+      "Bash(where:*)",
+      "Bash(winget install:*)",
+      "Bash(cmd.exe /c:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(python scripts/generate_sfx.py:*)",
+      "Bash(curl:*)",
+      "Bash(ls:*)",
+      "WebFetch(domain:kenney.nl)",
+      "Bash(unzip:*)",
+      "WebFetch(domain:opengameart.org)",
+      "Bash(python:*)"
     ]
   }
 }

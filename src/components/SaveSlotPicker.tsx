@@ -4,6 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SaveSlotData, SaveSlotMetadata } from '../save/SaveSlot';
 import { SaveSlotCard } from './SaveSlotCard';
+import SaveExportModal from './SaveExportModal';
 import SaveManager from '../save/SaveManager';
 import { GameState, Stats } from '../types';
 
@@ -41,6 +42,8 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportSlotId, setExportSlotId] = useState<string | null>(null);
+  const [saveModalTab, setSaveModalTab] = useState<'export' | 'import'>('export');
+  const premiumUnlocked = SaveManager.getAvailableSlots() > 2;
 
   useEffect(() => {
     if (isOpen) {
@@ -130,6 +133,7 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
 
   const handleExport = (slotId: string) => {
     setExportSlotId(slotId);
+    setSaveModalTab('export');
     setShowExportModal(true);
   };
 
@@ -170,16 +174,10 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
             <Feather name="lock" size={24} color="#eab308" />
             <View>
               <Text style={styles.premiumTitle}>Premium Slotlar</Text>
-              <Text style={styles.premiumSubtitle}>3 ekstra slot aç</Text>
+              <Text style={styles.premiumSubtitle}>Magaza artik Hub ekraninda</Text>
             </View>
           </View>
-          <TouchableOpacity
-            style={styles.premiumButton}
-            accessibilityLabel="Premium slotların kilidini aç"
-            accessibilityRole="button"
-          >
-            <Text style={styles.premiumButtonText}>Kilidi Aç</Text>
-          </TouchableOpacity>
+          <Text style={styles.premiumBannerTag}>{premiumUnlocked ? 'Premium Aktif' : 'Hub > Magaza'}</Text>
         </View>
 
         {/* Refresh Button */}
@@ -210,16 +208,33 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
           ) : (
             slots.map((metadata) => (
               <View key={metadata.slotId} style={styles.slotCardWrapper}>
-                <SaveSlotCard
-                  metadata={metadata}
-                  onLoad={handleLoad}
-                  onSave={handleSave}
-                  onDelete={handleDelete}
-                  onExport={handleExport}
-                  isCurrentSlot={metadata.slotId === currentSlotId}
-                  isAutoSave={metadata.slotId === 'auto'}
-                  theme={theme}
-                />
+                {premiumUnlocked && metadata.isPremium && metadata.status === 'empty' ? (
+                  <TouchableOpacity
+                    onPress={() => handleSave(metadata.slotId)}
+                    style={[styles.unlockedPremiumCard, { backgroundColor: theme.surfaceBase, borderColor: theme.border }]}
+                    accessibilityLabel={`Premium slot ${metadata.slotId}, kaydetmek icin dokun`}
+                    accessibilityRole="button"
+                  >
+                    <View style={styles.unlockedPremiumHeader}>
+                      <Feather name="unlock" size={18} color="#eab308" />
+                      <Text style={styles.unlockedPremiumTitle}>Premium Slot {metadata.slotId}</Text>
+                    </View>
+                    <Text style={[styles.unlockedPremiumSubtitle, { color: theme.textSecondary }]}>
+                      Bu slota kaydetmek icin dokun
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <SaveSlotCard
+                    metadata={metadata}
+                    onLoad={handleLoad}
+                    onSave={handleSave}
+                    onDelete={handleDelete}
+                    onExport={handleExport}
+                    isCurrentSlot={metadata.slotId === currentSlotId}
+                    isAutoSave={metadata.slotId === 'auto'}
+                    theme={theme}
+                  />
+                )}
               </View>
             ))
           )}
@@ -228,7 +243,11 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
         {/* Import Footer */}
         <View style={[styles.footer, { backgroundColor: theme.surfaceRaised, borderTopColor: theme.border }]}>
           <TouchableOpacity
-            onPress={() => setShowExportModal(true)}
+            onPress={() => {
+              setExportSlotId(null);
+              setSaveModalTab('import');
+              setShowExportModal(true);
+            }}
             style={[styles.importButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}
             accessibilityLabel="İçe aktar"
             accessibilityRole="button"
@@ -240,84 +259,53 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
       </View>
     </View>
   );
-
-  const exportContent = (
-    <View style={[styles.exportContainer, { backgroundColor: theme.surfaceBase, borderColor: theme.border }]}>
-      <View style={styles.exportHeader}>
-        <Text style={[styles.exportTitle, { color: theme.textPrimary }]}>Kayıt Dışa Aktar</Text>
-        <TouchableOpacity
-          onPress={() => {
-            setShowExportModal(false);
-            setExportSlotId(null);
-          }}
-          style={[styles.closeButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}
-          accessibilityLabel="Kapat"
-          accessibilityRole="button"
-        >
-          <Feather name="x" size={20} color={theme.textSecondary} />
-        </TouchableOpacity>
-      </View>
-      <Text style={[styles.exportDescription, { color: theme.textSecondary }]}>
-        Export/import işlemleri için SaveExportModal component'i kullanılacak
-      </Text>
-      <TouchableOpacity
-        onPress={() => {
-          setShowExportModal(false);
-          setExportSlotId(null);
-        }}
-        style={[styles.exportCloseButton, { backgroundColor: theme.accentEvent }]}
-        accessibilityLabel="Kapat"
-        accessibilityRole="button"
-      >
-        <Text style={styles.exportCloseButtonText}>Kapat</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
   const overlay = (
     <View style={styles.overlayRoot} pointerEvents="box-none">
       <Pressable style={styles.backdrop} onPress={onClose} />
       {content}
-
-      {showExportModal && exportSlotId && (
-        <View style={styles.overlayRoot} pointerEvents="box-none">
-          <Pressable
-            style={styles.backdrop}
-            onPress={() => {
-              setShowExportModal(false);
-              setExportSlotId(null);
-            }}
-          />
-          <View
-            style={[
-              styles.modalRoot,
-              {
-                paddingTop: insets.top + 16,
-                paddingBottom: insets.bottom + 16,
-              },
-            ]}
-          >
-            {exportContent}
-          </View>
-        </View>
-      )}
     </View>
   );
 
   if (Platform.OS === 'android') {
-    return overlay;
+    return (
+      <>
+        {overlay}
+        <SaveExportModal
+          isOpen={showExportModal}
+          onClose={() => {
+            setShowExportModal(false);
+            setExportSlotId(null);
+          }}
+          slotId={exportSlotId ?? undefined}
+          initialTab={saveModalTab}
+          theme={theme}
+        />
+      </>
+    );
   }
 
   return (
-    <Modal
-      visible={isOpen}
-      animationType="fade"
-      transparent
-      statusBarTranslucent
-      onRequestClose={onClose}
-    >
-      {overlay}
-    </Modal>
+    <>
+      <Modal
+        visible={isOpen}
+        animationType="fade"
+        transparent
+        statusBarTranslucent
+        onRequestClose={onClose}
+      >
+        {overlay}
+      </Modal>
+      <SaveExportModal
+        isOpen={showExportModal}
+        onClose={() => {
+          setShowExportModal(false);
+          setExportSlotId(null);
+        }}
+        slotId={exportSlotId ?? undefined}
+        initialTab={saveModalTab}
+        theme={theme}
+      />
+    </>
   );
 };
 
@@ -397,6 +385,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 2,
   },
+  premiumBannerTag: {
+    color: '#fde68a',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   premiumButton: {
     backgroundColor: '#ca8a04',
     paddingHorizontal: 16,
@@ -444,6 +437,28 @@ const styles = StyleSheet.create({
   },
   slotCardWrapper: {
     marginBottom: 12,
+  },
+  unlockedPremiumCard: {
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 16,
+    minHeight: 96,
+    justifyContent: 'center',
+  },
+  unlockedPremiumHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  unlockedPremiumTitle: {
+    color: '#eab308',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  unlockedPremiumSubtitle: {
+    fontSize: 13,
   },
   loadingContainer: {
     alignItems: 'center',
@@ -507,3 +522,5 @@ const styles = StyleSheet.create({
 });
 
 export default SaveSlotPicker;
+
+

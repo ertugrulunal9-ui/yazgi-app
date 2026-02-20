@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { UnlockedAchievement, Stats, GameState, Skills, SchoolGrades } from '../types';
 import { 
   loadAchievements, 
@@ -37,7 +37,10 @@ export const useAchievements = (
   const gradesRef = useRef(grades);
   const onUnlockRef = useRef(onUnlock);
 
-  const savedList = gameState.unlockedAchievements || [];
+  const savedList = useMemo(
+    () => gameState.unlockedAchievements || [],
+    [gameState.unlockedAchievements]
+  );
   const isFreshGame = gameState.turn <= 1 && gameState.age <= 1 && savedList.length === 0;
 
   useEffect(() => {

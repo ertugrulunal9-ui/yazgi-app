@@ -71,6 +71,8 @@ const MusicExamGame: React.FC<MusicExamGameProps> = ({
   const [noteDurationMs, setNoteDurationMs] = useState(0);
   const noteIdRef = useRef(0);
   const didSpawnInitial = useRef(false);
+  const handleMissRef = useRef<() => void>(() => {});
+  const spawnNoteRef = useRef<() => void>(() => {});
 
   const noteY = useSharedValue(START_Y);
   const noteScale = useSharedValue(1);
@@ -87,6 +89,10 @@ const MusicExamGame: React.FC<MusicExamGameProps> = ({
       -1,
       true
     );
+  }, [beatPulse]);
+
+  const triggerMiss = useCallback(() => {
+    handleMissRef.current();
   }, []);
 
   const spawnNote = useCallback(() => {
@@ -117,11 +123,25 @@ const MusicExamGame: React.FC<MusicExamGameProps> = ({
       { duration, easing: Easing.linear },
       (finished) => {
         if (finished) {
-          runOnJS(handleMiss)();
+          runOnJS(triggerMiss)();
         }
       }
     );
-  }, [age, difficulty, gameState.currentQuestion, gameState.totalQuestions, setGameState]);
+  }, [
+    age,
+    difficulty,
+    gameState.currentQuestion,
+    gameState.totalQuestions,
+    noteOpacity,
+    noteScale,
+    noteY,
+    setGameState,
+    triggerMiss,
+  ]);
+
+  useEffect(() => {
+    spawnNoteRef.current = spawnNote;
+  }, [spawnNote]);
 
   useEffect(() => {
     if (didSpawnInitial.current) return;
@@ -145,9 +165,11 @@ const MusicExamGame: React.FC<MusicExamGameProps> = ({
     }));
 
     if (!isLast) {
-      setTimeout(spawnNote, 500);
+      setTimeout(() => {
+        spawnNoteRef.current();
+      }, 500);
     }
-  }, [difficulty, gameState.currentQuestion, gameState.totalQuestions, gameState.streak, spawnNote]);
+  }, [difficulty, gameState.currentQuestion, gameState.streak, gameState.totalQuestions, setGameState]);
 
   const handleMiss = useCallback(() => {
     if (feedback !== null) return;
@@ -161,6 +183,10 @@ const MusicExamGame: React.FC<MusicExamGameProps> = ({
     );
     finishQuestion(false);
   }, [feedback, finishQuestion, hitFlash]);
+
+  useEffect(() => {
+    handleMissRef.current = handleMiss;
+  }, [handleMiss]);
 
   const handleLanePress = useCallback((laneIndex: number) => {
     if (!currentNote || feedback !== null) return;
@@ -264,7 +290,7 @@ const MusicExamGame: React.FC<MusicExamGameProps> = ({
           </Animated.View>
         )}
 
-        <Animated.View style={[styles.feedbackOverlay, feedbackStyle]}>
+        <Animated.View pointerEvents="none" style={[styles.feedbackOverlay, feedbackStyle]}>
           <Text style={styles.feedbackEmoji}>
             {feedback === 'correct' ? '✅' : feedback === 'wrong' ? '❌' : ''}
           </Text>

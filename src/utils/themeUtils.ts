@@ -7,12 +7,16 @@ export interface UIPrefs {
   theme: ThemeMode;
   density: DensityMode;
   reduceMotion: boolean;
+  analyticsEnabled: boolean;
+  personalizedAdsEnabled: boolean;
 }
 
 export const DEFAULT_UI_PREFS: UIPrefs = {
   theme: 'dark',
   density: 'standard',
   reduceMotion: false,
+  analyticsEnabled: false,
+  personalizedAdsEnabled: false,
 };
 
 export const SPLASH_DELAY_POOL = [1500, 1600, 1700, 1700, 1800, 1800, 1800, 1900, 2000, 2200];
@@ -39,6 +43,10 @@ export interface ThemeTokens {
   accentGrade: string;
   accentSkill: string;
   accentStat: string;
+  accentBrand: string;
+  accentBrandMuted: string;
+  fontHeading: string;
+  fontBody: string;
 }
 
 export const getThemeTokens = (theme: 'light' | 'dark'): ThemeTokens => {
@@ -55,6 +63,10 @@ export const getThemeTokens = (theme: 'light' | 'dark'): ThemeTokens => {
       accentGrade: '#047857',
       accentSkill: '#7e22ce',
       accentStat: '#1e40af',
+      accentBrand: '#d97706',
+      accentBrandMuted: 'rgba(217, 119, 6, 0.15)',
+      fontHeading: 'Inter_700Bold',
+      fontBody: 'Inter_400Regular',
     };
   }
   return {
@@ -69,6 +81,10 @@ export const getThemeTokens = (theme: 'light' | 'dark'): ThemeTokens => {
     accentGrade: '#34d399',
     accentSkill: '#c084fc',
     accentStat: '#93c5fd',
+    accentBrand: '#f59e0b',
+    accentBrandMuted: 'rgba(245, 158, 11, 0.15)',
+    fontHeading: 'Inter_700Bold',
+    fontBody: 'Inter_400Regular',
   };
 };
 

@@ -1,6 +1,5 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -11,7 +10,7 @@ import Animated, {
 import { Skills, Talent } from '../types';
 import { getThemeTokens, getDensityMetrics } from '../utils/themeUtils';
 import { MilestoneDetailModal } from './MilestoneDetailModal';
-import { selectionHaptic } from '../animations/HapticFeedback';
+import { selectionHaptic, milestoneHaptic } from '../animations/HapticFeedback';
 import { UI_TEXT } from '../constants/uiText';
 
 interface SkillTreeProps {
@@ -36,7 +35,7 @@ interface OtherSkillConfig {
   title: string;
   icon: string;
   accent: string;
-  milestones: Array<Omit<Milestone, 'unlocked'>>;
+  milestones: Omit<Milestone, 'unlocked'>[];
 }
 
 interface SkillColumnProps {
@@ -193,7 +192,11 @@ export const SkillTree = React.memo<SkillTreeProps>(({ skills, previousSkills, t
   const [modalVisible, setModalVisible] = useState(false);
 
   const handleMilestonePress = useCallback((milestone: Milestone, skillName: string) => {
-    selectionHaptic();
+    if (milestone.unlocked) {
+      milestoneHaptic();
+    } else {
+      selectionHaptic();
+    }
     setSelectedMilestone({
       level: milestone.lvl,
       benefits: milestone.benefits || [milestone.desc],
@@ -221,6 +224,10 @@ export const SkillTree = React.memo<SkillTreeProps>(({ skills, previousSkills, t
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[styles.contentContainer, { padding: metrics.pad }]}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
+        overScrollMode="never"
+        bounces={false}
       >
         {/* Header with Back Button */}
         <View style={styles.header}>
@@ -237,14 +244,9 @@ export const SkillTree = React.memo<SkillTreeProps>(({ skills, previousSkills, t
           </TouchableOpacity>
 
           <View style={styles.titleContainer}>
-            <LinearGradient
-              colors={['#60a5fa', '#a78bfa']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.titleGradient}
-            >
-              <Text style={styles.titleText}>{UI_TEXT.skillTree.title}</Text>
-            </LinearGradient>
+            <View style={[styles.titleBadge, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}>
+              <Text style={[styles.titleText, { color: theme.textPrimary }]}>{UI_TEXT.skillTree.title}</Text>
+            </View>
           </View>
         </View>
 
@@ -337,6 +339,8 @@ export const SkillTree = React.memo<SkillTreeProps>(({ skills, previousSkills, t
   );
 });
 
+SkillTree.displayName = 'SkillTree';
+
 const SkillColumn: React.FC<SkillColumnProps> = ({
   title,
   icon,
@@ -349,20 +353,13 @@ const SkillColumn: React.FC<SkillColumnProps> = ({
   metrics,
   onMilestonePress
 }) => {
-  const getGradientColors = (): [string, string] => {
-    if (color === 'cyan') return ['#06b6d4', '#2563eb'];
-    if (color === 'pink') return ['#ec4899', '#be185d'];
-    return ['#f97316', '#f59e0b'];
+  const getPalette = (): { accentColor: string; headerBg: string } => {
+    if (color === 'cyan') return { accentColor: '#0891b2', headerBg: 'rgba(8, 145, 178, 0.12)' };
+    if (color === 'pink') return { accentColor: '#db2777', headerBg: 'rgba(219, 39, 119, 0.12)' };
+    return { accentColor: '#ea580c', headerBg: 'rgba(234, 88, 12, 0.12)' };
   };
 
-  const getAccentColor = (): string => {
-    if (color === 'cyan') return '#22d3ee';
-    if (color === 'pink') return '#f472b6';
-    return '#fb923c';
-  };
-
-  const [gradientStart, gradientEnd] = getGradientColors();
-  const accentColor = getAccentColor();
+  const { accentColor, headerBg } = getPalette();
 
   // Animation for progress bar
   const progressWidth = useSharedValue(0);
@@ -372,7 +369,7 @@ const SkillColumn: React.FC<SkillColumnProps> = ({
       duration: 1000,
       easing: Easing.out(Easing.cubic),
     }));
-  }, [level]);
+  }, [level, progressWidth]);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
@@ -391,12 +388,15 @@ const SkillColumn: React.FC<SkillColumnProps> = ({
         borderWidth: hasTalent ? 2 : 1,
       }
     ]}>
-      {/* Header with Gradient */}
-      <LinearGradient
-        colors={[gradientStart, gradientEnd]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.columnHeader}
+      <View
+        style={[
+          styles.columnHeader,
+          {
+            backgroundColor: headerBg,
+            borderBottomColor: `${accentColor}66`,
+            borderBottomWidth: 1,
+          },
+        ]}
       >
         {hasTalent && (
           <View style={styles.talentBadge}>
@@ -405,11 +405,11 @@ const SkillColumn: React.FC<SkillColumnProps> = ({
         )}
 
         <Text style={styles.iconText}>{icon}</Text>
-        <Text style={styles.columnTitle}>{title}</Text>
+        <Text style={[styles.columnTitle, { color: theme.textPrimary }]}>{title}</Text>
 
         <View style={styles.levelContainer}>
-          <Text style={styles.levelNumber}>{level}</Text>
-          <Text style={styles.levelMax}>/100</Text>
+          <Text style={[styles.levelNumber, { color: accentColor }]}>{level}</Text>
+          <Text style={[styles.levelMax, { color: theme.textSecondary }]}>/100</Text>
 
           {/* Comparison Badge */}
           {levelDifference !== 0 && (
@@ -423,7 +423,7 @@ const SkillColumn: React.FC<SkillColumnProps> = ({
             </View>
           )}
         </View>
-      </LinearGradient>
+      </View>
 
       {/* Milestones - Compact Chips */}
       <View style={[styles.compactBody, { padding: metrics.pad }]}>
@@ -457,12 +457,7 @@ const SkillColumn: React.FC<SkillColumnProps> = ({
       {/* Progress Bar */}
       <View style={[styles.progressBarContainer, { backgroundColor: theme.surfaceOverlay }]}>
         <Animated.View style={[styles.progressBar, animatedStyle]}>
-          <LinearGradient
-            colors={[gradientStart, gradientEnd]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={{ flex: 1 }}
-          />
+          <View style={{ flex: 1, backgroundColor: accentColor }} />
         </Animated.View>
       </View>
     </View>
@@ -552,15 +547,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 8,
   },
-  titleGradient: {
+  titleBadge: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
+    borderWidth: 1,
   },
   titleText: {
     fontSize: 28,
-    fontWeight: '900',
-    color: '#ffffff',
+    fontWeight: '800',
     textAlign: 'center',
   },
 
@@ -622,7 +617,6 @@ const styles = StyleSheet.create({
   columnTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#ffffff',
     marginBottom: 2,
   },
   levelContainer: {
@@ -634,12 +628,10 @@ const styles = StyleSheet.create({
   levelNumber: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#ffffff',
   },
   levelMax: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#ffffff',
     opacity: 0.8,
     marginBottom: 2,
   },

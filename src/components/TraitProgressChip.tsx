@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { getTraitName } from '../data/traits';
+import { traitGainHaptic } from '../animations/HapticFeedback';
 
 interface ThemeTokens {
   textPrimary: string;
@@ -14,15 +16,22 @@ interface TraitProgressChipProps {
   theme: ThemeTokens;
 }
 
-const formatTraitList = (traits: string[]): string => {
-  if (traits.length <= 2) {
-    return traits.join(', ');
+const formatTraitList = (traitIds: string[]): string => {
+  const names = traitIds.map(getTraitName);
+  if (names.length <= 2) {
+    return names.join(', ');
   }
-  const [first, second, ...rest] = traits;
+  const [first, second, ...rest] = names;
   return `${first}, ${second} +${rest.length}`;
 };
 
 export const TraitProgressChip: React.FC<TraitProgressChipProps> = ({ traits, theme }) => {
+  useEffect(() => {
+    if (traits && traits.length > 0) {
+      traitGainHaptic();
+    }
+  }, [traits]);
+
   if (!traits || traits.length === 0) return null;
 
   const label = formatTraitList(traits);

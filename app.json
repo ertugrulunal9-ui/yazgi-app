@@ -96,7 +96,7 @@
         "interstitialCooldownMs": 180000,
         "remoteConfigUrl": "",
         "entitlementApiBaseUrl": "",
-        "requireServerAuthority": false,
+        "requireServerAuthority": true,
         "entitlementRefreshOnStartup": false,
         "entitlementRequestTimeoutMs": 2000
       },

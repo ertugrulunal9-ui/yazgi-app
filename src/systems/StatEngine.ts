@@ -1,25 +1,28 @@
 /**
- * StatEngine - Merkezi Stat İşleme Sistemi
+ * StatEngine - Central stat processing pipeline
  *
- * Tüm stat değişikliklerini tek noktadan geçirir:
- * - Diminishing returns (azalan getiri)
+ * Applies in one place:
+ * - Diminishing returns
  * - Trait multipliers
- * - Dynamic age-based caps
- * - Family bonuses/penalties
+ * - Behavioral Momentum multipliers
+ * - Dynamic stat caps
  */
 
-import { Stats, StatKey, Family } from '../types';
+import { Family, PersonalityState, StatKey, Stats } from '../types';
 import {
   calculateStatGain,
+  clamp,
   getStatCap,
   getTraitMultiplier,
-  clamp,
 } from '../utils/gameUtils';
+import { getMomentumMultiplierForStat } from './PersonalityMomentumEngine';
 
 export interface StatChangeConfig {
   age: number;
   family: Family | null;
   traits: string[];
+  personalityState?: Partial<PersonalityState>;
+  burdenRisk?: number;
 }
 
 export interface StatChangeResult {
@@ -33,26 +36,16 @@ export interface StatChangeDetail {
   originalDelta: number;
   afterDiminishing: number;
   traitMultiplier: number;
+  momentumMultiplier: number;
+  burdenMultiplier: number;
+  momentumTendency: string | null;
   finalDelta: number;
   oldValue: number;
   newValue: number;
   cap: number;
 }
 
-/**
- * StatEngine - Oyun dengesi için kritik
- *
- * Kullanım:
- * const result = StatEngine.applyChanges(currentStats, { intelligence: 5 }, config);
- * setStats(result.newStats);
- */
 export class StatEngine {
-  /**
-   * Stat değişikliklerini uygular
-   * - Diminishing returns: Cap'e yaklaştıkça kazanım azalır
-   * - Trait multipliers: GENIUS +30% intelligence, ATHLETIC +30% sports vb.
-   * - Dynamic caps: Yaşa göre soft cap (age 5 = max 30, age 18 = max 100)
-   */
   static applyChanges(
     currentStats: Stats,
     changes: Partial<Stats>,
@@ -73,19 +66,31 @@ export class StatEngine {
 
       let afterDiminishing = originalDelta;
       let traitMultiplier = 1.0;
+      let momentumMultiplier = 1.0;
+      let burdenMultiplier = 1.0;
+      let momentumTendency: string | null = null;
 
-      // Pozitif değişiklikler için formül uygula (money ve energy hariç)
       if (originalDelta > 0 && key !== 'money' && key !== 'energy') {
-        // 1. Diminishing returns
         afterDiminishing = calculateStatGain(oldValue, originalDelta, cap);
-
-        // 2. Trait multipliers
         traitMultiplier = getTraitMultiplier(config.traits, key);
         afterDiminishing = Math.ceil(afterDiminishing * traitMultiplier);
       }
 
-      // Negatif değişiklikler için sadece trait multiplier (opsiyonel)
-      // Şimdilik negatif değişiklikleri olduğu gibi uyguluyoruz
+      if (originalDelta > 0 && config.personalityState) {
+        const momentumResult = getMomentumMultiplierForStat(key, config.personalityState);
+        momentumMultiplier = momentumResult.multiplier;
+        momentumTendency = momentumResult.tendency;
+
+        if (momentumMultiplier > 1) {
+          afterDiminishing = Math.ceil(afterDiminishing * momentumMultiplier);
+        }
+      }
+
+      if (originalDelta > 0 && (config.burdenRisk ?? 0) > 50) {
+        burdenMultiplier = 0.9;
+        afterDiminishing = Math.ceil(afterDiminishing * burdenMultiplier);
+      }
+
       const shouldUseDiminishingForNegative =
         originalDelta < 0 &&
         key !== 'money' &&
@@ -97,15 +102,13 @@ export class StatEngine {
           ? -calculateStatGain(cap - oldValue, Math.abs(originalDelta), cap)
           : originalDelta;
 
-      // Değeri uygula ve clamp et
       let newValue = oldValue + finalDelta;
-      const minLimit = key === 'money' ? 0 : 0;
-      const maxLimit = key === 'money' ? Infinity : cap + 10; // Soft cap'i biraz aşabilir
+      const minLimit = 0;
+      const maxLimit = key === 'money' ? Infinity : cap + 10;
 
       newValue = clamp(newValue, minLimit, maxLimit);
       newStats[key] = newValue;
 
-      // Gerçek değişimi hesapla (clamp sonrası)
       const actualDelta = newValue - oldValue;
       if (actualDelta !== 0) {
         appliedChanges[key] = actualDelta;
@@ -116,6 +119,9 @@ export class StatEngine {
         originalDelta,
         afterDiminishing,
         traitMultiplier,
+        momentumMultiplier,
+        burdenMultiplier,
+        momentumTendency,
         finalDelta,
         oldValue,
         newValue,
@@ -130,10 +136,6 @@ export class StatEngine {
     };
   }
 
-  /**
-   * Basit stat değişikliği (formül olmadan)
-   * Sadece sistem gereksinimleri için kullanılmalı (energy restore vb.)
-   */
   static applyRaw(currentStats: Stats, changes: Partial<Stats>): Stats {
     const newStats = { ...currentStats };
 
@@ -141,32 +143,44 @@ export class StatEngine {
       const delta = changes[key];
       if (delta === undefined) continue;
 
-      let newValue = currentStats[key] + delta;
-      const minLimit = key === 'money' ? 0 : 0;
+      const minLimit = 0;
       const maxLimit = key === 'money' ? Infinity : 100;
-
-      newStats[key] = clamp(newValue, minLimit, maxLimit);
+      newStats[key] = clamp(currentStats[key] + delta, minLimit, maxLimit);
     }
 
     return newStats;
   }
 
-  /**
-   * Debug: Stat değişikliğinin detaylı raporunu döndürür
-   */
   static getChangeReport(result: StatChangeResult): string {
     const lines: string[] = ['=== Stat Change Report ==='];
 
     for (const detail of result.details) {
-      const { stat, originalDelta, finalDelta, traitMultiplier, oldValue, newValue, cap } = detail;
+      const {
+        stat,
+        originalDelta,
+        finalDelta,
+        traitMultiplier,
+        momentumMultiplier,
+        burdenMultiplier,
+        momentumTendency,
+        oldValue,
+        newValue,
+        cap,
+      } = detail;
       const sign = originalDelta > 0 ? '+' : '';
 
-      lines.push(`${stat}: ${oldValue} → ${newValue} (${sign}${finalDelta})`);
+      lines.push(`${stat}: ${oldValue} -> ${newValue} (${sign}${finalDelta})`);
 
       if (originalDelta !== finalDelta) {
         lines.push(`  Original: ${sign}${originalDelta}`);
         if (traitMultiplier !== 1.0) {
           lines.push(`  Trait multiplier: ${traitMultiplier.toFixed(2)}x`);
+        }
+        if (momentumMultiplier !== 1.0 && momentumTendency) {
+          lines.push(`  Momentum (${momentumTendency}): ${momentumMultiplier.toFixed(2)}x`);
+        }
+        if (burdenMultiplier !== 1.0) {
+          lines.push(`  Burden penalty: ${burdenMultiplier.toFixed(2)}x`);
         }
         lines.push(`  Cap: ${cap}`);
       }

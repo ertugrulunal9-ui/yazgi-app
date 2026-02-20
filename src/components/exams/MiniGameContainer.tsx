@@ -49,6 +49,13 @@ export interface GameState {
     streak: number;
 }
 
+type MiniGameChildProps = {
+    gameState: GameState;
+    setGameState: React.Dispatch<React.SetStateAction<GameState>>;
+    difficulty: Difficulty;
+    age: number;
+};
+
 // Calculate grade bonus based on performance
 export const calculateBonuses = (
     correctAnswers: number,
@@ -107,7 +114,7 @@ const MiniGameContainer: React.FC<MiniGameContainerProps> = ({
         // containerScale.value = withSpring(1, { damping: 15 });
         // containerOpacity.value = withTiming(1, { duration: 300 });
         console.log('[MiniGameContainer] Initial phase:', gameState.phase);
-    }, []);
+    }, [gameState.phase]);
 
 
     // Timer
@@ -248,13 +255,14 @@ const MiniGameContainer: React.FC<MiniGameContainerProps> = ({
                 {gameState.phase === 'PLAYING' && (
                     <View style={styles.gameContent}>
                         {React.Children.map(children, child => {
-                            if (React.isValidElement(child)) {
-                                return React.cloneElement(child as React.ReactElement, {
+                            if (React.isValidElement<Partial<MiniGameChildProps>>(child)) {
+                                const injectedProps: MiniGameChildProps = {
                                     gameState,
                                     setGameState,
                                     difficulty,
                                     age,
-                                });
+                                };
+                                return React.cloneElement(child, injectedProps);
                             }
                             return null;
                         })}

@@ -14,20 +14,27 @@ module.exports = {
     }],
   },
   testMatch: ['**/__tests__/**/*.test.(ts|tsx)'],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '[/\\\\]\\.claude[/\\\\]',
+    '[/\\\\]\\.agents[/\\\\]',
+  ],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
   collectCoverageFrom: [
     'src/utils/**/*.{ts,tsx}',
     'src/data/**/*.{ts,tsx}',
+    'src/systems/**/*.{ts,tsx}',
+    'src/context/**/*.{ts,tsx}',
     '!src/**/*.d.ts',
     '!src/**/index.ts',
     '!src/types.ts',
   ],
   coverageThreshold: {
     global: {
-      statements: 10,
-      branches: 0,
-      functions: 5,
-      lines: 8.5,
+      statements: 60,
+      branches: 65,
+      functions: 55,
+      lines: 60,
     },
   },
   moduleNameMapper: {

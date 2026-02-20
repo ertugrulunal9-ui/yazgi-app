@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, Alert, ListRenderItemInfo } from 'react-native';
 import { NPC, Skills } from '../types';
 import { getThemeTokens, getDensityMetrics } from '../utils/themeUtils';
 import { selectionHaptic, buttonPress } from '../animations/HapticFeedback';
@@ -102,14 +101,9 @@ const SocialHeader: React.FC<SocialHeaderProps> = ({ onBack, theme }) => (
     </TouchableOpacity>
 
     <View style={styles.titleContainer}>
-      <LinearGradient
-        colors={['#10b981', '#2563eb']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.titleGradient}
-      >
-        <Text style={styles.titleText}>👥 Sosyal Cevre</Text>
-      </LinearGradient>
+      <View style={[styles.titleBadge, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}>
+        <Text style={[styles.titleText, { color: theme.textPrimary }]}>👥 Sosyal Cevre</Text>
+      </View>
     </View>
   </View>
 );
@@ -121,7 +115,7 @@ const SocialResourceBar: React.FC<SocialResourceBarProps> = ({ currentEnergy, cu
   </View>
 );
 
-const SocialNPCCard: React.FC<SocialNPCCardProps> = ({
+const SocialNPCCard: React.FC<SocialNPCCardProps> = React.memo(({
   npc,
   selected,
   roleConfig,
@@ -251,7 +245,8 @@ const SocialNPCCard: React.FC<SocialNPCCardProps> = ({
       ) : null}
     </TouchableOpacity>
   );
-};
+}) as React.FC<SocialNPCCardProps>;
+SocialNPCCard.displayName = 'SocialNPCCard';
 
 const SocialScreenRoot: React.FC<SocialScreenProps> = ({
   npcs,
@@ -316,66 +311,80 @@ const SocialScreenRoot: React.FC<SocialScreenProps> = ({
 
   const meetColor = ensureTextContrast('#047857', theme.surfaceBase, 4.5);
 
+  const renderNPCItem = useCallback(({ item: npc }: ListRenderItemInfo<NPC>) => {
+    const roleConfig = ROLE_CONFIG[npc.role] || ROLE_CONFIG.ACQUAINTANCE;
+    const isSelected = selectedNPC?.id === npc.id;
+
+    return (
+      <SocialNPCCard
+        npc={npc}
+        selected={isSelected}
+        roleConfig={roleConfig}
+        theme={theme}
+        getRelationshipColor={getRelationshipColor}
+        onSelect={handleNPCSelect}
+        availableInteractions={availableInteractions}
+        canAfford={canAfford}
+        skills={skills}
+        onInteract={handleInteraction}
+      />
+    );
+  }, [selectedNPC?.id, theme, getRelationshipColor, handleNPCSelect, availableInteractions, canAfford, skills, handleInteraction]);
+
+  const npcKeyExtractor = useCallback((item: NPC) => item.id, []);
+
+  const listHeader = useMemo(() => (
+    <>
+      <SocialHeader onBack={onBack} theme={theme} />
+      <SocialResourceBar currentEnergy={currentEnergy} currentMoney={currentMoney} theme={theme} />
+
+      <TouchableOpacity
+        style={[styles.meetNewButton, { backgroundColor: meetColor }]}
+        onPress={handleMeetNew}
+        disabled={currentEnergy < 12}
+        accessibilityRole="button"
+        accessibilityLabel="Yeni biri ile tanis"
+        accessibilityHint={currentEnergy < 12 ? 'Bu aksiyon icin en az 12 enerji gerekir' : 'Yeni bir NPC ile tanismani saglar'}
+        accessibilityState={{ disabled: currentEnergy < 12 }}
+      >
+        <Text style={styles.meetNewIcon}>👋</Text>
+        <View>
+          <Text style={styles.meetNewText}>Yeni Biri ile Tanis</Text>
+          <Text style={styles.meetNewCost}>⚡12 enerji</Text>
+        </View>
+      </TouchableOpacity>
+    </>
+  ), [onBack, theme, currentEnergy, currentMoney, meetColor, handleMeetNew]);
+
+  const emptyComponent = useMemo(() => (
+    <View style={[styles.emptyState, { backgroundColor: theme.surfaceBase }]}>
+      <Text style={styles.emptyEmoji}>👥</Text>
+      <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>
+        Henuz kimseyi tanimiyorsun
+      </Text>
+      <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
+        "Yeni Biri ile Tanis" butonuna tikla.
+      </Text>
+    </View>
+  ), [theme]);
+
   return (
     <View style={[styles.container, { backgroundColor: theme.appBg }]}>
-      <ScrollView
-        style={styles.scrollView}
+      <FlatList
+        data={npcs}
+        keyExtractor={npcKeyExtractor}
+        renderItem={renderNPCItem}
+        ListHeaderComponent={listHeader}
+        ListEmptyComponent={emptyComponent}
         contentContainerStyle={[styles.contentContainer, { padding: metrics.pad }]}
-      >
-        <SocialHeader onBack={onBack} theme={theme} />
-        <SocialResourceBar currentEnergy={currentEnergy} currentMoney={currentMoney} theme={theme} />
-
-        <TouchableOpacity
-          style={[styles.meetNewButton, { backgroundColor: meetColor }]}
-          onPress={handleMeetNew}
-          disabled={currentEnergy < 12}
-          accessibilityRole="button"
-          accessibilityLabel="Yeni biri ile tanis"
-          accessibilityHint={currentEnergy < 12 ? 'Bu aksiyon icin en az 12 enerji gerekir' : 'Yeni bir NPC ile tanismani saglar'}
-          accessibilityState={{ disabled: currentEnergy < 12 }}
-        >
-          <Text style={styles.meetNewIcon}>👋</Text>
-          <View>
-            <Text style={styles.meetNewText}>Yeni Biri ile Tanis</Text>
-            <Text style={styles.meetNewCost}>⚡12 enerji</Text>
-          </View>
-        </TouchableOpacity>
-
-        {npcs.length === 0 ? (
-          <View style={[styles.emptyState, { backgroundColor: theme.surfaceBase }]}>
-            <Text style={styles.emptyEmoji}>👥</Text>
-            <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>
-              Henuz kimseyi tanimiyorsun
-            </Text>
-            <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
-              "Yeni Biri ile Tanis" butonuna tikla.
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.npcList}>
-            {npcs.map(npc => {
-              const roleConfig = ROLE_CONFIG[npc.role] || ROLE_CONFIG.ACQUAINTANCE;
-              const isSelected = selectedNPC?.id === npc.id;
-
-              return (
-                <SocialNPCCard
-                  key={npc.id}
-                  npc={npc}
-                  selected={isSelected}
-                  roleConfig={roleConfig}
-                  theme={theme}
-                  getRelationshipColor={getRelationshipColor}
-                  onSelect={handleNPCSelect}
-                  availableInteractions={availableInteractions}
-                  canAfford={canAfford}
-                  skills={skills}
-                  onInteract={handleInteraction}
-                />
-              );
-            })}
-          </View>
-        )}
-      </ScrollView>
+        keyboardShouldPersistTaps="handled"
+        overScrollMode="never"
+        bounces={false}
+        initialNumToRender={10}
+        maxToRenderPerBatch={5}
+        windowSize={5}
+        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+      />
     </View>
   );
 };
@@ -428,15 +437,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 8,
   },
-  titleGradient: {
+  titleBadge: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
+    borderWidth: 1,
   },
   titleText: {
     fontSize: 24,
-    fontWeight: '900',
-    color: '#ffffff',
+    fontWeight: '800',
     textAlign: 'center',
   },
   resourceBar: {
@@ -597,4 +606,3 @@ const styles = StyleSheet.create({
 });
 
 export default SocialScreen;
-

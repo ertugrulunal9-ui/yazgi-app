@@ -3,12 +3,12 @@ import {
   View,
   Text,
   TextInput,
-  SafeAreaView,
   TouchableOpacity,
   ScrollView,
   Modal,
   FlatList,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useGame } from '../context/GameContext';
 import { getThemeTokens, getDensityMetrics } from '../utils/themeUtils';
@@ -204,6 +204,13 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = (
 
   const isFormValid = form.firstName.trim() && form.lastName.trim() && form.birthCity;
 
+  // Narrative subtitle based on form progress
+  const narrativeSubtitle = useMemo(() => {
+    if (!form.firstName.trim()) return 'Hayatına başlayacak karakterini tasarla';
+    if (!form.birthCity) return 'Nerede büyüyeceksin?';
+    return `${form.firstName}, maceraya hazır mısın?`;
+  }, [form.firstName, form.birthCity]);
+
   // Stiller
   const containerStyle = useMemo(() => ({
     flex: 1,
@@ -254,17 +261,30 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = (
   }), [theme.accentEvent, theme.surfaceRaised, theme.border, metrics.pad]);
 
   return (
-    <SafeAreaView style={containerStyle}>
+    <View style={containerStyle}>
+    <SafeAreaView style={{ flex: 1 }}>
       {/* Header */}
       <View style={headerStyle}>
         <FadeInDownView delay={0}>
-          <Text style={{ fontSize: 24, fontWeight: '800', color: theme.textPrimary, textAlign: 'center' }}>
+          <Text style={{
+            fontSize: 26,
+            fontWeight: '800',
+            fontFamily: theme.fontHeading,
+            color: theme.textPrimary,
+            textAlign: 'center',
+          }}>
             Karakter Oluştur
           </Text>
         </FadeInDownView>
         <FadeInUpView delay={100}>
-          <Text style={{ fontSize: 13, color: theme.textSecondary, textAlign: 'center', marginTop: 4 }}>
-            Hayatına başlayacak karakterini tasarla
+          <Text style={{
+            fontSize: 13,
+            fontFamily: theme.fontBody,
+            color: theme.accentBrand,
+            textAlign: 'center',
+            marginTop: 4,
+          }}>
+            {narrativeSubtitle}
           </Text>
         </FadeInUpView>
       </View>
@@ -273,6 +293,10 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = (
         style={{ flex: 1 }}
         contentContainerStyle={{ padding: metrics.pad * 1.5, paddingTop: 0 }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
+        overScrollMode="never"
+        bounces={false}
       >
         {/* Rastgele Oluştur Butonu */}
         <FadeInUpView delay={150}>
@@ -403,8 +427,8 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = (
                   alignItems: 'center',
                   gap: 6,
                 }}>
-                  <Text style={{ fontSize: 18 }}>{zodiac.emoji}</Text>
-                  <Text style={{ color: theme.accentGrade, fontWeight: '600', fontSize: metrics.font - 1 }}>
+                  <Text style={{ fontSize: 22 }}>{zodiac.emoji}</Text>
+                  <Text style={{ color: theme.accentBrand, fontWeight: '700', fontFamily: theme.fontHeading, fontSize: metrics.font }}>
                     {zodiac.name}
                   </Text>
                 </View>
@@ -433,19 +457,35 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = (
           <FadeInUpView delay={400}>
             <View style={{
               backgroundColor: theme.surfaceOverlay,
-              borderRadius: 12,
-              padding: metrics.pad,
+              borderRadius: 14,
+              padding: metrics.pad * 1.2,
               marginBottom: metrics.pad,
-              borderWidth: 1,
-              borderColor: theme.accentEvent,
+              borderWidth: 1.5,
+              borderColor: theme.accentBrand,
             }}>
-              <Text style={{ color: theme.textSecondary, fontSize: metrics.font - 2, marginBottom: 8 }}>
+              <Text style={{
+                color: theme.accentBrand,
+                fontSize: metrics.font - 2,
+                fontFamily: theme.fontBody,
+                marginBottom: 8,
+                fontWeight: '600',
+              }}>
                 Karakter Özeti
               </Text>
-              <Text style={{ color: theme.textPrimary, fontSize: metrics.font + 2, fontWeight: '700' }}>
+              <Text style={{
+                color: theme.textPrimary,
+                fontSize: metrics.font + 4,
+                fontWeight: '800',
+                fontFamily: theme.fontHeading,
+              }}>
                 {form.firstName} {form.lastName}
               </Text>
-              <Text style={{ color: theme.textSecondary, fontSize: metrics.font - 1, marginTop: 4 }}>
+              <Text style={{
+                color: theme.textSecondary,
+                fontSize: metrics.font - 1,
+                fontFamily: theme.fontBody,
+                marginTop: 6,
+              }}>
                 {form.gender === 'MALE' ? 'Erkek' : 'Kadın'} • {form.birthDay} {turkishMonths[form.birthMonth - 1]} • {zodiac.emoji} {zodiac.name} • {form.birthCity}
               </Text>
             </View>
@@ -463,20 +503,31 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = (
         <TouchableOpacity
           onPress={handleStartGame}
           disabled={!isFormValid}
-          style={{
-            backgroundColor: isFormValid ? theme.accentEvent : theme.surfaceOverlay,
-            paddingVertical: metrics.pad * 1.2,
-            borderRadius: 12,
-            alignItems: 'center',
-            opacity: isFormValid ? 1 : 0.5,
-          }}
           activeOpacity={0.8}
         >
-          <Text style={{ color: '#fff', fontSize: metrics.font + 1, fontWeight: '700' }}>
-            Hayata Başla
-          </Text>
+          <View
+            style={{
+              paddingVertical: metrics.pad * 1.2,
+              borderRadius: 14,
+              alignItems: 'center',
+              opacity: isFormValid ? 1 : 0.5,
+              backgroundColor: isFormValid ? theme.accentEvent : theme.surfaceOverlay,
+              borderWidth: 1,
+              borderColor: isFormValid ? theme.accentEvent : theme.border,
+            }}
+          >
+            <Text style={{
+              color: '#fff',
+              fontSize: metrics.font + 1,
+              fontWeight: '700',
+              fontFamily: theme.fontHeading,
+            }}>
+              Hayata Başla
+            </Text>
+          </View>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
+    </View>
   );
 };

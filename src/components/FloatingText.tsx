@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -78,26 +78,7 @@ const FloatingTextItem: React.FC<FloatingTextItemProps> = ({ item, onComplete })
   const animationType = item.animationType || 'arcadeFloat';
   const duration = item.duration || 2000;
 
-  useEffect(() => {
-    // Trigger haptic feedback on appearance
-    selectionHaptic();
-
-    // Choose animation based on type
-    switch (animationType) {
-      case 'bounce':
-        animateBounce();
-        break;
-      case 'curve':
-        animateCurve();
-        break;
-      case 'arcadeFloat':
-      default:
-        animateArcadeFloat();
-        break;
-    }
-  }, [animationType, duration]);
-
-  const animateArcadeFloat = () => {
+  const animateArcadeFloat = useCallback(() => {
     // Classic arcade-style floating animation sequence
     const fadeInDuration = duration * 0.15; // 15%
     const sustainDuration = duration * 0.4; // 40%
@@ -127,9 +108,9 @@ const FloatingTextItem: React.FC<FloatingTextItemProps> = ({ item, onComplete })
       withTiming(1.3, { duration: fadeInDuration, easing: Easing.out(Easing.back(1.5)) }),
       withTiming(1.0, { duration: fadeInDuration, easing: Easing.out(Easing.quad) })
     );
-  };
+  }, [duration, item.id, onComplete, opacity, scale, translateY]);
 
-  const animateBounce = () => {
+  const animateBounce = useCallback(() => {
     // Bouncy elastic float
     const totalDuration = duration;
 
@@ -161,9 +142,9 @@ const FloatingTextItem: React.FC<FloatingTextItemProps> = ({ item, onComplete })
         easing: Easing.inOut(Easing.quad)
       })
     );
-  };
+  }, [duration, item.id, onComplete, opacity, scale, translateY]);
 
-  const animateCurve = () => {
+  const animateCurve = useCallback(() => {
     // Curved path animation (bezier-like)
     const totalDuration = duration;
 
@@ -195,7 +176,26 @@ const FloatingTextItem: React.FC<FloatingTextItemProps> = ({ item, onComplete })
       withTiming(1.2, { duration: totalDuration * 0.1, easing: Easing.out(Easing.cubic) }),
       withTiming(1.0, { duration: totalDuration * 0.1, easing: Easing.out(Easing.quad) })
     );
-  };
+  }, [duration, item.id, onComplete, opacity, scale, translateX, translateY]);
+
+  useEffect(() => {
+    // Trigger haptic feedback on appearance
+    selectionHaptic();
+
+    // Choose animation based on type
+    switch (animationType) {
+      case 'bounce':
+        animateBounce();
+        break;
+      case 'curve':
+        animateCurve();
+        break;
+      case 'arcadeFloat':
+      default:
+        animateArcadeFloat();
+        break;
+    }
+  }, [animateArcadeFloat, animateBounce, animateCurve, animationType]);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {

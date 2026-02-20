@@ -55,7 +55,7 @@ export const AudioSettings: React.FC<AudioSettingsProps> = ({ isOpen, onClose })
     <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4">
       <div className="bg-gray-900 rounded-xl w-full max-w-md border border-gray-700 overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 p-6 border-b border-gray-700">
+        <div className="bg-gray-800/70 p-6 border-b border-gray-700">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Music className="text-blue-400" size={24} />
@@ -108,9 +108,6 @@ export const AudioSettings: React.FC<AudioSettingsProps> = ({ isOpen, onClose })
               onChange={(e) => handleMasterVolumeChange(parseFloat(e.target.value))}
               disabled={muted}
               className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
-              style={{
-                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${masterVolume * 100}%, #374151 ${masterVolume * 100}%, #374151 100%)`
-              }}
             />
           </div>
 
@@ -132,9 +129,6 @@ export const AudioSettings: React.FC<AudioSettingsProps> = ({ isOpen, onClose })
               onChange={(e) => handleMusicVolumeChange(parseFloat(e.target.value))}
               disabled={muted}
               className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
-              style={{
-                background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${musicVolume * 100}%, #374151 ${musicVolume * 100}%, #374151 100%)`
-              }}
             />
           </div>
 
@@ -156,9 +150,6 @@ export const AudioSettings: React.FC<AudioSettingsProps> = ({ isOpen, onClose })
               onChange={(e) => handleSFXVolumeChange(parseFloat(e.target.value))}
               disabled={muted}
               className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
-              style={{
-                background: `linear-gradient(to right, #10b981 0%, #10b981 ${sfxVolume * 100}%, #374151 ${sfxVolume * 100}%, #374151 100%)`
-              }}
             />
           </div>
 

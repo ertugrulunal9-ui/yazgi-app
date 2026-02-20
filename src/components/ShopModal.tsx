@@ -10,12 +10,20 @@ import {
   hasProduct,
   restorePurchases
 } from '../services/monetization';
-import { logPurchase } from '../utils/analyticsEvents';
+import {
+  logPurchase,
+  logPurchaseAttempted,
+  logPurchaseResult,
+  logShopProductClicked,
+  logShopViewed,
+} from '../utils/analyticsEvents';
+import type { MonetizationPlacement } from '../utils/analyticsEvents';
 
 interface ShopModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPurchaseSuccess?: (productId: ProductId) => void;
+  placement?: MonetizationPlacement;
   theme: {
     appBg: string;
     surfaceBase: string;
@@ -45,7 +53,13 @@ const PRODUCT_COLORS: Record<ProductId, string> = {
   remove_ads: '#ef4444',
 };
 
-export const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose, onPurchaseSuccess, theme }) => {
+export const ShopModal: React.FC<ShopModalProps> = ({
+  isOpen,
+  onClose,
+  onPurchaseSuccess,
+  placement = 'unknown',
+  theme,
+}) => {
   const insets = useSafeAreaInsets();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
@@ -62,15 +76,21 @@ export const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose, onPurchas
 
   useEffect(() => {
     if (isOpen) {
-      loadProducts();
+      void loadProducts(true);
     }
-  }, [isOpen]);
+  }, [isOpen, placement]);
 
-  const loadProducts = async () => {
+  const loadProducts = async (trackView: boolean = false) => {
     try {
       setLoading(true);
       const prods = await getProducts();
       setProducts(prods);
+      if (trackView) {
+        void logShopViewed({
+          placement,
+          productCount: prods.length,
+        });
+      }
     } catch (err) {
       setError('Ürünler yüklenemedi');
       console.error(err);
@@ -80,29 +100,73 @@ export const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose, onPurchas
   };
 
   const handlePurchase = async (productId: ProductId) => {
+    const product = products.find(p => p.id === productId);
+    const price = parsePrice(product?.localizedPrice || product?.price);
+    const currency = product?.currencyCode || 'TRY';
+    const category = productId === 'energy_refill'
+      ? 'boosts'
+      : productId === 'cosmetics_pack'
+        ? 'cosmetics'
+        : 'premium';
+
     try {
       setPurchasing(productId);
       setError(null);
+      void logShopProductClicked({
+        placement,
+        productId,
+        owned: false,
+        price,
+        currency,
+      });
+      void logPurchaseAttempted({
+        placement,
+        productId,
+        price,
+        currency,
+        category,
+      });
 
       const result = await purchaseProduct(productId);
 
       if (result.success) {
-        setSuccessMessage(`${products.find(p => p.id === productId)?.title} satın alındı!`);
+        setSuccessMessage(`${products.find(p => p.id === productId)?.title} satin alindi!`);
         onPurchaseSuccess?.(productId);
-        const product = products.find(p => p.id === productId);
-        const price = parsePrice(product?.localizedPrice || product?.price);
-        const category = productId === 'energy_refill'
-          ? 'boosts'
-          : productId === 'cosmetics_pack'
-            ? 'cosmetics'
-            : 'premium';
         void logPurchase(productId, price, category);
+        void logPurchaseResult({
+          placement,
+          productId,
+          success: true,
+          price,
+          currency,
+          category,
+        });
         setTimeout(() => setSuccessMessage(null), 3000);
       } else {
-        setError(result.error || 'Satın alma başarısız');
+        const errorMessage = result.error || 'Satin alma basarisiz';
+        setError(errorMessage);
+        void logPurchaseResult({
+          placement,
+          productId,
+          success: false,
+          price,
+          currency,
+          category,
+          errorMessage,
+        });
       }
     } catch (err: any) {
-      setError(err.message || 'Bir hata oluştu');
+      const errorMessage = err?.message || 'Bir hata olustu';
+      setError(errorMessage);
+      void logPurchaseResult({
+        placement,
+        productId,
+        success: false,
+        price,
+        currency,
+        category,
+        errorMessage,
+      });
     } finally {
       setPurchasing(null);
     }
@@ -121,7 +185,7 @@ export const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose, onPurchas
       } else {
         setError('Geri yüklenecek satın alım bulunamadı');
       }
-    } catch (err) {
+    } catch {
       setError('Geri yükleme başarısız');
     } finally {
       setLoading(false);
@@ -459,3 +523,6 @@ const styles = StyleSheet.create({
 });
 
 export default ShopModal;
+
+
+

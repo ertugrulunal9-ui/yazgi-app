@@ -52,22 +52,16 @@
 
 ---
 
-### 2. **USAGE_EXAMPLES.ts** (Kullanım Örnekleri)
-**Lokasyon:** `src/config/USAGE_EXAMPLES.ts`  
-**Boyut:** ~400 satır  
-**Amaç:** Konseptleri anlamak ve örnekler görmek
+### 2. **README.md + MIGRATION_GUIDE.md** (Kullanım Rehberi)
+**Lokasyon:** `src/config/README.md`, `src/config/MIGRATION_GUIDE.md`  
+**Boyut:** ~900+ satır  
+**Amaç:** Konseptleri anlamak, migration adımlarını izlemek ve örnekleri doküman üzerinden uygulamak
 
-**Örnek Fonksiyonlar:**
-- ✅ `initializePlayerStats()` - Oyun başında stats
-- ✅ `studyMath()` - Ders aktivitesi örneği
-- ✅ `doSports()` - Spor aktivitesi örneği
-- ✅ `workAsWaiter()` - İş sistemi örneği
-- ✅ `calculateSchoolGrade()` - Not hesaplama
-- ✅ `getFamilyReaction()` - Rapor kartı aile tepkisi
-- ✅ `getStartingMoney()` - Başlangıç parası
-- ✅ `getMonthlyAllowance()` - Aylık harçlık
-- ✅ `calculateEndGameInheritance()` - Miras hesaplama
-- ✅ `checkDisciplineBonus()` - Disiplin bonus şansı
+**İçerik:**
+- Hızlı başlangıç ve import kalıpları
+- Değer değiştirme ve formül kullanımı
+- Migration checklist ve troubleshooting
+- Test ve dengeleme önerileri
 - ✅ `getStreakMultiplier()` - Seri multiplier'ı
 - ✅ `determineNPCRole()` - NPC rol belirleme
 - ✅ `calculateMathGain()` - Advanced: tüm multiplier'ları birleştir
@@ -214,7 +208,7 @@ const wealth: FamilyWealth = 'SUPER_RICH';
 | **Config Objeleri** | 23 |
 | **Helper Fonksiyonlar** | 7 |
 | **Type-Safe Exports** | 100+ |
-| **Örnek Kodu** | ~400 satır (USAGE_EXAMPLES.ts) |
+| **Örnek Kodu** | README.md + MIGRATION_GUIDE.md içindeki senaryolar |
 | **Dokumentasyon** | ~850 satır (guides + README) |
 | **Toplam Dosya Boyutu** | ~2000+ satır |
 
@@ -314,11 +308,6 @@ src/config/
 │   ├── Best practices
 │   └── Performance notes
 │
-├── USAGE_EXAMPLES.ts
-│   ├── 12 konsep & örnek kod
-│   ├── Copy-paste ready
-│   └── Advanced senaryolar
-│
 └── MIGRATION_GUIDE.md
     ├── 9 bölüm
     ├── Before/After kod örnekleri
@@ -346,7 +335,7 @@ src/config/
 ## 🚀 Başlamak İçin
 
 1. **README.md'yi oku** (5 dakika)
-2. **USAGE_EXAMPLES.ts'yi incele** (10 dakika)
+2. **MIGRATION_GUIDE.md'deki senaryoları incele** (10 dakika)
 3. **gameBalance.ts'yi aç** (referans için)
 4. **App.tsx'te import et ve kullan** (implementation)
 5. **Teste git** (oyunu oyna ve kontrol et)
@@ -356,7 +345,7 @@ src/config/
 ## 📞 Destek
 
 - **Hızlı Referans**: README.md
-- **Nasıl Kullanırım?**: USAGE_EXAMPLES.ts
+- **Nasıl Kullanırım?**: README.md + MIGRATION_GUIDE.md
 - **Migrate Etmeli miyim?**: MIGRATION_GUIDE.md
 - **Neden Bu Değer?**: gameBalance.ts comments
 

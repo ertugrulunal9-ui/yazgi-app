@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, TextInput, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGame } from '../context/GameContext';
 import { getThemeTokens, getDensityMetrics } from '../utils/themeUtils';
 import {
@@ -39,6 +40,8 @@ const NameInput: React.FC<{
     </View>
   );
 });
+
+NameInput.displayName = 'NameInput';
 
 export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme, metrics, onGameStart }) => {
   const [nameInput, setNameInput] = useState('');
@@ -168,3 +171,5 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
     </SafeAreaView>
   );
 });
+
+MainMenuScreen.displayName = 'MainMenuScreen';

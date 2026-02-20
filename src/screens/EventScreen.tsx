@@ -1,23 +1,31 @@
-import React, { useMemo, useCallback } from 'react';
-import { AccessibilityInfo, View, Text, ScrollView, Animated } from 'react-native';
+import React, { useMemo, useCallback, useRef, useEffect } from 'react';
+import { devLog } from '../utils/devLogger';
+import { AccessibilityInfo, View, Text, ScrollView, Animated, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useGame } from '../context/GameContext';
 import { useUI } from '../context/UIContext';
 import { useEvents } from '../hooks/useEvents';
+import { usePlayerStats, useGameActions, useFloatingTexts } from '../hooks/useGameSelectors';
 import { Z_INDEX } from '../constants/zIndex';
-import { Family, Skills, Stats, PersonalityRequirement, Personality, NPCRole } from '../types';
+import { Choice, Family, Skills, Stats, PersonalityRequirement, Personality, NPCRole } from '../types';
 import { TraitProgressChip } from '../components/TraitProgressChip';
 import {
   FadeInUpView,
-  StaggeredFadeIn,
+  eventStart,
   buttonPress,
   importantDecision,
+  badOutcomeHaptic,
+  milestoneHaptic,
 } from '../animations';
 import { AnimatedButton } from '../animations/ButtonAnimations';
 import { Card, StatChange, TypewriterText } from '../components/ui';
 import { getEventChoiceSet } from '../utils/gameStateAdapter';
 import { ensureTextContrast } from '../utils/colorContrast';
+import { SwipeChoiceDeck } from '../components/SwipeChoiceDeck';
+import { FateTokenDisplay, hasNegativeOutcome } from '../components/FateTokenDisplay';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
 
 type EventVisual = {
   color: string;
@@ -70,19 +78,46 @@ const GRADE_LABELS: Record<string, string> = {
   music: 'Muzik',
 };
 
+const PERSONALITY_AXIS_LABELS: Record<keyof Personality, string> = {
+  openness: 'Aciklik',
+  courage: 'Cesaret',
+  empathy: 'Empati',
+  patience: 'Sabir',
+  conformity: 'Uyum',
+};
+
+const CHOICE_TYPE_LABELS: Record<NonNullable<Choice['choiceType']>, string> = {
+  PASSIVE: 'Guvenli tercih',
+  CHALLENGE: 'Zorlayici tercih',
+  BREAKDOWN: 'Stres patlamasi',
+  NEUTRAL: 'Notr tercih',
+};
+
+const FATE_OUTCOME_LABELS: Record<string, string> = {
+  BLESSED: 'Mukemmel sans',
+  FORTUNATE: 'Iyi sans',
+  NEUTRAL: 'Notr sans',
+  UNLUCKY: 'Sanssiz',
+  CURSED: 'Kotu sans',
+};
+
 export const EventScreen: React.FC = React.memo(() => {
   const { theme, metrics, t } = useUI();
-  const { gameState, stats, updateGameState } = useGame();
-  const { handleEventChoice, resolveEventText, resolveChoice } = useEvents();
+  const { gameState } = useGame();
+  const { stats } = usePlayerStats();
+  const { updateGameState } = useGameActions();
+  const { showFloatingText } = useFloatingTexts();
+  const { handleEventChoice, rerollChoice, resolveEventText, resolveChoice } = useEvents();
   const insets = useSafeAreaInsets();
   const continueHandledRef = React.useRef(false);
   const resultPhaseEnteredAtRef = React.useRef<number>(0);
+  const lastSelectedChoiceRef = useRef<{ choice: Choice; index: number } | null>(null);
   const breakdownShakeX = React.useRef(new Animated.Value(0)).current;
   const [buttonEnabled, setButtonEnabled] = React.useState(false);
   const MIN_RESULT_DISPLAY_TIME = 1000; // Minimum 1 second display time for user to read
 
   // Debug: Log state changes
-  console.log('[EventScreen] Render - phase:', gameState.phase, 'hasEvent:', !!gameState.currentEvent, 'lastResult:', !!gameState.lastResult);
+  devLog.log('[EventScreen] Render - phase:', gameState.phase, 'hasEvent:', !!gameState.currentEvent, 'lastResult:', !!gameState.lastResult);
 
   // Reset the ref and enable button after delay when we enter RESULT phase
   React.useEffect(() => {
@@ -90,12 +125,12 @@ export const EventScreen: React.FC = React.memo(() => {
       continueHandledRef.current = false;
       resultPhaseEnteredAtRef.current = Date.now();
       setButtonEnabled(false); // Disable immediately
-      console.log('[EventScreen] RESULT phase entered - button will be enabled after delay');
+      devLog.log('[EventScreen] RESULT phase entered - button will be enabled after delay');
 
       // Enable button after delay to prevent accidental clicks
       const timer = setTimeout(() => {
         setButtonEnabled(true);
-        console.log('[EventScreen] Continue button is now enabled');
+        devLog.log('[EventScreen] Continue button is now enabled');
       }, MIN_RESULT_DISPLAY_TIME);
 
       return () => clearTimeout(timer);
@@ -118,34 +153,72 @@ export const EventScreen: React.FC = React.memo(() => {
   }, [gameState.phase, gameState.lastResult]);
 
   const handleChoice = useCallback((choice: any, choiceIndex: number) => {
+    const resolved = typeof choice === 'function' ? resolveChoice(choice) : choice;
+    lastSelectedChoiceRef.current = { choice: resolved, index: choiceIndex };
     buttonPress();
     importantDecision();
-    handleEventChoice(choice, choiceIndex);
-  }, [handleEventChoice]);
+    const turnResult = handleEventChoice(choice, choiceIndex);
+    const momentumFeedback = turnResult.momentumFeedback;
+
+    if (momentumFeedback) {
+      const x = SCREEN_WIDTH * 0.2 + Math.random() * 28;
+      const y = 130 + Math.random() * 18;
+      const color = momentumFeedback.streakBroken ? '#fda4af' : '#86efac';
+      showFloatingText(
+        momentumFeedback.feedbackText,
+        x,
+        y,
+        color,
+        {
+          animationType: momentumFeedback.streakBroken ? 'bounce' : 'curve',
+          duration: 1900,
+        }
+      );
+
+      if (momentumFeedback.unlockedNow) {
+        showFloatingText(
+          `${momentumFeedback.tendencyLabel} yolu acildi!`,
+          SCREEN_WIDTH * 0.22,
+          165,
+          '#fcd34d',
+          {
+            animationType: 'bounce',
+            duration: 2200,
+          }
+        );
+      }
+    }
+  }, [handleEventChoice, resolveChoice, showFloatingText]);
+
+  const handleReroll = useCallback(() => {
+    if (!lastSelectedChoiceRef.current) return;
+    const { choice, index } = lastSelectedChoiceRef.current;
+    rerollChoice(choice, index);
+  }, [rerollChoice]);
 
   const handleContinue = useCallback((source: string = 'UNKNOWN') => {
     // Log call stack to debug auto-triggering
-    console.log(`[EventScreen] handleContinue called from: ${source}`);
-    console.log('[EventScreen] Stack trace:', new Error().stack);
+    devLog.log(`[EventScreen] handleContinue called from: ${source}`);
+    devLog.log('[EventScreen] Stack trace:', new Error().stack);
 
     // Check if minimum display time has elapsed
     const timeElapsed = Date.now() - resultPhaseEnteredAtRef.current;
     if (timeElapsed < MIN_RESULT_DISPLAY_TIME) {
-      console.log(`[EventScreen] handleContinue - BLOCKED! Only ${timeElapsed}ms elapsed, need ${MIN_RESULT_DISPLAY_TIME}ms minimum`);
+      devLog.log(`[EventScreen] handleContinue - BLOCKED! Only ${timeElapsed}ms elapsed, need ${MIN_RESULT_DISPLAY_TIME}ms minimum`);
       return;
     }
 
     // Prevent double-triggering
     if (continueHandledRef.current) {
-      console.log('[EventScreen] handleContinue - already handled, ignoring duplicate call');
+      devLog.log('[EventScreen] handleContinue - already handled, ignoring duplicate call');
       return;
     }
 
     continueHandledRef.current = true;
-    console.log('[EventScreen] handleContinue executing - transitioning to SETUP');
+    devLog.log('[EventScreen] handleContinue executing - transitioning to HUB');
     buttonPress();
     updateGameState({
-      phase: 'SETUP',
+      phase: 'HUB',
       lastResult: null,
       currentEvent: null  // Clear the event to prevent hasEvent from staying true
     });
@@ -210,6 +283,23 @@ export const EventScreen: React.FC = React.memo(() => {
   );
 
   const isBreakdownEvent = gameState.phase === 'EVENT' && gameState.currentEvent?.personalityCategory === 'BREAKDOWN';
+  const isDramaticEvent = gameState.phase === 'EVENT' && gameState.currentEvent != null && (
+    (gameState.currentEvent.difficulty ?? 0) >= 4 ||
+    (gameState.currentEvent.tags ?? []).some(t => t === 'milestone' || t === 'turning_point')
+  );
+
+  // Dramatic event haptic feedback
+  React.useEffect(() => {
+    if (isDramaticEvent && !isBreakdownEvent) {
+      milestoneHaptic();
+    }
+  }, [isDramaticEvent, isBreakdownEvent, gameState.currentEvent?.id]);
+
+  React.useEffect(() => {
+    if (gameState.phase === 'EVENT' && gameState.currentEvent?.id) {
+      eventStart();
+    }
+  }, [gameState.phase, gameState.currentEvent?.id]);
 
   React.useEffect(() => {
     if (!isBreakdownEvent) {
@@ -233,6 +323,17 @@ export const EventScreen: React.FC = React.memo(() => {
       breakdownShakeX.setValue(0);
     };
   }, [breakdownShakeX, gameState.currentEvent?.id, isBreakdownEvent]);
+
+  // Kötü sonuçlarda güçlü haptic
+  useEffect(() => {
+    if (gameState.phase === 'RESULT' && gameState.lastResult?.changes) {
+      const isNegative = Object.values(gameState.lastResult.changes)
+        .some(v => typeof v === 'number' && v < 0);
+      if (isNegative) {
+        badOutcomeHaptic();
+      }
+    }
+  }, [gameState.phase, gameState.lastResult]);
 
   const meetsPersonality = (requirements: PersonalityRequirement[] | undefined, personality: Personality): boolean => {
     if (!requirements || requirements.length === 0) return true;
@@ -301,19 +402,100 @@ export const EventScreen: React.FC = React.memo(() => {
     return filtered.length > 0 ? filtered : gameState.currentEvent.choices;
   }, [gameState.currentEvent, gameState.family, gameState.personality, gameState.skills, meetsEventHistory, meetsNpcRole, resolveChoice, stats]);
 
+  const outcomeDrivers = useMemo(() => {
+    if (gameState.phase !== 'RESULT') return [];
+
+    const selectedChoice = lastSelectedChoiceRef.current?.choice;
+    const event = gameState.currentEvent;
+    const drivers: string[] = [];
+
+    if (event?.personalityCategory) {
+      const label = EVENT_VISUALS[event.personalityCategory]?.label ?? event.personalityCategory.toLowerCase();
+      drivers.push(`Event tipi: ${label}`);
+    }
+
+    if (event?.challengesAxis) {
+      const axis = event.challengesAxis;
+      const axisValue = gameState.personality[axis];
+      drivers.push(`${PERSONALITY_AXIS_LABELS[axis]} ekseni (${Math.round(axisValue)}) sonucu etkiledi`);
+    }
+
+    if (selectedChoice?.choiceType && selectedChoice.choiceType !== 'NEUTRAL') {
+      drivers.push(`Secim tipi: ${CHOICE_TYPE_LABELS[selectedChoice.choiceType]}`);
+    }
+
+    if (selectedChoice?.reqStats) {
+      const matchedStatReqs = Object.entries(selectedChoice.reqStats)
+        .filter(([, value]) => typeof value === 'number')
+        .map(([key, value]) => {
+          const current = stats[key as keyof Stats] ?? 0;
+          return `${STAT_LABELS[key] ?? key} ${current}/${value}`;
+        });
+      if (matchedStatReqs.length > 0) {
+        drivers.push(`Stat kosulu: ${matchedStatReqs.slice(0, 2).join(', ')}`);
+      }
+    }
+
+    if (selectedChoice?.reqSkills) {
+      const matchedSkillReqs = Object.entries(selectedChoice.reqSkills)
+        .filter(([, value]) => typeof value === 'number')
+        .map(([key, value]) => {
+          const current = gameState.skills[key as keyof Skills] ?? 0;
+          return `${SKILL_LABELS[key] ?? key} ${current}/${value}`;
+        });
+      if (matchedSkillReqs.length > 0) {
+        drivers.push(`Beceri kosulu: ${matchedSkillReqs.slice(0, 2).join(', ')}`);
+      }
+    }
+
+    if (selectedChoice?.reqPersonality?.length) {
+      const reqPreview = selectedChoice.reqPersonality
+        .slice(0, 2)
+        .map((req) => {
+          const axisLabel = PERSONALITY_AXIS_LABELS[req.axis];
+          const current = gameState.personality[req.axis];
+          if (req.min !== undefined) return `${axisLabel} ${Math.round(current)}/${req.min}+`;
+          if (req.max !== undefined) return `${axisLabel} ${Math.round(current)}/${req.max}-`;
+          return axisLabel;
+        })
+        .join(', ');
+
+      if (reqPreview) {
+        drivers.push(`Kisilik kosulu: ${reqPreview}`);
+      }
+    }
+
+    const fateRoll = gameState.lastResult?.fateRoll;
+    if (fateRoll) {
+      const outcomeLabel = FATE_OUTCOME_LABELS[fateRoll.outcome] ?? fateRoll.outcome;
+      drivers.push(`Kader etkisi: ${outcomeLabel} (rulo ${fateRoll.modifiedRoll})`);
+    }
+
+    return drivers.slice(0, 4);
+  }, [gameState.currentEvent, gameState.lastResult?.fateRoll, gameState.personality, gameState.phase, gameState.skills, stats]);
+
   // Don't render anything if not in EVENT or RESULT phase
   if (gameState.phase !== 'EVENT' && gameState.phase !== 'RESULT') {
-    console.log('[EventScreen] Returning null - phase:', gameState.phase);
+    devLog.log('[EventScreen] Returning null - phase:', gameState.phase);
     return null;
   }
 
     // RESULT phase - Show feedback and continue button
   if (gameState.phase === 'RESULT') {
-    const feedbackText = gameState.lastResult?.feedback || t('event.defaultFeedback', undefined, 'Devam ediyorsun...');
+    const rawFeedback = gameState.lastResult?.feedback || t('event.defaultFeedback', undefined, 'Devam ediyorsun...');
+    const wasDramatic = (gameState.currentEvent?.difficulty ?? 0) >= 4;
+    const feedbackText = wasDramatic ? `Bu kararın hayatını değiştirdi. ${rawFeedback}` : rawFeedback;
 
     return (
       <View style={overlayStyle}>
-        <ScrollView style={scrollViewStyle} contentContainerStyle={scrollContentStyle}>
+        <ScrollView
+          style={scrollViewStyle}
+          contentContainerStyle={scrollContentStyle}
+          keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled
+          overScrollMode="never"
+          bounces={false}
+        >
           <Card style={{ marginBottom: 20, borderRadius: 16 }} padded>
             <TypewriterText
               text={feedbackText}
@@ -327,6 +509,22 @@ export const EventScreen: React.FC = React.memo(() => {
               }}
             />
           </Card>
+
+          {outcomeDrivers.length > 0 && (
+            <Card style={{ marginBottom: 16, borderRadius: 14 }} padded>
+              <Text style={{ color: theme.textPrimary, fontSize: 14, fontWeight: '700', marginBottom: 8 }}>
+                Neden bu sonuc?
+              </Text>
+              {outcomeDrivers.map((line, index) => (
+                <Text
+                  key={`${line}_${index}`}
+                  style={{ color: theme.textSecondary, fontSize: 13, lineHeight: 19, marginBottom: index === outcomeDrivers.length - 1 ? 0 : 4 }}
+                >
+                  - {line}
+                </Text>
+              ))}
+            </Card>
+          )}
 
           {gameState.lastResult?.traitProgressUpdates && gameState.lastResult.traitProgressUpdates.length > 0 && (
             <View style={{ marginBottom: 16 }}>
@@ -354,6 +552,18 @@ export const EventScreen: React.FC = React.memo(() => {
                 : t('common.reading', undefined, 'Okunuyor...')}
             </Text>
           </AnimatedButton>
+
+          {/* Kader Jetonu — negatif sonuçlarda göster */}
+          {gameState.fate && gameState.fate.tokens > 0 && hasNegativeOutcome(gameState.lastResult?.changes) && (
+            <FateTokenDisplay
+              tokens={gameState.fate.tokens}
+              fateRoll={gameState.lastResult?.fateRoll}
+              onReroll={handleReroll}
+              canReroll={!!lastSelectedChoiceRef.current}
+              theme={theme}
+              metrics={metrics}
+            />
+          )}
 
           <FadeInUpView delay={100}>
             {gameState.lastResult?.changes && Object.keys(gameState.lastResult.changes).length > 0 && (
@@ -398,11 +608,11 @@ export const EventScreen: React.FC = React.memo(() => {
 
   // EVENT phase - Show event and choices
   if (!gameState.currentEvent) {
-    console.log('[EventScreen] Returning null - no currentEvent');
+    devLog.log('[EventScreen] Returning null - no currentEvent');
     return null;
   }
 
-  console.log('[EventScreen] Rendering event:', gameState.currentEvent?.id);
+  devLog.log('[EventScreen] Rendering event:', gameState.currentEvent?.id);
 
   const evt = gameState.currentEvent;
   const eventText = resolveEventText(evt);
@@ -411,18 +621,37 @@ export const EventScreen: React.FC = React.memo(() => {
 
   return (
     <View style={overlayStyle}>
-      <ScrollView style={scrollViewStyle} contentContainerStyle={scrollContentStyle}>
+      <ScrollView
+        style={scrollViewStyle}
+        contentContainerStyle={scrollContentStyle}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
+        overScrollMode="never"
+        bounces={false}
+      >
         <FadeInUpView>
           <Animated.View style={isBreakdownEvent ? { transform: [{ translateX: breakdownShakeX }] } : undefined}>
             <Card
               style={[
                 eventCardStyle,
                 {
-                  borderColor: eventColor,
-                  borderLeftWidth: 4,
+                  borderColor: isDramaticEvent ? '#d97706' : eventColor,
+                  borderLeftWidth: isDramaticEvent ? 3 : 4,
+                  borderWidth: isDramaticEvent ? 2 : 1,
+                  overflow: 'hidden',
                 },
               ]}
             >
+              <View
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 44,
+                  backgroundColor: `${eventColor}12`,
+                }}
+              />
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 6 }}>
                 <Feather name={eventVisual.icon} size={14} color={eventColor} />
                 <Text
@@ -431,12 +660,40 @@ export const EventScreen: React.FC = React.memo(() => {
                     color: eventColor,
                     fontSize: 12,
                     fontWeight: '700',
+                    fontFamily: theme.fontHeading,
                     textTransform: 'uppercase',
+                    letterSpacing: 0.5,
                   }}
                 >
                   {eventVisual.label}
                 </Text>
               </View>
+
+              {isDramaticEvent && (
+                <View style={{
+                  backgroundColor: 'rgba(217, 119, 6, 0.12)',
+                  borderRadius: 8,
+                  paddingVertical: 6,
+                  paddingHorizontal: 10,
+                  marginBottom: 10,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                }}>
+                  <Text style={{ fontSize: 14 }}>
+                    {(evt.tags ?? []).includes('turning_point') ? '\uD83C\uDF1F' : '\u26A1'}
+                  </Text>
+                  <Text style={{
+                    color: '#d97706',
+                    fontSize: 12,
+                    fontWeight: '800',
+                    textTransform: 'uppercase',
+                    letterSpacing: 1,
+                  }}>
+                    {(evt.tags ?? []).includes('turning_point') ? 'Dönüm Noktası' : 'Kritik Karar'}
+                  </Text>
+                </View>
+              )}
 
               <TypewriterText
                 text={eventText}
@@ -448,31 +705,16 @@ export const EventScreen: React.FC = React.memo(() => {
           </Animated.View>
         </FadeInUpView>
 
-        <StaggeredFadeIn>
-          {(choicesToRender ?? evt.choices).map((choice, index) => {
-            const resolved = resolveChoice(choice);
-            const originalIndex = evt.choices.indexOf(choice);
-            const choiceIndex = originalIndex >= 0 ? originalIndex : index;
-            return (
-              <AnimatedButton
-                key={index}
-                onPress={() => handleChoice(choice, choiceIndex)}
-                animationType={isBreakdownEvent ? 'shake' : 'pressScale'}
-                style={buttonStyle}
-                accessibilityRole="button"
-                accessibilityLabel={resolved.text}
-                accessibilityHint="Bu secim karakterini etkiler"
-              >
-                <Text style={buttonTextStyle}>
-                  {resolved.text}
-                </Text>
-              </AnimatedButton>
-            );
-          })}
-        </StaggeredFadeIn>
+        <SwipeChoiceDeck
+          choices={choicesToRender ?? evt.choices}
+          resolveChoice={resolveChoice}
+          onChoiceSelected={handleChoice}
+          isBreakdownEvent={isBreakdownEvent}
+          originalChoices={evt.choices}
+          personalityState={gameState.personalityState}
+        />
       </ScrollView>
     </View>
   );
 });
 EventScreen.displayName = 'EventScreen';
-

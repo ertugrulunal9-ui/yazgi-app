@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -136,7 +135,10 @@ const ArtExamGame: React.FC<ArtExamGameProps> = ({
   const optionScale1 = useSharedValue(1);
   const optionScale2 = useSharedValue(1);
   const optionScale3 = useSharedValue(1);
-  const optionScales = [optionScale0, optionScale1, optionScale2, optionScale3];
+  const optionScales = useMemo(
+    () => [optionScale0, optionScale1, optionScale2, optionScale3],
+    [optionScale0, optionScale1, optionScale2, optionScale3]
+  );
 
   const spawnQuestion = useCallback(() => {
     setQuestion(generateQuestion(gameState.currentQuestion + 1, difficulty));
@@ -189,7 +191,7 @@ const ArtExamGame: React.FC<ArtExamGameProps> = ({
     if (!isLast) {
       setTimeout(spawnQuestion, 600);
     }
-  }, [difficulty, gameState.currentQuestion, gameState.totalQuestions, gameState.streak, spawnQuestion]);
+  }, [difficulty, gameState.currentQuestion, gameState.streak, gameState.totalQuestions, setGameState, spawnQuestion]);
 
   const handleSelect = useCallback((index: number) => {
     if (!question || feedback !== null) return;
@@ -214,7 +216,7 @@ const ArtExamGame: React.FC<ArtExamGameProps> = ({
     optionScales[index].value = withSequence(withSpring(1.1), withTiming(1));
     feedbackScale.value = withSequence(withSpring(1.1), withTiming(0));
     finishQuestion(isCorrect);
-  }, [question, feedback, finishQuestion, optionScales, feedbackScale]);
+  }, [question, feedback, finishQuestion, optionScales, feedbackScale, sparkleOpacity, sparkleScale]);
 
   const feedbackStyle = useAnimatedStyle(() => ({
     transform: [{ scale: feedbackScale.value }],
@@ -274,12 +276,6 @@ const ArtExamGame: React.FC<ArtExamGameProps> = ({
   }
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#0f172a', '#1e1b4b', '#312e81']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFillObject}
-      />
       <View style={styles.backgroundLayer} pointerEvents="none">
         <Animated.View style={[styles.blob, styles.blobOne, blobOneStyle]} />
         <Animated.View style={[styles.blob, styles.blobTwo, blobTwoStyle]} />
@@ -317,7 +313,7 @@ const ArtExamGame: React.FC<ArtExamGameProps> = ({
           })}
         </View>
 
-        <Animated.View style={[styles.feedbackOverlay, feedbackStyle]}>
+        <Animated.View pointerEvents="none" style={[styles.feedbackOverlay, feedbackStyle]}>
           <Text style={styles.feedbackEmoji}>
             {feedback === 'correct' ? '✅' : feedback === 'wrong' ? '❌' : ''}
           </Text>

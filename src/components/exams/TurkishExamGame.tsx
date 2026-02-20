@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Animated, {
     useAnimatedStyle,
@@ -10,6 +10,7 @@ import Animated, {
 import * as Haptics from 'expo-haptics';
 import { Difficulty, GameState } from './MiniGameContainer';
 import seenQuestionsTracker from '../../utils/seenQuestionsTracker';
+import { balanceCorrectAnswerDistribution } from './questionOptionBalancer';
 
 type QuestionType = 'SYNONYM' | 'ANTONYM' | 'MEANING' | 'FILL_BLANK' | 'SPELLING';
 
@@ -183,7 +184,14 @@ const TurkishExamGame: React.FC<TurkishExamGameProps> = ({
 
     const shakeX = useSharedValue(0);
     const feedbackScale = useSharedValue(0);
-    const optionScales = [useSharedValue(1), useSharedValue(1), useSharedValue(1), useSharedValue(1)];
+    const optionScale0 = useSharedValue(1);
+    const optionScale1 = useSharedValue(1);
+    const optionScale2 = useSharedValue(1);
+    const optionScale3 = useSharedValue(1);
+    const optionScales = useMemo(
+        () => [optionScale0, optionScale1, optionScale2, optionScale3],
+        [optionScale0, optionScale1, optionScale2, optionScale3]
+    );
 
     // Soruları başlangıçta ayarla
     useEffect(() => {
@@ -194,9 +202,10 @@ const TurkishExamGame: React.FC<TurkishExamGameProps> = ({
                 pool,
                 gameState.totalQuestions
             );
-            setQuestions(selected);
-            if (selected.length > 0) {
-                setCurrentQuestion(selected[0]);
+            const balancedQuestions = balanceCorrectAnswerDistribution(selected);
+            setQuestions(balancedQuestions);
+            if (balancedQuestions.length > 0) {
+                setCurrentQuestion(balancedQuestions[0]);
                 await seenQuestionsTracker.markQuestionsAsSeen(
                     'turkish',
                     selected.map(q => q.id)
@@ -389,7 +398,7 @@ const TurkishExamGame: React.FC<TurkishExamGameProps> = ({
             )}
 
             {/* Feedback overlay */}
-            <Animated.View style={[styles.feedbackOverlay, feedbackAnimatedStyle]}>
+            <Animated.View pointerEvents="none" style={[styles.feedbackOverlay, feedbackAnimatedStyle]}>
                 <Text style={styles.feedbackEmoji}>
                     {feedback === 'correct' ? '✅' : '❌'}
                 </Text>

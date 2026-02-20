@@ -35,15 +35,13 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": [
+    "App.tsx",
     "src/**/*",
     "index.web.tsx",
     "index.js"
   ],
   "exclude": [
-    "App.tsx",
     "app/**/*",
-    "src/data/**/*",
-    "src/utils/**/*",
     "__tests__/**/*",
     "coverage/**/*",
     "node_modules/**/*"

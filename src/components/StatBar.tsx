@@ -83,7 +83,7 @@ const StatBar = React.memo<StatBarProps>(({ label, value, statKey, cap = 100, th
       marginTop: 4,
       fontWeight: '500',
     },
-  }), [theme?.textSecondary, theme?.surfaceBase, theme?.border, theme?.accentStat]);
+  }), [isMastered, theme?.textSecondary, theme?.surfaceBase, theme?.border, theme?.accentStat]);
 
   return (
     <View style={styles.container}>
@@ -114,5 +114,7 @@ const StatBar = React.memo<StatBarProps>(({ label, value, statKey, cap = 100, th
     </View>
   );
 });
+
+StatBar.displayName = 'StatBar';
 
 export default StatBar;

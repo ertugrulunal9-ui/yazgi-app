@@ -13,6 +13,8 @@ import {
   InteractionType,
 } from '../constants/interactionRestrictions';
 import { MILESTONE_EVENT_MAP } from '../data/relationshipMilestoneEvents';
+import { NPC_QUESTLINE_ARCS } from '../data/npcQuestlineArcs';
+import { ActiveStoryArc } from '../types';
 
 // =================================================================
 // NPC SOSYAL SİSTEM HOOK'U
@@ -71,7 +73,7 @@ const createMilestoneScheduledEvent = (milestone: RelationshipMilestone, npcId: 
 };
 
 export const useNPCs = () => {
-  const { gameState, updateGameState } = useGame();
+  const { gameState, updateGameState, setGameState } = useGame();
 
   // =================================================================
   // İLİŞKİ YÖNETİMİ
@@ -84,72 +86,84 @@ export const useNPCs = () => {
    * @warning NPC bulunamazsa sessizce başarısız olur (log kaydeder)
    */
   const updateRelationship = useCallback((npcId: string, delta: number) => {
-    // Birden fazla NPC için milestone event'leri toplama
-    const milestoneEvents: ScheduledEvent[] = [];
-
-    // Check if NPC exists before updating
-    const npcExists = gameState.npcs.some(n => n.id === npcId);
-    if (!npcExists) {
-      console.warn(`[useNPCs] updateRelationship: NPC with id "${npcId}" not found`);
-      return;
-    }
-
-    const updated = gameState.npcs.map(npc => {
-      if (npc.id !== npcId) return npc;
-
-      const oldRole = npc.role;
-
-      // İlişki puanını güncelle (-100 ile 100 arası)
-      const newRelationship = Math.max(-100, Math.min(100, npc.relationship + delta));
-
-      // Role'ü otomatik belirle
-      let newRole: NPCRole = npc.role;
-
-      // Romantik ilişki varsa öncelikli
-      if (npc.romance >= ROMANCE_THRESHOLDS.PARTNER && newRelationship > 0) {
-        newRole = 'PARTNER';
-      } else if (npc.romance >= ROMANCE_THRESHOLDS.CRUSH && newRelationship > 0) {
-        newRole = 'CRUSH';
-      }
-      // Değilse arkadaşlık/düşmanlık durumu
-      else if (newRelationship <= RELATIONSHIP_THRESHOLDS.ENEMY) {
-        newRole = 'ENEMY';
-      } else if (newRelationship <= RELATIONSHIP_THRESHOLDS.RIVAL) {
-        newRole = 'RIVAL';
-      } else if (newRelationship >= RELATIONSHIP_THRESHOLDS.BEST_FRIEND) {
-        newRole = 'BEST_FRIEND';
-      } else if (newRelationship >= RELATIONSHIP_THRESHOLDS.FRIEND) {
-        newRole = 'FRIEND';
-      } else {
-        newRole = 'ACQUAINTANCE';
+    setGameState(prevState => {
+      const milestoneEvents: ScheduledEvent[] = [];
+      const npcExists = prevState.npcs.some(n => n.id === npcId);
+      if (!npcExists) {
+        console.warn(`[useNPCs] updateRelationship: NPC with id "${npcId}" not found`);
+        return prevState;
       }
 
-      // Milestone tespiti - rol değiştiyse event zamanla
-      if (oldRole !== newRole) {
-        const milestone = detectMilestone(oldRole, newRole);
-        if (milestone) {
-          const event = createMilestoneScheduledEvent(milestone, npc.id);
-          if (event) {
-            milestoneEvents.push(event);
+      const updated = prevState.npcs.map(npc => {
+        if (npc.id !== npcId) return npc;
+
+        const oldRole = npc.role;
+        const newRelationship = Math.max(-100, Math.min(100, npc.relationship + delta));
+
+        let newRole: NPCRole = npc.role;
+        if (npc.romance >= ROMANCE_THRESHOLDS.PARTNER && newRelationship > 0) {
+          newRole = 'PARTNER';
+        } else if (npc.romance >= ROMANCE_THRESHOLDS.CRUSH && newRelationship > 0) {
+          newRole = 'CRUSH';
+        } else if (newRelationship <= RELATIONSHIP_THRESHOLDS.ENEMY) {
+          newRole = 'ENEMY';
+        } else if (newRelationship <= RELATIONSHIP_THRESHOLDS.RIVAL) {
+          newRole = 'RIVAL';
+        } else if (newRelationship >= RELATIONSHIP_THRESHOLDS.BEST_FRIEND) {
+          newRole = 'BEST_FRIEND';
+        } else if (newRelationship >= RELATIONSHIP_THRESHOLDS.FRIEND) {
+          newRole = 'FRIEND';
+        } else {
+          newRole = 'ACQUAINTANCE';
+        }
+
+        if (oldRole !== newRole) {
+          const milestone = detectMilestone(oldRole, newRole);
+          if (milestone) {
+            const event = createMilestoneScheduledEvent(milestone, npc.id);
+            if (event) {
+              milestoneEvents.push(event);
+            }
           }
+        }
+
+        return {
+          ...npc,
+          relationship: newRelationship,
+          role: newRole,
+          lastInteraction: prevState.turn,
+        };
+      });
+
+      // Check if role change should start an NPC questline arc
+      const newArcs: ActiveStoryArc[] = [];
+      for (const npc of updated) {
+        const oldNpc = prevState.npcs.find(o => o.id === npc.id);
+        if (!oldNpc || oldNpc.role === npc.role) continue;
+
+        for (const arc of NPC_QUESTLINE_ARCS) {
+          if (!arc.requiresNPC || !arc.npcRoleRequirement) continue;
+          if (!arc.npcRoleRequirement.includes(npc.role)) continue;
+          if (prevState.age < arc.ageRange[0] || prevState.age > arc.ageRange[1]) continue;
+          const alreadyActive = (prevState.activeArcs || []).some(a => a.arcId === arc.id);
+          const alreadyNew = newArcs.some(a => a.arcId === arc.id);
+          if (alreadyActive || alreadyNew) continue;
+          newArcs.push({ arcId: arc.id, stage: 0, npcId: npc.id });
         }
       }
 
       return {
-        ...npc,
-        relationship: newRelationship,
-        role: newRole,
-        lastInteraction: gameState.turn
+        ...prevState,
+        npcs: updated,
+        ...(milestoneEvents.length > 0
+          ? { scheduledEvents: [...(prevState.scheduledEvents || []), ...milestoneEvents] }
+          : {}),
+        ...(newArcs.length > 0
+          ? { activeArcs: [...(prevState.activeArcs || []), ...newArcs] }
+          : {}),
       };
     });
-
-    // Güncellemeleri uygula
-    const stateUpdate: { npcs: NPC[]; scheduledEvents?: ScheduledEvent[] } = { npcs: updated };
-    if (milestoneEvents.length > 0) {
-      stateUpdate.scheduledEvents = [...(gameState.scheduledEvents || []), ...milestoneEvents];
-    }
-    updateGameState(stateUpdate);
-  }, [gameState.npcs, gameState.turn, gameState.scheduledEvents, updateGameState]);
+  }, [setGameState]);
 
   /**
    * Romantik ilgi puanını güncelle (cinsiyet kontrolü ile)
@@ -158,65 +172,69 @@ export const useNPCs = () => {
    * @warning NPC bulunamazsa veya aynı cinsiyetteyse sessizce başarısız olur
    */
   const updateRomance = useCallback((npcId: string, delta: number) => {
-    // Birden fazla NPC için milestone event'leri toplama
-    const milestoneEvents: ScheduledEvent[] = [];
-
-    // Check if NPC exists before updating
-    const npcExists = gameState.npcs.some(n => n.id === npcId);
-    if (!npcExists) {
-      console.warn(`[useNPCs] updateRomance: NPC with id "${npcId}" not found`);
-      return;
-    }
-
-    const updated = gameState.npcs.map(npc => {
-      if (npc.id !== npcId) return npc;
-
-      // Aynı cinsiyette romantik ilişki engellenir
-      const playerGender = gameState.characterInfo?.gender;
-      if (playerGender && playerGender === npc.gender && delta > 0) {
-        return npc; // Değişiklik yapmadan geri dön
+    setGameState(prevState => {
+      const milestoneEvents: ScheduledEvent[] = [];
+      const npcExists = prevState.npcs.some(n => n.id === npcId);
+      if (!npcExists) {
+        console.warn(`[useNPCs] updateRomance: NPC with id "${npcId}" not found`);
+        return prevState;
       }
 
-      const oldRole = npc.role;
-      const newRomance = Math.max(0, Math.min(100, npc.romance + delta));
+      const updated = prevState.npcs.map(npc => {
+        if (npc.id !== npcId) return npc;
 
-      // Romance değişince role'ü güncelle
-      let newRole: NPCRole = npc.role;
-      if (newRomance >= ROMANCE_THRESHOLDS.PARTNER && npc.relationship > 0) {
-        newRole = 'PARTNER';
-      } else if (newRomance >= ROMANCE_THRESHOLDS.CRUSH && npc.relationship > 0) {
-        newRole = 'CRUSH';
-      } else if (npc.role === 'PARTNER' || npc.role === 'CRUSH') {
-        // Romantik ilişki bittiyse arkadaş/tanıdık yap
-        newRole = npc.relationship >= RELATIONSHIP_THRESHOLDS.FRIEND ? 'FRIEND' : 'ACQUAINTANCE';
-      }
+        const playerGender = prevState.characterInfo?.gender
+          ?? prevState.character?.characterInfo?.gender;
+        if (delta > 0) {
+          if (!playerGender) {
+            console.warn('[useNPCs] updateRomance: player gender missing, blocking romance increase');
+            return npc;
+          }
 
-      // Milestone tespiti - rol değiştiyse event zamanla
-      if (oldRole !== newRole) {
-        const milestone = detectMilestone(oldRole, newRole);
-        if (milestone) {
-          const event = createMilestoneScheduledEvent(milestone, npc.id);
-          if (event) {
-            milestoneEvents.push(event);
+          if (playerGender === npc.gender) {
+            return npc;
           }
         }
-      }
+
+        const oldRole = npc.role;
+        const newRomance = Math.max(0, Math.min(100, npc.romance + delta));
+
+        let newRole: NPCRole = npc.role;
+        if (newRomance >= ROMANCE_THRESHOLDS.PARTNER && npc.relationship > 0) {
+          newRole = 'PARTNER';
+        } else if (newRomance >= ROMANCE_THRESHOLDS.CRUSH && npc.relationship > 0) {
+          newRole = 'CRUSH';
+        } else if (npc.role === 'PARTNER' || npc.role === 'CRUSH') {
+          newRole = npc.relationship >= RELATIONSHIP_THRESHOLDS.FRIEND ? 'FRIEND' : 'ACQUAINTANCE';
+        }
+
+        if (oldRole !== newRole) {
+          const milestone = detectMilestone(oldRole, newRole);
+          if (milestone) {
+            const event = createMilestoneScheduledEvent(milestone, npc.id);
+            if (event) {
+              milestoneEvents.push(event);
+            }
+          }
+        }
+
+        return {
+          ...npc,
+          romance: newRomance,
+          role: newRole,
+          lastInteraction: prevState.turn,
+        };
+      });
 
       return {
-        ...npc,
-        romance: newRomance,
-        role: newRole,
-        lastInteraction: gameState.turn
+        ...prevState,
+        npcs: updated,
+        ...(milestoneEvents.length > 0
+          ? { scheduledEvents: [...(prevState.scheduledEvents || []), ...milestoneEvents] }
+          : {}),
       };
     });
-
-    // Güncellemeleri uygula
-    const stateUpdate: { npcs: NPC[]; scheduledEvents?: ScheduledEvent[] } = { npcs: updated };
-    if (milestoneEvents.length > 0) {
-      stateUpdate.scheduledEvents = [...(gameState.scheduledEvents || []), ...milestoneEvents];
-    }
-    updateGameState(stateUpdate);
-  }, [gameState.npcs, gameState.turn, gameState.scheduledEvents, updateGameState]);
+  }, [setGameState]);
 
   // =================================================================
   // NPC YÖNETİMİ
@@ -503,8 +521,17 @@ export const useNPCs = () => {
 
       // Flört için cinsiyet kontrolü - aynı cinsiyette flört engellenir
       if (actionType === 'FLIRT') {
-        const playerGender = gameState.characterInfo?.gender;
-        if (playerGender && playerGender === npc.gender) {
+        const playerGender = gameState.characterInfo?.gender
+          ?? gameState.character?.characterInfo?.gender;
+        if (!playerGender) {
+          return {
+            success: false,
+            message: 'Karakter cinsiyet bilgisi eksik. Flört aksiyonu kullanılamaz.',
+            cost: { energy: 0, money: 0 }
+          };
+        }
+
+        if (playerGender === npc.gender) {
           return {
             success: false,
             message: `${npc.name} ile bu şekilde ilişki kuramazsın.`,
@@ -587,7 +614,14 @@ export const useNPCs = () => {
       }
 
       return { success: true, message, relationChange: actualIncrease, cost: adjustedCost };
-    }, [gameState.npcs, gameState.turn, updateGameState, updateRelationship, updateRomance]),
+    }, [
+      gameState.npcs,
+      gameState.age,
+      gameState.characterInfo,
+      gameState.character,
+      updateRelationship,
+      updateRomance,
+    ]),
 
     /** Yeni NPC ile tanış */
     meetNewNPC: useCallback(() => {
@@ -597,3 +631,4 @@ export const useNPCs = () => {
     }, [gameState.age, gameState.turn, gameState.npcs, updateGameState]),
   };
 };
+

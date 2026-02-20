@@ -1,14 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, TextInput, ScrollView, Image, Modal, StyleSheet } from 'react-native';
+import React, { useCallback, useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, TextInput, ScrollView, Modal, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import QRCode from 'react-native-qrcode-svg';
 import SaveManager from '../save/SaveManager';
-import { copyToClipboard, readFromClipboard, downloadFile, readFile, generateQRCode } from '../utils/saveUtils';
+import { copyToClipboard, readFromClipboard, downloadFile, readFile } from '../utils/saveUtils';
 import { getCurrentSlotId } from '../utils/gameUtils';
 
 interface SaveExportModalProps {
   isOpen: boolean;
   onClose: () => void;
+  slotId?: string;
+  initialTab?: 'export' | 'import';
   theme: {
     appBg: string;
     surfaceBase: string;
@@ -23,25 +26,38 @@ interface SaveExportModalProps {
 export const SaveExportModal: React.FC<SaveExportModalProps> = ({
   isOpen,
   onClose,
+  slotId,
+  initialTab = 'export',
   theme,
 }) => {
   const insets = useSafeAreaInsets();
-  const slotId = getCurrentSlotId();
-  const [activeTab, setActiveTab] = useState<'export' | 'import'>('export');
+  const resolvedSlotId = slotId ?? getCurrentSlotId();
+  const [activeTab, setActiveTab] = useState<'export' | 'import'>(initialTab);
   const [exportData, setExportData] = useState<string | null>(null);
-  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [showQRCode, setShowQRCode] = useState(false);
   const [copiedToClipboard, setCopiedToClipboard] = useState(false);
   const [importData, setImportData] = useState<string>('');
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
-  const handleExport = async () => {
-    const data = await SaveManager.exportSlot(slotId);
+  const handleExport = useCallback(async () => {
+    const data = await SaveManager.exportSlot(resolvedSlotId);
     if (data) {
       setExportData(data);
-      const qrUrl = generateQRCode(data);
-      setQrCodeUrl(qrUrl);
     }
-  };
+  }, [resolvedSlotId]);
+
+  const handleGenerateQRCode = useCallback(async () => {
+    if (exportData) {
+      setShowQRCode(true);
+      return;
+    }
+
+    const data = await SaveManager.exportSlot(resolvedSlotId);
+    if (!data) return;
+
+    setExportData(data);
+    setShowQRCode(true);
+  }, [exportData, resolvedSlotId]);
 
   const handleCopyToClipboard = async () => {
     if (!exportData) return;
@@ -54,7 +70,7 @@ export const SaveExportModal: React.FC<SaveExportModalProps> = ({
 
   const handleDownloadJSON = () => {
     if (!exportData) return;
-    const filename = `yazgi_save_slot${slotId}_${Date.now()}.json`;
+    const filename = `yazgi_save_slot${resolvedSlotId}_${Date.now()}.json`;
     downloadFile(filename, exportData);
   };
 
@@ -76,23 +92,36 @@ export const SaveExportModal: React.FC<SaveExportModalProps> = ({
     if (!importData.trim()) return;
 
     try {
-      const success = await SaveManager.importSlot(slotId, importData);
+      const success = await SaveManager.importSlot(resolvedSlotId, importData);
       setImportStatus(success ? 'success' : 'error');
       if (success) {
         setTimeout(() => {
           onClose();
         }, 1500);
       }
-    } catch (error) {
+    } catch {
       setImportStatus('error');
     }
   };
 
   useEffect(() => {
+    if (!isOpen) return;
+    setActiveTab(initialTab);
+  }, [isOpen, initialTab]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setExportData(null);
+    setShowQRCode(false);
+    setCopiedToClipboard(false);
+    setImportStatus('idle');
+  }, [isOpen, resolvedSlotId]);
+
+  useEffect(() => {
     if (isOpen && activeTab === 'export' && !exportData) {
-      handleExport();
+      void handleExport();
     }
-  }, [isOpen, activeTab]);
+  }, [isOpen, activeTab, exportData, handleExport]);
 
   if (!isOpen) return null;
 
@@ -202,12 +231,10 @@ export const SaveExportModal: React.FC<SaveExportModalProps> = ({
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    onPress={handleExport}
-                    disabled={!exportData}
+                    onPress={handleGenerateQRCode}
                     style={[
                       styles.actionButton,
                       { backgroundColor: theme.surfaceRaised, borderColor: theme.border },
-                      !exportData && styles.actionButtonDisabled,
                     ]}
                     accessibilityLabel="QR kod oluştur"
                     accessibilityRole="button"
@@ -218,10 +245,12 @@ export const SaveExportModal: React.FC<SaveExportModalProps> = ({
                 </View>
 
                 {/* QR Code Display */}
-                {qrCodeUrl && (
+                {showQRCode && exportData && (
                   <View style={[styles.qrContainer, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}>
                     <Text style={[styles.qrLabel, { color: theme.textSecondary }]}>QR Kodu Tara:</Text>
-                    <Image source={{ uri: qrCodeUrl }} style={styles.qrImage} resizeMode="contain" />
+                    <View style={styles.qrCodeFrame}>
+                      <QRCode value={exportData} size={192} quietZone={8} />
+                    </View>
                     <Text style={[styles.qrHint, { color: theme.textSecondary }]}>
                       Bu QR kodu tarayarak kayıt dosyasını başka cihaza aktarabilirsin
                     </Text>
@@ -438,10 +467,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 16,
   },
-  qrImage: {
-    width: 192,
-    height: 192,
+  qrCodeFrame: {
+    backgroundColor: '#ffffff',
     borderRadius: 12,
+    padding: 8,
   },
   qrHint: {
     fontSize: 12,

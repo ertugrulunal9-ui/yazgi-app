@@ -20,6 +20,11 @@ export {
   gradeGood,
   gradeBad,
   healthCritical,
+  traitGainHaptic,
+  badOutcomeHaptic,
+  fateTokenHaptic,
+  ageTransitionHaptic,
+  milestoneHaptic,
   type HapticType,
 } from './HapticFeedback';
 

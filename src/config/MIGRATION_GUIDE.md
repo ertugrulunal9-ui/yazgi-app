@@ -515,7 +515,6 @@ git diff src/config/gameBalance.ts
 ## Bölüm 7: Checklist - Migration Tamamladıktan Sonra
 
 - [ ] gameBalance.ts'yi src/config/ klasörüne koydunuz
-- [ ] USAGE_EXAMPLES.ts'yi incelidiniz
 - [ ] App.tsx'te tüm hard-coded değerleri değiştirdiniz
 - [ ] gameUtils.ts'te stat formüllerini güncellediniz
 - [ ] schoolLogic.ts'te okul sistemini güncellediniz

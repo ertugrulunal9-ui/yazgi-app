@@ -95,6 +95,11 @@ describe('Save Migration', () => {
         personality: { openness: 50, courage: 50, empathy: 50, patience: 50, conformity: 50 },
         stress: { current: 0, threshold: 70, turnsSinceBreakdown: 0, sources: [] },
         personalityHistory: [],
+        personalityState: {
+          HELPFUL: { count: 0, streak: 0, multiplier: 1 },
+          PRAGMATIC: { count: 0, streak: 0, multiplier: 1 },
+          AGGRESSIVE: { count: 0, streak: 0, multiplier: 1 },
+        },
         socialGroups: [],
         socialReputation: 50,
         examsTakenThisYear: [],

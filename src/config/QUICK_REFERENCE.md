@@ -8,7 +8,6 @@ Yazgı/
 │   ├── config/                    ← BURAYA BAKMA!
 │   │   ├── gameBalance.ts         ← ANA CONFIG (650 lines)
 │   │   ├── README.md              ← BAŞLA BURADAN
-│   │   ├── USAGE_EXAMPLES.ts      ← ÖRNEKLER
 │   │   └── MIGRATION_GUIDE.md     ← GEÇIŞ REHBERİ
 │   │
 │   ├── App.tsx                    ← İMPORT ETMELİSİN
@@ -296,7 +295,7 @@ A: `src/config/gameBalance.ts`
 A: `import { INITIAL_STATS } from './config/gameBalance';`
 
 ### S: Type error alıyorum?
-A: TypeScript `as const` kullanarak type safety sağlıyor. USAGE_EXAMPLES.ts'yi kontrol et.
+A: TypeScript `as const` kullanarak type safety sagliyor. README.md ve MIGRATION_GUIDE.md'yi kontrol et.
 
 ### S: Değer değişikliği yapıyorum ama işlemiyor?
 A: Dev server restart et. Hot reload her zaman çalışmaz.
@@ -334,7 +333,6 @@ Verdict: ✅ SAFE - No performance penalty
 | Dosya | Amaç | Okuma Süresi |
 |-------|------|--------------|
 | [README.md](./src/config/README.md) | Overview & quick ref | 5 min |
-| [USAGE_EXAMPLES.ts](./src/config/USAGE_EXAMPLES.ts) | Kod örnekleri | 10 min |
 | [MIGRATION_GUIDE.md](./src/config/MIGRATION_GUIDE.md) | Detaylı rehber | 15 min |
 | [gameBalance.ts](./src/config/gameBalance.ts) | Ana config referans | 20 min |
 
@@ -345,7 +343,6 @@ Verdict: ✅ SAFE - No performance penalty
 - [ ] `src/config/` klasörünü açtım
 - [ ] `gameBalance.ts` dosyasını inceledim
 - [ ] `README.md`'yi okudum
-- [ ] `USAGE_EXAMPLES.ts`'deki örnekleri anladım
 - [ ] App.tsx'e import ekledim
 - [ ] Hard-coded değerleri config'le değiştirmeye başladım
 - [ ] Oyunu test ettim
@@ -369,7 +366,7 @@ Verdict: ✅ SAFE - No performance penalty
 Sorun ya da soru var mı?
 
 1. README.md'de arayın
-2. USAGE_EXAMPLES.ts'deki benzer örneği kontrol et
+2. README.md ve MIGRATION_GUIDE.md'deki benzer ornekleri kontrol et
 3. MIGRATION_GUIDE.md'de FAQ'ı bak
 4. gameBalance.ts'deki comments'i oku
 

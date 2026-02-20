@@ -71,6 +71,11 @@ const createMockGameState = (overrides = {}) => ({
   personality: { openness: 50, courage: 50, empathy: 50, patience: 50, conformity: 50 },
   stress: { current: 0, threshold: 70, turnsSinceBreakdown: 0, sources: [] },
   personalityHistory: [],
+  personalityState: {
+    HELPFUL: { count: 0, streak: 0, multiplier: 1 },
+    PRAGMATIC: { count: 0, streak: 0, multiplier: 1 },
+    AGGRESSIVE: { count: 0, streak: 0, multiplier: 1 },
+  },
   socialGroups: [],
   socialReputation: 50,
   examsTakenThisYear: [],
@@ -165,6 +170,73 @@ describe('Trait Formation System', () => {
 
       // Progress updates should be tracked
       expect(result.updatedProgress).toBeDefined();
+    });
+
+    it('should not progress BOOKWORM from coding actions even with high intelligence', () => {
+      const state = createMockGameState({ age: 12 });
+      const stats = createMockStats({ intelligence: 80 });
+
+      const result = checkTraitFormation('computer_code', null, state, stats);
+
+      expect(result.updatedProgress['BOOKWORM']?.points ?? 0).toBe(0);
+      expect(result.progressUpdates).not.toContain('BOOKWORM');
+    });
+
+    it('should progress BOOKWORM from study actions when threshold is met', () => {
+      const state = createMockGameState({ age: 12 });
+      const stats = createMockStats({ intelligence: 80 });
+
+      const result = checkTraitFormation('study_math', null, state, stats);
+
+      expect(result.updatedProgress['BOOKWORM']?.points ?? 0).toBeGreaterThan(0);
+      expect(result.progressUpdates).toContain('BOOKWORM');
+    });
+
+    it('should treat STAT_THRESHOLD as prerequisite for mixed-trigger traits', () => {
+      const state = createMockGameState({ age: 15 });
+      const belowThresholdStats = createMockStats({ intelligence: 55 });
+      const aboveThresholdStats = createMockStats({ intelligence: 75 });
+
+      const withoutThreshold = checkTraitFormation('work_parttime', null, state, belowThresholdStats);
+      const withThreshold = checkTraitFormation('work_parttime', null, state, aboveThresholdStats);
+
+      expect(withoutThreshold.updatedProgress['AMBITIOUS']?.points ?? 0).toBe(0);
+      expect(withThreshold.updatedProgress['AMBITIOUS']?.points ?? 0).toBeGreaterThan(0);
+    });
+
+    it('should only progress BURNOUT_PRONE for overwork actions under low energy', () => {
+      const state = createMockGameState({ age: 15 });
+      const lowEnergyStats = createMockStats({ energy: 15 });
+      const healthyEnergyStats = createMockStats({ energy: 60 });
+
+      const unrelatedAction = checkTraitFormation('social_talk', null, state, lowEnergyStats);
+      const lowEnergyStudy = checkTraitFormation('study_math', null, state, lowEnergyStats);
+      const highEnergyStudy = checkTraitFormation('study_math', null, state, healthyEnergyStats);
+
+      expect(unrelatedAction.updatedProgress['BURNOUT_PRONE']?.points ?? 0).toBe(0);
+      expect(lowEnergyStudy.updatedProgress['BURNOUT_PRONE']?.points ?? 0).toBeGreaterThan(0);
+      expect(highEnergyStudy.updatedProgress['BURNOUT_PRONE']?.points ?? 0).toBe(0);
+    });
+
+    it('should only progress LONE_WOLF on solitude-choice context with low charisma', () => {
+      const lowCharismaStats = createMockStats({ charisma: 30 });
+      const highCharismaStats = createMockStats({ charisma: 65 });
+      const solitudeEventState = createMockGameState({
+        age: 12,
+        currentEvent: { id: 'pers_bir_gun_yalniz' } as any,
+      });
+      const unrelatedEventState = createMockGameState({
+        age: 12,
+        currentEvent: { id: 'pers_grup_zorbaligi' } as any,
+      });
+
+      const unrelatedChoice = checkTraitFormation(null, 'zorbalik_izle', unrelatedEventState, lowCharismaStats);
+      const correctChoiceLowCharisma = checkTraitFormation(null, 'yalniz_rahat', solitudeEventState, lowCharismaStats);
+      const correctChoiceHighCharisma = checkTraitFormation(null, 'yalniz_rahat', solitudeEventState, highCharismaStats);
+
+      expect(unrelatedChoice.updatedProgress['LONE_WOLF']?.points ?? 0).toBe(0);
+      expect(correctChoiceLowCharisma.updatedProgress['LONE_WOLF']?.points ?? 0).toBeGreaterThan(0);
+      expect(correctChoiceHighCharisma.updatedProgress['LONE_WOLF']?.points ?? 0).toBe(0);
     });
 
     it('should handle conflicts between traits', () => {

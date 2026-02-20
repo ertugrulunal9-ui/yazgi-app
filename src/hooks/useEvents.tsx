@@ -1,19 +1,30 @@
 import { useCallback } from 'react';
 import { useGame } from '../context/GameContext';
-import { Choice, EventContext, GameEvent, ExamSubject, ALL_EXAM_SUBJECTS } from '../types';
+import { Choice, EventContext, GameEvent, ExamSubject, ALL_EXAM_SUBJECTS, GameState, Stats } from '../types';
+import { shouldEarnToken, earnToken, spendToken } from '../systems/FateEngine';
+import { ageTransitionHaptic } from '../animations/HapticFeedback';
 import { EVENTS, FALLBACK_EVENT } from '../data/events';
+import { selectCrisisEvent } from '../data/crisisEvents';
 import {
   shouldAgeUp,
   shouldGenerateReportCard,
-  calculateCareerResult,
   getMaxEnergy,
   getRestedEnergy
 } from '../utils/gameUtils';
+import { analyzeGoalMismatch, calculateEndingErrorDebt, resolveEnding } from '../utils/endingResolver';
 import { calculateSchoolReport } from '../utils/schoolLogic';
-import { TurnMediator } from '../systems/TurnMediator';
+import { TurnMediator, TurnResult } from '../systems/TurnMediator';
 import { getDueScheduledEvents, pickScheduledEvent, tickScheduledEvents } from '../utils/scheduledEvents';
-import { handleEventChoice as logEventChoice, logTurnProgress, logGameEnding, logTraitFormed } from '../utils/analyticsEvents';
-import { selectEventWithAdaptivePacing, getRecencyWindowSize } from '../utils/eventSelection';
+import {
+  handleEventChoice as logEventChoice,
+  logBurdenTrigger,
+  logGameEnding,
+  logGoalAlignmentScore,
+  logMilestoneReached,
+  logTraitFormed,
+  logTurnProgress
+} from '../utils/analyticsEvents';
+import { calculateGoalAlignmentScore, selectEventWithAdaptivePacing, getRecencyWindowSize } from '../utils/eventSelection';
 import { getEventChoiceSet } from '../utils/gameStateAdapter';
 import { naturalStressRecovery } from '../utils/personalitySystem';
 import {
@@ -24,10 +35,52 @@ import {
 import { STORY_ARCS } from '../data/storyArcs';
 import { selectStoryArcEvent, syncActiveArcsWithSelectedEvent } from '../utils/storyArcSelection';
 import { buildMemoryAwareEventText } from '../utils/memoryLogic';
+import { selectMomentumGateEvent } from '../data/momentumEvents';
+import { composeInnerThought, getStrategicMonologue } from '../utils/internalMonologue';
+import {
+  buildInitialLifeGoalEvent,
+  buildPivotLifeGoalEvent,
+  mapEndingGoalToLifeGoal,
+  shouldTriggerInitialLifeGoalEvent,
+  shouldTriggerPivotLifeGoalEvent,
+} from '../utils/lifeGoalSystem';
+import { getGoalChainStage } from '../data/goalChainEvents';
 
 const getEventById = (eventId: string): GameEvent | undefined =>
   EVENTS.find(evt => evt.id === eventId);
 const turnMediator = new TurnMediator();
+
+const pickGoalMilestoneEvent = (
+  gameState: GameState,
+  stats: Stats,
+  currentAge: number
+): GameEvent | null => {
+  if (shouldTriggerInitialLifeGoalEvent(gameState, currentAge)) {
+    return buildInitialLifeGoalEvent();
+  }
+
+  if (!gameState.selectedGoal) return null;
+
+  const mismatch = analyzeGoalMismatch(gameState, stats);
+  if (!shouldTriggerPivotLifeGoalEvent({
+    gameState,
+    currentAge,
+    isMismatch: mismatch.isMismatch,
+    mismatchGap: mismatch.gap,
+  })) {
+    return null;
+  }
+
+  const currentGoal = gameState.selectedGoal;
+  const suggestedGoal = mapEndingGoalToLifeGoal(mismatch.dominantGoal, currentGoal);
+  if (suggestedGoal === currentGoal) return null;
+
+  return buildPivotLifeGoalEvent(currentGoal, suggestedGoal, mismatch.gap);
+};
+
+const hasCriticalBurdenCrossed = (currentRisk: number, previousRisk: number): boolean => (
+  currentRisk > 80 && previousRisk <= 80
+);
 
 export const useEvents = () => {
   const { gameState, stats, advanceTurnInContext, updateGameState, setStats } = useGame();
@@ -46,6 +99,38 @@ export const useEvents = () => {
     grades: gameState.schoolGrades,
     skills: gameState.skills,
   }), [gameState, stats]);
+
+  const getBurdenRisk = useCallback((
+    state: GameState = gameState,
+    currentStats: Stats = stats
+  ): number => calculateEndingErrorDebt(state, currentStats).total, [gameState, stats]);
+
+  const logSelectedEventAnalytics = useCallback((
+    event: GameEvent,
+    age: number,
+    turn: number
+  ) => {
+    const selectedGoal = gameState.selectedGoal ?? null;
+    const alignmentScore = calculateGoalAlignmentScore(event, selectedGoal);
+    void logGoalAlignmentScore({
+      eventId: event.id,
+      selectedGoal,
+      alignmentScore,
+      age,
+      turn,
+    });
+
+    const stage = getGoalChainStage(event.id);
+    if (stage && selectedGoal) {
+      void logMilestoneReached({
+        arcId: 'arc_goal_path_chain',
+        stage,
+        selectedGoal,
+        age,
+        turn,
+      });
+    }
+  }, [gameState.selectedGoal]);
 
   const resolveEventText = useCallback((evt: GameEvent): string => {
     const ctx = buildEventContext();
@@ -90,6 +175,72 @@ export const useEvents = () => {
     const dueScheduled = getDueScheduledEvents(scheduledEvents, gameState.age);
     const allSeenEvents = getEventChoiceSet(gameState);
     const currentActiveArcs = gameState.activeArcs || [];
+    const burdenRisk = getBurdenRisk();
+    const previousBurdenRisk = gameState.lastBurdenRisk ?? 0;
+    const criticalBurdenCrossed = hasCriticalBurdenCrossed(burdenRisk, previousBurdenRisk);
+
+    if (criticalBurdenCrossed) {
+      const crisisEvent = selectCrisisEvent(gameState.age, gameState.recentEvents);
+      const nextActiveArcs = syncActiveArcsWithSelectedEvent(
+        currentActiveArcs,
+        STORY_ARCS,
+        crisisEvent.id,
+        ctx
+      );
+      const windowSize = getRecencyWindowSize(gameState.age);
+      const updatedFrequency = {
+        ...gameState.eventFrequency,
+        [crisisEvent.id]: {
+          count: ((gameState.eventFrequency ?? {})[crisisEvent.id]?.count ?? 0) + 1,
+          lastSeenTurn: gameState.turn,
+        },
+      };
+      void logBurdenTrigger({
+        burdenRisk,
+        age: gameState.age,
+        turn: gameState.turn,
+        selectedGoal: gameState.selectedGoal ?? null,
+      });
+      logSelectedEventAnalytics(crisisEvent, gameState.age, gameState.turn);
+      updateGameState({
+        currentEvent: crisisEvent,
+        phase: 'EVENT',
+        recentEvents: [...gameState.recentEvents, crisisEvent.id].slice(-windowSize),
+        activeArcs: nextActiveArcs,
+        eventFrequency: updatedFrequency,
+        lastBurdenRisk: burdenRisk,
+      });
+      return;
+    }
+
+    const forcedGoalEvent = pickGoalMilestoneEvent(gameState, stats, gameState.age);
+
+    if (forcedGoalEvent) {
+      const nextActiveArcs = syncActiveArcsWithSelectedEvent(
+        currentActiveArcs,
+        STORY_ARCS,
+        forcedGoalEvent.id,
+        ctx
+      );
+      const windowSize = getRecencyWindowSize(gameState.age);
+      const updatedFrequency = {
+        ...gameState.eventFrequency,
+        [forcedGoalEvent.id]: {
+          count: ((gameState.eventFrequency ?? {})[forcedGoalEvent.id]?.count ?? 0) + 1,
+          lastSeenTurn: gameState.turn,
+        },
+      };
+      logSelectedEventAnalytics(forcedGoalEvent, gameState.age, gameState.turn);
+      updateGameState({
+        currentEvent: forcedGoalEvent,
+        phase: 'EVENT',
+        recentEvents: [...gameState.recentEvents, forcedGoalEvent.id].slice(-windowSize),
+        activeArcs: nextActiveArcs,
+        eventFrequency: updatedFrequency,
+        lastBurdenRisk: burdenRisk,
+      });
+      return;
+    }
 
     if (dueScheduled.length > 0) {
       const scheduled = pickScheduledEvent(dueScheduled);
@@ -111,6 +262,11 @@ export const useEvents = () => {
               lastSeenTurn: gameState.turn,
             },
           };
+          logSelectedEventAnalytics(evt, gameState.age, gameState.turn);
+          // Clear pendingCliffhanger when its resolution event fires
+          const clearCliffhanger = scheduled.sourceEventId?.startsWith('cliff_')
+            ? { pendingCliffhanger: undefined }
+            : {};
           updateGameState({
             currentEvent: evt,
             phase: 'EVENT',
@@ -118,11 +274,47 @@ export const useEvents = () => {
             scheduledEvents: remainingScheduled,
             activeArcs: nextActiveArcs,
             eventFrequency: updatedFrequency,
+            lastBurdenRisk: burdenRisk,
+            ...clearCliffhanger,
           });
           return;
         }
         updateGameState({ scheduledEvents: remainingScheduled });
       }
+    }
+
+    const personalityGateEvent = selectMomentumGateEvent({
+      personalityState: gameState.personalityState,
+      context: ctx,
+      recentEventIds: gameState.recentEvents,
+      allSeenEvents,
+    });
+
+    if (personalityGateEvent) {
+      const nextActiveArcs = syncActiveArcsWithSelectedEvent(
+        currentActiveArcs,
+        STORY_ARCS,
+        personalityGateEvent.id,
+        ctx
+      );
+      const windowSize = getRecencyWindowSize(gameState.age);
+      const updatedFrequency = {
+        ...gameState.eventFrequency,
+        [personalityGateEvent.id]: {
+          count: ((gameState.eventFrequency ?? {})[personalityGateEvent.id]?.count ?? 0) + 1,
+          lastSeenTurn: gameState.turn,
+        },
+      };
+      logSelectedEventAnalytics(personalityGateEvent, gameState.age, gameState.turn);
+      updateGameState({
+        currentEvent: personalityGateEvent,
+        phase: 'EVENT',
+        recentEvents: [...gameState.recentEvents, personalityGateEvent.id].slice(-windowSize),
+        activeArcs: nextActiveArcs,
+        eventFrequency: updatedFrequency,
+        lastBurdenRisk: burdenRisk,
+      });
+      return;
     }
 
     const arcSelection = selectStoryArcEvent({
@@ -143,6 +335,7 @@ export const useEvents = () => {
         adaptivePacingStreak: gameState.adaptivePacingStreak,
         eventFrequency: gameState.eventFrequency,
         currentTurn: gameState.turn,
+        selectedGoal: gameState.selectedGoal ?? null,
       }
     );
     const evt = arcSelection.event ?? randomEvent;
@@ -158,16 +351,18 @@ export const useEvents = () => {
         lastSeenTurn: gameState.turn,
       },
     };
+    logSelectedEventAnalytics(evt, gameState.age, gameState.turn);
     updateGameState({
       currentEvent: evt,
       phase: 'EVENT',
       recentEvents: [...gameState.recentEvents, evt.id].slice(-windowSize),
       activeArcs: nextActiveArcs,
       eventFrequency: updatedFrequency,
+      lastBurdenRisk: burdenRisk,
     });
-  }, [buildEventContext, gameState, updateGameState]);
+  }, [buildEventContext, gameState, getBurdenRisk, logSelectedEventAnalytics, stats, updateGameState]);
 
-  const handleEventChoice = useCallback((choice: Choice | ((ctx: EventContext) => Choice), choiceIndex?: number) => {
+  const handleEventChoice = useCallback((choice: Choice | ((ctx: EventContext) => Choice), choiceIndex?: number): TurnResult => {
     const resolved = resolveChoice(choice);
 
     const turnResult = turnMediator.processEventChoice({
@@ -216,6 +411,7 @@ export const useEvents = () => {
         void logTraitFormed(traitId, gameState.age);
       });
     }
+    return turnResult;
   }, [gameState, stats, updateGameState, resolveChoice, setStats]);
 
   const advanceTurn = useCallback(() => {
@@ -225,10 +421,20 @@ export const useEvents = () => {
     const didAgeUp = shouldAgeUp(gameState.age, newTurn);
     if (didAgeUp) {
       newAge = gameState.age + 1;
+      ageTransitionHaptic();
     }
     const moneyAfterAllowance = stats.money;
     const stressAfterRecovery = naturalStressRecovery(gameState.stress, gameState.personality);
     const currentActiveArcs = gameState.activeArcs || [];
+    const burdenRisk = getBurdenRisk();
+    const previousBurdenRisk = gameState.lastBurdenRisk ?? 0;
+    const criticalBurdenCrossed = hasCriticalBurdenCrossed(burdenRisk, previousBurdenRisk);
+
+    // Kader sistemi — yaş geçişinde jeton kazanımı
+    let updatedFate = gameState.fate;
+    if (didAgeUp && updatedFate && shouldEarnToken(gameState.age, newAge)) {
+      updatedFate = earnToken(updatedFate);
+    }
 
     // NPC ya\u015Fland\u0131rma - oyuncu ya\u015Fland\u0131\u011F\u0131nda NPC'ler de ya\u015Flan\u0131r
     let updatedNPCs = gameState.npcs;
@@ -304,10 +510,29 @@ export const useEvents = () => {
       turn: newTurn,
       evolution: nextFamilyEvolution,
     });
-    const nextInnerThought = familyThought ?? gameState.innerThought;
+    const strategicResult = getStrategicMonologue({
+      burdenRisk,
+      age: newAge,
+      selectedGoal: gameState.selectedGoal ?? null,
+      goalMismatch: analyzeGoalMismatch(gameState, stats),
+      traitProgress: gameState.traitProgress,
+      personalityState: gameState.personalityState,
+      turn: newTurn,
+      pendingCliffhanger: gameState.pendingCliffhanger,
+    });
+    const composed = composeInnerThought(familyThought, strategicResult, gameState.innerThought);
+    const nextInnerThought = composed.text;
+    const nextInnerThoughtType = composed.type;
+    const newMaxEnergy = getMaxEnergy(newAge, gameState.family, gameState.traits);
+    const newEnergy = getRestedEnergy(newMaxEnergy);
 
     if (newAge >= 18) {
-      const careerResult = calculateCareerResult(gameState, stats);
+      const endingResolution = resolveEnding({
+        gameState,
+        stats,
+        achievements: gameState.unlockedAchievements,
+      });
+      const careerResult = endingResolution.result;
       void logGameEnding({
         age: newAge,
         stats: {
@@ -319,7 +544,7 @@ export const useEvents = () => {
           energy: stats.energy,
         },
         playtimeMinutes: Math.max(0, Math.round(newTotalTurns * 5)),
-        endingType: careerResult.type,
+        endingType: endingResolution.id,
       });
       advanceTurnInContext({
         newStats: didAgeUp ? { money: moneyAfterAllowance } : {},
@@ -332,13 +557,16 @@ export const useEvents = () => {
           pendingReportCard,
           isExamPeriod: false,
           examsTakenThisYear: [],
-          maxEnergy: getMaxEnergy(newAge, gameState.family, gameState.traits),
+          maxEnergy: newMaxEnergy,
           stress: stressAfterRecovery,
           activeArcs: currentActiveArcs,
           familyEvolution: nextFamilyEvolution,
           innerThought: nextInnerThought,
+          innerThoughtType: nextInnerThoughtType,
+          fate: updatedFate,
+          lastBurdenRisk: burdenRisk,
           lastResult: {
-            feedback: careerResult.description,
+            feedback: `${careerResult.title}: ${careerResult.description}`,
             changes: {},
           },
         }
@@ -346,8 +574,153 @@ export const useEvents = () => {
       return;
     }
 
-    const newMaxEnergy = getMaxEnergy(newAge, gameState.family, gameState.traits);
-    const newEnergy = getRestedEnergy(newMaxEnergy);
+    if (criticalBurdenCrossed) {
+      const turnCrisisEvent = selectCrisisEvent(newAge, gameState.recentEvents);
+      const crisisContext: EventContext = {
+        ...buildEventContext(),
+        age: newAge,
+        stress: stressAfterRecovery,
+        npcs: updatedNPCs,
+        stats: {
+          ...stats,
+          energy: newEnergy,
+          money: moneyAfterAllowance,
+        },
+      };
+      const crisisActiveArcs = syncActiveArcsWithSelectedEvent(
+        currentActiveArcs,
+        STORY_ARCS,
+        turnCrisisEvent.id,
+        crisisContext
+      );
+      const crisisWindowSize = getRecencyWindowSize(newAge);
+      const crisisFrequency = {
+        ...gameState.eventFrequency,
+        [turnCrisisEvent.id]: {
+          count: ((gameState.eventFrequency ?? {})[turnCrisisEvent.id]?.count ?? 0) + 1,
+          lastSeenTurn: newTurn,
+        },
+      };
+      void logTurnProgress(newAge, {
+        health: stats.health,
+        intelligence: stats.intelligence,
+        charisma: stats.charisma,
+        discipline: stats.discipline,
+        money: moneyAfterAllowance,
+        energy: newEnergy,
+      }, {
+        turn: newTurn,
+        totalTurns: newTotalTurns,
+        maxEnergy: newMaxEnergy,
+        energySpent: Math.max(0, gameState.maxEnergy - stats.energy),
+      });
+      void logBurdenTrigger({
+        burdenRisk,
+        age: newAge,
+        turn: newTurn,
+        selectedGoal: gameState.selectedGoal ?? null,
+      });
+      logSelectedEventAnalytics(turnCrisisEvent, newAge, newTurn);
+      advanceTurnInContext({
+        newStats: didAgeUp ? { energy: newEnergy, money: moneyAfterAllowance } : { energy: newEnergy },
+        newGameState: {
+          age: newAge,
+          turn: newTurn,
+          totalTurns: newTotalTurns,
+          phase: 'EVENT',
+          currentEvent: turnCrisisEvent,
+          recentEvents: [...gameState.recentEvents, turnCrisisEvent.id].slice(-crisisWindowSize),
+          schoolGrades: newGrades,
+          pendingReportCard,
+          isExamPeriod: false,
+          examsTakenThisYear,
+          lastResult: null,
+          npcs: updatedNPCs,
+          scheduledEvents: [...pendingScheduledEvents, ...dueScheduledEvents],
+          maxEnergy: newMaxEnergy,
+          stress: stressAfterRecovery,
+          activeArcs: crisisActiveArcs,
+          familyEvolution: nextFamilyEvolution,
+          innerThought: nextInnerThought,
+          innerThoughtType: nextInnerThoughtType,
+          eventFrequency: crisisFrequency,
+          fate: updatedFate,
+          lastBurdenRisk: burdenRisk,
+        }
+      });
+      return;
+    }
+
+    const forcedGoalEvent = pickGoalMilestoneEvent(gameState, stats, newAge);
+    if (forcedGoalEvent) {
+      const goalEventContext: EventContext = {
+        ...buildEventContext(),
+        age: newAge,
+        stress: stressAfterRecovery,
+        npcs: updatedNPCs,
+        stats: {
+          ...stats,
+          energy: newEnergy,
+          money: moneyAfterAllowance,
+        },
+      };
+      const goalActiveArcs = syncActiveArcsWithSelectedEvent(
+        currentActiveArcs,
+        STORY_ARCS,
+        forcedGoalEvent.id,
+        goalEventContext
+      );
+      const goalWindowSize = getRecencyWindowSize(newAge);
+      const goalFrequency = {
+        ...gameState.eventFrequency,
+        [forcedGoalEvent.id]: {
+          count: ((gameState.eventFrequency ?? {})[forcedGoalEvent.id]?.count ?? 0) + 1,
+          lastSeenTurn: newTurn,
+        },
+      };
+      void logTurnProgress(newAge, {
+        health: stats.health,
+        intelligence: stats.intelligence,
+        charisma: stats.charisma,
+        discipline: stats.discipline,
+        money: moneyAfterAllowance,
+        energy: newEnergy,
+      }, {
+        turn: newTurn,
+        totalTurns: newTotalTurns,
+        maxEnergy: newMaxEnergy,
+        energySpent: Math.max(0, gameState.maxEnergy - stats.energy),
+      });
+      logSelectedEventAnalytics(forcedGoalEvent, newAge, newTurn);
+      advanceTurnInContext({
+        newStats: didAgeUp ? { energy: newEnergy, money: moneyAfterAllowance } : { energy: newEnergy },
+        newGameState: {
+          age: newAge,
+          turn: newTurn,
+          totalTurns: newTotalTurns,
+          phase: 'EVENT',
+          currentEvent: forcedGoalEvent,
+          recentEvents: [...gameState.recentEvents, forcedGoalEvent.id].slice(-goalWindowSize),
+          schoolGrades: newGrades,
+          pendingReportCard,
+          isExamPeriod,
+          examsTakenThisYear,
+          lastResult: null,
+          npcs: updatedNPCs,
+          scheduledEvents: [...pendingScheduledEvents, ...dueScheduledEvents],
+          maxEnergy: newMaxEnergy,
+          stress: stressAfterRecovery,
+          activeArcs: goalActiveArcs,
+          familyEvolution: nextFamilyEvolution,
+          innerThought: nextInnerThought,
+          innerThoughtType: nextInnerThoughtType,
+          eventFrequency: goalFrequency,
+          fate: updatedFate,
+          lastBurdenRisk: burdenRisk,
+        }
+      });
+      return;
+    }
 
     void logTurnProgress(newAge, {
       health: stats.health,
@@ -385,6 +758,9 @@ export const useEvents = () => {
           activeArcs: currentActiveArcs,
           familyEvolution: nextFamilyEvolution,
           innerThought: nextInnerThought,
+          innerThoughtType: nextInnerThoughtType,
+          fate: updatedFate,
+          lastBurdenRisk: burdenRisk,
         }
       });
       return;
@@ -424,6 +800,7 @@ export const useEvents = () => {
           lastSeenTurn: newTurn,
         },
       };
+      logSelectedEventAnalytics(scheduledEvent, newAge, newTurn);
       advanceTurnInContext({
         newStats: didAgeUp ? { energy: newEnergy, money: moneyAfterAllowance } : { energy: newEnergy },
         newGameState: {
@@ -445,7 +822,10 @@ export const useEvents = () => {
           activeArcs: nextActiveArcs,
           familyEvolution: nextFamilyEvolution,
           innerThought: nextInnerThought,
+          innerThoughtType: nextInnerThoughtType,
           eventFrequency: schedFrequency,
+          fate: updatedFate,
+          lastBurdenRisk: burdenRisk,
         }
       });
       return;
@@ -468,6 +848,59 @@ export const useEvents = () => {
       },
     };
     const allSeenEvents = getEventChoiceSet(gameState);
+    const personalityGateEvent = selectMomentumGateEvent({
+      personalityState: gameState.personalityState,
+      context: ctx,
+      recentEventIds: gameState.recentEvents,
+      allSeenEvents,
+    });
+
+    if (personalityGateEvent) {
+      const nextActiveArcs = syncActiveArcsWithSelectedEvent(
+        currentActiveArcs,
+        STORY_ARCS,
+        personalityGateEvent.id,
+        ctx
+      );
+      const advWindowSize = getRecencyWindowSize(newAge);
+      const advFrequency = {
+        ...gameState.eventFrequency,
+        [personalityGateEvent.id]: {
+          count: ((gameState.eventFrequency ?? {})[personalityGateEvent.id]?.count ?? 0) + 1,
+          lastSeenTurn: newTurn,
+        },
+      };
+      logSelectedEventAnalytics(personalityGateEvent, newAge, newTurn);
+      advanceTurnInContext({
+        newStats: didAgeUp ? { energy: newEnergy, money: moneyAfterAllowance } : { energy: newEnergy },
+        newGameState: {
+          age: newAge,
+          turn: newTurn,
+          totalTurns: newTotalTurns,
+          phase: 'EVENT',
+          currentEvent: personalityGateEvent,
+          recentEvents: [...gameState.recentEvents, personalityGateEvent.id].slice(-advWindowSize),
+          schoolGrades: newGrades,
+          pendingReportCard,
+          isExamPeriod: false,
+          examsTakenThisYear,
+          lastResult: null,
+          npcs: updatedNPCs,
+          scheduledEvents: scheduledEventsForRandom,
+          maxEnergy: newMaxEnergy,
+          stress: stressAfterRecovery,
+          activeArcs: nextActiveArcs,
+          familyEvolution: nextFamilyEvolution,
+          innerThought: nextInnerThought,
+          innerThoughtType: nextInnerThoughtType,
+          eventFrequency: advFrequency,
+          fate: updatedFate,
+          lastBurdenRisk: burdenRisk,
+        }
+      });
+      return;
+    }
+
     const arcSelection = selectStoryArcEvent({
       arcs: STORY_ARCS,
       activeArcs: currentActiveArcs,
@@ -486,6 +919,7 @@ export const useEvents = () => {
         adaptivePacingStreak: gameState.adaptivePacingStreak,
         eventFrequency: gameState.eventFrequency,
         currentTurn: newTurn,
+        selectedGoal: gameState.selectedGoal ?? null,
       }
     );
     const evt = arcSelection.event ?? randomEvent;
@@ -501,6 +935,7 @@ export const useEvents = () => {
         lastSeenTurn: newTurn,
       },
     };
+    logSelectedEventAnalytics(evt, newAge, newTurn);
     advanceTurnInContext({
       newStats: didAgeUp ? { energy: newEnergy, money: moneyAfterAllowance } : { energy: newEnergy },
       newGameState: {
@@ -522,10 +957,32 @@ export const useEvents = () => {
         activeArcs: nextActiveArcs,
         familyEvolution: nextFamilyEvolution,
         innerThought: nextInnerThought,
+        innerThoughtType: nextInnerThoughtType,
         eventFrequency: advFrequency,
+        fate: updatedFate,
+        lastBurdenRisk: burdenRisk,
       }
     });
-  }, [gameState, stats, advanceTurnInContext, buildEventContext]);
+  }, [advanceTurnInContext, buildEventContext, gameState, getBurdenRisk, logSelectedEventAnalytics, stats]);
+
+  // Kader jetonu ile yeniden çekme
+  const rerollChoice = useCallback((choice: Choice, choiceIndex: number) => {
+    if (!gameState.fate || gameState.fate.tokens <= 0) return;
+    const fateAfterSpend = spendToken(gameState.fate);
+
+    const turnResult = turnMediator.processEventChoice({
+      choice,
+      choiceIndex,
+      gameState: { ...gameState, fate: fateAfterSpend },
+      stats,
+      forceGoodFate: true,
+    });
+
+    if (turnResult.newStats !== stats) {
+      setStats(turnResult.newStats);
+    }
+    updateGameState(turnResult.gameStateUpdates);
+  }, [gameState, stats, setStats, updateGameState]);
 
   // S\u0131nav tamamland\u0131\u011F\u0131nda \u00E7a\u011Fr\u0131l\u0131r
   const markExamTaken = useCallback((subject: ExamSubject) => {
@@ -534,11 +991,12 @@ export const useEvents = () => {
 
     const newExamsTaken = [...currentExams, subject];
     const allExamsTaken = ALL_EXAM_SUBJECTS.every(s => newExamsTaken.includes(s));
+    const shouldOpenReportCard = allExamsTaken && gameState.isExamPeriod;
 
     updateGameState({
-      examsTakenThisYear: newExamsTaken,
+      examsTakenThisYear: shouldOpenReportCard ? [] : newExamsTaken,
       // T\u00FCm s\u0131navlar tamamland\u0131ysa s\u0131nav d\u00F6nemi biter, karne a\u00E7\u0131l\u0131r
-      ...(allExamsTaken && gameState.isExamPeriod ? {
+      ...(shouldOpenReportCard ? {
         isExamPeriod: false,
         pendingReportCard: true,
         schoolGrades: calculateSchoolReport(stats, gameState),
@@ -548,9 +1006,12 @@ export const useEvents = () => {
 
   // S\u0131nav d\u00F6nemini manuel bitir (t\u00FCm s\u0131navlar tamamland\u0131\u011F\u0131nda ExamPeriodModal'dan \u00E7a\u011Fr\u0131l\u0131r)
   const completeExamPeriod = useCallback(() => {
+    const completedExams = gameState.examsTakenThisYear || [];
+    const allExamsTaken = ALL_EXAM_SUBJECTS.every(subject => completedExams.includes(subject));
     updateGameState({
       isExamPeriod: false,
       pendingReportCard: true,
+      ...(allExamsTaken ? { examsTakenThisYear: [] } : {}),
       schoolGrades: calculateSchoolReport(stats, gameState),
     });
   }, [gameState, stats, updateGameState]);
@@ -559,6 +1020,7 @@ export const useEvents = () => {
     currentEvent: gameState.currentEvent,
     selectNewEvent,
     handleEventChoice,
+    rerollChoice,
     resolveChoice,
     resolveEventText,
     advanceTurn,
@@ -566,4 +1028,3 @@ export const useEvents = () => {
     completeExamPeriod,
   };
 };
-

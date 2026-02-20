@@ -1,4 +1,4 @@
-import { errorLogger } from '../utils/errorLogger';
+﻿import { errorLogger } from '../utils/errorLogger';
 
 const isDev = __DEV__;
 const isWeb = typeof window !== 'undefined' && typeof navigator !== 'undefined';
@@ -14,11 +14,13 @@ interface CrashContext {
 }
 
 class CrashReportingService {
-  private enabled: boolean = !isDev && !isWeb;
+  private enabled: boolean = !isWeb;
   private initialized: boolean = false;
 
   constructor() {
-    console.log('🚨 Using simple error logger (Firebase removed)');
+    if (isDev) {
+      console.log('Crash reporting initialized with local logger backend');
+    }
     this.initialized = true;
   }
 
@@ -30,19 +32,19 @@ class CrashReportingService {
     if (!this.isEnabled()) return;
     errorLogger.setUserId(userId);
     if (isDev) {
-      console.log(`👤 User ID: ${userId}`);
+      console.log('Crash reporting user context updated');
     }
   }
 
   async setAttribute(key: string, value: string | number | boolean): Promise<void> {
     if (isDev) {
-      console.log(`📝 ${key} = ${value}`);
+      console.log(`[CrashAttr] ${key}=${String(value)}`);
     }
   }
 
   async setGameStats(stats: Record<string, number>): Promise<void> {
     if (isDev) {
-      console.log('📊 Game Stats:', stats);
+      console.log('[CrashStats]', stats);
     }
   }
 
@@ -60,7 +62,9 @@ class CrashReportingService {
 
   setEnabled(enabled: boolean): void {
     this.enabled = enabled;
-    console.log(`🚨 Error logging ${enabled ? 'enabled' : 'disabled'}`);
+    if (isDev) {
+      console.log(`Crash reporting ${enabled ? 'enabled' : 'disabled'}`);
+    }
   }
 }
 

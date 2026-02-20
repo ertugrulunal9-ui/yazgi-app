@@ -120,6 +120,7 @@ export const usePersonality = () => {
     personality: character.personality,
     stress: character.stress,
     personalityHistory: character.personalityHistory,
+    personalityState: character.personalityState,
   }), [
     character,
   ]);

@@ -8,8 +8,11 @@ import { LATE_TEEN_EVENTS } from './lateTeenEvents';
 import { FAMILY_ARC_EVENTS } from './familyArcEvents';
 import { MEMORY_GATED_EVENTS } from './memoryGatedEvents';
 import { AGE_SPECIFIC_EVENTS } from './ageSpecificEvents';
+import { GOAL_CHAIN_EVENTS } from './goalChainEvents';
+import { NPC_QUESTLINE_EVENTS } from './npcQuestlineEvents';
+import { CLIFFHANGER_EVENTS } from './cliffhangerEvents';
 import { EventBuilder } from '../builders/EventBuilder';
-import { validateEventGraph } from '../utils/eventValidation';
+import { validateEventGraph, validateEventTagStandard } from '../utils/eventValidation';
 
 // =================================================================
 // YAZGI - TÜM EVENTLER
@@ -31,6 +34,11 @@ export const EVENTS: GameEvent[] = [
   ...FAMILY_ARC_EVENTS,
   ...MEMORY_GATED_EVENTS,
   ...AGE_SPECIFIC_EVENTS,
+  ...GOAL_CHAIN_EVENTS,
+  // NPC questline arc eventleri
+  ...NPC_QUESTLINE_EVENTS,
+  // Cliffhanger / oturum kancasi eventleri
+  ...CLIFFHANGER_EVENTS,
 ];
 
 if (__DEV__) {
@@ -38,6 +46,19 @@ if (__DEV__) {
   if (eventValidationErrors.length > 0) {
     console.error('[EventValidation] Event graph validation failed:');
     eventValidationErrors.forEach(error => console.error(`[EventValidation] ${error}`));
+  }
+
+  const tagValidationWarnings = validateEventTagStandard(EVENTS);
+  if (tagValidationWarnings.length > 0) {
+    const previewLimit = 25;
+    console.warn(`[EventValidation] Tag standard warnings: ${tagValidationWarnings.length}`);
+    tagValidationWarnings
+      .slice(0, previewLimit)
+      .forEach(warning => console.warn(`[EventValidation] ${warning}`));
+
+    if (tagValidationWarnings.length > previewLimit) {
+      console.warn(`[EventValidation] ...and ${tagValidationWarnings.length - previewLimit} more tag warnings`);
+    }
   }
 }
 

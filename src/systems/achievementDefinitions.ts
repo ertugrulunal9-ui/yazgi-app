@@ -15,8 +15,29 @@ const hasUnlockedAchievement = (gameState: GameState, achievementId: string): bo
   return (gameState.unlockedAchievements || []).some(entry => entry.achievementId === achievementId);
 };
 
+const ACHIEVEMENT_MONEY_REWARD_SCALE = 0.35;
+const MIN_ACHIEVEMENT_MONEY_REWARD = 25;
+const MAX_ACHIEVEMENT_MONEY_REWARD = 3500;
+
+const scaleAchievementReward = (achievement: Achievement): Achievement => {
+  if (!achievement.reward?.money) return achievement;
+  return {
+    ...achievement,
+    reward: {
+      ...achievement.reward,
+      money: Math.min(
+        MAX_ACHIEVEMENT_MONEY_REWARD,
+        Math.max(
+          MIN_ACHIEVEMENT_MONEY_REWARD,
+          Math.round(achievement.reward.money * ACHIEVEMENT_MONEY_REWARD_SCALE)
+        )
+      ),
+    },
+  };
+};
+
 // 50+ Production-Ready Achievements
-export const ACHIEVEMENTS: Achievement[] = [
+const BASE_ACHIEVEMENTS: Achievement[] = [
   // === ONBOARDING CHAIN (FIRST 3 SESSIONS) ===
   {
     id: ONBOARDING_CHAIN_IDS.step1,
@@ -833,6 +854,8 @@ export const ACHIEVEMENTS: Achievement[] = [
     }
   },
 ];
+
+export const ACHIEVEMENTS: Achievement[] = BASE_ACHIEVEMENTS.map(scaleAchievementReward);
 
 // Helper: Get achievement by ID
 export const getAchievement = (id: string): Achievement | undefined => {

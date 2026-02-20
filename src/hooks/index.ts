@@ -19,7 +19,7 @@ export {
   useNPCList,
   useSchoolGrades,
   useSkills,
-  usePersonality,
+  usePersonality as usePersonalitySelector,
   useTraits,
   useInventory,
   useAchievementsState,
@@ -46,3 +46,4 @@ export { useEvents } from './useEvents';
 export { useNPCs } from './useNPCs';
 export { useExamHandler } from './useExamHandler';
 export { useAudio } from './useAudio';
+export { usePersonality } from './usePersonality';

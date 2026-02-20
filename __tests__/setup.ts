@@ -2,6 +2,9 @@
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('./mocks/AsyncStorage.mock')
 );
+jest.mock('expo-secure-store', () =>
+  require('./mocks/SecureStore.mock')
+);
 
 // Mock localStorage for browser-based tests
 const localStorageMock = (() => {
@@ -19,6 +22,9 @@ const localStorageMock = (() => {
 
 global.localStorage = localStorageMock as Storage;
 
+// React Native global
+(global as typeof global & { __DEV__?: boolean }).__DEV__ = false;
+
 // Mock Firebase/Analytics
 jest.mock('../src/services/analytics', () =>
   require('./mocks/Firebase.mock')
@@ -33,6 +39,12 @@ jest.mock('expo-haptics', () => ({
   notificationAsync: jest.fn(),
   selectionAsync: jest.fn(),
 }));
+
+jest.mock('expo-linear-gradient', () => ({
+  LinearGradient: 'LinearGradient',
+}));
+
+jest.mock('react-native-qrcode-svg', () => 'QRCode');
 
 jest.mock('expo-constants', () => ({
   manifest: {},
@@ -56,8 +68,24 @@ global.console = {
 // Set up fake timers
 beforeEach(() => {
   jest.clearAllMocks();
+  const secureStore = require('./mocks/SecureStore.mock').default;
+  secureStore.__CLEAR__();
 });
 
 afterEach(() => {
   jest.useRealTimers();
+});
+
+afterAll(async () => {
+  try {
+    const [{ audioManager }, { musicPlayer }] = await Promise.all([
+      import('../src/audio/AudioManager'),
+      import('../src/audio/MusicPlayer'),
+    ]);
+
+    await musicPlayer.dispose();
+    await audioManager.dispose();
+  } catch {
+    // Test environment might not initialize audio modules in every suite.
+  }
 });

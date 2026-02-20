@@ -1,4 +1,6 @@
 
+export type InnerThoughtType = 'CRISIS' | 'MISMATCH' | 'TRAIT' | 'MOMENTUM' | 'CLIFFHANGER' | 'IDLE';
+
 export type StatKey = 'health' | 'intelligence' | 'charisma' | 'discipline' | 'money' | 'energy' | 'familyRelation';
 
 export interface Stats {
@@ -42,58 +44,58 @@ export interface Skills {
 }
 
 // =================================================================
-// KİŞİLİK SİSTEMİ (PERSONALITY SYSTEM)
-// "Karakter = Kader" - Her seçim karakteri şekillendirir
+// KÄ°ÅÄ°LÄ°K SÄ°STEMÄ° (PERSONALITY SYSTEM)
+// "Karakter = Kader" - Her seÃ§im karakteri ÅŸekillendirir
 // =================================================================
 
 /**
- * Kişilik Eksenleri (0-100)
- * Bu değerler oyuncunun seçimlerine göre değişir ve
- * hangi eventlerin tetikleneceğini, seçeneklerin nasıl görüneceğini etkiler
+ * KiÅŸilik Eksenleri (0-100)
+ * Bu deÄŸerler oyuncunun seÃ§imlerine gÃ¶re deÄŸiÅŸir ve
+ * hangi eventlerin tetikleneceÄŸini, seÃ§eneklerin nasÄ±l gÃ¶rÃ¼neceÄŸini etkiler
  */
 export interface Personality {
-  // İçe Dönüklük vs Dışa Dönüklük
-  // 0 = Tam içe kapanık (sosyal kaygı, yalnızlık tercihi)
-  // 100 = Tam dışa dönük (sosyal kelebek, dikkat çekme ihtiyacı)
+  // Ä°Ã§e DÃ¶nÃ¼klÃ¼k vs DÄ±ÅŸa DÃ¶nÃ¼klÃ¼k
+  // 0 = Tam iÃ§e kapanÄ±k (sosyal kaygÄ±, yalnÄ±zlÄ±k tercihi)
+  // 100 = Tam dÄ±ÅŸa dÃ¶nÃ¼k (sosyal kelebek, dikkat Ã§ekme ihtiyacÄ±)
   openness: number;
 
   // Temkin vs Cesaret
-  // 0 = Aşırı temkinli (risk almaz, güvenli seçimler)
-  // 100 = Gözü kara (risk alır, maceraperest)
+  // 0 = AÅŸÄ±rÄ± temkinli (risk almaz, gÃ¼venli seÃ§imler)
+  // 100 = GÃ¶zÃ¼ kara (risk alÄ±r, maceraperest)
   courage: number;
 
   // Bencillik vs Vicdan
-  // 0 = Tam bencil (kendi çıkarı önce)
-  // 100 = Aşırı fedakar (kendi zararına başkaları için)
+  // 0 = Tam bencil (kendi Ã§Ä±karÄ± Ã¶nce)
+  // 100 = AÅŸÄ±rÄ± fedakar (kendi zararÄ±na baÅŸkalarÄ± iÃ§in)
   empathy: number;
 
-  // Sabır vs Dürtüsellik
-  // 0 = Çok sabırsız (anında tatmin, dürtüsel)
-  // 100 = Çok sabırlı (uzun vadeli düşünür)
+  // SabÄ±r vs DÃ¼rtÃ¼sellik
+  // 0 = Ã‡ok sabÄ±rsÄ±z (anÄ±nda tatmin, dÃ¼rtÃ¼sel)
+  // 100 = Ã‡ok sabÄ±rlÄ± (uzun vadeli dÃ¼ÅŸÃ¼nÃ¼r)
   patience: number;
 
-  // Uyum vs İsyan
-  // 0 = Tam uyumcu (kurallara boyun eğer)
-  // 100 = Tam isyankar (otoriteye karşı)
+  // Uyum vs Ä°syan
+  // 0 = Tam uyumcu (kurallara boyun eÄŸer)
+  // 100 = Tam isyankar (otoriteye karÅŸÄ±)
   conformity: number;
 }
 
 /**
  * Stres Sistemi
- * Gizli stat - oyuncuya doğrudan gösterilmez
- * Yüksek stres: breakdown eventleri tetikler
+ * Gizli stat - oyuncuya doÄŸrudan gÃ¶sterilmez
+ * YÃ¼ksek stres: breakdown eventleri tetikler
  */
 export interface StressState {
   // Mevcut stres seviyesi (0-100)
   current: number;
 
-  // Stres eşiği - bu değeri aşınca breakdown riski
+  // Stres eÅŸiÄŸi - bu deÄŸeri aÅŸÄ±nca breakdown riski
   threshold: number;
 
-  // Son breakdown'dan bu yana geçen tur
+  // Son breakdown'dan bu yana geÃ§en tur
   turnsSinceBreakdown: number;
 
-  // Stres kaynakları (debug için)
+  // Stres kaynaklarÄ± (debug iÃ§in)
   sources: StressSource[];
 }
 
@@ -104,8 +106,8 @@ export interface StressSource {
 }
 
 /**
- * Kişilik Geçmişi
- * Seçimlerin zaman içinde kişiliği nasıl değiştirdiğini izler
+ * KiÅŸilik GeÃ§miÅŸi
+ * SeÃ§imlerin zaman iÃ§inde kiÅŸiliÄŸi nasÄ±l deÄŸiÅŸtirdiÄŸini izler
  */
 export interface PersonalityShift {
   axis: keyof Personality;
@@ -117,7 +119,7 @@ export interface PersonalityShift {
 }
 
 /**
- * Event için Kişilik Gereksinimleri
+ * Event iÃ§in KiÅŸilik Gereksinimleri
  */
 export interface PersonalityRequirement {
   axis: keyof Personality;
@@ -126,43 +128,74 @@ export interface PersonalityRequirement {
 }
 
 /**
- * Seçeneğin Kişiliğe Etkisi
+ * SeÃ§eneÄŸin KiÅŸiliÄŸe Etkisi
  */
 export interface PersonalityEffect {
   axis: keyof Personality;
-  change: number; // + veya - değer
+  change: number; // + veya - deÄŸer
 }
 
 /**
- * Seçenek Tipi - Kişiliğe uyum durumu
+ * SeÃ§enek Tipi - KiÅŸiliÄŸe uyum durumu
  */
 export type ChoiceType =
-  | 'PASSIVE'      // Kişiliğe uygun, kolay yol (düşük stres)
-  | 'CHALLENGE'    // Kişiliğe ters, zor yol (yüksek stres ama büyüme)
-  | 'BREAKDOWN'    // Stres patlaması seçeneği
-  | 'NEUTRAL';     // Kişilikten bağımsız
+  | 'PASSIVE'      // KiÅŸiliÄŸe uygun, kolay yol (dÃ¼ÅŸÃ¼k stres)
+  | 'CHALLENGE'    // KiÅŸiliÄŸe ters, zor yol (yÃ¼ksek stres ama bÃ¼yÃ¼me)
+  | 'BREAKDOWN'    // Stres patlamasÄ± seÃ§eneÄŸi
+  | 'NEUTRAL';     // KiÅŸilikten baÄŸÄ±msÄ±z
+
+// =================================================================
+// DAVRANISSAL IVME (BEHAVIORAL MOMENTUM)
+// =================================================================
+
+/**
+ * Momentum takibi yapilan ana kisilik egilimleri
+ */
+export type PersonalityTendency = 'HELPFUL' | 'PRAGMATIC' | 'AGGRESSIVE';
+
+/**
+ * Secim sinyali:
+ * - Ana egilimler momentum kazanir
+ * - Zit sinyaller ilgili streak'i kirar
+ */
+export type PersonalityMomentumSignal =
+  | PersonalityTendency
+  | 'SELFISH'
+  | 'IMPULSIVE'
+  | 'PACIFIST';
+
+export interface PersonalityMomentum {
+  count: number;
+  streak: number;
+  multiplier: number;
+}
+
+export type PersonalityState = Record<PersonalityTendency, PersonalityMomentum>;
+
 
 export type Talent = 'NONE' | 'CODING' | 'MUSIC' | 'SPORTS';
 
+export type LifeGoal = 'ACADEMIC' | 'ATHLETIC' | 'CREATIVE' | 'WEALTH' | 'SOCIAL';
+
 // =================================================================
-// KARAKTER OLUŞTURMA SİSTEMİ
+// KARAKTER OLUÅTURMA SÄ°STEMÄ°
 // =================================================================
 
 export type PlayerGender = 'MALE' | 'FEMALE';
 
 export type ZodiacSign =
-  | 'KOC'      // Koç (21 Mart - 19 Nisan)
-  | 'BOGA'     // Boğa (20 Nisan - 20 Mayıs)
-  | 'IKIZLER'  // İkizler (21 Mayıs - 20 Haziran)
-  | 'YENGEC'   // Yengeç (21 Haziran - 22 Temmuz)
-  | 'ASLAN'    // Aslan (23 Temmuz - 22 Ağustos)
-  | 'BASAK'    // Başak (23 Ağustos - 22 Eylül)
-  | 'TERAZI'   // Terazi (23 Eylül - 22 Ekim)
-  | 'AKREP'    // Akrep (23 Ekim - 21 Kasım)
-  | 'YAY'      // Yay (22 Kasım - 21 Aralık)
-  | 'OGLAK'    // Oğlak (22 Aralık - 19 Ocak)
-  | 'KOVA'     // Kova (20 Ocak - 18 Şubat)
-  | 'BALIK';   // Balık (19 Şubat - 20 Mart)
+  | 'KOC'      // KoÃ§ (21 Mart - 19 Nisan)
+  | 'BOGA'     // BoÄŸa (20 Nisan - 20 MayÄ±s)
+  | 'IKIZLER'  // Ä°kizler (21 MayÄ±s - 20 Haziran)
+  | 'YENGEC'   // YengeÃ§ (21 Haziran - 22 Temmuz)
+  | 'ASLAN'    // Aslan (23 Temmuz - 22 AÄŸustos)
+  | 'BASAK'    // BaÅŸak (23 AÄŸustos - 22 EylÃ¼l)
+  | 'TERAZI'   // Terazi (23 EylÃ¼l - 22 Ekim)
+  | 'AKREP'    // Akrep (23 Ekim - 21 KasÄ±m)
+  | 'YAY'      // Yay (22 KasÄ±m - 21 AralÄ±k)
+  | 'OGLAK'    // OÄŸlak (22 AralÄ±k - 19 Ocak)
+  | 'KOVA'     // Kova (20 Ocak - 18 Åubat)
+  | 'BALIK';   // BalÄ±k (19 Åubat - 20 Mart)
 
 export interface CharacterInfo {
   firstName: string;
@@ -242,11 +275,17 @@ export interface StoryArc {
   events: StoryArcEvent[];
   reqPersonality?: PersonalityRequirement[];
   isRepeatable: boolean;
+  /** NPC questline arc'ları için — bu arc bir NPC ilişkisi gerektiriyor mu */
+  requiresNPC?: boolean;
+  /** NPC'nin hangi rolde olması gerekli (ör. FRIEND, CRUSH, RIVAL) */
+  npcRoleRequirement?: NPCRole[];
 }
 
 export interface ActiveStoryArc {
   arcId: string;
   stage: number;
+  /** NPC questline arc'ları için — bu arc hangi NPC'ye bağlı */
+  npcId?: string;
 }
 
 export interface Choice {
@@ -258,6 +297,7 @@ export interface Choice {
   gradeUpdates?: Partial<SchoolGrades>;
   skillUpdates?: Partial<Skills>;
   inventoryAdd?: string[];
+  setSelectedGoal?: LifeGoal | null;
   feedback: string;
   reqStats?: Partial<Stats>;
   reqFamily?: {
@@ -281,21 +321,24 @@ export interface Choice {
   // Future Events
   futureEvents?: FutureEventConfig[];
 
-  // === KİŞİLİK SİSTEMİ ===
+  // === KÃ„Â°Ã…ÂÃ„Â°LÃ„Â°K SÃ„Â°STEMÃ„Â° ===
 
-  // Seçenek tipi: Kişiliğe uygun mu, zor mu?
+  // SeÃƒÂ§enek tipi: KiÃ…Å¸iliÃ„Å¸e uygun mu, zor mu?
   choiceType?: ChoiceType;
 
-  // Bu seçenek kişiliği nasıl değiştirir?
+  // Bu seÃƒÂ§enek kiÃ…Å¸iliÃ„Å¸i nasÃ„Â±l deÃ„Å¸iÃ…Å¸tirir?
   personalityEffects?: PersonalityEffect[];
 
-  // Bu seçeneği görmek için gereken kişilik
+  // Davranissal ivme sinyali (opsiyonel, manuel etiketleme)
+  momentumTag?: PersonalityMomentumSignal;
+
+  // Bu seÃƒÂ§eneÃ„Å¸i gÃƒÂ¶rmek iÃƒÂ§in gereken kiÃ…Å¸ilik
   reqPersonality?: PersonalityRequirement[];
 
-  // Stres etkisi (+ stres ekler, - stres azaltır)
+  // Stres etkisi (+ stres ekler, - stres azaltÃ„Â±r)
   stressEffect?: number;
 
-  // Kişiliğe göre dinamik feedback
+  // KiÃ…Å¸iliÃ„Å¸e gÃƒÂ¶re dinamik feedback
   dynamicFeedback?: {
     introvert?: string;   // openness < 30
     extrovert?: string;   // openness > 70
@@ -304,13 +347,16 @@ export interface Choice {
     empathetic?: string;  // empathy > 70
     selfish?: string;     // empathy < 30
   };
+
+  // === KOÃ…ÂULLU SONUÃƒâ€¡LAR ===
+  conditionalOutcomes?: ConditionalOutcome[];
 }
 
 export type EventRarity = 'COMMON' | 'UNCOMMON' | 'RARE';
 
 export type NPCRole = 'ACQUAINTANCE' | 'FRIEND' | 'BEST_FRIEND' | 'CRUSH' | 'PARTNER' | 'RIVAL' | 'ENEMY';
 
-/** İlişki milestone tipleri - rol değişimlerinde tetiklenen eventler için */
+/** Ä°liÅŸki milestone tipleri - rol deÄŸiÅŸimlerinde tetiklenen eventler iÃ§in */
 export type RelationshipMilestone =
   | 'BECAME_FRIEND'
   | 'BECAME_BEST_FRIEND'
@@ -322,32 +368,32 @@ export type RelationshipMilestone =
   | 'BREAKUP';
 
 // =================================================================
-// NPC SOSYAL SİSTEM TİPLERİ
+// NPC SOSYAL SÄ°STEM TÄ°PLERÄ°
 // =================================================================
 
-/** NPC kişilik tipi - davranışlarını belirler */
+/** NPC kiÅŸilik tipi - davranÄ±ÅŸlarÄ±nÄ± belirler */
 export type NPCPersonality = 'FRIENDLY' | 'SHY' | 'AGGRESSIVE' | 'POPULAR' | 'NERDY' | 'ARTISTIC' | 'ATHLETIC';
 
-/** NPC özelliği - ilişki dinamiklerini etkiler */
+/** NPC Ã¶zelliÄŸi - iliÅŸki dinamiklerini etkiler */
 export type NPCTrait = 'LOYAL' | 'JEALOUS' | 'GOSSIPER' | 'SUPPORTIVE' | 'COMPETITIVE' | 'ROMANTIC' | 'MANIPULATIVE';
 
 /** Sosyal grup tipi */
 export type SocialGroupType = 'FRIEND_GROUP' | 'CLIQUE' | 'CLUB' | 'STUDY_GROUP';
 
-/** Sosyal grup yapısı */
+/** Sosyal grup yapÄ±sÄ± */
 export interface SocialGroup {
   id: string;
   name: string;
   members: string[];          // NPC id'leri
   leaderId: string | null;    // Lider NPC id
   type: SocialGroupType;
-  reputation: number;         // Grubun okuldaki itibarı (0-100)
+  reputation: number;         // Grubun okuldaki itibarÄ± (0-100)
   isPlayerMember: boolean;
   formedAtAge: number;
   formedAtTurn: number;
 }
 
-// 1. EventContext Yapısı
+// 1. EventContext YapÄ±sÄ±
 export interface EventContext {
   age: number;
   traits: string[];
@@ -358,24 +404,24 @@ export interface EventContext {
   inventory?: string[];
   gameState?: GameState;
 
-  // === KİŞİLİK SİSTEMİ ===
+  // === KÄ°ÅÄ°LÄ°K SÄ°STEMÄ° ===
   personality: Personality;
   stress: StressState;
   grades?: SchoolGrades;
   skills?: Skills;
 }
 
-// 2. GameEvent Yapısı (Dinamik Metin Desteği ile)
+// 2. GameEvent YapÄ±sÄ± (Dinamik Metin DesteÄŸi ile)
 export interface GameEvent {
   id: string;
-  // Text: Düz yazı (string) veya Duruma göre değişen fonksiyon
+  // Text: DÃ¼z yazÄ± (string) veya Duruma gÃ¶re deÄŸiÅŸen fonksiyon
   text: string | ((context: EventContext) => string);
   minAge: number;
   maxAge: number;
   milestoneLevel?: 'MINOR' | 'MAJOR';
-  // Bu event bir ilişki milestone event'i mi?
+  // Bu event bir iliÅŸki milestone event'i mi?
   isMilestoneEvent?: boolean;
-  // Choices: Seçenekler de dinamik olabilir
+  // Choices: SeÃ§enekler de dinamik olabilir
   choices: (Choice | ((context: EventContext) => Choice))[];
   rarity?: EventRarity;
   isRepeatable?: boolean;
@@ -398,18 +444,18 @@ export interface GameEvent {
   tags?: string[];
   difficulty?: number;
 
-  // === KİŞİLİK SİSTEMİ ===
+  // === KÄ°ÅÄ°LÄ°K SÄ°STEMÄ° ===
 
-  // Bu event için gereken kişilik profili
+  // Bu event iÃ§in gereken kiÅŸilik profili
   reqPersonality?: PersonalityRequirement[];
 
-  // Stres eşiği gereksinimi (örn: sadece stres > 70 iken tetiklenir)
+  // Stres eÅŸiÄŸi gereksinimi (Ã¶rn: sadece stres > 70 iken tetiklenir)
   reqStress?: { min?: number; max?: number };
 
-  // Event kategorisi - kişilik sisteminde nasıl ele alınacağını belirler
+  // Event kategorisi - kiÅŸilik sisteminde nasÄ±l ele alÄ±nacaÄŸÄ±nÄ± belirler
   personalityCategory?: 'SOCIAL' | 'RISK' | 'MORAL' | 'CONFLICT' | 'GROWTH' | 'BREAKDOWN';
 
-  // Bu event kişiliğin hangi eksenini test ediyor?
+  // Bu event kiÅŸiliÄŸin hangi eksenini test ediyor?
   challengesAxis?: keyof Personality;
 }
 
@@ -499,23 +545,48 @@ export interface CareerResult {
   memoryInfluence?: string;
 }
 
+export interface MetaRunSummary {
+  runId: string;
+  endedAt: number;
+  age: number;
+  endingId: string;
+  endingTitle: string;
+  tier: CareerResult['type'];
+  pointsEarned: number;
+  compatibilityScore: number;
+  selectedGoal: LifeGoal | null;
+}
+
+export interface MetaProgression {
+  version: number;
+  totalRunsCompleted: number;
+  totalLegacyPoints: number;
+  legacyLevel: number;
+  bestTier: CareerResult['type'] | null;
+  highestCompatibilityScore: number;
+  highestAgeReached: number;
+  lifetimeAchievementIds: string[];
+  recentRuns: MetaRunSummary[];
+  updatedAt: number;
+}
+
 export interface NPC {
   id: string;
   name: string;
   role: NPCRole;
-  relationship: number;         // -100 to 100 (negatif = düşman)
+  relationship: number;         // -100 to 100 (negatif = dÃ¼ÅŸman)
   romance: number;              // 0-100
   gender: 'MALE' | 'FEMALE';
   age: number;
 
-  // === SOSYAL SİSTEM ALANLARI ===
-  personality: NPCPersonality;  // NPC kişiliği
-  traits: NPCTrait[];           // NPC özellikleri
-  metAge: number;               // Tanışma yaşı
-  metTurn: number;              // Tanışma turu
-  lastInteraction: number;      // Son etkileşim turu
-  sharedMemories: string[];     // Ortak anılar (event id'leri)
-  isInPlayerGroup: boolean;     // Oyuncu grubunda mı?
+  // === SOSYAL SÄ°STEM ALANLARI ===
+  personality: NPCPersonality;  // NPC kiÅŸiliÄŸi
+  traits: NPCTrait[];           // NPC Ã¶zellikleri
+  metAge: number;               // TanÄ±ÅŸma yaÅŸÄ±
+  metTurn: number;              // TanÄ±ÅŸma turu
+  lastInteraction: number;      // Son etkileÅŸim turu
+  sharedMemories: string[];     // Ortak anÄ±lar (event id'leri)
+  isInPlayerGroup: boolean;     // Oyuncu grubunda mÄ±?
   groupId?: string;             // Hangi gruptaysa
 }
 
@@ -596,6 +667,46 @@ export interface ResultData {
   gradeChanges?: Partial<SchoolGrades>;
   personalityChanges?: Partial<Personality>;
   traitProgressUpdates?: string[];
+  fateRoll?: FateRollResult;
+}
+
+// ===== KADER SÄ°STEMÄ° (FATE SYSTEM) =====
+
+export type FateOutcome = 'BLESSED' | 'FORTUNATE' | 'NEUTRAL' | 'UNLUCKY' | 'CURSED';
+
+export interface FateRollResult {
+  outcome: FateOutcome;
+  rawRoll: number;
+  modifiedRoll: number;
+  zodiacModifier: number;
+  pityModifier: number;
+}
+
+export interface FateState {
+  seed: number;
+  tokens: number;
+  totalRolls: number;
+  outcomeHistory: FateOutcome[];
+  zodiacSign: ZodiacSign;
+  consecutiveBadOutcomes: number;
+}
+
+// ===== KOÅULLU SONUÃ‡LAR (CONDITIONAL OUTCOMES) =====
+
+export interface ConditionalOutcome {
+  id?: string;
+  condition: (ctx: EventContext) => boolean;
+  weight: number;
+  statChanges: Partial<Stats>;
+  feedback: string;
+  personalityEffects?: PersonalityEffect[];
+  momentumTag?: PersonalityMomentumSignal;
+  memoryEmotion?: MemoryEmotion;
+  memoryWeight?: MemoryWeight;
+  scheduleEvent?: FutureEventConfig;
+  skillUpdates?: Partial<Skills>;
+  gradeUpdates?: Partial<SchoolGrades>;
+  stressEffect?: number;
 }
 
 export interface CharacterState {
@@ -603,6 +714,7 @@ export interface CharacterState {
   personality: Personality;
   stress: StressState;
   personalityHistory: PersonalityShift[];
+  personalityState: PersonalityState;
   traits: string[];
   traitProgress: { [traitId: string]: TraitProgressData };
 }
@@ -650,7 +762,7 @@ export interface GameState {
   currentEvent: GameEvent | null;
   pendingReportCard: boolean;
 
-  // === KARAKTER BİLGİLERİ ===
+  // === KARAKTER BÄ°LGÄ°LERÄ° ===
   characterInfo: CharacterInfo | null;
   lastResult: ResultData | null;
   historyLog: LogEntry[];
@@ -660,6 +772,7 @@ export interface GameState {
   schoolGrades: SchoolGrades;
   skills: Skills;
   talent: Talent;
+  selectedGoal?: LifeGoal | null;
 
   streak: {
     actionId: string | null;
@@ -679,6 +792,7 @@ export interface GameState {
   npcs: NPC[];
   selectedNpcId: string | null;
   innerThought: string;
+  innerThoughtType: InnerThoughtType;
   floatingTexts: FloatingText[];
   totalTurns: number;
   sessionCount: number;
@@ -696,20 +810,23 @@ export interface GameState {
   unlockedAchievements: UnlockedAchievement[];
   achievementProgress: { [achievementId: string]: number };
 
-  // === KİŞİLİK SİSTEMİ ===
+  // === KÄ°ÅÄ°LÄ°K SÄ°STEMÄ° ===
   personality: Personality;
   stress: StressState;
   personalityHistory: PersonalityShift[];
+  personalityState: PersonalityState;
 
-  // === SOSYAL SİSTEM ===
-  socialGroups: SocialGroup[];    // Oyuncunun dahil olduğu gruplar
+  // === SOSYAL SÄ°STEM ===
+  socialGroups: SocialGroup[];    // Oyuncunun dahil olduÄŸu gruplar
   socialReputation: number;       // Genel sosyal itibar (0-100)
 
-  // === SINAV SİSTEMİ ===
-  examsTakenThisYear: ExamSubject[];  // Bu yıl girilen sınavlar
-  isExamPeriod: boolean;              // Sınav dönemi aktif mi
+  // === SINAV SÄ°STEMÄ° ===
+  examsTakenThisYear: ExamSubject[];  // Bu yÄ±l girilen sÄ±navlar
+  isExamPeriod: boolean;              // SÄ±nav dÃ¶nemi aktif mi
 
   // === CHILDHOOD PROLOG ===
+  // === RISK TAKIBI ===
+  lastBurdenRisk?: number;
   childhood: ChildhoodState;
 
   // Derived grouped slices (compatibility bridge for phased migration)
@@ -722,6 +839,19 @@ export interface GameState {
   // Single-source stats field for staged migration.
   // Existing code can still use context.stats accessor.
   stats?: Stats;
+
+  // === KADER SÄ°STEMÄ° ===
+  fate?: FateState;
+
+  // === OTURUM TAKİBİ ===
+  lastSessionTimestamp?: number;
+  pendingCliffhanger?: {
+    type: 'SCHEDULED_EVENT' | 'NPC_PROMISE' | 'MILESTONE_NEAR' | 'EXAM_RESULT';
+    title: string;
+    description: string;
+  };
+  metaProgression?: MetaProgression;
+  metaRunRecorded?: boolean;
 }
 
 export type GameStateUpdate =
@@ -734,9 +864,9 @@ export type GameStateUpdate =
     stats?: Stats | Partial<Stats>;
   };
 
-// Sınav dersleri
+// SÄ±nav dersleri
 export type ExamSubject = 'math' | 'turkish' | 'science' | 'language' | 'history' | 'geography' | 'art' | 'music';
 
-// Tüm sınav dersleri listesi
+// TÃ¼m sÄ±nav dersleri listesi
 export const ALL_EXAM_SUBJECTS: ExamSubject[] = ['math', 'turkish', 'science', 'language', 'history', 'geography', 'art', 'music'];
 

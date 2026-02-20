@@ -210,6 +210,11 @@ export const FadeView: React.FC<{ children: ReactNode; visible?: boolean }> = Re
   return prevProps.visible === nextProps.visible;
 });
 
+ScreenTransition.displayName = 'ScreenTransition';
+FadeInLeftView.displayName = 'FadeInLeftView';
+FadeInRightView.displayName = 'FadeInRightView';
+FadeView.displayName = 'FadeView';
+
 /**
  * Staggered (kademeli) fade in animasyonu
  * Çocukları sırayla animasyonla gösterir

@@ -80,6 +80,37 @@ Store gönderimi gerekiyorsa:
 npx eas submit --platform android --profile production
 ```
 
+## RevenueCat + AdMob Native Setup
+
+Before production builds, set the native monetization IDs:
+
+1. RevenueCat API keys
+- `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY`
+- `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY`
+- or fill `expo.extra.revenueCat.androidApiKey` / `expo.extra.revenueCat.iosApiKey` in `app.json`
+
+2. RevenueCat product and entitlement mapping
+- Fill `expo.extra.revenueCat.productIds` in `app.json` with your real App Store / Play product IDs.
+- Fill `expo.extra.revenueCat.entitlements` with your RevenueCat entitlement IDs mapped to game product IDs.
+
+3. AdMob unit IDs
+- `EXPO_PUBLIC_ADMOB_ANDROID_REWARDED_UNIT_ID`
+- `EXPO_PUBLIC_ADMOB_IOS_REWARDED_UNIT_ID`
+- `EXPO_PUBLIC_ADMOB_ANDROID_INTERSTITIAL_UNIT_ID`
+- `EXPO_PUBLIC_ADMOB_IOS_INTERSTITIAL_UNIT_ID`
+- or fill `expo.extra.admob.*` in `app.json`
+
+4. Interstitial runtime config (frequency cap / cooldown)
+- `EXPO_PUBLIC_INTERSTITIAL_SESSION_CAP`
+- `EXPO_PUBLIC_INTERSTITIAL_COOLDOWN_MS`
+- Optional remote override URL: `EXPO_PUBLIC_MONETIZATION_REMOTE_CONFIG_URL`
+- or fill `expo.extra.monetization.*` in `app.json`
+
+Notes:
+- Development builds use AdMob test ad units automatically.
+- Production builds do not fall back to test ad units and require real IDs.
+- `react-native-google-mobile-ads` plugin app IDs in `app.json` must be replaced with your real AdMob App IDs before store release.
+
 ## Single Source of Truth
 
 Gameplay balansı ve başlangıç state’i için referans **kod**dur, GDD değil.

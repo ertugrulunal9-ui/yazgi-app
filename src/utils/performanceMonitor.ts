@@ -66,7 +66,7 @@ export const useRenderCount = (componentName: string): void => {
   if (!__DEV__) return;
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  const { useRef, useEffect } = require('react');
+  const { useRef, useEffect } = require('react') as typeof import('react');
   const renderCount = useRef(0);
 
   useEffect(() => {
@@ -90,7 +90,7 @@ export const useWhyDidYouRender = <T extends Record<string, unknown>>(
   if (!__DEV__) return;
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  const { useRef, useEffect } = require('react');
+  const { useRef, useEffect } = require('react') as typeof import('react');
   const previousProps = useRef<T | null>(null);
 
   useEffect(() => {

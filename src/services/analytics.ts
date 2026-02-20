@@ -4,6 +4,7 @@ import type {
   EnergyCostBucket,
   RetentionCheckpoint,
 } from '../utils/progressionAnalytics';
+import { devLog } from '../utils/devLogger';
 
 const isDev = __DEV__;
 const isWeb = typeof window !== 'undefined' && typeof navigator !== 'undefined';
@@ -105,7 +106,7 @@ export interface RetentionCheckpointParams {
 }
 
 class AnalyticsService {
-  private enabled: boolean = !isDev;
+  private enabled: boolean = false;
   private firebaseAnalytics: FirebaseAnalyticsModule | null = null;
   private firebaseLoadAttempted = false;
   private firebaseUnavailableWarned = false;
@@ -116,8 +117,8 @@ class AnalyticsService {
 
   private initialize(): void {
     this.firebaseAnalytics = this.getFirebaseAnalytics();
-    console.log('[ANALYTICS] Service initialized');
-    this.setEnabled(!isDev); // Enabled by default in prod, disabled in dev
+    devLog.log('[ANALYTICS] Service initialized');
+    this.setEnabled(false); // Explicit opt-in required.
   }
 
   private getFirebaseAnalytics(): FirebaseAnalyticsModule | null {
@@ -146,7 +147,7 @@ class AnalyticsService {
       return this.firebaseAnalytics;
     } catch (error) {
       if (isDev) {
-        console.warn('[ANALYTICS] Firebase Analytics module not available', error);
+        devLog.warn('[ANALYTICS] Firebase Analytics module not available', error);
       }
       return null;
     }
@@ -157,7 +158,7 @@ class AnalyticsService {
       return;
     }
     this.firebaseUnavailableWarned = true;
-    console.warn('[ANALYTICS] Firebase Analytics not available. Check native Firebase setup.');
+    devLog.warn('[ANALYTICS] Firebase Analytics not available. Check native Firebase setup.');
   }
 
   private async applyCollectionPreference(enabled: boolean): Promise<void> {
@@ -173,7 +174,7 @@ class AnalyticsService {
       await firebaseAnalytics.setAnalyticsCollectionEnabled(enabled);
     } catch (error) {
       if (isDev) {
-        console.warn('[ANALYTICS] Failed to set analytics collection state', error);
+        devLog.warn('[ANALYTICS] Failed to set analytics collection state', error);
       }
     }
   }
@@ -184,7 +185,7 @@ class AnalyticsService {
   setEnabled(enabled: boolean): void {
     this.enabled = enabled;
     void this.applyCollectionPreference(enabled);
-    console.log(`[ANALYTICS] ${this.enabled ? 'enabled' : 'disabled'}`);
+    devLog.log(`[ANALYTICS] ${this.enabled ? 'enabled' : 'disabled'}`);
   }
 
   private sanitizeParams(params?: Record<string, unknown>): Record<string, unknown> | undefined {
@@ -211,7 +212,7 @@ class AnalyticsService {
    */
   async logGameStarted(params: GameStartedParams): Promise<void> {
     const event = {
-      character_name: params.characterName,
+      character_name_length: params.characterName.length,
       difficulty: params.difficulty || 'normal',
       platform: isWeb ? 'web' : 'mobile',
       timestamp: new Date().toISOString(),
@@ -371,7 +372,7 @@ class AnalyticsService {
     const sanitizedParams = this.sanitizeParams(params);
 
     if (isDev) {
-      console.log(`[ANALYTICS] Event: ${eventName}`, sanitizedParams || {});
+      devLog.log(`[ANALYTICS] Event: ${eventName}`, sanitizedParams || {});
     }
 
     if (!this.enabled) {
@@ -390,7 +391,7 @@ class AnalyticsService {
       await firebaseAnalytics.logEvent(eventName, sanitizedParams);
     } catch (error) {
       if (isDev) {
-        console.warn(`[ANALYTICS] Failed to log event: ${eventName}`, error);
+        devLog.warn(`[ANALYTICS] Failed to log event: ${eventName}`, error);
       }
     }
   }
@@ -400,7 +401,7 @@ class AnalyticsService {
    */
   async setUserId(userId: string): Promise<void> {
     if (isDev) {
-      console.log(`[ANALYTICS] User ID set: ${userId}`);
+      devLog.log(`[ANALYTICS] User ID set: ${userId}`);
     }
 
     if (!this.enabled) {
@@ -419,7 +420,7 @@ class AnalyticsService {
       await firebaseAnalytics.setUserId(userId);
     } catch (error) {
       if (isDev) {
-        console.warn('[ANALYTICS] Failed to set user ID', error);
+        devLog.warn('[ANALYTICS] Failed to set user ID', error);
       }
     }
   }
@@ -432,7 +433,7 @@ class AnalyticsService {
     value: string | number
   ): Promise<void> {
     if (isDev) {
-      console.log(`[ANALYTICS] User property set: ${name} = ${value}`);
+      devLog.log(`[ANALYTICS] User property set: ${name} = ${value}`);
     }
 
     if (!this.enabled) {
@@ -451,7 +452,7 @@ class AnalyticsService {
       await firebaseAnalytics.setUserProperty(name, String(value));
     } catch (error) {
       if (isDev) {
-        console.warn(`[ANALYTICS] Failed to set user property: ${name}`, error);
+        devLog.warn(`[ANALYTICS] Failed to set user property: ${name}`, error);
       }
     }
   }
@@ -461,7 +462,7 @@ class AnalyticsService {
    */
   async resetAnalytics(): Promise<void> {
     if (isDev) {
-      console.log('[ANALYTICS] Data reset');
+      devLog.log('[ANALYTICS] Data reset');
     }
 
     const firebaseAnalytics = this.getFirebaseAnalytics();
@@ -473,7 +474,7 @@ class AnalyticsService {
       await firebaseAnalytics.resetAnalyticsData();
     } catch (error) {
       if (isDev) {
-        console.warn('[ANALYTICS] Failed to reset analytics data', error);
+        devLog.warn('[ANALYTICS] Failed to reset analytics data', error);
       }
     }
   }
@@ -485,10 +486,10 @@ export const analyticsService = new AnalyticsService();
 // For debugging: enable/disable analytics
 export const enableAnalyticsDebug = () => {
   analyticsService.setEnabled(true);
-  console.log('[ANALYTICS] Debug enabled');
+  devLog.log('[ANALYTICS] Debug enabled');
 };
 
 export const disableAnalyticsDebug = () => {
   analyticsService.setEnabled(false);
-  console.log('[ANALYTICS] Debug disabled');
+  devLog.log('[ANALYTICS] Debug disabled');
 };

@@ -215,33 +215,31 @@ describe('SaveUtils - Error Handling & Edge Cases', () => {
   describe('generateQRCode - Edge Cases', () => {
     it('should handle empty string', () => {
       const result = generateQRCode('');
-      expect(result).toContain('qrserver.com');
-      expect(result).toContain('data=');
+      expect(result).toBe('');
     });
 
     it('should handle very long data', () => {
       const longData = 'x'.repeat(10000);
       const result = generateQRCode(longData);
-      expect(result).toContain('qrserver.com');
+      expect(result).toBe(longData);
     });
 
     it('should handle special characters', () => {
       const specialData = 'test@example.com?param=value&foo=bar';
       const result = generateQRCode(specialData);
-      expect(result).toContain('qrserver.com');
-      expect(result).toContain(encodeURIComponent(specialData));
+      expect(result).toBe(specialData);
     });
 
     it('should handle Turkish characters', () => {
       const turkishData = 'Türkçe özel karakterler üğöşçİ';
       const result = generateQRCode(turkishData);
-      expect(result).toContain('qrserver.com');
+      expect(result).toBe(turkishData);
     });
 
     it('should handle JSON data', () => {
       const jsonData = JSON.stringify({ save: 'game', version: 1 });
       const result = generateQRCode(jsonData);
-      expect(result).toContain('qrserver.com');
+      expect(result).toBe(jsonData);
     });
   });
 

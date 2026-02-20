@@ -4,7 +4,7 @@
  * Performans için optimize edilmiş
  */
 
-import React, { ReactNode, useEffect, useRef } from 'react';
+import React, { ReactNode, useCallback, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ViewStyle, Platform } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -52,6 +52,20 @@ export const Toast: React.FC<ToastProps> = React.memo(({
   const scale = useSharedValue(0.8);
   const hasTriggeredHaptic = useRef(false);
 
+  const hideToast = useCallback(() => {
+    translateY.value = withTiming(
+      position === 'top' ? -100 : 100,
+      { duration: 300, easing: Easing.in(Easing.ease) }
+    );
+    opacity.value = withTiming(0, { duration: 300 });
+
+    const timer = setTimeout(() => {
+      onClose?.();
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [onClose, opacity, position, translateY]);
+
   useEffect(() => {
     if (visible) {
       // Haptic feedback - sadece bir kez tetikle
@@ -96,21 +110,7 @@ export const Toast: React.FC<ToastProps> = React.memo(({
     }
     
     return undefined;
-  }, [visible]);
-
-  const hideToast = () => {
-    translateY.value = withTiming(
-      position === 'top' ? -100 : 100,
-      { duration: 300, easing: Easing.in(Easing.ease) }
-    );
-    opacity.value = withTiming(0, { duration: 300 });
-
-    const timer = setTimeout(() => {
-      onClose?.();
-    }, 300);
-
-    return () => clearTimeout(timer);
-  };
+  }, [animationType, duration, hideToast, opacity, scale, translateY, visible]);
 
   const animatedStyle = useAnimatedStyle(() => {
     const transformArray: any[] = [];
@@ -282,7 +282,7 @@ export const ProgressToast: React.FC<{
     if (visible) {
       progressWidth.value = withTiming(progress, { duration: 300 });
     }
-  }, [visible, progress]);
+  }, [progress, progressWidth, visible]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     width: `${progressWidth.value}%`,
@@ -307,6 +307,11 @@ export const ProgressToast: React.FC<{
          prevProps.progress === nextProps.progress &&
          prevProps.message === nextProps.message;
 });
+
+Toast.displayName = 'Toast';
+AchievementToastNative.displayName = 'AchievementToastNative';
+MessageToast.displayName = 'MessageToast';
+ProgressToast.displayName = 'ProgressToast';
 
 const styles = StyleSheet.create({
   toastContainer: {

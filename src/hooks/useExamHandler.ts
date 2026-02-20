@@ -75,6 +75,13 @@ export const useExamHandler = (options: UseExamHandlerOptions): UseExamHandlerRe
     return 'EASY';
   }, [age, intelligence]);
 
+  // Handle exam cancellation
+  const handleExamCancel = useCallback(() => {
+    console.log('[useExamHandler] Exam cancelled');
+    setExamGameVisible(false);
+    setCurrentExamType(null);
+  }, []);
+
   // Handle Android back button for exam overlay
   useEffect(() => {
     if (!examGameVisible) return;
@@ -85,7 +92,7 @@ export const useExamHandler = (options: UseExamHandlerOptions): UseExamHandlerRe
     });
 
     return () => backHandler.remove();
-  }, [examGameVisible]);
+  }, [examGameVisible, handleExamCancel]);
 
   // Open exam game
   const openExamGame = useCallback((examType: ExamGameType) => {
@@ -141,13 +148,6 @@ export const useExamHandler = (options: UseExamHandlerOptions): UseExamHandlerRe
       totalQuestions: result.totalQuestions,
     });
   }, [schoolGrades, updateSchoolGrades, markExamTaken, updateStats, onExamComplete, skills, updateSkills, traitIds]);
-
-  // Handle exam cancellation
-  const handleExamCancel = useCallback(() => {
-    console.log('[useExamHandler] Exam cancelled');
-    setExamGameVisible(false);
-    setCurrentExamType(null);
-  }, []);
 
   return {
     examGameVisible,

@@ -75,7 +75,7 @@ class AudioManager {
     const promises = toPreload.map(async (def) => {
       try {
         await this.loadSound(def);
-      } catch (error) {
+      } catch {
         // Silent fail - sound files may not exist yet
       }
     });
@@ -136,14 +136,18 @@ class AudioManager {
     if (!instance && pool.length < 3) {
       try {
         await this.loadSound(definition);
+        pool = this.soundPool.get(soundId) || [];
         instance = pool[pool.length - 1]; // Last added
-      } catch (error) {
+      } catch {
         return null;
       }
     }
 
     // Force reuse oldest if pool full
     if (!instance) {
+      if (pool.length === 0) {
+        return null;
+      }
       instance = pool.reduce((oldest, current) => 
         current.lastPlayedAt < oldest.lastPlayedAt ? current : oldest
       );
@@ -200,7 +204,7 @@ class AudioManager {
           this.activeSounds.delete(instance.sound);
         }
       });
-    } catch (error) {
+    } catch {
       // Silent fail - sound files may not exist yet
     }
   }

@@ -10,6 +10,7 @@ import Animated, {
 import * as Haptics from 'expo-haptics';
 import { Difficulty, GameState } from './MiniGameContainer';
 import seenQuestionsTracker from '../../utils/seenQuestionsTracker';
+import { balanceCorrectAnswerDistribution } from './questionOptionBalancer';
 
 type QuestionType = 'EXPERIMENT' | 'BODY' | 'NATURE' | 'PHYSICS' | 'CHEMISTRY';
 
@@ -173,9 +174,10 @@ const ScienceExamGame: React.FC<ScienceExamGameProps> = ({
                 pool,
                 gameState.totalQuestions
             );
-            setQuestions(selected);
-            if (selected.length > 0) {
-                setCurrentQuestion(selected[0]);
+            const balancedQuestions = balanceCorrectAnswerDistribution(selected);
+            setQuestions(balancedQuestions);
+            if (balancedQuestions.length > 0) {
+                setCurrentQuestion(balancedQuestions[0]);
                 await seenQuestionsTracker.markQuestionsAsSeen(
                     'science',
                     selected.map(q => q.id)
@@ -342,7 +344,7 @@ const ScienceExamGame: React.FC<ScienceExamGameProps> = ({
                 </View>
             )}
 
-            <Animated.View style={[styles.feedbackOverlay, feedbackAnimatedStyle]}>
+            <Animated.View pointerEvents="none" style={[styles.feedbackOverlay, feedbackAnimatedStyle]}>
                 <Text style={styles.feedbackEmoji}>
                     {feedback === 'correct' ? '✅' : '❌'}
                 </Text>

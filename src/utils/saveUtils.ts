@@ -56,8 +56,8 @@ export const readFromClipboard = async (): Promise<string | null> => {
 };
 
 export const generateQRCode = (data: string): string => {
-  const encoded = encodeURIComponent(data);
-  return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encoded}`;
+  // QR rendering is local; this helper now just normalizes payload text.
+  return typeof data === 'string' ? data : String(data ?? '');
 };
 
 export const downloadFile = (filename: string, content: string): void => {

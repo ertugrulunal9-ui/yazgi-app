@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { FadeInUpView } from '../animations';
@@ -33,50 +33,77 @@ export const ActionGrid: React.FC<ActionGridProps> = ({
     onCategoryPress,
 }) => {
     const { theme, t } = useUI();
+    const isLightTheme = useMemo(() => {
+        const match = /^#([0-9a-fA-F]{6})$/.exec(theme.appBg || '');
+        if (!match) return false;
+        const hex = match[1];
+        const r = parseInt(hex.slice(0, 2), 16);
+        const g = parseInt(hex.slice(2, 4), 16);
+        const b = parseInt(hex.slice(4, 6), 16);
+        const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        return luminance >= 0.6;
+    }, [theme.appBg]);
+    const titleTypography = useMemo(() => ({
+        fontSize: isLightTheme ? 13 : 14,
+        fontWeight: isLightTheme ? '600' as const : '700' as const,
+        letterSpacing: isLightTheme ? 0 : 0.1,
+    }), [isLightTheme]);
+    const sectionTitleTypography = useMemo(() => ({
+        fontSize: isLightTheme ? 17 : 18,
+        fontWeight: isLightTheme ? '600' as const : '700' as const,
+        letterSpacing: isLightTheme ? 0 : 0.1,
+    }), [isLightTheme]);
 
     return (
         <View style={styles.container}>
-            <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
+            <Text style={[styles.sectionTitle, sectionTitleTypography, { color: theme.textPrimary }]}>
                 {t('game.whatDoYouWant', undefined, 'Ne yapmak istersin?')}
             </Text>
 
             <View style={styles.grid}>
-                {categories.map((category, index) => (
-                    <View key={category.id} style={styles.cardWrapper}>
-                        <FadeInUpView delay={index * 50}>
-                            <TouchableOpacity
-                                style={[
-                                    styles.actionCard,
-                                    {
-                                        backgroundColor: category.bgColor || theme.surfaceBase,
-                                        borderColor: category.color || theme.border
-                                    }
-                                ]}
-                                onPress={() => onCategoryPress(category)}
-                                activeOpacity={0.8}
-                                accessibilityRole="button"
-                                accessibilityLabel={category.title}
-                                accessibilityHint={`${category.subActions.length} farkli aksiyon icerir`}
-                            >
-                                <View style={styles.cardContent}>
-                                    <View style={styles.icon}>
-                                        <MaterialCommunityIcons
-                                            name={getCategoryIconName(category.id)}
-                                            size={38}
-                                            color={category.color || theme.textPrimary}
-                                        />
-                                    </View>
-                                    <Text style={[styles.title, { color: category.color || theme.textPrimary }]}>
-                                        {category.title}
-                                    </Text>
-                                </View>
+                {categories.map((category, index) => {
+                    const baseColor = category.color || theme.textPrimary;
+                    const cardBackground = isLightTheme
+                        ? theme.surfaceRaised
+                        : category.bgColor || theme.surfaceBase;
+                    const cardBorder = isLightTheme ? `${baseColor}4d` : baseColor;
+                    const iconBg = isLightTheme ? `${baseColor}1f` : `${baseColor}33`;
+                    const titleColor = isLightTheme ? theme.textPrimary : baseColor;
 
-                                {/* Subtle Gradient Border Effect */}
-                                <View style={[styles.borderGlow, { borderColor: category.color + '40' }]} />
-                            </TouchableOpacity>
-                        </FadeInUpView>
-                    </View>
-                ))}
+                    return (
+                        <View key={category.id} style={styles.cardWrapper}>
+                            <FadeInUpView delay={index * 50}>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.actionCard,
+                                        {
+                                            backgroundColor: cardBackground,
+                                            borderColor: cardBorder,
+                                        }
+                                    ]}
+                                    onPress={() => onCategoryPress(category)}
+                                    activeOpacity={0.84}
+                                    accessibilityRole="button"
+                                    accessibilityLabel={category.title}
+                                    accessibilityHint={`${category.subActions.length} farkli aksiyon icerir`}
+                                >
+                                    <View style={styles.cardContent}>
+                                        <View style={[styles.iconShell, { backgroundColor: iconBg }]}>
+                                            <MaterialCommunityIcons
+                                                name={getCategoryIconName(category.id)}
+                                                size={30}
+                                                color={baseColor}
+                                            />
+                                        </View>
+                                        <Text style={[styles.title, titleTypography, { color: titleColor }]}>
+                                            {category.title}
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            </FadeInUpView>
+                        </View>
+                    );
+                })}
             </View>
         </View>
     );
@@ -84,76 +111,58 @@ export const ActionGrid: React.FC<ActionGridProps> = ({
 
 const styles = StyleSheet.create({
     container: {
-        marginBottom: 16,
+        marginBottom: 12,
     },
     sectionTitle: {
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: '700',
-        marginBottom: 16,
+        marginBottom: 14,
         paddingHorizontal: 4,
     },
     grid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
-        gap: 12,
+        gap: 10,
     },
     cardWrapper: {
         width: '48%',
-        minHeight: 110,
+        minHeight: 102,
     },
     actionCard: {
         flex: 1,
-        borderRadius: 16,
-        borderWidth: 2,
+        borderRadius: 14,
+        borderWidth: 1.5,
         overflow: 'hidden',
-        minHeight: 110,
+        minHeight: 102,
         ...Platform.select({
             ios: {
                 shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.15,
-                shadowRadius: 8,
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.08,
+                shadowRadius: 6,
             },
             android: {
-                elevation: 4,
+                elevation: 2,
             },
         }),
-    },
-    glowOverlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
     },
     cardContent: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingVertical: 20,
+        paddingVertical: 14,
         paddingHorizontal: 12,
     },
-    icon: {
+    iconShell: {
+        width: 46,
+        height: 46,
+        borderRadius: 23,
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 8,
+        marginBottom: 9,
     },
     title: {
-        fontSize: 14,
-        fontWeight: '700',
         textAlign: 'center',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-    },
-    borderGlow: {
-        position: 'absolute',
-        top: -1,
-        left: -1,
-        right: -1,
-        bottom: -1,
-        borderRadius: 16,
-        borderWidth: 1,
-        pointerEvents: 'none',
     },
 });

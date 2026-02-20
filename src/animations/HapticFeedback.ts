@@ -1,140 +1,195 @@
 /**
- * Haptic Feedback & Audio Wrapper
- * Mobil uyumlu dokunsal geri bildirim ve ses sistemi
+ * Haptic feedback and audio wrappers.
+ * On web, haptics are skipped but SFX playback stays active.
  */
 
 import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
+import { devLog } from '../utils/devLogger';
 import { audioManager } from '../audio/AudioManager';
 
-export type HapticType = 
-  | 'light'      // Hafif dokunsal geri bildirim
-  | 'medium'     // Orta seviye
-  | 'heavy'       // Güçlü geri bildirim
-  | 'success'    // Başarı bildirimi
-  | 'warning'    // Uyarı bildirimi
-  | 'error'      // Hata bildirimi
-  | 'selection'; // Seçim bildirimi
+export type HapticType =
+  | 'light'
+  | 'medium'
+  | 'heavy'
+  | 'success'
+  | 'warning'
+  | 'error'
+  | 'selection';
 
 /**
- * Haptic feedback tetikleyici
- * @param type Haptic geri bildirim tipi
+ * Trigger haptic feedback and matching SFX.
  */
 export const triggerHaptic = async (type: HapticType): Promise<void> => {
-  if (Platform.OS === 'web') {
-    return;
-  }
+  const isWeb = Platform.OS === 'web';
 
   try {
     switch (type) {
       case 'light':
-        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        if (!isWeb) {
+          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
         await audioManager.playSFX('button_click');
         break;
       case 'medium':
-        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        if (!isWeb) {
+          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        }
         break;
       case 'heavy':
-        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        if (!isWeb) {
+          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        }
         break;
       case 'success':
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        if (!isWeb) {
+          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
         await audioManager.playSFX('stat_gain');
         break;
       case 'warning':
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        if (!isWeb) {
+          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        }
         await audioManager.playSFX('notification');
         break;
       case 'error':
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        if (!isWeb) {
+          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        }
         await audioManager.playSFX('stat_loss');
         break;
       case 'selection':
-        await Haptics.selectionAsync();
+        if (!isWeb) {
+          await Haptics.selectionAsync();
+        }
         await audioManager.playSFX('button_hover');
+        break;
+      default:
         break;
     }
   } catch (error) {
-    console.warn('Haptic feedback hatası:', error);
-    // Haptic desteklenmeyen cihazlarda sessizce geç
+    devLog.warn('Haptic feedback failed:', error);
   }
 };
 
-/**
- * Butona basınca hafif haptic + ses
- */
+/** Light haptic + click SFX. */
 export const buttonPress = () => triggerHaptic('light');
 
-/**
- * Başarılı işlem sonrası haptic + ses
- */
+/** Success haptic + gain SFX. */
 export const successHaptic = () => triggerHaptic('success');
 
-/**
- * Hata sonrası haptic + ses
- */
+/** Error haptic + loss SFX. */
 export const errorHaptic = () => triggerHaptic('error');
 
-/**
- * Seçim yapıldığında haptic + ses
- */
+/** Selection haptic + hover SFX. */
 export const selectionHaptic = () => triggerHaptic('selection');
 
-/**
- * Önemli karar için haptic + ses
- */
+/** Important decision haptic. */
 export const importantDecision = () => triggerHaptic('heavy');
 
-/**
- * Para kazanma sesi
- */
+/** Money gain SFX. */
 export const moneyGain = () => audioManager.playSFX('money_gain');
 
-/**
- * Para kaybetme sesi
- */
+/** Money loss SFX. */
 export const moneyLoss = () => audioManager.playSFX('money_loss');
 
-/**
- * Başarım açma sesi
- */
+/** Achievement unlock haptic + SFX. */
 export const achievementUnlock = () => {
-  triggerHaptic('success');
-  audioManager.playSFX('achievement_unlock');
+  void triggerHaptic('success');
+  void audioManager.playSFX('achievement_unlock');
 };
 
-/**
- * Seviye atlama sesi
- */
+/** Level up haptic + SFX. */
 export const levelUp = () => {
-  triggerHaptic('success');
-  audioManager.playSFX('level_up');
+  void triggerHaptic('success');
+  void audioManager.playSFX('level_up');
 };
 
-/**
- * Tur atlama sesi
- */
+/** Turn advance SFX. */
 export const turnAdvance = () => audioManager.playSFX('turn_advance');
 
-/**
- * Olay başlangıç sesi
- */
+/** Event start SFX. */
 export const eventStart = () => audioManager.playSFX('event_start');
 
-/**
- * İyi not sesi
- */
+/** Positive grade SFX. */
 export const gradeGood = () => audioManager.playSFX('grade_good');
 
-/**
- * Kötü not sesi
- */
+/** Negative grade SFX. */
 export const gradeBad = () => audioManager.playSFX('grade_bad');
 
-/**
- * Kritik sağlık uyarısı
- */
+/** Critical health warning haptic + SFX. */
 export const healthCritical = () => {
-  triggerHaptic('warning');
-  audioManager.playSFX('health_critical');
+  void triggerHaptic('warning');
+  void audioManager.playSFX('health_critical');
+};
+
+const delay = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
+
+/** Trait gain pattern. */
+export const traitGainHaptic = async (): Promise<void> => {
+  try {
+    if (Platform.OS !== 'web') {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+    await audioManager.playSFX('stat_gain');
+  } catch (error) {
+    devLog.warn('Haptic feedback failed:', error);
+  }
+};
+
+/** Bad outcome pattern. */
+export const badOutcomeHaptic = async (): Promise<void> => {
+  try {
+    if (Platform.OS !== 'web') {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
+    await audioManager.playSFX('stat_loss');
+  } catch (error) {
+    devLog.warn('Haptic feedback failed:', error);
+  }
+};
+
+/** Fate token pattern (haptics only). */
+export const fateTokenHaptic = async (): Promise<void> => {
+  if (Platform.OS === 'web') return;
+  try {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    await delay(100);
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    await delay(100);
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+  } catch (error) {
+    devLog.warn('Haptic feedback failed:', error);
+  }
+};
+
+/** Age transition pattern (haptics only). */
+export const ageTransitionHaptic = async (): Promise<void> => {
+  if (Platform.OS === 'web') return;
+  try {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await delay(150);
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  } catch (error) {
+    devLog.warn('Haptic feedback failed:', error);
+  }
+};
+
+/** Milestone pattern (haptics only). */
+export const milestoneHaptic = async (): Promise<void> => {
+  if (Platform.OS === 'web') return;
+  try {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    await delay(150);
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    await delay(150);
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    await delay(50);
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    await delay(50);
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+  } catch (error) {
+    devLog.warn('Haptic feedback failed:', error);
+  }
 };

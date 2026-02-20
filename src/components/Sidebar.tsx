@@ -424,4 +424,6 @@ const Sidebar = React.memo<SidebarProps>(({ age, stats, playerName, family, game
   );
 });
 
+Sidebar.displayName = 'Sidebar';
+
 export default Sidebar;
