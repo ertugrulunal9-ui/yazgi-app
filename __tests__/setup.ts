@@ -46,11 +46,40 @@ jest.mock('react-native-safe-area-context', () => ({
   SafeAreaView: 'SafeAreaView',
 }));
 
-// Suppress console warnings in tests
+// Missing module stubs (balanceContract, familyNarrative, onboardingGuidance)
+// are handled via moduleNameMapper in jest.config.js
+
+// Selectively suppress known noisy warnings, but keep real errors visible
+const originalWarn = console.warn;
+const originalError = console.error;
+
 global.console = {
   ...console,
-  warn: jest.fn(),
-  error: jest.fn(),
+  warn: (...args: any[]) => {
+    // Suppress known React Native / Expo noise
+    const msg = typeof args[0] === 'string' ? args[0] : '';
+    if (
+      msg.includes('Animated:') ||
+      msg.includes('NativeModule') ||
+      msg.includes('Require cycle') ||
+      msg.includes('ViewPropTypes')
+    ) {
+      return;
+    }
+    originalWarn(...args);
+  },
+  error: (...args: any[]) => {
+    // Suppress known test environment noise
+    const msg = typeof args[0] === 'string' ? args[0] : '';
+    if (
+      msg.includes('NativeModule') ||
+      msg.includes('Invariant Violation') ||
+      msg.includes('not wrapped in act')
+    ) {
+      return;
+    }
+    originalError(...args);
+  },
 };
 
 // Set up fake timers
