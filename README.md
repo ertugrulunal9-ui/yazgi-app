@@ -129,3 +129,18 @@ Kural:
 
 - GDD/dokümanlar açıklayıcıdır.
 - Test beklentileri dokümandan değil, runtime kod davranışından türetilmelidir.
+
+## Guvenlik ve Stabilite Bakimi
+
+Bakim politikasi ve operasyon adimlari:
+
+- `SECURITY_MAINTENANCE.md`
+
+Hizli komutlar:
+
+```bash
+npm run deps:policy
+npm run audit:prod
+npm run maint:doctor
+npm run maint:weekly
+```
