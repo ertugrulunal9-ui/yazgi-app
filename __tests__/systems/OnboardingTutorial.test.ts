@@ -1,4 +1,4 @@
-import {
+﻿import {
   INITIAL_TUTORIAL_STATE,
   advanceTutorial,
   skipTutorial,
@@ -13,6 +13,7 @@ describe('OnboardingTutorial', () => {
     it('starts at GOAL_VISION with no completed steps', () => {
       expect(INITIAL_TUTORIAL_STATE.currentStep).toBe('GOAL_VISION');
       expect(INITIAL_TUTORIAL_STATE.completedSteps).toEqual([]);
+      expect(INITIAL_TUTORIAL_STATE.sessionNumber).toBe(1);
     });
   });
 
@@ -21,11 +22,22 @@ describe('OnboardingTutorial', () => {
       const next = advanceTutorial(INITIAL_TUTORIAL_STATE);
       expect(next.currentStep).toBe('WELCOME_HUB');
       expect(next.completedSteps).toContain('GOAL_VISION');
+      expect(next.sessionNumber).toBe(1);
     });
 
     it('advances through all steps to COMPLETED', () => {
       let state: TutorialState = INITIAL_TUTORIAL_STATE;
-      const steps = ['WELCOME_HUB', 'FIRST_ACTION', 'STAT_CHANGE', 'FIRST_EVENT', 'ENERGY_EXPLAIN', 'COMPLETED'];
+      const steps = [
+        'WELCOME_HUB',
+        'FIRST_ACTION',
+        'STAT_CHANGE',
+        'FIRST_EVENT',
+        'ENERGY_EXPLAIN',
+        'FATE_TOKEN_TUTORIAL',
+        'PERSONALITY_MOMENTUM',
+        'NPC_INTRODUCTION',
+        'COMPLETED',
+      ];
 
       for (const expectedStep of steps) {
         state = advanceTutorial(state);
@@ -52,7 +64,15 @@ describe('OnboardingTutorial', () => {
       expect(result.completedSteps).toContain('WELCOME_HUB');
       expect(result.completedSteps).toContain('FIRST_ACTION');
       expect(result.completedSteps).toContain('ENERGY_EXPLAIN');
+      expect(result.completedSteps).toContain('FATE_TOKEN_TUTORIAL');
+      expect(result.completedSteps).toContain('PERSONALITY_MOMENTUM');
+      expect(result.completedSteps).toContain('NPC_INTRODUCTION');
       expect(result.completedSteps).not.toContain('COMPLETED');
+    });
+
+    it('preserves provided session number', () => {
+      const result = skipTutorial(3);
+      expect(result.sessionNumber).toBe(3);
     });
   });
 
@@ -62,7 +82,7 @@ describe('OnboardingTutorial', () => {
       expect(content).not.toBeNull();
       expect(content!.message).toContain('Akademik');
       expect(content!.stepNumber).toBe(1);
-      expect(content!.totalSteps).toBe(6);
+      expect(content!.totalSteps).toBe(9);
     });
 
     it('returns content for WELCOME_HUB', () => {
@@ -71,11 +91,42 @@ describe('OnboardingTutorial', () => {
       expect(content!.title).toBeTruthy();
       expect(content!.message).toBeTruthy();
       expect(content!.stepNumber).toBe(2);
-      expect(content!.totalSteps).toBe(6);
+      expect(content!.totalSteps).toBe(9);
     });
 
     it('returns null for COMPLETED', () => {
       expect(getTutorialContent('COMPLETED')).toBeNull();
+    });
+
+    it('returns returning text for GOAL_VISION when sessionNumber > 1', () => {
+      const content = getTutorialContent('GOAL_VISION', {
+        selectedGoal: 'ACADEMIC',
+        sessionNumber: 2,
+      });
+      expect(content).not.toBeNull();
+      expect(content!.title).toBe('Yeni Bir Hayat');
+      expect(content!.message).toContain('Akademik');
+    });
+
+    it('returns original text for GOAL_VISION when sessionNumber is 1', () => {
+      const content = getTutorialContent('GOAL_VISION', {
+        selectedGoal: 'ACADEMIC',
+        sessionNumber: 1,
+      });
+      expect(content).not.toBeNull();
+      expect(content!.title).toBe('Hayalin');
+    });
+
+    it('returns returning text for WELCOME_HUB when sessionNumber > 1', () => {
+      const content = getTutorialContent('WELCOME_HUB', { sessionNumber: 2 });
+      expect(content).not.toBeNull();
+      expect(content!.title).toBe('Tekrar Merhaba!');
+    });
+
+    it('returns original text for WELCOME_HUB when sessionNumber is 1', () => {
+      const content = getTutorialContent('WELCOME_HUB', { sessionNumber: 1 });
+      expect(content).not.toBeNull();
+      expect(content!.title).toBe('Hayatina Hos Geldin!');
     });
 
     it('has correct step numbers for all steps', () => {
@@ -85,6 +136,9 @@ describe('OnboardingTutorial', () => {
       expect(getTutorialContent('STAT_CHANGE')!.stepNumber).toBe(4);
       expect(getTutorialContent('FIRST_EVENT')!.stepNumber).toBe(5);
       expect(getTutorialContent('ENERGY_EXPLAIN')!.stepNumber).toBe(6);
+      expect(getTutorialContent('FATE_TOKEN_TUTORIAL')!.stepNumber).toBe(7);
+      expect(getTutorialContent('PERSONALITY_MOMENTUM')!.stepNumber).toBe(8);
+      expect(getTutorialContent('NPC_INTRODUCTION')!.stepNumber).toBe(9);
     });
   });
 
@@ -97,6 +151,10 @@ describe('OnboardingTutorial', () => {
       eventChoiceHistory: [] as Array<{ eventId: string }>,
       energy: 100,
       maxEnergy: 100,
+      sessionNumber: 1,
+      fateTokens: 0,
+      momentumStreak: 0,
+      npcRoleChanged: false,
     };
 
     it('shows GOAL_VISION only on first hub turn when goal exists', () => {
@@ -152,6 +210,78 @@ describe('OnboardingTutorial', () => {
 
     it('does not show ENERGY_EXPLAIN when energy is high', () => {
       expect(shouldShowStep('ENERGY_EXPLAIN', baseContext)).toBe(false);
+    });
+
+    it('shows FATE_TOKEN_TUTORIAL in first session when token is earned early', () => {
+      expect(shouldShowStep('FATE_TOKEN_TUTORIAL', {
+        ...baseContext,
+        turn: 12,
+        fateTokens: 1,
+      })).toBe(true);
+    });
+
+    it('does not show FATE_TOKEN_TUTORIAL after the early turn window', () => {
+      expect(shouldShowStep('FATE_TOKEN_TUTORIAL', {
+        ...baseContext,
+        turn: 21,
+        fateTokens: 1,
+      })).toBe(false);
+    });
+
+    it('hides PERSONALITY_MOMENTUM in session 1 even with streak', () => {
+      expect(shouldShowStep('PERSONALITY_MOMENTUM', {
+        ...baseContext,
+        momentumStreak: 3,
+        sessionNumber: 1,
+      })).toBe(false);
+    });
+
+    it('shows PERSONALITY_MOMENTUM in session 2 when streak reaches 3', () => {
+      expect(shouldShowStep('PERSONALITY_MOMENTUM', {
+        ...baseContext,
+        sessionNumber: 2,
+        momentumStreak: 3,
+      })).toBe(true);
+    });
+
+    it('shows PERSONALITY_MOMENTUM in session 3 with streak >= 1 (fallback)', () => {
+      expect(shouldShowStep('PERSONALITY_MOMENTUM', {
+        ...baseContext,
+        sessionNumber: 3,
+        momentumStreak: 1,
+      })).toBe(true);
+    });
+
+    it('does not show PERSONALITY_MOMENTUM in session 2 with streak < 3 and no fallback', () => {
+      expect(shouldShowStep('PERSONALITY_MOMENTUM', {
+        ...baseContext,
+        sessionNumber: 2,
+        momentumStreak: 1,
+      })).toBe(false);
+    });
+
+    it('shows NPC_INTRODUCTION in session 2 when an NPC role changes', () => {
+      expect(shouldShowStep('NPC_INTRODUCTION', {
+        ...baseContext,
+        sessionNumber: 2,
+        npcRoleChanged: true,
+      })).toBe(true);
+    });
+
+    it('shows NPC_INTRODUCTION in session 3 regardless of role change (fallback)', () => {
+      expect(shouldShowStep('NPC_INTRODUCTION', {
+        ...baseContext,
+        sessionNumber: 3,
+        npcRoleChanged: false,
+      })).toBe(true);
+    });
+
+    it('does not show NPC_INTRODUCTION in session 2 without role change', () => {
+      expect(shouldShowStep('NPC_INTRODUCTION', {
+        ...baseContext,
+        sessionNumber: 2,
+        npcRoleChanged: false,
+      })).toBe(false);
     });
 
     it('never shows COMPLETED step', () => {

@@ -11,7 +11,7 @@ import Animated, {
   Easing,
   interpolate,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { Haptics } from '../../utils/haptics';
 import { Difficulty, GameState } from './MiniGameContainer';
 
 interface ArtExamGameProps {
@@ -482,4 +482,3 @@ const styles = StyleSheet.create({
 });
 
 export default ArtExamGame;
-

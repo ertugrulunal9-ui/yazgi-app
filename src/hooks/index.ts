@@ -14,6 +14,9 @@ export { useGame } from '../context/GameContext';
 export {
   // Temel selectors
   usePlayerStats,
+  usePillarStats,
+  useStress,
+  useLegacyBonuses,
   useGameProgress,
   useGamePhase,
   useNPCList,

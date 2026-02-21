@@ -24,7 +24,8 @@
       "Bash(npm view:*)",
       "Bash(npm run test:ci:*)",
       "Bash(node -e:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(npm run simulate:game:*)"
     ]
   }
 }

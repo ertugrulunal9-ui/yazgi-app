@@ -23,6 +23,13 @@ const clamp = (value: number, min: number, max: number): number =>
 const deriveLegacyLevel = (totalLegacyPoints: number): number =>
   Math.min(10, Math.floor(Math.max(0, totalLegacyPoints) / 80));
 
+export interface LegacyBonusBreakdown {
+  level: number;
+  statBonus: number;
+  relationBonus: number;
+  moneyBonus: number;
+}
+
 export interface MetaRunInput {
   runId: string;
   endedAt?: number;
@@ -110,23 +117,38 @@ export const applyRunToMetaProgression = (
 };
 
 export const applyLegacyBonusesToStats = (baseStats: Stats, meta: MetaProgression): Stats => {
-  const level = meta.legacyLevel || deriveLegacyLevel(meta.totalLegacyPoints || 0);
-  if (level <= 0) {
+  const bonus = getLegacyBonusBreakdown(meta);
+  if (bonus.level <= 0) {
     return baseStats;
   }
 
-  const statBonus = Math.min(10, level);
-  const relationBonus = Math.min(8, Math.ceil(level / 2));
-  const moneyBonus = level * 10;
-
   return {
     ...baseStats,
-    health: clamp(baseStats.health + statBonus, 0, 100),
-    intelligence: clamp(baseStats.intelligence + statBonus, 0, 100),
-    charisma: clamp(baseStats.charisma + statBonus, 0, 100),
-    discipline: clamp(baseStats.discipline + statBonus, 0, 100),
-    familyRelation: clamp(baseStats.familyRelation + relationBonus, 0, 100),
-    money: Math.max(0, baseStats.money + moneyBonus),
+    health: clamp(baseStats.health + bonus.statBonus, 0, 100),
+    intelligence: clamp(baseStats.intelligence + bonus.statBonus, 0, 100),
+    charisma: clamp(baseStats.charisma + bonus.statBonus, 0, 100),
+    discipline: clamp(baseStats.discipline + bonus.statBonus, 0, 100),
+    familyRelation: clamp(baseStats.familyRelation + bonus.relationBonus, 0, 100),
+    money: Math.max(0, baseStats.money + bonus.moneyBonus),
+  };
+};
+
+export const getLegacyBonusBreakdown = (meta: MetaProgression): LegacyBonusBreakdown => {
+  const level = meta.legacyLevel || deriveLegacyLevel(meta.totalLegacyPoints || 0);
+  if (level <= 0) {
+    return {
+      level: 0,
+      statBonus: 0,
+      relationBonus: 0,
+      moneyBonus: 0,
+    };
+  }
+
+  return {
+    level,
+    statBonus: Math.min(10, level),
+    relationBonus: Math.min(8, Math.ceil(level / 2)),
+    moneyBonus: level * 10,
   };
 };
 

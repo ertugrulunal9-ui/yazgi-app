@@ -6,7 +6,7 @@
 import React, { ReactNode } from 'react';
 import { renderHook, act } from '@testing-library/react-native';
 import { GameProvider, GameContext, GameContextType } from '../../src/context/GameContext';
-import { getMomentumVisibility } from '../../src/hooks/useGameSelectors';
+import { getMomentumVisibility, usePillarStats, useStress } from '../../src/hooks/useGameSelectors';
 
 // Mock initial values
 const mockStats = {
@@ -485,5 +485,86 @@ describe('Momentum visibility selector', () => {
     const visibility = getMomentumVisibility(gameState as any);
     expect(visibility.dominantTendency).toBe('HELPFUL');
     expect(visibility.streakLevel).toBe('POWERFUL');
+  });
+});
+
+describe('usePillarStats hook', () => {
+  const buildContextValue = (statsOverride: typeof mockStats): GameContextType => ({
+    gameState: {
+      ...mockGameState,
+      stats: statsOverride,
+    } as any,
+    stats: statsOverride as any,
+    playerName: 'Test User',
+    isLoading: false,
+    startNewGame: jest.fn(),
+    loadSavedGame: jest.fn(async () => true),
+    resetGame: jest.fn(),
+    setGameState: jest.fn(),
+    setStats: jest.fn(),
+    setPlayerName: jest.fn(),
+    updateGameState: jest.fn(),
+    updateStats: jest.fn(),
+    advanceTurnInContext: jest.fn(),
+  });
+
+  it('includes familyRelation in Ruh pillar calculation', () => {
+    const lowFamilyStats = {
+      ...mockStats,
+      charisma: 40,
+      familyRelation: 10,
+    };
+
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <GameContext.Provider value={buildContextValue(lowFamilyStats)}>
+        {children}
+      </GameContext.Provider>
+    );
+
+    const { result } = renderHook(() => usePillarStats(), { wrapper });
+
+    expect(result.current.beden).toBe(Math.round((lowFamilyStats.health + lowFamilyStats.energy) / 2));
+    expect(result.current.zihin).toBe(Math.round((lowFamilyStats.intelligence + lowFamilyStats.discipline) / 2));
+    expect(result.current.ruh).toBe(25);
+    expect(result.current.raw.familyRelation).toBe(10);
+  });
+});
+
+describe('useStress hook', () => {
+  const buildContextValue = (stressOverride: { current: number; threshold: number }): GameContextType => ({
+    gameState: {
+      ...mockGameState,
+      stress: {
+        ...mockGameState.stress,
+        current: stressOverride.current,
+        threshold: stressOverride.threshold,
+      },
+    } as any,
+    stats: mockStats as any,
+    playerName: 'Test User',
+    isLoading: false,
+    startNewGame: jest.fn(),
+    loadSavedGame: jest.fn(async () => true),
+    resetGame: jest.fn(),
+    setGameState: jest.fn(),
+    setStats: jest.fn(),
+    setPlayerName: jest.fn(),
+    updateGameState: jest.fn(),
+    updateStats: jest.fn(),
+    advanceTurnInContext: jest.fn(),
+  });
+
+  it('calculates stress ratio for critical threshold state', () => {
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <GameContext.Provider value={buildContextValue({ current: 65, threshold: 70 })}>
+        {children}
+      </GameContext.Provider>
+    );
+
+    const { result } = renderHook(() => useStress(), { wrapper });
+
+    expect(result.current.current).toBe(65);
+    expect(result.current.threshold).toBe(70);
+    expect(result.current.ratio).toBeCloseTo(0.9285, 3);
   });
 });

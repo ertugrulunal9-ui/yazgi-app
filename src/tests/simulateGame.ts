@@ -201,7 +201,7 @@ const getEventById = (eventId: string): GameEvent | undefined =>
   EVENTS.find(event => event.id === eventId);
 
 const hasCriticalBurdenCrossed = (currentRisk: number, previousRisk: number): boolean =>
-  currentRisk > 80 && previousRisk <= 80;
+  currentRisk > 85 && previousRisk <= 85;
 
 const buildEventContext = (
   gameState: GameState,

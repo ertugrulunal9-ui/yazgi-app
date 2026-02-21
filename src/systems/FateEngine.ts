@@ -74,8 +74,8 @@ const TOKEN_EARN_CONDITIONS: TokenEarnCondition[] = [
 ];
 
 const FATE_MULTIPLIERS: Record<FateOutcome, { positive: number; negative: number }> = {
-  BLESSED:   { positive: 1.5,  negative: 0.5 },
-  FORTUNATE: { positive: 1.25, negative: 0.75 },
+  BLESSED:   { positive: 1.35, negative: 0.6 },
+  FORTUNATE: { positive: 1.15, negative: 0.85 },
   NEUTRAL:   { positive: 1.0,  negative: 1.0 },
   UNLUCKY:   { positive: 0.8,  negative: 1.2 },
   CURSED:    { positive: 0.6,  negative: 1.5 },
@@ -84,6 +84,17 @@ const FATE_MULTIPLIERS: Record<FateOutcome, { positive: number; negative: number
 const MAX_OUTCOME_HISTORY = 50;
 const PITY_PER_BAD = 0.05;
 const MAX_PITY = 0.25;
+const FATE_ODDS_SAMPLE_SIZE = 20000;
+
+type OddsPreviewEntry = { label: string; pct: number };
+
+const FATE_ODDS_LABELS: Record<FateOutcome, string> = {
+  BLESSED: 'Kutsanmis',
+  FORTUNATE: 'Sansli',
+  NEUTRAL: 'Notr',
+  UNLUCKY: 'Sanssiz',
+  CURSED: 'Lanetli',
+};
 
 // ===== BURÇ MODİFİKATÖRLERİ =====
 // personalityCategory → şans modifikasyonu (pozitif = şanslı, negatif = şanssız)
@@ -124,6 +135,36 @@ const classifyOutcome = (roll: number): FateOutcome => {
   return 'CURSED';
 };
 
+const clamp01 = (value: number): number => Math.max(0, Math.min(1, value));
+
+const estimateOutcomeDistribution = (
+  rollTransform: (rawRoll: number) => number
+): Record<FateOutcome, number> => {
+  const counts: Record<FateOutcome, number> = {
+    BLESSED: 0,
+    FORTUNATE: 0,
+    NEUTRAL: 0,
+    UNLUCKY: 0,
+    CURSED: 0,
+  };
+
+  for (let i = 0; i < FATE_ODDS_SAMPLE_SIZE; i++) {
+    const rawRoll = (i + 0.5) / FATE_ODDS_SAMPLE_SIZE;
+    const outcome = classifyOutcome(rollTransform(rawRoll));
+    counts[outcome] += 1;
+  }
+
+  return counts;
+};
+
+const toPreviewEntries = (distribution: Record<FateOutcome, number>): OddsPreviewEntry[] => {
+  const order: FateOutcome[] = ['BLESSED', 'FORTUNATE', 'NEUTRAL', 'UNLUCKY', 'CURSED'];
+  return order.map((outcome) => ({
+    label: FATE_ODDS_LABELS[outcome],
+    pct: Math.round((distribution[outcome] / FATE_ODDS_SAMPLE_SIZE) * 1000) / 10,
+  }));
+};
+
 const isBadOutcome = (outcome: FateOutcome): boolean =>
   outcome === 'UNLUCKY' || outcome === 'CURSED';
 
@@ -138,6 +179,28 @@ export const getZodiacModifier = (
   const modifiers = ZODIAC_MODIFIERS[zodiacSign];
   if (!modifiers) return 0;
   return modifiers[personalityCategory as PersonalityCategory] ?? 0;
+};
+
+export const previewFateOdds = (
+  state: FateState,
+  options?: { personalityCategory?: string; zodiacModifier?: number }
+): { withoutToken: OddsPreviewEntry[]; withToken: OddsPreviewEntry[] } => {
+  const zodiacModifier = options?.zodiacModifier ?? getZodiacModifier(state.zodiacSign, options?.personalityCategory);
+  const pityModifier = getPityModifier(state.consecutiveBadOutcomes);
+
+  const withoutTokenDistribution = estimateOutcomeDistribution((rawRoll) => (
+    clamp01(rawRoll + zodiacModifier + pityModifier)
+  ));
+
+  const withTokenDistribution = estimateOutcomeDistribution((rawRoll) => {
+    const forcedRoll = Math.max(FATE_THRESHOLDS.FORTUNATE, rawRoll);
+    return clamp01(forcedRoll + zodiacModifier);
+  });
+
+  return {
+    withoutToken: toPreviewEntries(withoutTokenDistribution),
+    withToken: toPreviewEntries(withTokenDistribution),
+  };
 };
 
 export const rollFate = (

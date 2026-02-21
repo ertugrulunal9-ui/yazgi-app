@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Animated, TouchableOpacity, Modal, Pressable } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { InnerThoughtType, LifeGoal, Stats } from '../types';
+import { MessageToast } from '../animations/ToastAnimations';
+import { usePillarStats, useStress } from '../hooks/useGameSelectors';
 import { getLifeGoalMeta } from '../utils/lifeGoalSystem';
 
 type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
@@ -21,9 +23,13 @@ interface StatusHeaderProps {
 
 interface StatMeterProps {
   icon: IconName;
+  label: string;
   barColor: string;
   percent: number;
+  valueText: string;
+  onPress: () => void;
   theme: any;
+  alertDot?: boolean;
 }
 
 interface TrackerProps {
@@ -34,7 +40,31 @@ interface TrackerProps {
   isLightTheme: boolean;
 }
 
+type PillarKey = 'beden' | 'zihin' | 'ruh' | 'servet';
+type StressBand = 'HIDDEN' | 'YELLOW' | 'ORANGE' | 'RED';
+
 const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
+
+const formatMoneyDisplay = (money: number): string => {
+  if (Math.abs(money) >= 1000) {
+    return `${(money / 1000).toFixed(1)}K TL`;
+  }
+  return `${money} TL`;
+};
+
+const getStressBand = (ratio: number): StressBand => {
+  if (ratio < 0.3) return 'HIDDEN';
+  if (ratio < 0.6) return 'YELLOW';
+  if (ratio < 0.85) return 'ORANGE';
+  return 'RED';
+};
+
+const getStressHint = (band: StressBand): string | null => {
+  if (band === 'YELLOW') return 'Yorgunluk birikmeye başlıyor.';
+  if (band === 'ORANGE') return 'Dikkat: Yükünü hafiflet.';
+  if (band === 'RED') return 'Kriz eşiğindesin! Dur ve nefes al.';
+  return null;
+};
 
 const isLightHex = (hex: string): boolean => {
   const match = /^#([0-9a-fA-F]{6})$/.exec(hex);
@@ -56,9 +86,35 @@ const getPlayerIcon = (age: number): IconName => {
   return 'account-circle-outline';
 };
 
-const StatMeter: React.FC<StatMeterProps> = ({ icon, barColor, percent, theme }) => (
-  <View style={styles.statusItem}>
-    <MaterialCommunityIcons name={icon} size={18} color={theme.textSecondary} />
+const StatMeter: React.FC<StatMeterProps> = ({
+  icon,
+  label,
+  barColor,
+  percent,
+  valueText,
+  onPress,
+  theme,
+  alertDot,
+}) => (
+  <TouchableOpacity
+    onPress={onPress}
+    activeOpacity={0.85}
+    style={[
+      styles.statusItem,
+      {
+        borderColor: alertDot ? '#ef4444' : theme.border,
+        backgroundColor: theme.surfaceOverlay,
+      },
+    ]}
+    accessibilityRole="button"
+    accessibilityLabel={`${label} detaylarini ac`}
+  >
+    {alertDot && <View style={styles.alertDot} />}
+    <View style={styles.statLabelRow}>
+      <MaterialCommunityIcons name={icon} size={15} color={theme.textSecondary} />
+      <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{label}</Text>
+    </View>
+    <Text style={[styles.statValue, { color: theme.textPrimary }]}>{valueText}</Text>
     <View style={[styles.miniBar, { backgroundColor: theme.border }]}>
       <View
         style={[
@@ -70,8 +126,27 @@ const StatMeter: React.FC<StatMeterProps> = ({ icon, barColor, percent, theme })
         ]}
       />
     </View>
-  </View>
+  </TouchableOpacity>
 );
+
+const getDreamHint = (progress: number, statHint: string): string => {
+  if (progress >= 100) return 'Hayalin sana açık!';
+  if (progress >= 71) return 'Hedefe çok yakınsın. Son hamleyi dikkatli yap.';
+  if (progress >= 31) return `İyi gidiyorsun! ${statHint} biraz daha güçlendir.`;
+  return `Yolun başındasın. ${statHint} geliştirmeye odaklan.`;
+};
+
+const getRiskName = (risk: number): string => {
+  if (risk >= 85) return '⚠️ Kritik Risk Alarmı';
+  if (risk >= 50) return 'Risk Alarmı Açık';
+  return 'Risk Seviyesi Normal';
+};
+
+const getRiskHint = (risk: number): string => {
+  if (risk >= 85) return 'Kritik risk! Son hamlen çok önemli.';
+  if (risk >= 50) return 'Risk artıyor. Kararlarını yavaşlat.';
+  return 'Risk seviyesi kontrol altında.';
+};
 
 const GoalAndRiskTracker: React.FC<TrackerProps> = ({
   selectedGoal,
@@ -124,7 +199,9 @@ const GoalAndRiskTracker: React.FC<TrackerProps> = ({
           {goalMeta?.label || 'Hedef secimi 10 yasinda acilir.'}
         </Text>
         <Text style={[styles.goalHint, { color: theme.textSecondary }]}>
-          {goalMeta?.statHint || 'Hedef secince izlenecek statlar burada gorunur.'}
+          {goalMeta
+            ? getDreamHint(safeDreamProgress, goalMeta.statHint)
+            : 'Hedef secince izlenecek statlar burada gorunur.'}
         </Text>
         <View style={[styles.trackerBar, { backgroundColor: theme.border }]}>
           <View
@@ -156,10 +233,10 @@ const GoalAndRiskTracker: React.FC<TrackerProps> = ({
           </Text>
         </View>
         <Text style={[styles.goalName, { color: theme.textPrimary }]}>
-          {safeRisk >= 50 ? 'Risk alarmi acik' : 'Risk seviyesi kontrol altinda'}
+          {getRiskName(safeRisk)}
         </Text>
         <Text style={[styles.goalHint, { color: theme.textSecondary }]}>
-          Risk arttikca finalde basari sansin azalir.
+          {getRiskHint(safeRisk)}
         </Text>
         <View style={[styles.trackerBar, { backgroundColor: theme.border }]}>
           <View
@@ -234,15 +311,78 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
   theme,
 }) => {
   const safeMaxEnergy = Math.max(1, maxEnergy);
-  const energyPercentage = (stats.energy / safeMaxEnergy) * 100;
   const avatarIcon = getPlayerIcon(age);
   const safeRiskPercent = clamp(riskPercent, 0, 100);
-  const notificationCount = innerThought ? 3 : 2;
+  const notificationCount = 1 + (safeRiskPercent >= 50 ? 1 : 0) + (innerThought ? 1 : 0);
+  const badgeIsUrgent = innerThoughtType === 'CRISIS' || innerThoughtType === 'CLIFFHANGER';
+  const stress = useStress();
+  const [selectedPillar, setSelectedPillar] = useState<PillarKey | null>(null);
+  const [stressToastVisible, setStressToastVisible] = useState(false);
+  const stressScale = useRef(new Animated.Value(1)).current;
+  const wasCriticalRef = useRef(false);
 
   const isLightTheme = useMemo(() => isLightHex(theme.appBg), [theme.appBg]);
   const accentBg = isLightTheme ? `${theme.accentBrand}1F` : `${theme.accentBrand}26`;
   const thoughtStyle = THOUGHT_STYLES[innerThoughtType ?? 'IDLE'];
   const isThoughtHighlight = innerThoughtType != null && innerThoughtType !== 'IDLE';
+  const pillarStats = usePillarStats(stats);
+  const moneyDisplay = useMemo(() => formatMoneyDisplay(pillarStats.servet), [pillarStats.servet]);
+  const pillarAlerts = useMemo(() => ({
+    beden: pillarStats.raw.health < 25 || pillarStats.raw.energy < 25,
+    zihin: pillarStats.raw.intelligence < 25 || pillarStats.raw.discipline < 25,
+    ruh: pillarStats.raw.charisma < 25 || pillarStats.raw.familyRelation < 25,
+    servet: false,
+  }), [pillarStats.raw]);
+  const selectedPillarContent = useMemo(() => {
+    if (!selectedPillar) return null;
+
+    if (selectedPillar === 'beden') {
+      return {
+        title: 'Beden',
+        rows: [
+          { label: 'Saglik', value: Math.round(pillarStats.raw.health).toString() },
+          { label: 'Enerji', value: `${Math.round(pillarStats.raw.energy)}/${safeMaxEnergy}` },
+        ],
+      };
+    }
+
+    if (selectedPillar === 'zihin') {
+      return {
+        title: 'Zihin',
+        rows: [
+          { label: 'Zeka', value: Math.round(pillarStats.raw.intelligence).toString() },
+          { label: 'Disiplin', value: Math.round(pillarStats.raw.discipline).toString() },
+        ],
+      };
+    }
+
+    if (selectedPillar === 'ruh') {
+      return {
+        title: 'Ruh',
+        rows: [
+          { label: 'Karizma', value: Math.round(pillarStats.raw.charisma).toString() },
+          { label: 'Aile Iliskisi', value: Math.round(pillarStats.raw.familyRelation).toString() },
+        ],
+      };
+    }
+
+    return {
+      title: 'Servet',
+      rows: [
+        { label: 'Para', value: moneyDisplay },
+      ],
+    };
+  }, [moneyDisplay, pillarStats.raw, safeMaxEnergy, selectedPillar]);
+  const stressRatio = useMemo(() => (
+    Number.isFinite(stress.ratio) ? clamp(stress.ratio, 0, 2) : 0
+  ), [stress.ratio]);
+  const stressBand = useMemo(() => getStressBand(stressRatio), [stressRatio]);
+  const stressColor = useMemo(() => {
+    if (stressBand === 'RED') return '#ef4444';
+    if (stressBand === 'ORANGE') return '#f97316';
+    return '#eab308';
+  }, [stressBand]);
+  const stressPercent = useMemo(() => Math.round(clamp(stressRatio, 0, 1) * 100), [stressRatio]);
 
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const panelProgress = useRef(new Animated.Value(0)).current;
@@ -273,6 +413,44 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
     }],
   }), [panelMaxHeight, panelProgress]);
 
+  useEffect(() => {
+    if (stressBand !== 'ORANGE' && stressBand !== 'RED') {
+      stressScale.stopAnimation();
+      stressScale.setValue(1);
+      return;
+    }
+
+    const pulseMax = stressBand === 'RED' ? 1.07 : 1.03;
+    const pulseDuration = stressBand === 'RED' ? 420 : 760;
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(stressScale, { toValue: pulseMax, duration: pulseDuration, useNativeDriver: true }),
+        Animated.timing(stressScale, { toValue: 1, duration: pulseDuration, useNativeDriver: true }),
+      ]),
+      { iterations: -1 }
+    );
+
+    animation.start();
+    return () => {
+      animation.stop();
+      stressScale.setValue(1);
+    };
+  }, [stressBand, stressScale]);
+
+  useEffect(() => {
+    const isCritical = stressBand === 'RED';
+
+    if (isCritical && !wasCriticalRef.current) {
+      setStressToastVisible(true);
+    }
+
+    if (!isCritical) {
+      setStressToastVisible(false);
+    }
+
+    wasCriticalRef.current = isCritical;
+  }, [stressBand]);
+
   return (
     <View
       style={[
@@ -301,55 +479,83 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
       <View style={styles.statusRow}>
         <StatMeter
           icon="heart-pulse"
+          label="Beden"
           barColor="#ef4444"
-          percent={(stats.health / 100) * 100}
+          percent={pillarStats.beden}
+          valueText={`%${pillarStats.beden}`}
+          onPress={() => setSelectedPillar('beden')}
           theme={theme}
+          alertDot={pillarAlerts.beden}
         />
+        <StatMeter
+          icon="brain"
+          label="Zihin"
+          barColor="#3b82f6"
+          percent={pillarStats.zihin}
+          valueText={`%${pillarStats.zihin}`}
+          onPress={() => setSelectedPillar('zihin')}
+          theme={theme}
+          alertDot={pillarAlerts.zihin}
+        />
+        <StatMeter
+          icon="star-four-points-outline"
+          label="Ruh"
+          barColor="#a855f7"
+          percent={pillarStats.ruh}
+          valueText={`%${pillarStats.ruh}`}
+          onPress={() => setSelectedPillar('ruh')}
+          theme={theme}
+          alertDot={pillarAlerts.ruh}
+        />
+        <StatMeter
+          icon="sack"
+          label="Servet"
+          barColor="#22c55e"
+          percent={Math.min(100, Math.max(0, pillarStats.servet / 10))}
+          valueText={moneyDisplay}
+          onPress={() => setSelectedPillar('servet')}
+          theme={theme}
+          alertDot={pillarAlerts.servet}
+        />
+      </View>
 
-        <View style={styles.statusItem}>
-          <MaterialCommunityIcons name="flash" size={18} color={theme.textSecondary} />
-          <View style={[styles.miniBar, { backgroundColor: theme.border }]}>
+      {stressBand !== 'HIDDEN' ? (
+        <Animated.View
+          testID="stress-bar-container"
+          style={[
+            styles.stressContainer,
+            {
+              borderColor: theme.border,
+              backgroundColor: isLightTheme ? theme.surfaceRaised : theme.surfaceOverlay,
+              transform: [{ scale: stressScale }],
+            },
+          ]}
+        >
+          <View style={styles.stressHeader}>
+            <Text style={[styles.stressLabel, { color: stressColor }]}>{'\u{1F321}\uFE0F'} Stres</Text>
+            <Text style={[styles.stressValue, { color: stressColor }]}>
+              {stress.current}/{stress.threshold} (%{stressPercent})
+            </Text>
+          </View>
+          <View style={[styles.stressTrack, { backgroundColor: theme.border }]}>
             <View
+              testID="stress-bar-fill"
               style={[
-                styles.miniFill,
+                styles.stressFill,
                 {
-                  backgroundColor: '#eab308',
-                  width: `${clamp(energyPercentage, 0, 100)}%`,
+                  width: `${clamp(stressRatio * 100, 0, 100)}%`,
+                  backgroundColor: stressColor,
                 },
               ]}
             />
           </View>
-          <Text style={[styles.energyText, { color: theme.textSecondary }]}>
-            {Math.round(stats.energy)}/{safeMaxEnergy}
-          </Text>
-        </View>
-
-        <View style={styles.statusItem}>
-          <MaterialCommunityIcons name="sack" size={18} color={theme.textSecondary} />
-          <Text style={[styles.moneyText, { color: theme.textPrimary }]}>TL {stats.money}</Text>
-        </View>
-      </View>
-
-      <View style={styles.statusRow}>
-        <StatMeter
-          icon="brain"
-          barColor="#3b82f6"
-          percent={(stats.intelligence / 100) * 100}
-          theme={theme}
-        />
-        <StatMeter
-          icon="star-four-points-outline"
-          barColor="#a855f7"
-          percent={(stats.charisma / 100) * 100}
-          theme={theme}
-        />
-        <StatMeter
-          icon="book-education-outline"
-          barColor="#14b8a6"
-          percent={(stats.discipline / 100) * 100}
-          theme={theme}
-        />
-      </View>
+          {getStressHint(stressBand) != null && (
+            <Text style={[styles.stressHint, { color: stressColor }]}>
+              {getStressHint(stressBand)}
+            </Text>
+          )}
+        </Animated.View>
+      ) : null}
 
       <View style={styles.notificationToggleRow}>
         <TouchableOpacity
@@ -373,7 +579,7 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
           <Text style={[styles.notificationToggleText, { color: theme.textPrimary }]}>
             Bildirimler
           </Text>
-          <View style={[styles.notificationCountBadge, { backgroundColor: theme.accentEvent }]}>
+          <View style={[styles.notificationCountBadge, { backgroundColor: badgeIsUrgent ? '#ef4444' : theme.accentEvent }]}>
             <Text style={styles.notificationCountText}>{notificationCount}</Text>
           </View>
         </TouchableOpacity>
@@ -385,6 +591,24 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
           </View>
         ) : null}
       </View>
+
+      {!notificationsOpen && isThoughtHighlight &&
+       (innerThoughtType === 'CRISIS' || innerThoughtType === 'CLIFFHANGER') && (
+        <TouchableOpacity
+          onPress={() => setNotificationsOpen(true)}
+          style={[
+            styles.thoughtPeek,
+            { borderColor: thoughtStyle.borderColor, backgroundColor: thoughtStyle.backgroundColor },
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="Kriz bildirimini görüntüle"
+        >
+          <MaterialCommunityIcons name={thoughtStyle.icon} size={13} color={thoughtStyle.iconColor} />
+          <Text style={[styles.thoughtPeekText, { color: thoughtStyle.iconColor }]} numberOfLines={1}>
+            {innerThought}
+          </Text>
+        </TouchableOpacity>
+      )}
 
       <Animated.View
         style={[styles.notificationPanel, panelAnimatedStyle]}
@@ -424,6 +648,55 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
           ) : null}
         </View>
       </Animated.View>
+
+      <Modal
+        transparent
+        animationType="slide"
+        visible={selectedPillarContent != null}
+        onRequestClose={() => setSelectedPillar(null)}
+      >
+        <View style={styles.sheetRoot}>
+          <Pressable style={styles.sheetBackdrop} onPress={() => setSelectedPillar(null)} />
+          <View
+            style={[
+              styles.sheetCard,
+              {
+                backgroundColor: theme.surfaceBase,
+                borderColor: theme.border,
+              },
+            ]}
+          >
+            <View style={[styles.sheetHandle, { backgroundColor: theme.border }]} />
+            <View style={styles.sheetHeader}>
+              <Text style={[styles.sheetTitle, { color: theme.textPrimary }]}>
+                {selectedPillarContent?.title ?? ''} Detaylari
+              </Text>
+              <TouchableOpacity
+                onPress={() => setSelectedPillar(null)}
+                accessibilityRole="button"
+                accessibilityLabel="Detay panelini kapat"
+              >
+                <MaterialCommunityIcons name="close" size={20} color={theme.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            {selectedPillarContent?.rows.map(row => (
+              <View key={row.label} style={[styles.sheetRow, { borderBottomColor: theme.border }]}>
+                <Text style={[styles.sheetLabel, { color: theme.textSecondary }]}>{row.label}</Text>
+                <Text style={[styles.sheetValue, { color: theme.textPrimary }]}>{row.value}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      </Modal>
+
+      <MessageToast
+        visible={stressToastVisible}
+        message="Kriz yaklasiyor!"
+        type="error"
+        onClose={() => setStressToastVisible(false)}
+        style={styles.stressToast}
+      />
     </View>
   );
 };
@@ -463,33 +736,79 @@ const styles = StyleSheet.create({
   },
   statusRow: {
     flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: 8,
+    marginBottom: 10,
+  },
+  stressContainer: {
+    borderWidth: 1,
+    borderRadius: 11,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 10,
+  },
+  stressHeader: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
-    paddingHorizontal: 4,
+    marginBottom: 6,
+  },
+  stressLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  stressValue: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  stressTrack: {
+    height: 7,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  stressFill: {
+    height: '100%',
+    borderRadius: 999,
+  },
+  stressToast: {
+    top: 20,
+  },
+  stressHint: {
+    fontSize: 11,
+    marginTop: 4,
   },
   statusItem: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 7,
+    justifyContent: 'space-between',
+  },
+  statLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
+  },
+  statLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  statValue: {
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 2,
   },
   miniBar: {
-    width: 46,
+    width: '100%',
     height: 6,
     borderRadius: 3,
     overflow: 'hidden',
+    marginTop: 6,
   },
   miniFill: {
     height: '100%',
     borderRadius: 3,
-  },
-  moneyText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  energyText: {
-    fontSize: 11,
-    fontWeight: '600',
   },
   notificationToggleRow: {
     flexDirection: 'row',
@@ -595,6 +914,29 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 999,
   },
+  alertDot: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: '#ef4444',
+  },
+  thoughtPeek: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginTop: 6,
+  },
+  thoughtPeekText: {
+    fontSize: 12,
+    flex: 1,
+  },
   thoughtBubble: {
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -611,4 +953,59 @@ const styles = StyleSheet.create({
     fontSize: 13,
     flex: 1,
   },
+  sheetRoot: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  sheetBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(15, 23, 42, 0.42)',
+  },
+  sheetCard: {
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    paddingHorizontal: 16,
+    paddingBottom: 18,
+    paddingTop: 8,
+  },
+  sheetHandle: {
+    alignSelf: 'center',
+    width: 42,
+    height: 4,
+    borderRadius: 999,
+    opacity: 0.7,
+    marginBottom: 10,
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  sheetTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  sheetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    paddingVertical: 10,
+  },
+  sheetLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  sheetValue: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
 });
+

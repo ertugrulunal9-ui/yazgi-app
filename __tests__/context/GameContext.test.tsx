@@ -12,7 +12,7 @@ import {
   setCurrentSlotId,
 } from '../../src/utils/gameUtils';
 import SaveManager from '../../src/save/SaveManager';
-import { applyLegacyBonusesToStats, applyRunToMetaProgression } from '../../src/utils/metaProgression';
+import { applyLegacyBonusesToStats } from '../../src/utils/metaProgression';
 import { resolveEnding } from '../../src/utils/endingResolver';
 import { createInitialFateState } from '../../src/systems/FateEngine';
 import { trackSpecialProgress } from '../../src/utils/achievementChecker';
@@ -196,14 +196,14 @@ describe('GameContext', () => {
     }).toThrow('useGame must be used within GameProvider');
   });
 
-  it('bootstraps save/meta flow and registers auto-save callback', async () => {
+  it('bootstraps save flow and registers auto-save callback', async () => {
     const removeSpy = jest.fn();
     (AppState.addEventListener as jest.Mock).mockImplementationOnce(() => ({ remove: removeSpy }));
 
     const tree = await renderProvider();
 
     expect(initializeSaveSystem).toHaveBeenCalledTimes(1);
-    expect((SaveManager.getMetaProgression as jest.Mock)).toHaveBeenCalled();
+    expect((SaveManager.getMetaProgression as jest.Mock)).not.toHaveBeenCalled();
     expect((SaveManager.registerAutoSaveCallback as jest.Mock)).toHaveBeenCalledTimes(1);
     expect(latestContext?.isLoading).toBe(false);
 
@@ -499,7 +499,7 @@ describe('GameContext', () => {
     expect(latestContext?.isLoading).toBe(false);
   });
 
-  it('persists meta progression when run reaches GAME_OVER once', async () => {
+  it('does not persist meta progression in GAME_OVER (handled by MetaProgressionContext)', async () => {
     await renderProvider();
 
     act(() => {
@@ -527,39 +527,9 @@ describe('GameContext', () => {
     await flushEffects();
     await flushEffects();
 
-    expect(resolveEnding).toHaveBeenCalled();
-    expect(applyRunToMetaProgression).toHaveBeenCalled();
-    expect((SaveManager.setMetaProgression as jest.Mock)).toHaveBeenCalledTimes(1);
-    expect(latestContext?.gameState.metaRunRecorded).toBe(true);
-
-    await flushEffects();
-    expect((SaveManager.setMetaProgression as jest.Mock)).toHaveBeenCalledTimes(1);
-  });
-
-  it('handles meta persistence failure through GAME_OVER catch branch', async () => {
-    await renderProvider();
-    const persistError = new Error('persist fail');
-    (SaveManager.setMetaProgression as jest.Mock).mockRejectedValueOnce(persistError);
-
-    act(() => {
-      latestContext?.startNewGame('MetaFail');
-    });
-
-    act(() => {
-      latestContext?.setGameState(prev => ({
-        ...prev,
-        phase: 'GAME_OVER',
-        age: 18,
-        turn: 50,
-        totalTurns: 50,
-        metaRunRecorded: false,
-      }));
-    });
-
-    await flushEffects();
-    await flushEffects();
-
-    expect(console.error).toHaveBeenCalledWith('Failed to persist meta progression run:', persistError);
+    expect(resolveEnding).not.toHaveBeenCalled();
+    expect((SaveManager.setMetaProgression as jest.Mock)).not.toHaveBeenCalled();
+    expect(latestContext?.gameState.metaRunRecorded).toBe(false);
   });
 
   it('executes setStats function/object branches and resetGame path', async () => {

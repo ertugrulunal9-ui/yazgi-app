@@ -86,8 +86,11 @@ export class StatEngine {
         }
       }
 
-      if (originalDelta > 0 && (config.burdenRisk ?? 0) > 50) {
-        burdenMultiplier = 0.9;
+      const burden = config.burdenRisk ?? 0;
+      const isProductivityStat = key === 'intelligence' || key === 'discipline' || key === 'charisma';
+      if (originalDelta > 0 && burden > 40 && isProductivityStat) {
+        const severity = Math.min((burden - 40) / 60, 1); // 0→1 as burden goes 40→100
+        burdenMultiplier = 1.0 - severity * 0.35;          // 1.0 → 0.65 kademeli (sadece verimlilik statları)
         afterDiminishing = Math.ceil(afterDiminishing * burdenMultiplier);
       }
 

@@ -10,7 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 
-import * as Haptics from 'expo-haptics';
+import { Haptics } from '../../utils/haptics';
 
 
 // Types

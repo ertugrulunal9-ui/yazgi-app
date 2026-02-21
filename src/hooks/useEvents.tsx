@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { useGame } from '../context/GameContext';
 import { Choice, EventContext, GameEvent, ExamSubject, ALL_EXAM_SUBJECTS, GameState, Stats } from '../types';
 import { earnToken, getEarnedTokenCount, spendToken } from '../systems/FateEngine';
@@ -37,6 +37,7 @@ import { selectStoryArcEvent, syncActiveArcsWithSelectedEvent } from '../utils/s
 import { buildMemoryAwareEventText } from '../utils/memoryLogic';
 import { selectMomentumGateEvent } from '../data/momentumEvents';
 import { composeInnerThought, getStrategicMonologue } from '../utils/internalMonologue';
+import { getEligibleEventsWithAgeCache } from '../utils/eventEligibilityCache';
 import {
   buildInitialLifeGoalEvent,
   buildPivotLifeGoalEvent,
@@ -79,11 +80,23 @@ const pickGoalMilestoneEvent = (
 };
 
 const hasCriticalBurdenCrossed = (currentRisk: number, previousRisk: number): boolean => (
-  currentRisk > 80 && previousRisk <= 80
+  currentRisk > 85 && previousRisk <= 85
 );
 
 export const useEvents = () => {
   const { gameState, stats, advanceTurnInContext, updateGameState, setStats } = useGame();
+  const eligibilityCache = useRef<{ age: number; eligible: GameEvent[] }>({ age: -1, eligible: [] });
+
+  const getCachedEligibleEvents = useCallback((
+    context: EventContext,
+  ): GameEvent[] => {
+    eligibilityCache.current = getEligibleEventsWithAgeCache(
+      eligibilityCache.current,
+      EVENTS,
+      context.age
+    );
+    return eligibilityCache.current.eligible;
+  }, []);
 
   const buildEventContext = useCallback((): EventContext => ({
     age: gameState.age,
@@ -323,16 +336,17 @@ export const useEvents = () => {
       return;
     }
 
+    const cachedEligibleEvents = getCachedEligibleEvents(ctx);
     const arcSelection = selectStoryArcEvent({
       arcs: STORY_ARCS,
       activeArcs: currentActiveArcs,
-      events: EVENTS,
+      events: cachedEligibleEvents,
       context: ctx,
       recentEventIds: gameState.recentEvents,
       allSeenEvents,
     });
     const randomEvent = selectEventWithAdaptivePacing(
-      EVENTS,
+      cachedEligibleEvents,
       ctx,
       gameState.recentEvents,
       allSeenEvents,
@@ -366,7 +380,7 @@ export const useEvents = () => {
       eventFrequency: updatedFrequency,
       lastBurdenRisk: burdenRisk,
     });
-  }, [buildEventContext, gameState, getBurdenRisk, logSelectedEventAnalytics, stats, updateGameState]);
+  }, [buildEventContext, gameState, getBurdenRisk, getCachedEligibleEvents, logSelectedEventAnalytics, stats, updateGameState]);
 
   const handleEventChoice = useCallback((choice: Choice | ((ctx: EventContext) => Choice), choiceIndex?: number): TurnResult => {
     const resolved = resolveChoice(choice);
@@ -997,16 +1011,17 @@ export const useEvents = () => {
       return;
     }
 
+    const cachedEligibleEvents = getCachedEligibleEvents(ctx);
     const arcSelection = selectStoryArcEvent({
       arcs: STORY_ARCS,
       activeArcs: currentActiveArcs,
-      events: EVENTS,
+      events: cachedEligibleEvents,
       context: ctx,
       recentEventIds: gameState.recentEvents,
       allSeenEvents,
     });
     const randomEvent = selectEventWithAdaptivePacing(
-      EVENTS,
+      cachedEligibleEvents,
       ctx,
       gameState.recentEvents,
       allSeenEvents,
@@ -1060,7 +1075,7 @@ export const useEvents = () => {
         dailyDecisionCount: 0,
       }
     });
-  }, [advanceTurnInContext, buildEventContext, gameState, getBurdenRisk, logSelectedEventAnalytics, stats]);
+  }, [advanceTurnInContext, buildEventContext, gameState, getBurdenRisk, getCachedEligibleEvents, logSelectedEventAnalytics, stats]);
 
   // Kader jetonu ile yeniden çekme
   const rerollChoice = useCallback((choice: Choice, choiceIndex: number) => {

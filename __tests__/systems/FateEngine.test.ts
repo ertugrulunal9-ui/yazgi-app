@@ -11,6 +11,7 @@ import {
   applyFateToStatChanges,
   getPityModifier,
   getZodiacModifier,
+  previewFateOdds,
   ZODIAC_MODIFIERS,
 } from '../../src/systems/FateEngine';
 import { FateState, ZodiacSign } from '../../src/types';
@@ -359,6 +360,51 @@ describe('FateEngine', () => {
     it('caps at 0.25', () => {
       expect(getPityModifier(5)).toBe(0.25);
       expect(getPityModifier(10)).toBe(0.25);
+    });
+  });
+
+  describe('previewFateOdds', () => {
+    const baseState: FateState = {
+      seed: 42,
+      tokens: 1,
+      totalRolls: 10,
+      outcomeHistory: [],
+      zodiacSign: 'KOC',
+      consecutiveBadOutcomes: 0,
+    };
+
+    it('returns non-fabricated baseline distribution without modifiers', () => {
+      const preview = previewFateOdds(baseState, { zodiacModifier: 0 });
+      const pctMap = new Map(preview.withoutToken.map(entry => [entry.label, entry.pct]));
+
+      expect(pctMap.get('Kutsanmis')).toBeCloseTo(10, 1);
+      expect(pctMap.get('Sansli')).toBeCloseTo(25, 1);
+      expect(pctMap.get('Notr')).toBeCloseTo(30, 1);
+      expect(pctMap.get('Sanssiz')).toBeCloseTo(20, 1);
+      expect(pctMap.get('Lanetli')).toBeCloseTo(15, 1);
+    });
+
+    it('guarantees fortunate-or-better bucket when token is used', () => {
+      const preview = previewFateOdds(baseState, { zodiacModifier: 0 });
+      const withTokenMap = new Map(preview.withToken.map(entry => [entry.label, entry.pct]));
+
+      expect(withTokenMap.get('Sanssiz')).toBe(0);
+      expect(withTokenMap.get('Lanetli')).toBe(0);
+      expect((withTokenMap.get('Kutsanmis') || 0) + (withTokenMap.get('Sansli') || 0)).toBeCloseTo(100, 1);
+    });
+
+    it('applies pity to improve odds before token spend', () => {
+      const lowPity = previewFateOdds({ ...baseState, consecutiveBadOutcomes: 0 }, { zodiacModifier: 0 });
+      const highPity = previewFateOdds({ ...baseState, consecutiveBadOutcomes: 5 }, { zodiacModifier: 0 });
+
+      const lowGood = lowPity.withoutToken
+        .filter(entry => entry.label === 'Kutsanmis' || entry.label === 'Sansli')
+        .reduce((sum, entry) => sum + entry.pct, 0);
+      const highGood = highPity.withoutToken
+        .filter(entry => entry.label === 'Kutsanmis' || entry.label === 'Sansli')
+        .reduce((sum, entry) => sum + entry.pct, 0);
+
+      expect(highGood).toBeGreaterThan(lowGood);
     });
   });
 

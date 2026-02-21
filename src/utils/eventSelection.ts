@@ -35,6 +35,11 @@ const GOAL_KEYWORDS: Record<LifeGoal, string[]> = {
   SOCIAL: ['social', 'family', 'friend', 'npc', 'relationship', 'love', 'group', 'topluluk'],
 };
 
+const NPC_CHECKIN_TAG = 'npc_checkin';
+const NPC_CHECKIN_BIAS_MULTIPLIER = 1.7;
+const NPC_CHECKIN_BIAS_INTERVAL = 5;
+const NPC_CHECKIN_BIAS_PRE_TURN = 4;
+
 const clamp = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max);
 
 const normalizeEventSearchText = (event: GameEvent): string => {
@@ -218,6 +223,19 @@ const getCategoryDiversityMultiplier = (
   return Math.max(0.4, 1 - count * 0.2);
 };
 
+const hasTag = (event: GameEvent, tag: string): boolean => Boolean(event.tags?.includes(tag));
+
+const getNpcCheckInMultiplier = (event: GameEvent, currentTurn?: number): number => {
+  if (!hasTag(event, NPC_CHECKIN_TAG)) return 1;
+  if (typeof currentTurn !== 'number' || currentTurn <= 0) return 1;
+
+  const turnMod = currentTurn % NPC_CHECKIN_BIAS_INTERVAL;
+  if (turnMod === 0 || turnMod === NPC_CHECKIN_BIAS_PRE_TURN) {
+    return NPC_CHECKIN_BIAS_MULTIPLIER;
+  }
+  return 1;
+};
+
 // =================================================================
 // PURE WEIGHT CALCULATION LAYER (test edilebilir, yan etkisiz)
 // =================================================================
@@ -230,6 +248,7 @@ export interface EventWeightBreakdown {
   freshnessMultiplier: number;
   goalMultiplier: number;
   categoryMultiplier: number;
+  npcCheckInMultiplier: number;
   finalWeight: number;
 }
 
@@ -304,6 +323,7 @@ export function calculateEventWeights(
       event.personalityCategory,
       context.recentCategories,
     );
+    const npcCheckInMultiplier = getNpcCheckInMultiplier(event, context.currentTurn);
 
     const finalWeight = Math.max(
       1,
@@ -313,7 +333,8 @@ export function calculateEventWeights(
           narrativeBonus *
           freshnessMultiplier *
           goalMultiplier *
-          categoryMultiplier,
+          categoryMultiplier *
+          npcCheckInMultiplier,
       ),
     );
 
@@ -327,6 +348,7 @@ export function calculateEventWeights(
         freshnessMultiplier,
         goalMultiplier,
         categoryMultiplier,
+        npcCheckInMultiplier,
         finalWeight,
       },
     };
@@ -376,10 +398,17 @@ const pickWeighted = (
   return weightedEvents[weightedEvents.length - 1].event;
 };
 
-const pickChaosRandom = (candidates: GameEvent[], randomFn: () => number): GameEvent | null => {
+const pickChaosRandom = (
+  candidates: GameEvent[],
+  randomFn: () => number,
+  currentTurn?: number
+): GameEvent | null => {
   if (candidates.length === 0) return null;
   const neutralWeight = Math.max(0, GOAL_EVENT_WEIGHTING.CHAOS_MULTIPLIER);
-  const weighted = candidates.map(event => ({ event, weight: neutralWeight }));
+  const weighted = candidates.map(event => ({
+    event,
+    weight: neutralWeight * getNpcCheckInMultiplier(event, currentTurn),
+  }));
   return pickWeighted(weighted, randomFn);
 };
 
@@ -412,7 +441,7 @@ export const selectEventWithAdaptivePacing = (
 
   const rng = options.randomFn ?? Math.random;
   if (shouldUseChaosSelection(options.currentTurn)) {
-    return pickChaosRandom(candidates, rng) ?? options.fallbackEvent;
+    return pickChaosRandom(candidates, rng, options.currentTurn) ?? options.fallbackEvent;
   }
 
   const recentCategories = options.recentCategories ?? getRecentCategories(events, recentEventIds);

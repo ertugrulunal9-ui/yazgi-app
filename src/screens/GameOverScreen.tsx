@@ -4,9 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import ViewShot from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { useGame } from '../context/GameContext';
+import { useMetaProgression } from '../context/MetaProgressionContext';
 import { getThemeTokens, getDensityMetrics } from '../utils/themeUtils';
 import { getTraitName } from '../data/traits';
-import { calculateAllGoalScores, resolveEnding, TOTAL_ENDING_COUNT } from '../utils/endingResolver';
+import { calculateAllGoalScores, generateFutureVision, resolveEnding, TOTAL_ENDING_COUNT } from '../utils/endingResolver';
 import { calculateLegacyPointsForRun, createInitialMetaProgression } from '../utils/metaProgression';
 import { showInterstitialAdDetailed } from '../services/monetization';
 import { logInterstitialOpportunity, logInterstitialResult, logShareEvent } from '../utils/analyticsEvents';
@@ -72,7 +73,8 @@ const ALTERNATIVE_SUGGESTIONS: Record<string, string> = {
 };
 
 export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, onRestart, npcs: npcsProp }) => {
-  const { gameState, playerName, stats, metaProgression } = useGame();
+  const { gameState, playerName, stats } = useGame();
+  const { metaProgression } = useMetaProgression();
   const safeMeta = metaProgression ?? createInitialMetaProgression();
   const npcs = npcsProp ?? gameState.npcs;
 
@@ -117,6 +119,14 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
     if (!best) return null;
     return ALTERNATIVE_SUGGESTIONS[best.goal] ?? null;
   }, [gameState, stats, endingResolution.goal]);
+  const futureVision = useMemo(() => (
+    generateFutureVision(stats, endingResolution, playerName)
+  ), [endingResolution, playerName, stats]);
+  const futureMoodIcon = useMemo(() => {
+    if (futureVision.mood === 'optimistic') return '\u{1F31F}';
+    if (futureVision.mood === 'somber') return '\u{1F327}\uFE0F';
+    return '\u{1F325}\uFE0F';
+  }, [futureVision.mood]);
 
   const highlightedRelations = useMemo(() => {
     const partners = npcs.filter(npc => npc.role === 'PARTNER');
@@ -420,7 +430,40 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
             </View>
           </FadeInUpView>
 
-          {/* Katman 3 — Yeniden oynama kancası */}
+          {/* Katman 2 - Gelecege bakis */}
+          <FadeInUpView delay={470}>
+            <View style={{
+              marginBottom: 16,
+              borderRadius: 10,
+              borderWidth: 1,
+              borderColor: theme.border,
+              backgroundColor: theme.surfaceOverlay,
+              padding: metrics.pad,
+            }}>
+              <Text style={{ color: theme.textPrimary, fontWeight: '700', fontSize: 15, marginBottom: 8 }}>
+                {'\u{1F4D6}'} Hayatinin Geri Kalani
+              </Text>
+              <Text style={{ color: theme.textSecondary, lineHeight: 20, marginBottom: 10 }}>
+                {futureVision.at30}
+              </Text>
+
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+                <View style={{ flex: 1, height: 1, backgroundColor: theme.border }} />
+                <Text style={{ color: theme.textSecondary, fontSize: 11, marginHorizontal: 8 }}>20 yil sonra</Text>
+                <View style={{ flex: 1, height: 1, backgroundColor: theme.border }} />
+              </View>
+
+              <Text style={{ color: theme.textPrimary, lineHeight: 20, marginBottom: 8 }}>
+                {futureVision.at50}
+              </Text>
+
+              <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
+                {futureMoodIcon} Gelecek ruh hali: {futureVision.mood}
+              </Text>
+            </View>
+          </FadeInUpView>
+
+          {/* Katman 3 - Yeniden oynama kancasi */}
           {alternativeSuggestion && (
             <FadeInUpView delay={480}>
               <View style={{

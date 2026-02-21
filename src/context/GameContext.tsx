@@ -6,7 +6,6 @@ import { trackSpecialProgress } from '../utils/achievementChecker';
 import SaveManager from '../save/SaveManager';
 import { SaveSlotData } from '../save/SaveSlot';
 import { useAutoSave } from '../hooks/useAutoSave';
-import { useMetaRunRecorder } from '../hooks/useMetaRunRecorder';
 import { ensureStructuredGameState, mergeGameStateUpdate, stripRuntimeGameStateCaches } from '../utils/gameStateAdapter';
 import { DEFAULT_FAMILY_EVOLUTION_STATE } from '../utils/familyNarrative';
 import {
@@ -18,6 +17,7 @@ import { devLog } from '../utils/devLogger';
 export interface GameContextType {
   gameState: GameState;
   stats: Stats;
+  /** @deprecated MetaProgressionContext kullanimi tercih edilmelidir. */
   metaProgression: MetaProgression;
   playerName: string;
   isLoading: boolean;
@@ -35,6 +35,7 @@ export interface GameContextType {
   // Composite updates
   updateGameState: (updates: GameStateUpdate) => void;
   updateStats: (updates: Partial<Stats>) => void;
+  /** @deprecated MetaProgressionContext.refreshMetaProgression kullanimi tercih edilmelidir. */
   refreshMetaProgression: () => Promise<void>;
 
   // For atomic turn advancement
@@ -107,16 +108,15 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, onLoadGame
   const initialStatsRef = useRef<Stats>(getInitialStats());
   const [gameState, setGameStateInternal] = useState<GameState>(() => buildInitialState(initialStatsRef.current));
   const stats = gameState.stats ?? initialStatsRef.current;
-  const [metaProgression, setMetaProgression] = useState<MetaProgression>(() => createInitialMetaProgression());
   const [playerName, setPlayerName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const metaProgression = gameState.metaProgression ?? createInitialMetaProgression();
 
   // Refs for async callbacks — updated inline each render (safe: only read after event loop tick).
   const gameStateRef = useRef(gameState);
   const statsRef = useRef(stats);
   const playerNameRef = useRef(playerName);
   const isLoadingRef = useRef(isLoading);
-  const metaProgressionRef = useRef(metaProgression);
   const hasLoadedOnceRef = useRef(false);
   const prevStatsRef = useRef(stats);
 
@@ -124,7 +124,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, onLoadGame
   statsRef.current = stats;
   playerNameRef.current = playerName;
   isLoadingRef.current = isLoading;
-  metaProgressionRef.current = metaProgression;
 
   useEffect(() => {
     if (isLoading) {
@@ -142,23 +141,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, onLoadGame
       prevStatsRef.current = stats;
     }
   }, [stats, isLoading]);
-
-  const refreshMetaProgression = useCallback(async () => {
-    try {
-      const nextMeta = await SaveManager.getMetaProgression();
-      setMetaProgression(nextMeta);
-      setGameStateInternal(prev => ensureStructuredGameState(
-        {
-          ...prev,
-          metaProgression: nextMeta,
-        },
-        prev,
-        prev.stats ?? initialStatsRef.current
-      ));
-    } catch (error) {
-      console.error('Failed to refresh meta progression:', error);
-    }
-  }, []);
 
   useAutoSave({
     gameStateRef,
@@ -224,7 +206,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, onLoadGame
           },
           characterInfo: savedState?.characterInfo ?? null,
           fate: savedState?.fate ?? undefined,
-          metaProgression: metaProgressionRef.current,
+          metaProgression: savedState?.metaProgression ?? prev.metaProgression ?? createInitialMetaProgression(),
           metaRunRecorded: savedState?.metaRunRecorded ?? false,
           stats: resolvedStats,
         }),
@@ -264,7 +246,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, onLoadGame
     const bootstrap = async () => {
       try {
         await initializeSaveSystem();
-        await refreshMetaProgression();
       } catch (error) {
         console.error('Save system initialization failed:', error);
       } finally {
@@ -273,7 +254,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, onLoadGame
     };
 
     void bootstrap();
-  }, [loadSavedGame, refreshMetaProgression]);
+  }, [loadSavedGame]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -285,23 +266,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, onLoadGame
     });
   }, [isLoading]);
 
-  useMetaRunRecorder({
-    gameState,
-    stats,
-    isLoading,
-    metaProgressionRef,
-    gameStateRef,
-    statsRef,
-    playerNameRef,
-    setMetaProgression,
-    setGameStateInternal,
-    prepareState: prepareStateForPersistence,
-  });
-
   const startNewGame = useCallback((name: string, characterInfo?: CharacterInfo) => {
     setPlayerName(name);
 
-    const newStats = applyLegacyBonusesToStats(getInitialStats(), metaProgressionRef.current);
+    const currentMeta = gameStateRef.current.metaProgression ?? createInitialMetaProgression();
+    const newStats = applyLegacyBonusesToStats(getInitialStats(), currentMeta);
     initialStatsRef.current = newStats;
 
     const newGameState = getInitialGameState();
@@ -318,7 +287,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, onLoadGame
         {
           ...newGameState,
           stats: newStats,
-          metaProgression: metaProgressionRef.current,
+          metaProgression: currentMeta,
           metaRunRecorded: false,
         },
         prev,
@@ -379,6 +348,15 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, onLoadGame
       return nextState;
     });
   }, []);
+
+  const refreshMetaProgression = useCallback(async () => {
+    try {
+      const nextMeta = await SaveManager.getMetaProgression();
+      updateGameState({ metaProgression: nextMeta });
+    } catch (error) {
+      console.error('Failed to refresh meta progression:', error);
+    }
+  }, [updateGameState]);
 
   // Applies deltas, not absolute values.
   const updateStats = useCallback((updates: Partial<Stats>) => {

@@ -15,6 +15,8 @@ interface SessionStartRecapProps {
   age: number;
   metaProgression?: MetaProgression;
   theme?: ReturnType<typeof getThemeTokens>;
+  cohortLabel?: string;
+  cohortMessage?: string;
 }
 
 export const SessionStartRecap: React.FC<SessionStartRecapProps> = ({
@@ -25,6 +27,8 @@ export const SessionStartRecap: React.FC<SessionStartRecapProps> = ({
   age,
   metaProgression,
   theme: themeOverride,
+  cohortLabel,
+  cohortMessage,
 }) => {
   const theme = themeOverride || getThemeTokens('dark');
 
@@ -41,6 +45,15 @@ export const SessionStartRecap: React.FC<SessionStartRecapProps> = ({
           <Text style={[styles.ageInfo, { color: theme.textSecondary }]}>
             {age} yasinda kaldin.
           </Text>
+
+          {cohortLabel && (
+            <View style={[styles.metaBox, { borderColor: theme.border, backgroundColor: theme.surfaceBase }]}>
+              <Text style={[styles.metaTitle, { color: theme.textPrimary }]}>{cohortLabel}</Text>
+              {cohortMessage && (
+                <Text style={[styles.metaLine, { color: theme.textSecondary }]}>{cohortMessage}</Text>
+              )}
+            </View>
+          )}
 
           {metaProgression && metaProgression.totalRunsCompleted > 0 && (
             <View style={[styles.metaBox, { borderColor: theme.border, backgroundColor: theme.surfaceBase }]}>

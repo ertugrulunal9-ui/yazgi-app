@@ -23,8 +23,13 @@ const getUniqueActionRoots = (ids: string[]): Set<string> => {
   return new Set(roots);
 };
 
+export const normalizeSessionCount = (value: number | null | undefined): number => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 0;
+  return Math.max(0, Math.floor(value));
+};
+
 export const isInOnboardingWindow = (gameState: GameState): boolean => {
-  const sessionCount = gameState.sessionCount || 0;
+  const sessionCount = normalizeSessionCount(gameState.sessionCount);
   return sessionCount > 0 && sessionCount <= 3;
 };
 

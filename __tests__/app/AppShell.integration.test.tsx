@@ -6,6 +6,7 @@ import { logTutorialCompleted } from '../../src/utils/analyticsEvents';
 
 const mockUseAppBootstrap = jest.fn();
 const mockUseGame = jest.fn();
+const mockUseMetaProgression = jest.fn();
 const mockSetHasCompletedOnboarding = jest.fn();
 const mockSettingsPanel = jest.fn();
 const mockNavigator = jest.fn();
@@ -33,6 +34,15 @@ jest.mock('../../src/context/GameContext', () => {
     GameProvider: ({ children }: { children: React.ReactNode }) =>
       ReactLocal.createElement(ReactLocal.Fragment, null, children),
     useGame: () => mockUseGame(),
+  };
+});
+
+jest.mock('../../src/context/MetaProgressionContext', () => {
+  const ReactLocal = require('react');
+  return {
+    MetaProgressionProvider: ({ children }: { children: React.ReactNode }) =>
+      ReactLocal.createElement(ReactLocal.Fragment, null, children),
+    useMetaProgression: () => mockUseMetaProgression(),
   };
 });
 
@@ -200,6 +210,10 @@ describe('AppShell integration', () => {
     jest.clearAllMocks();
     mockUseAppBootstrap.mockReturnValue(createBootstrapState());
     mockUseGame.mockReturnValue(createGameContext());
+    mockUseMetaProgression.mockReturnValue({
+      metaProgression: null,
+      refreshMetaProgression: jest.fn(async () => {}),
+    });
   });
 
   it('renders splash branch before app flow', () => {

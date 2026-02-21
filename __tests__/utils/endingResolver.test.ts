@@ -1,4 +1,4 @@
-import { resolveEnding, calculateEndingErrorDebt, calculateAllGoalScores } from '../../src/utils/endingResolver';
+import { EndingGoal, resolveEnding, calculateEndingErrorDebt, calculateAllGoalScores, generateFutureVision } from '../../src/utils/endingResolver';
 import { GameState, Stats } from '../../src/types';
 
 const baseStats: Stats = {
@@ -451,5 +451,49 @@ describe('calculateEndingErrorDebt', () => {
     const debt = calculateEndingErrorDebt(gameState, stats);
     expect(debt.total).toBeGreaterThan(0);
     expect(debt.reasons.length).toBeGreaterThan(0);
+  });
+});
+
+describe('generateFutureVision', () => {
+  it('returns non-empty text for every goal x tier combination', () => {
+    const goals: EndingGoal[] = ['ACADEMIC', 'CREATIVE', 'ATHLETIC', 'SOCIAL', 'ENTERPRISE', 'BALANCED'];
+    const tiers: Array<'LEGENDARY' | 'SUCCESS' | 'NORMAL' | 'FAILURE'> = ['LEGENDARY', 'SUCCESS', 'NORMAL', 'FAILURE'];
+
+    goals.forEach((goal) => {
+      tiers.forEach((tier) => {
+        const vision = generateFutureVision(
+          baseStats,
+          { goal, tier } as any,
+          'Deniz'
+        );
+
+        expect(vision.at30.trim().length).toBeGreaterThan(0);
+        expect(vision.at50.trim().length).toBeGreaterThan(0);
+      });
+    });
+  });
+
+  it('returns optimistic vision for LEGENDARY academic ending', () => {
+    const vision = generateFutureVision(
+      baseStats,
+      { goal: 'ACADEMIC', tier: 'LEGENDARY' } as any,
+      'Ayse'
+    );
+
+    expect(vision.mood).toBe('optimistic');
+    expect(vision.at30).toContain('Ayse');
+    expect(vision.at50).toContain('Ayse');
+  });
+
+  it('returns somber vision for FAILURE athletic ending', () => {
+    const vision = generateFutureVision(
+      baseStats,
+      { goal: 'ATHLETIC', tier: 'FAILURE' } as any,
+      'Can'
+    );
+
+    expect(vision.mood).toBe('somber');
+    expect(vision.at30).toContain('Can');
+    expect(vision.at50).toContain('Can');
   });
 });

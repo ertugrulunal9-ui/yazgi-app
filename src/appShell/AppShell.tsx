@@ -9,6 +9,7 @@ import { SessionEndTeaser } from '../components/SessionEndTeaser';
 import { SessionStartRecap } from '../components/SessionStartRecap';
 import { TutorialTooltip } from '../components/TutorialTooltip';
 import { GameProvider, useGame } from '../context/GameContext';
+import { MetaProgressionProvider, useMetaProgression } from '../context/MetaProgressionContext';
 import { UIProvider, useUI } from '../context/UIContext';
 import { useTutorial } from '../hooks/useTutorial';
 import { SaveSlotData } from '../save/SaveSlot';
@@ -17,6 +18,7 @@ import { AppNavigationState } from '../types';
 import { logTutorialCompleted, logSessionStart, logSessionEnd } from '../utils/analyticsEvents';
 import { clearSlotSave, getCurrentSlotId, setCurrentSlotId } from '../utils/gameUtils';
 import { stripRuntimeGameStateCaches } from '../utils/gameStateAdapter';
+import { getOnboardingCohort, isInOnboardingWindow, COHORT_DISPLAY_NAMES } from '../utils/onboardingGuidance';
 import { AnalyticsTracker } from './AnalyticsTracker';
 import { AppNavigator } from './AppNavigator';
 import { SettingsPanel } from './SettingsPanel';
@@ -25,6 +27,7 @@ import { useAppBootstrap } from './useAppBootstrap';
 const AUDIO_SETTINGS_KEY = '@yazgi/audio_settings/v1';
 const ONBOARDING_KEY = '@yazgi/onboarding_completed';
 const TUTORIAL_KEY = '@yazgi/tutorial_v2';
+const SESSION_COUNT_KEY = '@yazgi/session_count';
 const LEGACY_TUTORIAL_KEYS = [
   '@yazgi/hub_tutorial_shown',
   '@yazgi/event_tooltip_shown',
@@ -50,7 +53,8 @@ interface AppContentProps {
 }
 
 const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
-  const { gameState, stats, metaProgression, playerName, isLoading, resetGame, loadSavedGame, updateGameState } = useGame();
+  const { gameState, stats, playerName, isLoading, resetGame, loadSavedGame, updateGameState } = useGame();
+  const { metaProgression } = useMetaProgression();
   const isTestEnv = process.env.NODE_ENV === 'test'
     || typeof (globalThis as { jest?: unknown }).jest !== 'undefined';
   const [appState, setAppState] = useState<AppNavigationState>({
@@ -184,6 +188,12 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
     eventChoiceHistory: gameState.eventChoiceHistory ?? [],
     energy: stats?.energy ?? 100,
     maxEnergy: gameState.maxEnergy ?? 100,
+    fateTokens: gameState.fate?.tokens ?? 0,
+    momentumStreak: Math.max(
+      0,
+      ...Object.values(gameState.personalityState ?? {}).map(entry => entry?.streak ?? 0)
+    ),
+    npcs: (gameState.npcs ?? []).map(npc => ({ id: npc.id, role: npc.role })),
   }), [
     gameState.phase,
     gameState.turn,
@@ -192,7 +202,16 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
     gameState.eventChoiceHistory,
     stats?.energy,
     gameState.maxEnergy,
+    gameState.fate?.tokens,
+    gameState.personalityState,
+    gameState.npcs,
   ]);
+
+  const cohortMeta = useMemo(() => {
+    if (!isInOnboardingWindow(gameState)) return null;
+    const cohort = getOnboardingCohort(gameState);
+    return COHORT_DISPLAY_NAMES[cohort];
+  }, [gameState]);
 
   const tutorial = useTutorial(
     tutorialContext,
@@ -333,7 +352,10 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
 
   const prepareTutorialForNewPlayer = useCallback(async () => {
     await AsyncStorage.setItem(TUTORIAL_KEY, JSON.stringify(INITIAL_TUTORIAL_STATE));
-    await Promise.all(LEGACY_TUTORIAL_KEYS.map(key => AsyncStorage.removeItem(key)));
+    await Promise.all([
+      AsyncStorage.setItem(SESSION_COUNT_KEY, '0'),
+      ...LEGACY_TUTORIAL_KEYS.map(key => AsyncStorage.removeItem(key)),
+    ]);
   }, []);
 
   const handleStartOnboarding = useCallback(() => {
@@ -608,6 +630,8 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
         age={gameState.age}
         metaProgression={metaProgression}
         theme={theme}
+        cohortLabel={cohortMeta?.label}
+        cohortMessage={cohortMeta?.message}
       />
 
       <SessionEndTeaser
@@ -631,7 +655,9 @@ export const AppShell: React.FC = () => {
     <SafeAreaProvider>
       <View style={{ flex: 1 }}>
         <GameProvider onLoadGame={() => clearFloatingTextsRef.current?.()}>
-          <AppContentMemo clearFloatingTextsRef={clearFloatingTextsRef} />
+          <MetaProgressionProvider>
+            <AppContentMemo clearFloatingTextsRef={clearFloatingTextsRef} />
+          </MetaProgressionProvider>
         </GameProvider>
       </View>
     </SafeAreaProvider>

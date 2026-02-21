@@ -8,6 +8,7 @@ import {
   getInitialStats,
   getInitialGameState,
   getMaxEnergy,
+  zodiacInfo,
 } from '../../src/utils/gameUtils';
 import { BALANCE_CONTRACT, calculateInitialEnergy } from '../../src/config/balanceContract';
 
@@ -136,6 +137,19 @@ describe('gameUtils - Core Functions', () => {
       expect(state.currentEvent).toBeNull();
       expect(state.lastResult).toBeNull();
       expect(state.selectedNpcId).toBeNull();
+    });
+  });
+
+  describe('zodiacInfo', () => {
+    it('includes personality text for every zodiac sign', () => {
+      const signs = Object.values(zodiacInfo);
+
+      expect(signs).toHaveLength(12);
+      signs.forEach((sign) => {
+        expect(sign.personality.trim().length).toBeGreaterThan(0);
+        expect(sign.strength.trim().length).toBeGreaterThan(0);
+        expect(sign.challenge.trim().length).toBeGreaterThan(0);
+      });
     });
   });
 });

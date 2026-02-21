@@ -1423,19 +1423,110 @@ export const turkishMonths = [
 ];
 
 // Burç bilgileri
-export const zodiacInfo: Record<ZodiacSign, { name: string; emoji: string; dateRange: string }> = {
-  KOC: { name: "Koç", emoji: "♈", dateRange: "21 Mart - 19 Nisan" },
-  BOGA: { name: "Boğa", emoji: "♉", dateRange: "20 Nisan - 20 Mayıs" },
-  IKIZLER: { name: "İkizler", emoji: "♊", dateRange: "21 Mayıs - 20 Haziran" },
-  YENGEC: { name: "Yengeç", emoji: "♋", dateRange: "21 Haziran - 22 Temmuz" },
-  ASLAN: { name: "Aslan", emoji: "♌", dateRange: "23 Temmuz - 22 Ağustos" },
-  BASAK: { name: "Başak", emoji: "♍", dateRange: "23 Ağustos - 22 Eylül" },
-  TERAZI: { name: "Terazi", emoji: "♎", dateRange: "23 Eylül - 22 Ekim" },
-  AKREP: { name: "Akrep", emoji: "♏", dateRange: "23 Ekim - 21 Kasım" },
-  YAY: { name: "Yay", emoji: "♐", dateRange: "22 Kasım - 21 Aralık" },
-  OGLAK: { name: "Oğlak", emoji: "♑", dateRange: "22 Aralık - 19 Ocak" },
-  KOVA: { name: "Kova", emoji: "♒", dateRange: "20 Ocak - 18 Şubat" },
-  BALIK: { name: "Balık", emoji: "♓", dateRange: "19 Şubat - 20 Mart" }
+export const zodiacInfo: Record<ZodiacSign, {
+  name: string;
+  emoji: string;
+  dateRange: string;
+  personality: string;
+  strength: string;
+  challenge: string;
+}> = {
+  KOC: {
+    name: "Koc",
+    emoji: "♈",
+    dateRange: "21 Mart - 19 Nisan",
+    personality: "Riskte atak, buyumede hizli ama catismada cabuk alevlenen bir ruh.",
+    strength: "Cesaret ve hizli karar",
+    challenge: "Catismada sabir",
+  },
+  BOGA: {
+    name: "Boga",
+    emoji: "♉",
+    dateRange: "20 Nisan - 20 Mayis",
+    personality: "Degerlerine sadik, adim adim ilerleyen ve riskte frene basan bir karakter.",
+    strength: "Guven ve istikrar",
+    challenge: "Belirsizlikte cesur adim",
+  },
+  IKIZLER: {
+    name: "Ikizler",
+    emoji: "♊",
+    dateRange: "21 Mayis - 20 Haziran",
+    personality: "Sosyallikte parlayan, firsati hizla yakalayan ama ilkesel dengede zorlanan bir zihin.",
+    strength: "Iletisim ve ceviklik",
+    challenge: "Degerlerde tutarlilik",
+  },
+  YENGEC: {
+    name: "Yengec",
+    emoji: "♋",
+    dateRange: "21 Haziran - 22 Temmuz",
+    personality: "Vicdani guclu, insanlarla sicak bag kuran ama gerilimde geri cekilen bir kalp.",
+    strength: "Sefkat ve bag kurma",
+    challenge: "Catismada dayanma",
+  },
+  ASLAN: {
+    name: "Aslan",
+    emoji: "♌",
+    dateRange: "23 Temmuz - 22 Agustos",
+    personality: "Sahnede guclu, catismada cesur ama vicdani dengede zorlanabilen bir liderlik enerjisi.",
+    strength: "Liderlik ve etki",
+    challenge: "Empati ve olcululuk",
+  },
+  BASAK: {
+    name: "Basak",
+    emoji: "♍",
+    dateRange: "23 Agustos - 22 Eylul",
+    personality: "Gelisimi sabirla isleyen, etik durusu koruyan ve riskte kontrollu kalan bir ruh.",
+    strength: "Disiplinli gelisim",
+    challenge: "Guvenli alandan cikmak",
+  },
+  TERAZI: {
+    name: "Terazi",
+    emoji: "♎",
+    dateRange: "23 Eylul - 22 Ekim",
+    personality: "Sosyal dengeyi kuran, adalet duygusu yuksek ama sert gerilimde zorlanan bir karakter.",
+    strength: "Uzlasi ve adalet",
+    challenge: "Sert catismada karar",
+  },
+  AKREP: {
+    name: "Akrep",
+    emoji: "♏",
+    dateRange: "23 Ekim - 21 Kasim",
+    personality: "Catismada guclu, riskte cesur ama sosyal iliskilerde zorlanan bir ruh.",
+    strength: "Cesaret ve kararlilik",
+    challenge: "Empati ve baglanti",
+  },
+  YAY: {
+    name: "Yay",
+    emoji: "♐",
+    dateRange: "22 Kasim - 21 Aralik",
+    personality: "Kesfe acik, riskte istekli ve buyumeye odakli; deger dengesini korumakta zorlanan bir yolcu.",
+    strength: "Kesif cesareti",
+    challenge: "Sorumlulukta istikrar",
+  },
+  OGLAK: {
+    name: "Oglak",
+    emoji: "♑",
+    dateRange: "22 Aralik - 19 Ocak",
+    personality: "Uzun vadede sabirli, etik cizgisi guclu ve riskte temkinli bir stratejist.",
+    strength: "Sabir ve strateji",
+    challenge: "Cesur risk alma",
+  },
+  KOVA: {
+    name: "Kova",
+    emoji: "♒",
+    dateRange: "20 Ocak - 18 Subat",
+    personality: "Toplulukta yenilikci, riskte atik ama gerilimde mesafelenen bir vizyon.",
+    strength: "Yenilik ve sosyal vizyon",
+    challenge: "Gerilimde denge",
+  },
+  BALIK: {
+    name: "Balik",
+    emoji: "♓",
+    dateRange: "19 Subat - 20 Mart",
+    personality: "Vicdani ve sosyal bagi guclu, catismada sinir cizmekte zorlanan duygusal bir ruh.",
+    strength: "Empati ve sezgi",
+    challenge: "Catismada net sinir",
+  },
 };
 
 /** Ay ve güne göre burç hesaplar */

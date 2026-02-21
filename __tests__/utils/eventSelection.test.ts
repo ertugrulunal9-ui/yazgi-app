@@ -325,6 +325,60 @@ describe('eventSelection', () => {
     expect(chaosPick.id).toBe('chaos_social');
   });
 
+  it('boosts npc_checkin events around 4-5 turn cadence', () => {
+    const regularEvent: GameEvent = {
+      id: 'regular_social_event',
+      text: 'Regular social',
+      minAge: 0,
+      maxAge: 99,
+      choices: [{ text: 'ok', effect: {}, feedback: 'ok' }],
+      rarity: 'COMMON',
+      difficulty: 2,
+      isRepeatable: true,
+      tags: ['social'],
+    };
+    const checkInEvent: GameEvent = {
+      id: 'npc_checkin_event',
+      text: 'NPC check-in',
+      minAge: 0,
+      maxAge: 99,
+      choices: [{ text: 'ok', effect: {}, feedback: 'ok' }],
+      rarity: 'COMMON',
+      difficulty: 2,
+      isRepeatable: true,
+      tags: ['npc_checkin', 'social'],
+      reqNPCRole: 'FRIEND',
+    };
+
+    const normalTurnPick = selectEventWithAdaptivePacing(
+      [regularEvent, checkInEvent],
+      baseContext,
+      [],
+      [],
+      {
+        fallbackEvent,
+        adaptivePacingStreak: 0,
+        currentTurn: 3,
+        randomFn: () => 0.4,
+      }
+    );
+    expect(normalTurnPick.id).toBe('regular_social_event');
+
+    const boostedTurnPick = selectEventWithAdaptivePacing(
+      [regularEvent, checkInEvent],
+      baseContext,
+      [],
+      [],
+      {
+        fallbackEvent,
+        adaptivePacingStreak: 0,
+        currentTurn: 5,
+        randomFn: () => 0.4,
+      }
+    );
+    expect(boostedTurnPick.id).toBe('npc_checkin_event');
+  });
+
   it('applies category diversity penalty for repeated categories', () => {
     const socialEvent: GameEvent = {
       id: 'social_1',

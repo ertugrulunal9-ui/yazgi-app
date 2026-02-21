@@ -5,6 +5,7 @@ export const Text = 'Text';
 export const TouchableOpacity = 'TouchableOpacity';
 export const Pressable = 'Pressable';
 export const ScrollView = 'ScrollView';
+export const FlatList = 'FlatList';
 export const TextInput = 'TextInput';
 export const Modal = 'Modal';
 export const SafeAreaView = 'SafeAreaView';
@@ -24,10 +25,28 @@ export const Animated = {
   Value: class MockAnimatedValue {
     constructor(value: number) {}
     setValue(value: number) {}
+    stopAnimation(callback?: (value: number) => void) {
+      callback?.(1);
+    }
     interpolate(config: any) { return '100%'; }
   },
   timing: jest.fn(() => ({
     start: jest.fn((callback?: () => void) => callback && callback()),
+    stop: jest.fn(),
+  })),
+  sequence: jest.fn((animations: Array<{ start?: (callback?: () => void) => void }>) => ({
+    start: jest.fn((callback?: () => void) => {
+      animations.forEach(animation => animation?.start?.());
+      callback?.();
+    }),
+    stop: jest.fn(),
+  })),
+  loop: jest.fn((animation: { start?: (callback?: () => void) => void }, _config?: unknown) => ({
+    start: jest.fn((callback?: () => void) => {
+      animation?.start?.();
+      callback?.();
+    }),
+    stop: jest.fn(),
   })),
   View: 'Animated.View',
 };
@@ -57,6 +76,7 @@ export default {
   TouchableOpacity,
   Pressable,
   ScrollView,
+  FlatList,
   TextInput,
   Modal,
   SafeAreaView,

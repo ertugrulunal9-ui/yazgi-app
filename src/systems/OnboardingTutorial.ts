@@ -1,6 +1,6 @@
 /**
  * Onboarding Tutorial State Machine
- * Pure functions — no side effects, easily testable.
+ * Pure functions - no side effects, easily testable.
  */
 
 import { LifeGoal } from '../types';
@@ -13,16 +13,21 @@ export type TutorialStep =
   | 'STAT_CHANGE'
   | 'FIRST_EVENT'
   | 'ENERGY_EXPLAIN'
+  | 'FATE_TOKEN_TUTORIAL'
+  | 'PERSONALITY_MOMENTUM'
+  | 'NPC_INTRODUCTION'
   | 'COMPLETED';
 
 export interface TutorialState {
   currentStep: TutorialStep;
   completedSteps: TutorialStep[];
+  sessionNumber: number;
 }
 
 export const INITIAL_TUTORIAL_STATE: TutorialState = {
   currentStep: 'GOAL_VISION',
   completedSteps: [],
+  sessionNumber: 1,
 };
 
 export const TUTORIAL_STEPS_ORDER: TutorialStep[] = [
@@ -32,6 +37,9 @@ export const TUTORIAL_STEPS_ORDER: TutorialStep[] = [
   'STAT_CHANGE',
   'FIRST_EVENT',
   'ENERGY_EXPLAIN',
+  'FATE_TOKEN_TUTORIAL',
+  'PERSONALITY_MOMENTUM',
+  'NPC_INTRODUCTION',
   'COMPLETED',
 ];
 
@@ -45,37 +53,59 @@ export interface TutorialContent {
 const isTutorialHubPhase = (phase: string): boolean =>
   phase === 'HUB' || phase === 'SETUP';
 
-const STEP_CONTENT: Record<Exclude<TutorialStep, 'COMPLETED'>, { title: string; message: string }> = {
+const STEP_CONTENT: Record<Exclude<TutorialStep, 'COMPLETED'>, {
+  title: string;
+  message: string;
+  returningTitle?: string;
+  returningMessage?: string;
+}> = {
   GOAL_VISION: {
     title: 'Hayalin',
     message: 'Bu hayatta {goalName} olmayi hedefliyorsun. Bunun icin {keyStats} gelistirmeni gerekiyor.',
+    returningTitle: 'Yeni Bir Hayat',
+    returningMessage: 'Yeni bir yaşam, aynı hayal: {goalName}. Hazır mısın?',
   },
   WELCOME_HUB: {
-    title: 'Hayatına Hoş Geldin!',
-    message: 'Bu senin yaşam alanın. Aktiviteler seçerek gününü geçirebilirsin. Her aktivite statlarını etkiler.',
+    title: 'Hayatina Hos Geldin!',
+    message: 'Bu senin yasam alanin. Aktiviteler secerek gununu gecirebilirsin. Her aktivite statlarini etkiler.',
+    returningTitle: 'Tekrar Merhaba!',
+    returningMessage: 'Tekrar hayata döndün. Bu sefer nasıl yazacaksın kaderini?',
   },
   FIRST_ACTION: {
-    title: 'İlk Aktiviteni Seç',
-    message: 'Bir aktiviteye dokun! Ders çalışma zekanı, spor sağlığını, sosyal etkinlikler karizmayı artırır.',
+    title: 'Ilk Aktiviteni Sec',
+    message: 'Bir aktiviteye dokun! Ders calisma zekani, spor sagligini, sosyal etkinlikler karizmayi artirir.',
   },
   STAT_CHANGE: {
-    title: 'Statların Değişti!',
-    message: 'Gördün mü? Seçimlerin karakterini şekillendiriyor. Dengelemeyi unutma — tek yöne aşırı gitmek riskli!',
+    title: 'Statlarin Degisti!',
+    message: 'Gordun mu? Secimlerin karakterini sekillendiriyor. Dengelemeyi unutma - tek yone asiri gitmek riskli!',
   },
   FIRST_EVENT: {
-    title: 'Bir Olay Gerçekleşti!',
-    message: 'Hayatta rastgele olaylar olur. Seçimlerin karakterini ve geleceğini belirler. Dikkatli karar ver!',
+    title: 'Bir Olay Gerceklesti!',
+    message: 'Hayatta rastgele olaylar olur. Secimlerin karakterini ve gelecegini belirler. Dikkatli karar ver!',
   },
   ENERGY_EXPLAIN: {
     title: 'Enerji Sistemi',
-    message: 'Her aktivite enerji harcar. Enerji bittiğinde günü bitirmen gerekir. Yeni gün = yeni enerji!',
+    message: 'Her aktivite enerji harcar. Enerji bittiginde gunu bitirmen gerekir. Yeni gun = yeni enerji!',
+  },
+  FATE_TOKEN_TUTORIAL: {
+    title: 'Kader Tokeni',
+    message: 'Ilk kader tokenini kazandin! Zor anlarda secimlerini tekrar yazmak icin bunu kullanabilirsin.',
+  },
+  PERSONALITY_MOMENTUM: {
+    title: 'Kisilik Ivmesi',
+    message: 'Ayni tarz secimler birikince momentum olusur. Seri yakaladiginda etkiler daha belirgin olur.',
+  },
+  NPC_INTRODUCTION: {
+    title: 'NPC Rolleri',
+    message: 'Iliskiler degistikce NPC rol degisimi olur. Kimin dost, kimin rakip oldugunu takip et.',
   },
 };
 
-const TOTAL_STEPS = 6; // Excluding COMPLETED
+const TOTAL_STEPS = TUTORIAL_STEPS_ORDER.filter(step => step !== 'COMPLETED').length;
 
 interface TutorialContentContext {
   selectedGoal?: LifeGoal | null;
+  sessionNumber?: number;
 }
 
 const getGoalVisionMessage = (context?: TutorialContentContext): string => {
@@ -94,12 +124,27 @@ export const getTutorialContent = (step: TutorialStep, context?: TutorialContent
 
   const content = STEP_CONTENT[step];
   const stepIndex = TUTORIAL_STEPS_ORDER.indexOf(step);
-  const message = step === 'GOAL_VISION'
-    ? getGoalVisionMessage(context)
-    : content.message;
+  const isReturning = (context?.sessionNumber ?? 1) > 1;
+
+  let title = content.title;
+  let message: string;
+
+  if (step === 'GOAL_VISION') {
+    if (isReturning && content.returningMessage) {
+      const goalMeta = getLifeGoalMeta(context?.selectedGoal ?? null);
+      const goalName = goalMeta?.shortLabel ?? 'guclu bir rota';
+      message = content.returningMessage.replace('{goalName}', goalName);
+      if (content.returningTitle) title = content.returningTitle;
+    } else {
+      message = getGoalVisionMessage(context);
+    }
+  } else {
+    message = isReturning && content.returningMessage ? content.returningMessage : content.message;
+    if (isReturning && content.returningTitle) title = content.returningTitle;
+  }
 
   return {
-    title: content.title,
+    title,
     message,
     stepNumber: stepIndex + 1,
     totalSteps: TOTAL_STEPS,
@@ -118,15 +163,17 @@ export const advanceTutorial = (state: TutorialState): TutorialState => {
   return {
     currentStep: nextStep,
     completedSteps: [...state.completedSteps, state.currentStep],
+    sessionNumber: state.sessionNumber,
   };
 };
 
 /**
  * Skip the entire tutorial.
  */
-export const skipTutorial = (): TutorialState => ({
+export const skipTutorial = (sessionNumber: number = 1): TutorialState => ({
   currentStep: 'COMPLETED',
   completedSteps: [...TUTORIAL_STEPS_ORDER.filter(s => s !== 'COMPLETED')],
+  sessionNumber,
 });
 
 /**
@@ -142,6 +189,10 @@ export const shouldShowStep = (
     eventChoiceHistory: unknown[];
     energy: number;
     maxEnergy: number;
+    sessionNumber: number;
+    fateTokens: number;
+    momentumStreak: number;
+    npcRoleChanged: boolean;
   }
 ): boolean => {
   switch (step) {
@@ -166,6 +217,19 @@ export const shouldShowStep = (
       return isTutorialHubPhase(gameContext.phase) &&
         gameContext.turn <= 4 &&
         gameContext.energy < gameContext.maxEnergy * 0.7;
+
+    case 'FATE_TOKEN_TUTORIAL':
+      return gameContext.sessionNumber >= 1
+        && gameContext.fateTokens >= 1
+        && gameContext.turn <= 20;
+
+    case 'PERSONALITY_MOMENTUM':
+      return (gameContext.sessionNumber >= 2 && gameContext.momentumStreak >= 3)
+        || (gameContext.sessionNumber >= 3 && gameContext.momentumStreak >= 1);
+
+    case 'NPC_INTRODUCTION':
+      return (gameContext.sessionNumber >= 2 && gameContext.npcRoleChanged)
+        || gameContext.sessionNumber >= 3;
 
     case 'COMPLETED':
       return false;

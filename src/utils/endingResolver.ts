@@ -669,7 +669,7 @@ const flavorByAchievements = (
 };
 
 const calculateTier = (score: number, errorDebt: EndingErrorDebt): CareerResult['type'] => {
-  if (errorDebt.total >= 82) return 'FAILURE';
+  if (errorDebt.total >= 70) return 'FAILURE';
   if (score >= 82) return 'LEGENDARY';
   if (score >= 58) return 'SUCCESS';
   if (score >= 40) return 'NORMAL';
@@ -1090,11 +1090,11 @@ export const resolveEnding = ({
   const achievementBonus = achievementBonusForGoal(goal, achievementSet);
   const rawScore = (compatibilityScore * 0.65) + (basePick.domainFit * 0.35);
   const debtPenalty = resolvedDebt.total * 0.65;
-  const mismatchPenalty = mismatchAnalysis.isMismatch ? 22 : 0;
+  const mismatchPenalty = mismatchAnalysis.isMismatch ? 30 : 0;
   const finalScore = clamp(rawScore + achievementBonus - debtPenalty - mismatchPenalty, 0, 100);
 
   let tier = calculateTier(finalScore, resolvedDebt);
-  if (!mismatchAnalysis.isMismatch && resolvedDebt.total < 82) {
+  if (!mismatchAnalysis.isMismatch && resolvedDebt.total < 70) { // FAILURE threshold ile senkronize
     if (basePick.result.type === 'LEGENDARY' && resolvedDebt.total < 65) {
       tier = 'LEGENDARY';
     }
@@ -1150,3 +1150,156 @@ export const resolveEnding = ({
     result: finalResult,
   };
 };
+
+type FutureVisionMood = 'optimistic' | 'neutral' | 'somber';
+
+interface FutureVisionTemplate {
+  at30: [string, string];
+  at50: [string, string];
+}
+
+const FUTURE_VISION_GOAL_TEMPLATES: Record<EndingGoal, FutureVisionTemplate> = {
+  ACADEMIC: {
+    at30: [
+      '{name}, 30 yasinda arastirma masasinda gecirdigin uzun geceler meyvesini veriyor. Calismalarin seni alaninda guvenilen bir sese donusturuyor.',
+      '{name}, 30 yasinda derslik ile laboratuvar arasinda kurdugun denge meyve veriyor. Urettigin fikirler genc zihinlere yeni kapilar aciyor.',
+    ],
+    at50: [
+      '{name}, 50 yasinda yetistirdigin ogrenciler senin izini surmeye devam ediyor.',
+      '{name}, 50 yasinda adin bilgiyle anilan bir okulun temel taslarindan biri oluyor.',
+    ],
+  },
+  CREATIVE: {
+    at30: [
+      '{name}, 30 yasinda hayal gucun somut projelere donusuyor. Eserlerin izleyicilerde iz birakan bir imzaya sahip oluyor.',
+      '{name}, 30 yasinda uretim ritmini buluyorsun. Islerin hem duyguyu hem cesareti ayni anda tasiyor.',
+    ],
+    at50: [
+      '{name}, 50 yasinda bir kusagin ilham panosunda adini birakmis oluyorsun.',
+      '{name}, 50 yasinda eserlerin yeni sanatcilara yol haritasi olarak gosteriliyor.',
+    ],
+  },
+  ATHLETIC: {
+    at30: [
+      '{name}, 30 yasinda disiplinin bedenine ve zihnine ayni anda yansiyor. Rekabetin icinde kalirken etrafina da tempo veriyorsun.',
+      '{name}, 30 yasinda antrenman rutinin hayatinin iskeleti oluyor. Zirve yarislari kadar toparlanma gunlerine de deger veriyorsun.',
+    ],
+    at50: [
+      '{name}, 50 yasinda birikiminle genc sporculara yol gosteren bir isim haline geliyorsun.',
+      '{name}, 50 yasinda performans kadar saglam kalmanin bilgisini paylasiyorsun.',
+    ],
+  },
+  SOCIAL: {
+    at30: [
+      '{name}, 30 yasinda insanlar arasinda kopru kuran bir role geciyorsun. Guven verdigin icin kapilar once sana aciliyor.',
+      '{name}, 30 yasinda iliski agin sadece kalabalik degil, ayni zamanda derin oluyor. Zor anlarda insanlar senden yon buluyor.',
+    ],
+    at50: [
+      '{name}, 50 yasinda etrafinda kurdugun guven cemberi hayatinin en buyuk sermayesine donusuyor.',
+      '{name}, 50 yasinda bircok insan seni kriz anlarinda ilk aradigi kisi olarak goruyor.',
+    ],
+  },
+  ENTERPRISE: {
+    at30: [
+      '{name}, 30 yasinda risk ile plan arasinda yeni bir denge kuruyorsun. Urettigin deger seni sadece kazanan degil yon veren bir oyuncu yapiyor.',
+      '{name}, 30 yasinda firsat kokusunu erken alan bir bakis acisi gelistiriyorsun. Dogru ekiplerle buyumeyi hizlandiriyorsun.',
+    ],
+    at50: [
+      '{name}, 50 yasinda kurdugun sistemler senden sonra da islemeye devam ediyor.',
+      '{name}, 50 yasinda birikimin hem yatirimlara hem yeni girisimcilere can veriyor.',
+    ],
+  },
+  BALANCED: {
+    at30: [
+      '{name}, 30 yasinda tek bir alana kapanmak yerine hayatini dengede buyutuyorsun. Is, iliski ve ic huzur arasinda kendi olcunu buluyorsun.',
+      '{name}, 30 yasinda farkli rolleri tasirken yorulmadan ilerlemeyi ogreniyorsun. Kucuk ama surekli adimlarin buyuk bir denge kuruyor.',
+    ],
+    at50: [
+      '{name}, 50 yasinda hayatindaki uyum duygusu en guclu pusulana donusuyor.',
+      '{name}, 50 yasinda istikrarli yonden sapmadan ilerlemenin degerini cevrendekilere aktariyorsun.',
+    ],
+  },
+};
+
+const FUTURE_VISION_TIER_TONES: Record<CareerResult['type'], {
+  mood: FutureVisionMood;
+  at30: [string, string];
+  at50: [string, string];
+}> = {
+  LEGENDARY: {
+    mood: 'optimistic',
+    at30: [
+      'Adin ulke sinirlarini asan bir etki alanina ulasiyor.',
+      'Basarin sadece sonuclarla degil, etrafinda kurdugun standartla da konusuluyor.',
+    ],
+    at50: [
+      'Zaman gectikce hikayen bir basari olcusune donusuyor.',
+      'Birakilan etki, yillara ragmen azalmadan buyuyor.',
+    ],
+  },
+  SUCCESS: {
+    mood: 'optimistic',
+    at30: [
+      'Istikrarli adimlarin seni saglam bir zirveye tasiyor.',
+      'Hizli sicramalardan cok, guvenilir ilerlemenin gucunu gostermis oluyorsun.',
+    ],
+    at50: [
+      'Emeginin uzun vadeli getirisi hayatina huzurlu bir genislik katıyor.',
+      'Yillar sonra bakildiginda cizginin ne kadar saglam oldugu netlesiyor.',
+    ],
+  },
+  NORMAL: {
+    mood: 'neutral',
+    at30: [
+      'Yolun parlak ama olculu; fazla risk almadan yavas yavas gucleniyorsun.',
+      'Buyuk patlamalar yerine duzgun ritim seni ayakta tutuyor.',
+    ],
+    at50: [
+      'Zamanla topladigin deneyim sade ama guvenilir bir hayat kuruyor.',
+      'Dengenin de bir basari bicimi oldugunu en iyi sen kanitliyorsun.',
+    ],
+  },
+  FAILURE: {
+    mood: 'somber',
+    at30: [
+      'Hatalarin birikimi omuzlarini zorluyor; yeniden kurmak icin sabir gerekiyor.',
+      'Bazi kapilar gec aciliyor, bu da yolunu yeniden cizmeye zorluyor.',
+    ],
+    at50: [
+      'Yine de gecmisin agirligini anlamlandirdikca daha sakin bir dayaniklilik gelisiyor.',
+      'Acilar silinmiyor ama onlardan dogan bilgelik hayata tutunmana yardim ediyor.',
+    ],
+  },
+};
+
+const getFutureVisionVariantIndex = (stats: Stats, playerName: string): 0 | 1 => {
+  const seed = Math.round(
+    stats.health
+    + stats.intelligence
+    + stats.charisma
+    + stats.discipline
+    + (stats.money / 100)
+    + playerName.length * 3
+  );
+  return (Math.abs(seed) % 2) as 0 | 1;
+};
+
+const injectName = (template: string, name: string): string =>
+  template.replaceAll('{name}', name);
+
+export function generateFutureVision(
+  stats: Stats,
+  ending: EndingResolution,
+  playerName: string
+): { at30: string; at50: string; mood: FutureVisionMood } {
+  const safeName = playerName.trim() || 'Sen';
+  const variant = getFutureVisionVariantIndex(stats, safeName);
+  const goalTemplate = FUTURE_VISION_GOAL_TEMPLATES[ending.goal] ?? FUTURE_VISION_GOAL_TEMPLATES.BALANCED;
+  const tierTone = FUTURE_VISION_TIER_TONES[ending.tier] ?? FUTURE_VISION_TIER_TONES.NORMAL;
+
+  return {
+    at30: `${injectName(goalTemplate.at30[variant], safeName)} ${tierTone.at30[variant]}`,
+    at50: `${injectName(goalTemplate.at50[variant], safeName)} ${tierTone.at50[variant]}`,
+    mood: tierTone.mood,
+  };
+}

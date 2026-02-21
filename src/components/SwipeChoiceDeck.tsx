@@ -9,7 +9,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 // Reanimated reserved for future card stack animations
 import { Choice, EventContext, EventRarity, PersonalityState } from '../types';
 import { useUI } from '../context/UIContext';
-import { SwipeChoiceCard } from './SwipeChoiceCard';
+import { ChoiceCard } from './ChoiceCard';
 import { AnimatedButton } from '../animations/ButtonAnimations';
 import { StaggeredFadeIn, buttonPress, importantDecision } from '../animations';
 import { getMomentumDialogueTag } from '../utils/momentumDialogue';
@@ -156,7 +156,7 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
                 },
               ]}
             >
-              <SwipeChoiceCard
+              <ChoiceCard
                 choice={resolved}
                 index={activeIndex}
                 totalChoices={resolvedChoices.length}

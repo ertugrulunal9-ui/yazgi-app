@@ -11,6 +11,7 @@
 
 import { useContext, useMemo } from 'react';
 import { GameContext } from '../context/GameContext';
+import { useMetaProgression } from '../context/MetaProgressionContext';
 import { useUI } from '../context/UIContext';
 import {
   SchoolGrades,
@@ -20,8 +21,10 @@ import {
   Family,
   GameState,
   MomentumVisibility,
+  Stats,
 } from '../types';
 import { getAcademicState, getCharacterState, getEventState, getProgressState, getSocialState } from '../utils/gameStateAdapter';
+import { getLegacyBonusBreakdown } from '../utils/metaProgression';
 import { getMomentumVisibilityFromPersonalityState } from '../utils/momentumVisibility';
 
 export const getMomentumVisibility = (state: GameState): MomentumVisibility => {
@@ -46,6 +49,67 @@ export const usePlayerStats = () => {
     updateStats: context.updateStats,
     setStats: context.setStats,
   }), [stats, context.updateStats, context.setStats]);
+};
+
+/**
+ * Header için 7 stati 4 anlamli sutuna indirger.
+ */
+export const usePillarStats = (overrideStats?: Stats) => {
+  const context = useContext(GameContext);
+  const stats = overrideStats ?? context?.gameState.stats ?? context?.stats;
+  if (!stats) {
+    throw new Error('usePillarStats must be used within GameProvider when overrideStats is not provided');
+  }
+
+  return useMemo(() => ({
+    beden: Math.round((stats.health + stats.energy) / 2),
+    zihin: Math.round((stats.intelligence + stats.discipline) / 2),
+    ruh: Math.round((stats.charisma + stats.familyRelation) / 2),
+    servet: stats.money,
+    raw: stats,
+  }), [stats]);
+};
+
+/**
+ * Stress bilgisini HUD icin normalize eder.
+ */
+export const useStress = () => {
+  const context = useContext(GameContext);
+  if (!context) throw new Error('useStress must be used within GameProvider');
+
+  return useMemo(() => {
+    const stress = context.gameState.stress ?? { current: 0, threshold: 70 };
+    const threshold = stress.threshold > 0 ? stress.threshold : 70;
+
+    return {
+      current: stress.current,
+      threshold,
+      ratio: stress.current / threshold,
+    };
+  }, [context.gameState.stress]);
+};
+
+/**
+ * Legacy bonuslarini New Game UI'i icin ozetler.
+ */
+export const useLegacyBonuses = () => {
+  const { metaProgression } = useMetaProgression();
+
+  return useMemo(() => {
+    const bonus = getLegacyBonusBreakdown(metaProgression);
+    const visible = bonus.level > 0;
+
+    return {
+      visible,
+      level: bonus.level,
+      health: bonus.statBonus,
+      intelligence: bonus.statBonus,
+      charisma: bonus.statBonus,
+      discipline: bonus.statBonus,
+      familyRelation: bonus.relationBonus,
+      money: bonus.moneyBonus,
+    };
+  }, [metaProgression]);
 };
 
 /**
@@ -147,7 +211,10 @@ export const useMomentumVisibility = (): MomentumVisibility => {
   const context = useContext(GameContext);
   if (!context) throw new Error('useMomentumVisibility must be used within GameProvider');
 
-  return useMemo(() => getMomentumVisibility(context.gameState), [context.gameState.personalityState]);
+  return useMemo(
+    () => getMomentumVisibilityFromPersonalityState(context.gameState.personalityState),
+    [context.gameState.personalityState]
+  );
 };
 
 /**

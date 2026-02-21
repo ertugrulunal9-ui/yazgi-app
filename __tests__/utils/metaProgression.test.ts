@@ -3,6 +3,7 @@ import {
   applyRunToMetaProgression,
   calculateLegacyPointsForRun,
   createInitialMetaProgression,
+  getLegacyBonusBreakdown,
 } from '../../src/utils/metaProgression';
 import { Stats } from '../../src/types';
 
@@ -107,5 +108,17 @@ describe('metaProgression', () => {
     expect(boosted.discipline).toBe(60);
     expect(boosted.familyRelation).toBe(58);
     expect(boosted.money).toBe(350);
+  });
+
+  it('derives legacy bonus breakdown from level', () => {
+    const bonus = getLegacyBonusBreakdown({
+      ...createInitialMetaProgression(),
+      legacyLevel: 4,
+    });
+
+    expect(bonus.level).toBe(4);
+    expect(bonus.statBonus).toBe(4);
+    expect(bonus.relationBonus).toBe(2);
+    expect(bonus.moneyBonus).toBe(40);
   });
 });

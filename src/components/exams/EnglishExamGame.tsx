@@ -7,7 +7,7 @@ import Animated, {
     withSpring,
     withTiming,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { Haptics } from '../../utils/haptics';
 import { Difficulty, GameState } from './MiniGameContainer';
 import seenQuestionsTracker from '../../utils/seenQuestionsTracker';
 import { balanceCorrectAnswerDistribution } from './questionOptionBalancer';

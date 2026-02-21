@@ -3,7 +3,7 @@
  * On web, haptics are skipped but SFX playback stays active.
  */
 
-import * as Haptics from 'expo-haptics';
+import { Haptics } from '../utils/haptics';
 import { Platform } from 'react-native';
 import { devLog } from '../utils/devLogger';
 import { audioManager } from '../audio/AudioManager';

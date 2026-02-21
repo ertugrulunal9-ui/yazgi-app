@@ -14,6 +14,8 @@ import { LegacyPanel } from '../components/LegacyPanel';
 import { EndingGallery } from '../components/EndingGallery';
 import { GoalVisionOnboarding } from '../components/Onboarding';
 import { useGame } from '../context/GameContext';
+import { useMetaProgression } from '../context/MetaProgressionContext';
+import { useLegacyBonuses } from '../hooks/useGameSelectors';
 import { CharacterInfo, LifeGoal, PlayerGender } from '../types';
 import { LIFE_GOAL_META, LIFE_GOAL_ORDER } from '../utils/lifeGoalSystem';
 import {
@@ -144,7 +146,9 @@ const DropdownPicker: React.FC<DropdownPickerProps> = ({
 };
 
 export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme, metrics, onGameStart }) => {
-  const { startNewGame, metaProgression, updateGameState } = useGame();
+  const { startNewGame, updateGameState } = useGame();
+  const { metaProgression } = useMetaProgression();
+  const legacyBonuses = useLegacyBonuses();
 
   const [activeTab, setActiveTab] = useState<'play' | 'lives'>('play');
   const [firstName, setFirstName] = useState('');
@@ -461,14 +465,16 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
                   borderColor: theme.border,
                   backgroundColor: theme.surfaceOverlay,
                   padding: 10,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
                 }}
               >
-                <Text style={{ color: theme.textSecondary, fontSize: 12 }}>Burc</Text>
-                <Text style={{ color: theme.accentBrand, fontWeight: '800' }}>
-                  {zodiac.emoji} {zodiac.name}
+                <Text style={{ color: theme.accentBrand, fontWeight: '800', marginBottom: 6 }}>
+                  {zodiac.emoji} {zodiac.name.toUpperCase()}  {'\u2022'}  {zodiac.dateRange}
+                </Text>
+                <Text style={{ color: theme.textPrimary, fontSize: 13, lineHeight: 20, marginBottom: 6 }}>
+                  "{zodiac.personality}"
+                </Text>
+                <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
+                  {'\u{1F4AA}'} Guclu: {zodiac.strength}   {'\u26A0\uFE0F'} Zorluk: {zodiac.challenge}
                 </Text>
               </View>
             </View>
@@ -515,6 +521,37 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
               theme={theme}
               metrics={metrics}
             />
+
+            {legacyBonuses.visible && (
+              <View style={sectionStyle}>
+                <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
+                  Miras Avantajlari
+                </Text>
+                <Text style={{ color: theme.textPrimary, fontWeight: '700', marginBottom: 8 }}>
+                  Legacy Seviye {legacyBonuses.level}
+                </Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  <View style={{ backgroundColor: theme.surfaceOverlay, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}>
+                    <Text style={{ color: theme.textPrimary, fontSize: 12 }}>Saglik +{legacyBonuses.health}</Text>
+                  </View>
+                  <View style={{ backgroundColor: theme.surfaceOverlay, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}>
+                    <Text style={{ color: theme.textPrimary, fontSize: 12 }}>Zeka +{legacyBonuses.intelligence}</Text>
+                  </View>
+                  <View style={{ backgroundColor: theme.surfaceOverlay, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}>
+                    <Text style={{ color: theme.textPrimary, fontSize: 12 }}>Karizma +{legacyBonuses.charisma}</Text>
+                  </View>
+                  <View style={{ backgroundColor: theme.surfaceOverlay, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}>
+                    <Text style={{ color: theme.textPrimary, fontSize: 12 }}>Disiplin +{legacyBonuses.discipline}</Text>
+                  </View>
+                  <View style={{ backgroundColor: theme.surfaceOverlay, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}>
+                    <Text style={{ color: theme.textPrimary, fontSize: 12 }}>Aile +{legacyBonuses.familyRelation}</Text>
+                  </View>
+                  <View style={{ backgroundColor: theme.surfaceOverlay, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}>
+                    <Text style={{ color: theme.textPrimary, fontSize: 12 }}>Para +{legacyBonuses.money} TL</Text>
+                  </View>
+                </View>
+              </View>
+            )}
 
             <TouchableOpacity
               onPress={handleStartGame}
