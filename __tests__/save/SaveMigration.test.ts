@@ -1,5 +1,6 @@
 import { detectLegacySave, migrateLegacySave, migrateToVersion } from '../../src/save/SaveMigration';
 import { SAVE_VERSION, SaveSlotData } from '../../src/save/SaveSlot';
+import { GameState } from '../../src/types';
 import { generateChecksum } from '../../src/utils/checksum';
 
 const createMockStorage = () => {
@@ -36,7 +37,7 @@ describe('Save Migration', () => {
     const expectedChecksum = generateChecksum({
       playerName: legacyData.playerName,
       stats: legacyData.stats,
-      gameState: legacyData.gameState as any,
+      gameState: legacyData.gameState,
     });
     expect(migrated?.metadata.checksum).toBe(expectedChecksum);
   });
@@ -83,8 +84,11 @@ describe('Save Migration', () => {
         npcs: [],
         selectedNpcId: null,
         innerThought: '',
+        innerThoughtType: 'IDLE',
         floatingTexts: [],
         totalTurns: 0,
+        sessionCount: 1,
+        adaptivePacingStreak: 0,
         lastInteracted: {},
         recentEvents: [],
         memories: [],
@@ -104,7 +108,13 @@ describe('Save Migration', () => {
         socialReputation: 50,
         examsTakenThisYear: [],
         isExamPeriod: false,
-      },
+        childhood: {
+          completed: false,
+          sceneIndex: 0,
+          memories: [],
+          selectedMemoryId: null,
+        },
+      } as GameState,
     };
 
     const migrated = migrateToVersion(saveData, SAVE_VERSION);

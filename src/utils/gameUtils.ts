@@ -1188,7 +1188,8 @@ export const checkTraitFormation = (
   const potentialTraits = TRAIT_DEFINITIONS.filter(t => t.category === 'ACQUIRED' && t.formation && !state.traits.includes(t.id));
 
   potentialTraits.forEach(trait => {
-    const formation = trait.formation!;
+    const formation = trait.formation;
+    if (!formation) return; // filter above guarantees this, but TS needs explicit narrowing
 
     // 1. Age Check
     if (!isWithinAgeWindow(state.age, formation.ageWindow)) return;

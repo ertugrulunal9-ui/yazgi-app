@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { devLog } from '../utils/devLogger';
-import { MetaProgression } from '../types';
+import { GameState, MetaProgression, Stats } from '../types';
 import { createInitialMetaProgression } from '../utils/metaProgression';
 import {
   SaveSlotData,
@@ -27,22 +27,36 @@ import { compressSaveData, decompressSaveData } from './SaveCompression';
 import { detectLegacySave, migrateLegacySave, migrateToVersion, createMigrationBackup } from './SaveMigration';
 import { generateChecksum, validateChecksum } from '../utils/checksum';
 import { validateSaveData } from './SaveValidation';
+import { AsyncStorageLike } from './storageTypes';
 
 const AUTO_SAVE_INTERVAL = 5 * 60 * 1000;
 const META_PROGRESS_KEY = '@yazgi_save/meta_progression/v1';
 const INTEGRITY_SECRET_KEY = 'yazgi_save.integrity_secret.v1';
 const ENCRYPTION_SECRET_KEY = 'yazgi_save.encryption_secret.v1';
 const INTEGRITY_SIGNATURE_PREFIX = 'yazgi_save.integrity_signature.';
-const INTEGRITY_SCHEME_VERSION = 1;
-const ENCRYPTED_STORAGE_PREFIX = 'enc:v1:';
-const ENCRYPTED_STORAGE_VERSION = 1;
+const INTEGRITY_SCHEME_VERSION = 2;
+const ENCRYPTED_STORAGE_PREFIX_V1 = 'enc:v1:';
+const ENCRYPTED_STORAGE_PREFIX_V2 = 'enc:v2:';
+const ENCRYPTED_STORAGE_VERSION_V1 = 1;
+const ENCRYPTED_STORAGE_VERSION_V2 = 2;
+const ENCRYPTION_KDF_ITERATIONS = 120_000;
 const DEVICE_ID_KEY = '@yazgi_save/device_id/v1';
 const MAX_IMPORT_PAYLOAD_BYTES = 2 * 1024 * 1024;
 const IS_DEV_RUNTIME =
   Boolean((globalThis as { __DEV__?: boolean }).__DEV__) || process.env.NODE_ENV !== 'production';
 
-type EncryptedStoragePayload = {
+type EncryptedStoragePayloadV1 = {
   v: number;
+  iv: string;
+  ct: string;
+};
+
+type EncryptedStoragePayloadV2 = {
+  v: number;
+  alg: 'AES-GCM';
+  kdf: 'PBKDF2-SHA256';
+  iter: number;
+  salt: string;
   iv: string;
   ct: string;
 };
@@ -51,10 +65,41 @@ type SignatureVerificationResult =
   | { valid: true; reason: 'disabled' | 'missing' | 'match' | 'resealed_dev_autosave' }
   | { valid: false; reason: 'mismatch' };
 
+type WebCryptoSubtleLike = {
+  digest: (algorithm: string, data: Uint8Array) => Promise<ArrayBuffer>;
+  importKey: (
+    format: 'raw',
+    keyData: Uint8Array,
+    algorithm: string | { name: string; hash?: string | { name: string } },
+    extractable: boolean,
+    keyUsages: string[]
+  ) => Promise<unknown>;
+  deriveKey: (
+    algorithm: { name: 'PBKDF2'; salt: Uint8Array; iterations: number; hash: 'SHA-256' },
+    baseKey: unknown,
+    derivedKeyType: { name: 'AES-GCM'; length: number },
+    extractable: boolean,
+    keyUsages: string[]
+  ) => Promise<unknown>;
+  encrypt: (
+    algorithm: { name: 'AES-GCM'; iv: Uint8Array },
+    key: unknown,
+    data: Uint8Array
+  ) => Promise<ArrayBuffer>;
+  decrypt: (
+    algorithm: { name: 'AES-GCM'; iv: Uint8Array },
+    key: unknown,
+    data: Uint8Array
+  ) => Promise<ArrayBuffer>;
+  sign: (
+    algorithm: 'HMAC',
+    key: unknown,
+    data: Uint8Array
+  ) => Promise<ArrayBuffer>;
+};
+
 type CryptoLike = {
-  subtle?: {
-    digest: (algorithm: string, data: Uint8Array) => Promise<ArrayBuffer>;
-  };
+  subtle?: WebCryptoSubtleLike;
   getRandomValues?: (array: Uint8Array) => Uint8Array;
 };
 
@@ -64,7 +109,69 @@ type SecureStoreModule = {
   deleteItemAsync?: (key: string) => Promise<void>;
 };
 
-type CryptoJsLike = any;
+type CryptoWordArrayLike = {
+  toString: (encoder?: unknown) => string;
+};
+
+type CryptoCipherParamsLike = {
+  ciphertext: CryptoWordArrayLike;
+};
+
+type CryptoJsLike = {
+  SHA256: (input: string) => CryptoWordArrayLike;
+  HmacSHA256?: (message: string, key: string) => CryptoWordArrayLike;
+  AES: {
+    encrypt: (
+      value: string,
+      key: CryptoWordArrayLike,
+      options: {
+        iv: CryptoWordArrayLike;
+        mode: unknown;
+        padding: unknown;
+      }
+    ) => CryptoCipherParamsLike;
+    decrypt: (
+      value: CryptoCipherParamsLike,
+      key: CryptoWordArrayLike,
+      options: {
+        iv: CryptoWordArrayLike;
+        mode: unknown;
+        padding: unknown;
+      }
+    ) => CryptoWordArrayLike;
+  };
+  lib: {
+    WordArray: {
+      random: (size: number) => CryptoWordArrayLike;
+    };
+    CipherParams: {
+      create: (params: { ciphertext: CryptoWordArrayLike }) => CryptoCipherParamsLike;
+    };
+  };
+  enc: {
+    Hex: {
+      parse: (value: string) => CryptoWordArrayLike;
+    };
+    Base64: {
+      parse: (value: string) => CryptoWordArrayLike;
+    };
+    Utf8: unknown;
+  };
+  mode: {
+    CBC: unknown;
+  };
+  pad: {
+    Pkcs7: unknown;
+  };
+};
+
+type SaveSnapshot = {
+  playerName: string;
+  stats: Stats;
+  gameState: GameState;
+};
+
+type EncryptionProvider = 'none' | 'webcrypto' | 'cryptojs';
 
 let secureStoreModule: SecureStoreModule | null = null;
 let secureStoreResolveAttempted = false;
@@ -88,7 +195,8 @@ const getCryptoJs = async (): Promise<CryptoJsLike | null> => {
   cryptoJsResolveAttempted = true;
   try {
     const mod = await import('crypto-js');
-    cryptoJsModule = (mod as any).default ?? mod;
+    cryptoJsModule = (mod as unknown as { default?: CryptoJsLike }).default
+      ?? (mod as unknown as CryptoJsLike);
   } catch {
     cryptoJsModule = null;
   }
@@ -96,11 +204,11 @@ const getCryptoJs = async (): Promise<CryptoJsLike | null> => {
 };
 
 // Auto-save callback tipi - oyun state'ini döndüren fonksiyon
-type AutoSaveCallback = () => { playerName: string; stats: any; gameState: any } | null;
+type AutoSaveCallback = () => SaveSnapshot | null;
 
 class SaveManager {
   private static instance: SaveManager;
-  private storage: any;
+  private storage: AsyncStorageLike;
   private state: SaveManagerState;
   private metaProgression: MetaProgression;
   private autoSaveTimer: ReturnType<typeof setInterval> | null = null;
@@ -112,6 +220,7 @@ class SaveManager {
   private integrityActive = false;
   private encryptionInitAttempted = false;
   private encryptionActive = false;
+  private encryptionProvider: EncryptionProvider = 'none';
 
   // Mutex/lock mechanism to prevent concurrent saves
   private saveLocks: Map<string, boolean> = new Map();
@@ -143,7 +252,7 @@ class SaveManager {
     return SaveManager.instance;
   }
 
-  private buildChecksumPayload(playerName: string, stats: any, gameState: any) {
+  private buildChecksumPayload(playerName: string, stats: Stats, gameState: GameState): SaveSnapshot {
     return { playerName, stats, gameState };
   }
 
@@ -370,14 +479,92 @@ class SaveManager {
     return `${INTEGRITY_SIGNATURE_PREFIX}${encodedSlotId}.v${INTEGRITY_SCHEME_VERSION}`;
   }
 
-  private generateIntegritySecret(): string {
-    const cryptoCandidate = (globalThis as { crypto?: CryptoLike }).crypto;
+  private getCryptoCandidate(): CryptoLike | undefined {
+    return (globalThis as { crypto?: CryptoLike }).crypto;
+  }
+
+  private getWebCryptoSubtle(): WebCryptoSubtleLike | null {
+    const subtle = this.getCryptoCandidate()?.subtle;
+    if (!subtle) return null;
+
+    const isSupported = typeof subtle.importKey === 'function'
+      && typeof subtle.deriveKey === 'function'
+      && typeof subtle.encrypt === 'function'
+      && typeof subtle.decrypt === 'function'
+      && typeof subtle.sign === 'function';
+
+    return isSupported ? subtle : null;
+  }
+
+  private getRandomBytes(byteLength: number): Uint8Array | null {
+    const bytes = new Uint8Array(byteLength);
+    const cryptoCandidate = this.getCryptoCandidate();
     if (cryptoCandidate?.getRandomValues) {
-      const bytes = new Uint8Array(32);
       cryptoCandidate.getRandomValues(bytes);
-      return Array.from(bytes)
-        .map(byte => byte.toString(16).padStart(2, '0'))
-        .join('');
+      return bytes;
+    }
+    return null;
+  }
+
+  private bytesToHex(bytes: Uint8Array): string {
+    return Array.from(bytes)
+      .map(byte => byte.toString(16).padStart(2, '0'))
+      .join('');
+  }
+
+  private hexToBytes(hex: string): Uint8Array | null {
+    if (hex.length % 2 !== 0) return null;
+    if (!/^[0-9a-fA-F]+$/.test(hex)) return null;
+
+    const bytes = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < hex.length; i += 2) {
+      bytes[i / 2] = parseInt(hex.slice(i, i + 2), 16);
+    }
+    return bytes;
+  }
+
+  private encodeUtf8(value: string): Uint8Array | null {
+    if (typeof TextEncoder === 'undefined') return null;
+    return new TextEncoder().encode(value);
+  }
+
+  private decodeUtf8(value: Uint8Array): string | null {
+    if (typeof TextDecoder === 'undefined') return null;
+    try {
+      return new TextDecoder().decode(value);
+    } catch {
+      return null;
+    }
+  }
+
+  private async deriveAesGcmKey(secret: string, salt: Uint8Array): Promise<unknown | null> {
+    const subtle = this.getWebCryptoSubtle();
+    const secretBytes = this.encodeUtf8(secret);
+    if (!subtle || !secretBytes) return null;
+
+    try {
+      const keyMaterial = await subtle.importKey('raw', secretBytes, 'PBKDF2', false, ['deriveKey']);
+      return await subtle.deriveKey(
+        {
+          name: 'PBKDF2',
+          salt,
+          iterations: ENCRYPTION_KDF_ITERATIONS,
+          hash: 'SHA-256',
+        },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['encrypt', 'decrypt']
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  private generateIntegritySecret(): string {
+    const bytes = this.getRandomBytes(32);
+    if (bytes) {
+      return this.bytesToHex(bytes);
     }
 
     return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}_${Math.random().toString(36).slice(2)}`;
@@ -409,7 +596,7 @@ class SaveManager {
   }
 
   private isEncryptedStoragePayload(value: string): boolean {
-    return value.startsWith(ENCRYPTED_STORAGE_PREFIX);
+    return value.startsWith(ENCRYPTED_STORAGE_PREFIX_V1) || value.startsWith(ENCRYPTED_STORAGE_PREFIX_V2);
   }
 
   private async ensureEncryptionInitialized(): Promise<void> {
@@ -417,8 +604,9 @@ class SaveManager {
     this.encryptionInitAttempted = true;
 
     const [secureStore, cryptoJs] = await Promise.all([getSecureStore(), getCryptoJs()]);
-    if (!secureStore || !cryptoJs) {
+    if (!secureStore) {
       this.encryptionActive = false;
+      this.encryptionProvider = 'none';
       devLog.warn('Secure save encryption unavailable, local save payloads use plaintext storage.');
       return;
     }
@@ -430,26 +618,98 @@ class SaveManager {
         await secureStore.setItemAsync(ENCRYPTION_SECRET_KEY, secret);
       }
       this.encryptionSecret = secret;
-      this.encryptionActive = true;
+
+      if (this.getWebCryptoSubtle() && typeof TextEncoder !== 'undefined' && typeof TextDecoder !== 'undefined') {
+        this.encryptionProvider = 'webcrypto';
+        this.encryptionActive = true;
+        return;
+      }
+
+      if (cryptoJs) {
+        this.encryptionProvider = 'cryptojs';
+        this.encryptionActive = true;
+        return;
+      }
+
+      this.encryptionProvider = 'none';
+      this.encryptionActive = false;
+      devLog.warn('No supported crypto provider found for secure save encryption.');
     } catch (error) {
       this.encryptionActive = false;
+      this.encryptionProvider = 'none';
       console.error('Failed to initialize save encryption secret:', error);
     }
   }
 
-  private async encryptForStorage(rawValue: string): Promise<string> {
-    await this.ensureEncryptionInitialized();
-    if (!this.encryptionActive || !this.encryptionSecret) {
-      return rawValue;
+  private async encryptWithWebCrypto(rawValue: string, secret: string): Promise<string | null> {
+    const subtle = this.getWebCryptoSubtle();
+    const plainBytes = this.encodeUtf8(rawValue);
+    const salt = this.getRandomBytes(16);
+    const iv = this.getRandomBytes(12);
+    if (!subtle || !plainBytes || !salt || !iv) {
+      return null;
     }
 
-    const cryptoJs = await getCryptoJs();
-    if (!cryptoJs) {
-      return rawValue;
-    }
+    const key = await this.deriveAesGcmKey(secret, salt);
+    if (!key) return null;
 
     try {
-      const key = cryptoJs.SHA256(this.encryptionSecret);
+      const cipherBuffer = await subtle.encrypt({ name: 'AES-GCM', iv }, key, plainBytes);
+      const payload: EncryptedStoragePayloadV2 = {
+        v: ENCRYPTED_STORAGE_VERSION_V2,
+        alg: 'AES-GCM',
+        kdf: 'PBKDF2-SHA256',
+        iter: ENCRYPTION_KDF_ITERATIONS,
+        salt: this.bytesToHex(salt),
+        iv: this.bytesToHex(iv),
+        ct: this.bytesToHex(new Uint8Array(cipherBuffer)),
+      };
+      return `${ENCRYPTED_STORAGE_PREFIX_V2}${JSON.stringify(payload)}`;
+    } catch {
+      return null;
+    }
+  }
+
+  private async decryptWithWebCrypto(rawValue: string, secret: string): Promise<string | null> {
+    const subtle = this.getWebCryptoSubtle();
+    if (!subtle) return null;
+
+    try {
+      const encoded = rawValue.slice(ENCRYPTED_STORAGE_PREFIX_V2.length);
+      const payload = JSON.parse(encoded) as Partial<EncryptedStoragePayloadV2>;
+      if (
+        payload.v !== ENCRYPTED_STORAGE_VERSION_V2
+        || payload.alg !== 'AES-GCM'
+        || payload.kdf !== 'PBKDF2-SHA256'
+        || payload.iter !== ENCRYPTION_KDF_ITERATIONS
+        || typeof payload.salt !== 'string'
+        || typeof payload.iv !== 'string'
+        || typeof payload.ct !== 'string'
+      ) {
+        return null;
+      }
+
+      const salt = this.hexToBytes(payload.salt);
+      const iv = this.hexToBytes(payload.iv);
+      const cipherBytes = this.hexToBytes(payload.ct);
+      if (!salt || !iv || !cipherBytes) return null;
+
+      const key = await this.deriveAesGcmKey(secret, salt);
+      if (!key) return null;
+
+      const plainBuffer = await subtle.decrypt({ name: 'AES-GCM', iv }, key, cipherBytes);
+      return this.decodeUtf8(new Uint8Array(plainBuffer));
+    } catch {
+      return null;
+    }
+  }
+
+  private async encryptWithCryptoJs(rawValue: string, secret: string): Promise<string | null> {
+    const cryptoJs = await getCryptoJs();
+    if (!cryptoJs) return null;
+
+    try {
+      const key = cryptoJs.SHA256(secret);
       const iv = cryptoJs.lib.WordArray.random(16);
       const encrypted = cryptoJs.AES.encrypt(rawValue, key, {
         iv,
@@ -457,42 +717,34 @@ class SaveManager {
         padding: cryptoJs.pad.Pkcs7,
       });
 
-      const payload: EncryptedStoragePayload = {
-        v: ENCRYPTED_STORAGE_VERSION,
+      const payload: EncryptedStoragePayloadV1 = {
+        v: ENCRYPTED_STORAGE_VERSION_V1,
         iv: iv.toString(cryptoJs.enc.Hex),
         ct: encrypted.ciphertext.toString(cryptoJs.enc.Base64),
       };
 
-      return `${ENCRYPTED_STORAGE_PREFIX}${JSON.stringify(payload)}`;
-    } catch (error) {
-      console.error('Save payload encryption failed:', error);
-      return rawValue;
+      return `${ENCRYPTED_STORAGE_PREFIX_V1}${JSON.stringify(payload)}`;
+    } catch {
+      return null;
     }
   }
 
-  private async decryptFromStorage(rawValue: string): Promise<string | null> {
-    if (!this.isEncryptedStoragePayload(rawValue)) {
-      return rawValue;
-    }
-
-    await this.ensureEncryptionInitialized();
-    if (!this.encryptionActive || !this.encryptionSecret) {
-      return null;
-    }
-
+  private async decryptWithCryptoJs(rawValue: string, secret: string): Promise<string | null> {
     const cryptoJs = await getCryptoJs();
-    if (!cryptoJs) {
-      return null;
-    }
+    if (!cryptoJs) return null;
 
     try {
-      const encoded = rawValue.slice(ENCRYPTED_STORAGE_PREFIX.length);
-      const payload = JSON.parse(encoded) as Partial<EncryptedStoragePayload>;
-      if (payload.v !== ENCRYPTED_STORAGE_VERSION || typeof payload.iv !== 'string' || typeof payload.ct !== 'string') {
+      const encoded = rawValue.slice(ENCRYPTED_STORAGE_PREFIX_V1.length);
+      const payload = JSON.parse(encoded) as Partial<EncryptedStoragePayloadV1>;
+      if (
+        payload.v !== ENCRYPTED_STORAGE_VERSION_V1
+        || typeof payload.iv !== 'string'
+        || typeof payload.ct !== 'string'
+      ) {
         return null;
       }
 
-      const key = cryptoJs.SHA256(this.encryptionSecret);
+      const key = cryptoJs.SHA256(secret);
       const iv = cryptoJs.enc.Hex.parse(payload.iv);
       const ciphertext = cryptoJs.enc.Base64.parse(payload.ct);
       const cipherParams = cryptoJs.lib.CipherParams.create({ ciphertext });
@@ -502,9 +754,6 @@ class SaveManager {
         padding: cryptoJs.pad.Pkcs7,
       });
       const plainText = decrypted.toString(cryptoJs.enc.Utf8);
-      if (typeof plainText !== 'string') {
-        return null;
-      }
       if (plainText.length === 0 && payload.ct.length > 0) {
         return null;
       }
@@ -513,6 +762,53 @@ class SaveManager {
     } catch {
       return null;
     }
+  }
+
+  private async encryptForStorage(rawValue: string): Promise<string> {
+    await this.ensureEncryptionInitialized();
+    if (!this.encryptionActive || !this.encryptionSecret) {
+      return rawValue;
+    }
+
+    try {
+      if (this.encryptionProvider === 'webcrypto') {
+        const encrypted = await this.encryptWithWebCrypto(rawValue, this.encryptionSecret);
+        if (encrypted) return encrypted;
+      }
+
+      if (this.encryptionProvider === 'cryptojs' || this.encryptionProvider === 'webcrypto') {
+        const encrypted = await this.encryptWithCryptoJs(rawValue, this.encryptionSecret);
+        if (encrypted) return encrypted;
+      }
+    } catch (error) {
+      console.error('Save payload encryption failed:', error);
+    }
+
+    return rawValue;
+  }
+
+  private async decryptFromStorage(rawValue: string): Promise<string | null> {
+    if (!this.isEncryptedStoragePayload(rawValue)) {
+      return rawValue;
+    }
+
+    await this.ensureEncryptionInitialized();
+    if (!this.encryptionSecret) {
+      return null;
+    }
+
+    if (rawValue.startsWith(ENCRYPTED_STORAGE_PREFIX_V2)) {
+      const decryptedV2 = await this.decryptWithWebCrypto(rawValue, this.encryptionSecret);
+      if (decryptedV2 !== null) return decryptedV2;
+      const decryptedFallback = await this.decryptWithCryptoJs(rawValue, this.encryptionSecret);
+      return decryptedFallback;
+    }
+
+    if (rawValue.startsWith(ENCRYPTED_STORAGE_PREFIX_V1)) {
+      return this.decryptWithCryptoJs(rawValue, this.encryptionSecret);
+    }
+
+    return null;
   }
 
   private async writeProtectedStorageItem(key: string, value: string): Promise<void> {
@@ -553,20 +849,36 @@ class SaveManager {
     await this.ensureIntegrityInitialized();
     if (!this.integrityActive || !this.integritySecret) return null;
 
-    const payload = `v${INTEGRITY_SCHEME_VERSION}:${slotId}:${compressedChecksum}:${serializedCompressed}:${this.integritySecret}`;
-    const cryptoCandidate = (globalThis as { crypto?: CryptoLike }).crypto;
-    if (cryptoCandidate?.subtle?.digest && typeof TextEncoder !== 'undefined') {
+    const payload = `v${INTEGRITY_SCHEME_VERSION}:${slotId}:${compressedChecksum}:${serializedCompressed}`;
+    const subtle = this.getWebCryptoSubtle();
+    const payloadBytes = this.encodeUtf8(payload);
+    const secretBytes = this.encodeUtf8(this.integritySecret);
+    if (subtle && payloadBytes && secretBytes) {
       try {
-        const digest = await cryptoCandidate.subtle.digest('SHA-256', new TextEncoder().encode(payload));
-        return Array.from(new Uint8Array(digest))
-          .map(byte => byte.toString(16).padStart(2, '0'))
-          .join('');
+        const key = await subtle.importKey(
+          'raw',
+          secretBytes,
+          { name: 'HMAC', hash: 'SHA-256' },
+          false,
+          ['sign']
+        );
+        const signature = await subtle.sign('HMAC', key, payloadBytes);
+        return this.bytesToHex(new Uint8Array(signature));
       } catch {
-        // fall back below
+        // Fall back below.
       }
     }
 
-    return generateChecksum({ payload });
+    const cryptoJs = await getCryptoJs();
+    if (cryptoJs?.HmacSHA256) {
+      try {
+        return cryptoJs.HmacSHA256(payload, this.integritySecret).toString();
+      } catch {
+        // Fall back below.
+      }
+    }
+
+    return generateChecksum({ payload, secret: this.integritySecret });
   }
 
   private async readSlotSignature(slotId: string): Promise<string | null> {
@@ -721,8 +1033,8 @@ class SaveManager {
   async saveToSlot(
     slotId: string,
     playerName: string,
-    stats: any,
-    gameState: any,
+    stats: Stats,
+    gameState: GameState,
     options?: { importedMetadata?: Partial<SaveSlotMetadata> }
   ): Promise<boolean> {
     try {
@@ -878,7 +1190,7 @@ class SaveManager {
       }
 
       // Use repaired data if auto-repair was applied
-      let validatedData = validation.data!;
+      let validatedData = validation.data as SaveSlotData;
       if (validation.repaired) {
         devLog.warn(`Slot ${slotId} was auto-repaired:`, validation.repairLog);
         // Recompute checksum for repaired data before persisting/validating
@@ -1014,7 +1326,7 @@ class SaveManager {
     }
   }
 
-  async autoSave(playerName: string, stats: any, gameState: any): Promise<boolean> {
+  async autoSave(playerName: string, stats: Stats, gameState: GameState): Promise<boolean> {
     if (!this.state.autoSaveEnabled) return false;
 
     const now = Date.now();

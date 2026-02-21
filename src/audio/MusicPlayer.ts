@@ -426,8 +426,6 @@ class MusicPlayer {
       try { pendingTrack.pause(); await pendingTrack.seekTo(0); } catch {}
       try { pendingTrack.remove(); } catch {}
     }
-
-    console.log('Music Player disposed');
   }
 }
 

@@ -367,7 +367,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, onLoadGame
       (Object.keys(updates) as (keyof Stats)[]).forEach(key => {
         if (updates[key] === undefined) return;
 
-        const delta = updates[key] || 0;
+        const delta = updates[key] ?? 0;
         let newValue = previousStats[key] + delta;
 
         if (key === 'money') {

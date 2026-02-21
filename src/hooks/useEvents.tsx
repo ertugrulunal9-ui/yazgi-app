@@ -49,7 +49,6 @@ import { getGoalChainStage } from '../data/goalChainEvents';
 
 const getEventById = (eventId: string): GameEvent | undefined =>
   EVENTS.find(evt => evt.id === eventId);
-const turnMediator = new TurnMediator();
 
 const pickGoalMilestoneEvent = (
   gameState: GameState,
@@ -85,6 +84,7 @@ const hasCriticalBurdenCrossed = (currentRisk: number, previousRisk: number): bo
 
 export const useEvents = () => {
   const { gameState, stats, advanceTurnInContext, updateGameState, setStats } = useGame();
+  const turnMediatorRef = useRef(new TurnMediator());
   const eligibilityCache = useRef<{ age: number; eligible: GameEvent[] }>({ age: -1, eligible: [] });
 
   const getCachedEligibleEvents = useCallback((
@@ -385,7 +385,7 @@ export const useEvents = () => {
   const handleEventChoice = useCallback((choice: Choice | ((ctx: EventContext) => Choice), choiceIndex?: number): TurnResult => {
     const resolved = resolveChoice(choice);
 
-    const turnResult = turnMediator.processEventChoice({
+    const turnResult = turnMediatorRef.current.processEventChoice({
       choice: resolved,
       choiceIndex,
       gameState,
@@ -1082,7 +1082,7 @@ export const useEvents = () => {
     if (!gameState.fate || gameState.fate.tokens <= 0) return;
     const fateAfterSpend = spendToken(gameState.fate);
 
-    const turnResult = turnMediator.processEventChoice({
+    const turnResult = turnMediatorRef.current.processEventChoice({
       choice,
       choiceIndex,
       gameState: { ...gameState, fate: fateAfterSpend },

@@ -380,6 +380,7 @@ describe('gameUtils - Extended Coverage', () => {
       phase: 'HUB',
       currentEvent: null,
       pendingReportCard: false,
+      characterInfo: null,
       lastResult: null,
       historyLog: [],
       family: null,
@@ -412,8 +413,11 @@ describe('gameUtils - Extended Coverage', () => {
       npcs: [],
       selectedNpcId: null,
       innerThought: '',
+      innerThoughtType: 'IDLE',
       floatingTexts: [],
       totalTurns: 50,
+      sessionCount: 1,
+      adaptivePacingStreak: 0,
       lastInteracted: {
         math: 0, science: 0, language: 0,
         coding: 0, music: 0, sports: 0, design: 0,
@@ -421,6 +425,24 @@ describe('gameUtils - Extended Coverage', () => {
       recentEvents: [],
       unlockedAchievements: [],
       achievementProgress: {},
+      personality: { openness: 50, courage: 50, empathy: 50, patience: 50, conformity: 50 },
+      stress: { current: 0, threshold: 70, turnsSinceBreakdown: 0, sources: [] },
+      personalityHistory: [],
+      personalityState: {
+        HELPFUL: { count: 0, streak: 0, multiplier: 1 },
+        PRAGMATIC: { count: 0, streak: 0, multiplier: 1 },
+        AGGRESSIVE: { count: 0, streak: 0, multiplier: 1 },
+      },
+      socialGroups: [],
+      socialReputation: 50,
+      examsTakenThisYear: [],
+      isExamPeriod: false,
+      childhood: {
+        completed: false,
+        sceneIndex: 0,
+        memories: [],
+        selectedMemoryId: null,
+      },
     };
 
     const baseStats: Stats = {
@@ -618,6 +640,7 @@ describe('gameUtils - Extended Coverage', () => {
       phase: 'HUB',
       currentEvent: null,
       pendingReportCard: false,
+      characterInfo: null,
       lastResult: null,
       historyLog: [],
       family: null,
@@ -650,8 +673,11 @@ describe('gameUtils - Extended Coverage', () => {
       npcs: [],
       selectedNpcId: null,
       innerThought: '',
+      innerThoughtType: 'IDLE',
       floatingTexts: [],
       totalTurns: 100,
+      sessionCount: 1,
+      adaptivePacingStreak: 0,
       lastInteracted: {
         math: 0, science: 0, language: 0,
         coding: 0, music: 0, sports: 0, design: 0,
@@ -659,6 +685,24 @@ describe('gameUtils - Extended Coverage', () => {
       recentEvents: [],
       unlockedAchievements: [],
       achievementProgress: {},
+      personality: { openness: 50, courage: 50, empathy: 50, patience: 50, conformity: 50 },
+      stress: { current: 0, threshold: 70, turnsSinceBreakdown: 0, sources: [] },
+      personalityHistory: [],
+      personalityState: {
+        HELPFUL: { count: 0, streak: 0, multiplier: 1 },
+        PRAGMATIC: { count: 0, streak: 0, multiplier: 1 },
+        AGGRESSIVE: { count: 0, streak: 0, multiplier: 1 },
+      },
+      socialGroups: [],
+      socialReputation: 50,
+      examsTakenThisYear: [],
+      isExamPeriod: false,
+      childhood: {
+        completed: true,
+        sceneIndex: 0,
+        memories: [],
+        selectedMemoryId: null,
+      },
     };
 
     it('should return athlete career for high sports skill', () => {

@@ -1,6 +1,7 @@
 import { resolveOutcome } from '../../src/systems/ConditionalOutcomeResolver';
+import { Choice, EventContext, FateRollResult } from '../../src/types';
 
-const createEventContext = () => {
+const createEventContext = (): EventContext => {
   return {
     age: 12,
     traits: ['GENIUS'],
@@ -65,7 +66,7 @@ describe('ConditionalOutcomeResolver', () => {
   });
 
   it('returns default outcome when conditional outcomes are missing', () => {
-    const choice = {
+    const choice: Choice = {
       id: 'default_choice',
       text: 'Varsayilan secim',
       effect: { intelligence: 2, energy: -1 },
@@ -90,7 +91,7 @@ describe('ConditionalOutcomeResolver', () => {
   });
 
   it('falls back to default when no conditional outcome is eligible', () => {
-    const choice = {
+    const choice: Choice = {
       id: 'ineligible_choice',
       text: 'Kosullu secim',
       effect: { charisma: 1 },
@@ -121,7 +122,7 @@ describe('ConditionalOutcomeResolver', () => {
   });
 
   it('returns conditional outcome and maps optional fields', () => {
-    const choice = {
+    const choice: Choice = {
       id: 'conditional_single',
       text: 'Tek kosullu sonuc',
       effect: { health: 1 },
@@ -192,14 +193,14 @@ describe('ConditionalOutcomeResolver', () => {
       ],
     };
 
-    const fateBlessed = {
+    const fateBlessed: FateRollResult = {
       outcome: 'BLESSED',
       rawRoll: 95,
       modifiedRoll: 95,
       zodiacModifier: 0,
       pityModifier: 0,
     };
-    const fateCursed = {
+    const fateCursed: FateRollResult = {
       outcome: 'CURSED',
       rawRoll: 5,
       modifiedRoll: 5,
@@ -216,7 +217,7 @@ describe('ConditionalOutcomeResolver', () => {
   });
 
   it('falls back to last outcome when weights produce an invalid roll', () => {
-    const choice = {
+    const choice: Choice = {
       id: 'nan_weight_choice',
       text: 'NaN agirlik testi',
       effect: {},

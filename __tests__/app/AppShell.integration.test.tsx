@@ -228,8 +228,8 @@ describe('AppShell integration', () => {
     act(() => {
       tree = renderer.create(<AppShell />);
     });
-    const onboarding = tree.root.findAllByType('MockOnboarding');
-    const navigator = tree.root.findAllByType('MockAppNavigator');
+    const onboarding = tree.root.findAllByType('MockOnboarding' as any);
+    const navigator = tree.root.findAllByType('MockAppNavigator' as any);
 
     expect(onboarding).toHaveLength(0);
     expect(navigator).toHaveLength(0);
@@ -257,7 +257,7 @@ describe('AppShell integration', () => {
       await Promise.resolve();
     });
 
-    const onboarding = tree.root.findByType('MockOnboarding');
+    const onboarding = tree.root.findByType('MockOnboarding' as any);
 
     await act(async () => {
       await onboarding.props.onComplete();

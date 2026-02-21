@@ -85,7 +85,6 @@ const MiniGameContainer: React.FC<MiniGameContainerProps> = ({
     onCancel,
     children,
 }) => {
-    console.log('[MiniGameContainer] Rendering with props:', { type, difficulty, age });
     const [gameState, setGameState] = useState<GameState>({
         phase: 'INTRO',
         score: 0,
@@ -98,10 +97,6 @@ const MiniGameContainer: React.FC<MiniGameContainerProps> = ({
         streak: 0,
     });
 
-    console.log('[MiniGameContainer] Phase:', gameState.phase, 'Children:', React.Children.count(children));
-
-
-
     const [startTime, setStartTime] = useState<number>(0);
 
 
@@ -113,7 +108,6 @@ const MiniGameContainer: React.FC<MiniGameContainerProps> = ({
     useEffect(() => {
         // containerScale.value = withSpring(1, { damping: 15 });
         // containerOpacity.value = withTiming(1, { duration: 300 });
-        console.log('[MiniGameContainer] Initial phase:', gameState.phase);
     }, [gameState.phase]);
 
 
@@ -202,8 +196,6 @@ const MiniGameContainer: React.FC<MiniGameContainerProps> = ({
     };
 
     const statusBarHeight = Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0;
-
-    console.log('[MiniGameContainer] About to render - phase:', gameState.phase, 'statusBarHeight:', statusBarHeight);
 
     return (
         <View style={[styles.container, { paddingTop: statusBarHeight }]}>

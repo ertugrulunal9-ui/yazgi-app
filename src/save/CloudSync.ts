@@ -1,4 +1,5 @@
 import { SaveSlotData } from './SaveSlot';
+import { devLog } from '../utils/devLogger';
 
 type SyncStatus = 'idle' | 'syncing' | 'success' | 'error';
 type ConflictResolution = 'local' | 'remote' | 'newest';
@@ -168,7 +169,7 @@ class CloudSync {
 
   async syncSlot(slotId: string, localData: SaveSlotData): Promise<boolean> {
     if (!this.isConfigured()) {
-      console.log('Cloud sync not configured (enabled/apiEndpoint/https/auth required)');
+      devLog.warn('Cloud sync not configured (enabled/apiEndpoint/https/auth required)');
       return false;
     }
 

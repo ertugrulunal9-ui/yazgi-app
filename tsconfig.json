@@ -37,7 +37,6 @@
   "include": [
     "App.tsx",
     "src/**/*",
-    "index.web.tsx",
     "index.js"
   ],
   "exclude": [

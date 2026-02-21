@@ -1,6 +1,7 @@
 import { TriggerManager } from '../../src/systems/TriggerManager';
+import { Choice, GameState, Stats } from '../../src/types';
 
-const baseStats = {
+const baseStats: Stats = {
   health: 50,
   intelligence: 60,
   charisma: 40,
@@ -10,28 +11,95 @@ const baseStats = {
   familyRelation: 55,
 };
 
-const createGameState = (overrides?: Record<string, any>) => {
-  return {
-    phase: 'HUB',
-    age: 14,
-    turn: 22,
-    personality: {
-      openness: 50,
-      courage: 50,
-      empathy: 45,
-      patience: 20,
-      conformity: 50,
-    },
-    stress: {
-      current: 80,
-      threshold: 70,
-      turnsSinceBreakdown: 20,
-      sources: [],
-    },
-    stats: baseStats,
-    ...overrides,
-  };
-};
+const createGameState = (overrides: Partial<GameState> = {}): GameState => ({
+  age: 14,
+  turn: 22,
+  phase: 'HUB',
+  currentEvent: null,
+  pendingReportCard: false,
+  characterInfo: null,
+  lastResult: null,
+  historyLog: [],
+  family: { wealth: 'MIDDLE', dynamic: 'SUPPORTIVE', allowance: 20 },
+  maxEnergy: 100,
+  schoolGrades: {
+    math: 60,
+    science: 60,
+    language: 60,
+    turkish: 60,
+    history: 60,
+    geography: 60,
+    art: 60,
+    music: 60,
+  },
+  skills: {
+    coding: 0,
+    music: 0,
+    sports: 0,
+    design: 0,
+    athletics: 0,
+    logic: 0,
+    reading: 0,
+    teamwork: 0,
+    art: 0,
+    writing: 0,
+    work_ethic: 0,
+    business: 0,
+  },
+  talent: 'NONE',
+  streak: { actionId: null, count: 0 },
+  traits: [],
+  traitProgress: {},
+  actionCounts: {},
+  actionHistory: [],
+  eventChoiceHistory: [],
+  inventory: [],
+  npcs: [],
+  selectedNpcId: null,
+  innerThought: '',
+  innerThoughtType: 'IDLE',
+  floatingTexts: [],
+  totalTurns: 22,
+  sessionCount: 1,
+  adaptivePacingStreak: 0,
+  lastInteracted: {},
+  recentEvents: [],
+  memories: [],
+  scheduledEvents: [],
+  unlockedAchievements: [],
+  achievementProgress: {},
+  personality: {
+    openness: 50,
+    courage: 50,
+    empathy: 45,
+    patience: 20,
+    conformity: 50,
+  },
+  stress: {
+    current: 80,
+    threshold: 70,
+    turnsSinceBreakdown: 20,
+    sources: [],
+  },
+  personalityHistory: [],
+  personalityState: {
+    HELPFUL: { count: 0, streak: 0, multiplier: 1 },
+    PRAGMATIC: { count: 0, streak: 0, multiplier: 1 },
+    AGGRESSIVE: { count: 0, streak: 0, multiplier: 1 },
+  },
+  socialGroups: [],
+  socialReputation: 50,
+  examsTakenThisYear: [],
+  isExamPeriod: false,
+  childhood: {
+    completed: false,
+    sceneIndex: 0,
+    memories: [],
+    selectedMemoryId: null,
+  },
+  stats: baseStats,
+  ...overrides,
+});
 
 describe('TriggerManager', () => {
   afterEach(() => {
@@ -40,7 +108,7 @@ describe('TriggerManager', () => {
 
   it('processes stress, personality, memory and breakdown trigger together', () => {
     const gameState = createGameState();
-    const choice = {
+    const choice: Choice = {
       id: 'choice_all',
       text: 'Zor secim',
       effect: { health: 1 },
@@ -81,7 +149,7 @@ describe('TriggerManager', () => {
       sources: [],
     };
     const gameState = createGameState({ stress });
-    const choice = {
+    const choice: Choice = {
       id: 'choice_neutral',
       text: 'Notr secim',
       effect: {},

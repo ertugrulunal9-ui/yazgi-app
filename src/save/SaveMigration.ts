@@ -1,6 +1,7 @@
 import { GameState, Stats } from '../types';
 import { SaveSlotData, SaveSlotMetadata, SAVE_VERSION } from './SaveSlot';
 import { generateChecksum } from '../utils/checksum';
+import { AsyncStorageLike } from './storageTypes';
 
 interface LegacySaveData {
   playerName: string;
@@ -8,7 +9,7 @@ interface LegacySaveData {
   gameState: GameState;
 }
 
-export const detectLegacySave = async (storage: any): Promise<boolean> => {
+export const detectLegacySave = async (storage: AsyncStorageLike): Promise<boolean> => {
   try {
     const legacyKey = 'game_save';
     const data = await storage.getItem(legacyKey);
@@ -18,7 +19,7 @@ export const detectLegacySave = async (storage: any): Promise<boolean> => {
   }
 };
 
-export const migrateLegacySave = async (storage: any): Promise<SaveSlotData | null> => {
+export const migrateLegacySave = async (storage: AsyncStorageLike): Promise<SaveSlotData | null> => {
   try {
     const legacyKey = 'game_save';
     const rawData = await storage.getItem(legacyKey);
@@ -90,7 +91,7 @@ const migrateV0ToV1 = (saveData: SaveSlotData): SaveSlotData => {
   };
 };
 
-export const createMigrationBackup = async (storage: any, slotId: string, saveData: SaveSlotData): Promise<void> => {
+export const createMigrationBackup = async (storage: AsyncStorageLike, slotId: string, saveData: SaveSlotData): Promise<void> => {
   try {
     const backupKey = `@yazgi_save/backup_${slotId}_${Date.now()}`;
     await storage.setItem(backupKey, JSON.stringify(saveData));
@@ -108,11 +109,11 @@ export const createMigrationBackup = async (storage: any, slotId: string, saveDa
   }
 };
 
-const getAllBackupKeys = async (storage: any, slotId: string): Promise<string[]> => {
+const getAllBackupKeys = async (storage: AsyncStorageLike, slotId: string): Promise<string[]> => {
   try {
     const allKeys = await storage.getAllKeys();
     const backupKeys = allKeys.filter((key: string) => key.startsWith(`@yazgi_save/backup_${slotId}_`));
-    return backupKeys.sort();
+    return [...backupKeys].sort();
   } catch {
     return [];
   }

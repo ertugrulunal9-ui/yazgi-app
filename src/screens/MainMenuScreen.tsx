@@ -427,7 +427,12 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
                   <DropdownPicker
                     value={turkishMonths[birthMonth - 1]}
                     options={turkishMonths}
-                    onSelect={(monthLabel) => setBirthMonth(turkishMonths.indexOf(monthLabel) + 1)}
+                    onSelect={(monthLabel) => {
+                      const monthIndex = turkishMonths.indexOf(monthLabel);
+                      if (monthIndex >= 0) {
+                        setBirthMonth(monthIndex + 1);
+                      }
+                    }}
                     placeholder="Ay sec"
                     theme={theme}
                     metrics={metrics}

@@ -178,7 +178,6 @@ const MathExamGame: React.FC<MathExamGameProps> = ({
     difficulty = 'MEDIUM',
     age = 10,
 }) => {
-    console.log('[MathExamGame] Mounted', { difficulty, age, hasGameState: !!gameState });
     // Guard: Props injected by MiniGameContainer via cloneElement
     if (!gameState || !setGameState) {
         return (

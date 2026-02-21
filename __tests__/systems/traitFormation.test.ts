@@ -9,9 +9,10 @@ import {
   getEnergyCostMultiplier,
 } from '../../src/utils/gameUtils';
 import { TRAIT_DEFINITIONS } from '../../src/data/traits';
+import { GameState, Stats } from '../../src/types';
 
 // Mock Stats
-const createMockStats = (overrides = {}) => ({
+const createMockStats = (overrides: Partial<Stats> = {}): Stats => ({
   health: 50,
   intelligence: 50,
   charisma: 50,
@@ -23,7 +24,7 @@ const createMockStats = (overrides = {}) => ({
 });
 
 // Mock GameState
-const createMockGameState = (overrides = {}) => ({
+const createMockGameState = (overrides: Partial<GameState> = {}): GameState => ({
   age: 10,
   turn: 25,
   phase: 'HUB' as const,
@@ -60,8 +61,11 @@ const createMockGameState = (overrides = {}) => ({
   npcs: [],
   selectedNpcId: null,
   innerThought: '',
+  innerThoughtType: 'IDLE',
   floatingTexts: [],
   totalTurns: 25,
+  sessionCount: 1,
+  adaptivePacingStreak: 0,
   lastInteracted: {},
   recentEvents: [],
   memories: [],
@@ -80,6 +84,12 @@ const createMockGameState = (overrides = {}) => ({
   socialReputation: 50,
   examsTakenThisYear: [],
   isExamPeriod: false,
+  childhood: {
+    completed: false,
+    sceneIndex: 0,
+    memories: [],
+    selectedMemoryId: null,
+  },
   ...overrides,
 });
 

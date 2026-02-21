@@ -1,6 +1,7 @@
 import React, { ReactNode, Component, ErrorInfo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { crashReportingService } from '../services/crashReporting';
+import { devLog } from '../utils/devLogger';
 
 interface Props {
   children: ReactNode;
@@ -127,7 +128,7 @@ export class ErrorBoundary extends Component<Props, State> {
   handleCopyError = () => {
     if (this.state.error) {
       const errorText = `${this.state.error.name}: ${this.state.error.message}\n\n${this.state.errorInfo?.componentStack || ''}`;
-      console.log('Error copied to clipboard (dev only):', errorText);
+      devLog.log('Error copied to clipboard (dev only):', errorText);
     }
   };
 

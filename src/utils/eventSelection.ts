@@ -1,5 +1,6 @@
 import { EventContext, GameEvent, LifeGoal, MemoryWeight, NPCRole, SchoolGrades, Skills, Stats } from '../types';
 import { GOAL_EVENT_WEIGHTING } from '../constants/gameConstants';
+import { clamp } from './gameUtils';
 
 export type AdaptivePacingBand = 'RECOVERY' | 'BALANCED' | 'CHALLENGE';
 
@@ -39,8 +40,6 @@ const NPC_CHECKIN_TAG = 'npc_checkin';
 const NPC_CHECKIN_BIAS_MULTIPLIER = 1.7;
 const NPC_CHECKIN_BIAS_INTERVAL = 5;
 const NPC_CHECKIN_BIAS_PRE_TURN = 4;
-
-const clamp = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max);
 
 const normalizeEventSearchText = (event: GameEvent): string => {
   const textPart = typeof event.text === 'string' ? event.text : '';

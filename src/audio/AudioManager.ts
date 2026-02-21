@@ -68,7 +68,6 @@ class AudioManager {
         await this.preloadSounds();
 
         this.initialized = true;
-        console.log('Audio Manager initialized');
       } catch (error) {
         console.error('Audio initialization failed:', error);
       } finally {
@@ -331,8 +330,6 @@ class AudioManager {
     this.soundPool.clear();
     this.activeSounds.clear();
     this.initialized = false;
-
-    console.log('Audio Manager disposed');
   }
 }
 

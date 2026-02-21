@@ -117,7 +117,7 @@ describe('memoryLogic extended', () => {
       eventId: highRollEvent,
       currentAge: 17,
       currentTurn: 11,
-      personalityCategory: 'MIXED',
+      personalityCategory: 'RISK',
     });
     expect(highRollResult).toBe('Base high roll');
   });
@@ -144,28 +144,28 @@ describe('memoryLogic extended', () => {
     const regretText = buildMemoryAwareEventText(
       'Base regret',
       [makeMemory({ id: 'r', emotion: 'REGRET', weight: 'HIGH', age: 14, turnTimestamp: 20 }), neutralTail],
-      { eventId: lowRollEvent, currentAge: 14, currentTurn: 7, personalityCategory: 'MIXED' }
+      { eventId: lowRollEvent, currentAge: 14, currentTurn: 7, personalityCategory: 'RISK' }
     );
     expect(regretText).toContain('Az once');
 
     const guiltText = buildMemoryAwareEventText(
       'Base guilt',
       [makeMemory({ id: 'g', emotion: 'GUILT', weight: 'HIGH', age: 13, turnTimestamp: 21 }), neutralTail],
-      { eventId: lowRollEvent, currentAge: 14, currentTurn: 7, personalityCategory: 'MIXED' }
+      { eventId: lowRollEvent, currentAge: 14, currentTurn: 7, personalityCategory: 'RISK' }
     );
     expect(guiltText).toContain('yasinda');
 
     const prideText = buildMemoryAwareEventText(
       'Base pride',
       [makeMemory({ id: 'p', emotion: 'PRIDE', weight: 'HIGH', age: 11, turnTimestamp: 25 }), neutralTail],
-      { eventId: lowRollEvent, currentAge: 14, currentTurn: 7, personalityCategory: 'MIXED' }
+      { eventId: lowRollEvent, currentAge: 14, currentTurn: 7, personalityCategory: 'RISK' }
     );
     expect(prideText).toContain('omurg');
 
     const satisfactionText = buildMemoryAwareEventText(
       'Base sat',
       [makeMemory({ id: 's', emotion: 'SATISFACTION', weight: 'HIGH', age: 10, turnTimestamp: 26 }), neutralTail],
-      { eventId: lowRollEvent, currentAge: 14, currentTurn: 7, personalityCategory: 'MIXED' }
+      { eventId: lowRollEvent, currentAge: 14, currentTurn: 7, personalityCategory: 'RISK' }
     );
     expect(satisfactionText).toContain('sakin');
 
@@ -181,7 +181,7 @@ describe('memoryLogic extended', () => {
         }),
         neutralTail,
       ],
-      { eventId: lowRollEvent, currentAge: 14, currentTurn: 7, personalityCategory: 'MIXED' }
+      { eventId: lowRollEvent, currentAge: 14, currentTurn: 7, personalityCategory: 'RISK' }
     );
     expect(unknownEmotionText).toContain('kisa bir iz');
   });

@@ -6,7 +6,6 @@ import React, {
   useEffect,
   useMemo,
   useRef,
-  useState,
 } from 'react';
 import SaveManager from '../save/SaveManager';
 import { MetaProgression } from '../types';
@@ -26,13 +25,6 @@ interface MetaProgressionProviderProps {
   children: ReactNode;
 }
 
-const isSameMetaProgression = (a: MetaProgression, b: MetaProgression): boolean => (
-  a.updatedAt === b.updatedAt
-  && a.totalRunsCompleted === b.totalRunsCompleted
-  && a.totalLegacyPoints === b.totalLegacyPoints
-  && a.legacyLevel === b.legacyLevel
-);
-
 export const MetaProgressionProvider: React.FC<MetaProgressionProviderProps> = ({ children }) => {
   const {
     gameState,
@@ -43,9 +35,9 @@ export const MetaProgressionProvider: React.FC<MetaProgressionProviderProps> = (
     updateGameState,
   } = useGame();
 
-  const [metaProgression, setMetaProgressionState] = useState<MetaProgression>(() => (
+  const metaProgression = useMemo<MetaProgression>(() => (
     gameState.metaProgression ?? createInitialMetaProgression()
-  ));
+  ), [gameState.metaProgression]);
 
   const metaProgressionRef = useRef(metaProgression);
   const gameStateRef = useRef(gameState);
@@ -58,7 +50,6 @@ export const MetaProgressionProvider: React.FC<MetaProgressionProviderProps> = (
   playerNameRef.current = playerName;
 
   const setMetaProgression = useCallback((next: MetaProgression) => {
-    setMetaProgressionState(next);
     updateGameState({ metaProgression: next });
   }, [updateGameState]);
 
@@ -74,13 +65,6 @@ export const MetaProgressionProvider: React.FC<MetaProgressionProviderProps> = (
   useEffect(() => {
     void refreshMetaProgression();
   }, [refreshMetaProgression]);
-
-  useEffect(() => {
-    const fromGameState = gameState.metaProgression;
-    if (!fromGameState) return;
-    if (isSameMetaProgression(metaProgressionRef.current, fromGameState)) return;
-    setMetaProgressionState(fromGameState);
-  }, [gameState.metaProgression]);
 
   useMetaRunRecorder({
     gameState,

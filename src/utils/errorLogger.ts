@@ -2,6 +2,7 @@
 // Errors are kept in localStorage for capped, local-only diagnostics.
 
 import { calculateChecksum } from './checksum';
+import { devLog } from './devLogger';
 
 interface ErrorLog {
   message: string;
@@ -63,7 +64,7 @@ class ErrorLogger {
   setUserId(userId: string): void {
     this.userId = this.anonymizeUserId(userId);
     if (isDev) {
-      console.log(`User ID set: ${this.userId}`);
+      devLog.log(`User ID set: ${this.userId}`);
     }
   }
 
@@ -94,7 +95,17 @@ class ErrorLogger {
   }
 
   logMessage(message: string, level: 'info' | 'warning' | 'error' = 'info'): void {
-    console.log(`${level.toUpperCase()}: ${message}`);
+    if (level === 'error') {
+      console.error(`ERROR: ${message}`);
+      return;
+    }
+
+    if (level === 'warning') {
+      console.warn(`WARNING: ${message}`);
+      return;
+    }
+
+    devLog.log(`INFO: ${message}`);
   }
 
   private saveToStorage(errorLog: ErrorLog): void {
@@ -127,7 +138,7 @@ class ErrorLogger {
     try {
       if (typeof localStorage === 'undefined') return;
       localStorage.removeItem(ERROR_LOGS_KEY);
-      console.log('Error logs cleared');
+      devLog.log('Error logs cleared');
     } catch (e) {
       console.error('Failed to clear logs:', e);
     }
@@ -138,12 +149,12 @@ class ErrorLogger {
     const logs = this.getLogs();
     console.group('Error Logs');
     logs.forEach((log, index) => {
-      console.log(`\n--- Log ${index + 1} ---`);
-      console.log('Time:', log.timestamp);
-      console.log('User:', log.userId || 'Unknown');
-      console.log('Message:', log.message);
-      console.log('Context:', log.context);
-      if (log.stack) console.log('Stack:', log.stack);
+      console.info(`\n--- Log ${index + 1} ---`);
+      console.info('Time:', log.timestamp);
+      console.info('User:', log.userId || 'Unknown');
+      console.info('Message:', log.message);
+      console.info('Context:', log.context);
+      if (log.stack) console.info('Stack:', log.stack);
     });
     console.groupEnd();
   }

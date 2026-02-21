@@ -70,11 +70,11 @@ interface GameScreenProps {
   currentTab: AppTab;
 }
 
-const hubActionCommand = new HubActionCommand();
 const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, currentTab }) => {
   const { theme, metrics, t } = useUI();
   const { gameState, playerName } = useGame();
   const { updateGameState, updateStats, setStats } = useGameActions();
+  const hubActionCommandRef = useRef(new HubActionCommand());
   const { floatingTexts, removeFloatingText } = useFloatingTexts();
   const { stats } = useStats();
   const { advanceTurn, markExamTaken, completeExamPeriod, selectNewEvent } = useEvents();
@@ -339,7 +339,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     buttonPress();
     selectionHaptic();
 
-    const result = hubActionCommand.execute({
+    const result = hubActionCommandRef.current.execute({
       action,
       currentStats: stats,
       gameState,

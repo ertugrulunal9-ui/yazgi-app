@@ -495,6 +495,7 @@ describe('usePillarStats hook', () => {
       stats: statsOverride,
     } as any,
     stats: statsOverride as any,
+    metaProgression: {} as any,
     playerName: 'Test User',
     isLoading: false,
     startNewGame: jest.fn(),
@@ -505,6 +506,7 @@ describe('usePillarStats hook', () => {
     setPlayerName: jest.fn(),
     updateGameState: jest.fn(),
     updateStats: jest.fn(),
+    refreshMetaProgression: jest.fn(async () => {}),
     advanceTurnInContext: jest.fn(),
   });
 
@@ -541,6 +543,7 @@ describe('useStress hook', () => {
       },
     } as any,
     stats: mockStats as any,
+    metaProgression: {} as any,
     playerName: 'Test User',
     isLoading: false,
     startNewGame: jest.fn(),
@@ -551,6 +554,7 @@ describe('useStress hook', () => {
     setPlayerName: jest.fn(),
     updateGameState: jest.fn(),
     updateStats: jest.fn(),
+    refreshMetaProgression: jest.fn(async () => {}),
     advanceTurnInContext: jest.fn(),
   });
 

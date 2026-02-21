@@ -5,6 +5,7 @@ import { InnerThoughtType, LifeGoal, Stats } from '../types';
 import { MessageToast } from '../animations/ToastAnimations';
 import { usePillarStats, useStress } from '../hooks/useGameSelectors';
 import { getLifeGoalMeta } from '../utils/lifeGoalSystem';
+import { clamp } from '../utils/gameUtils';
 
 type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
 
@@ -42,8 +43,6 @@ interface TrackerProps {
 
 type PillarKey = 'beden' | 'zihin' | 'ruh' | 'servet';
 type StressBand = 'HIDDEN' | 'YELLOW' | 'ORANGE' | 'RED';
-
-const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
 
 const formatMoneyDisplay = (money: number): string => {
   if (Math.abs(money) >= 1000) {
@@ -389,11 +388,17 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
   const panelMaxHeight = innerThought ? 320 : 250;
 
   useEffect(() => {
-    Animated.timing(panelProgress, {
+    const animation = Animated.timing(panelProgress, {
       toValue: notificationsOpen ? 1 : 0,
       duration: 220,
       useNativeDriver: false,
-    }).start();
+    });
+
+    animation.start();
+
+    return () => {
+      animation.stop();
+    };
   }, [notificationsOpen, panelProgress]);
 
   const panelAnimatedStyle = useMemo(() => ({

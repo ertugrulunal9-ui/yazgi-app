@@ -71,7 +71,7 @@ interface FeedbackOverlayProps {
   theme: any;
   metrics: any;
   insets: { top: number; bottom: number };
-  t: (key: string, params?: unknown, fallback?: string) => string;
+  t: (key: string, params?: Record<string, string | number | boolean>, fallback?: string) => string;
   lastResult: ResultData | null;
   currentEvent: GameEvent | null;
   selectedChoice: Choice | null;
@@ -412,4 +412,3 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
 });
 
 FeedbackOverlay.displayName = 'FeedbackOverlay';
-

@@ -1,4 +1,5 @@
 import { CareerResult, LifeGoal, MetaProgression, MetaRunSummary, Stats } from '../types';
+import { clamp } from './gameUtils';
 
 const META_VERSION = 1;
 const MAX_RECENT_RUNS = 6;
@@ -16,9 +17,6 @@ const TIER_RANK: Record<CareerResult['type'], number> = {
   SUCCESS: 2,
   LEGENDARY: 3,
 };
-
-const clamp = (value: number, min: number, max: number): number =>
-  Math.min(max, Math.max(min, value));
 
 const deriveLegacyLevel = (totalLegacyPoints: number): number =>
   Math.min(10, Math.floor(Math.max(0, totalLegacyPoints) / 80));

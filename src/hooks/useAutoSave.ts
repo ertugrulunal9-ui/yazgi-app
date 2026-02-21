@@ -64,6 +64,32 @@ export function useAutoSave(config: UseAutoSaveConfig): void {
     playerName: playerNameRef.current,
   });
 
+  const saveWithRetry = async (
+    payloadFactory: () => AutoSavePayload,
+    contextLabel: string,
+    maxRetries: number = 3
+  ): Promise<boolean> => {
+    let attempt = 0;
+    let lastError: unknown;
+
+    while (attempt < maxRetries) {
+      try {
+        await saveGame(payloadFactory());
+        return true;
+      } catch (error) {
+        lastError = error;
+        attempt += 1;
+
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 200 * Math.pow(2, attempt - 1)));
+        }
+      }
+    }
+
+    console.error(`${contextLabel} failed after ${maxRetries} attempts:`, lastError);
+    return false;
+  };
+
   // Register SaveManager auto-save callback (e.g. for timed interval saves).
   useEffect(() => {
     SaveManager.registerAutoSaveCallback(() => {
@@ -94,36 +120,14 @@ export function useAutoSave(config: UseAutoSaveConfig): void {
       }
 
       isSavingRef.current = true;
-      const MAX_RETRIES = 3;
-      let attempt = 0;
-      let lastError: unknown;
-
-      while (attempt < MAX_RETRIES) {
-        try {
-          await saveGame(buildPayload());
-          lastError = undefined;
-          break;
-        } catch (err) {
-          lastError = err;
-          attempt++;
-          if (attempt < MAX_RETRIES) {
-            await new Promise(resolve => setTimeout(resolve, 200 * Math.pow(2, attempt - 1)));
-          }
-        }
-      }
-
-      if (lastError) {
-        console.error(`Auto-save failed after ${MAX_RETRIES} attempts:`, lastError);
-      }
-
-      isSavingRef.current = false;
+      await saveWithRetry(buildPayload, 'Auto-save');
 
       if (pendingSaveRef.current) {
         pendingSaveRef.current = false;
-        void saveGame(buildPayload()).catch(err => {
-          console.error('Pending save failed:', err);
-        });
+        await saveWithRetry(buildPayload, 'Pending save');
       }
+
+      isSavingRef.current = false;
     }, 500);
 
     return () => {
@@ -138,9 +142,7 @@ export function useAutoSave(config: UseAutoSaveConfig): void {
   useEffect(() => {
     const handleAppState = (nextState: string) => {
       if (nextState === 'background' && hasLoadedOnceRef.current && playerNameRef.current) {
-        void saveGame(buildPayload()).catch(err => {
-          console.error('Background save failed:', err);
-        });
+        void saveWithRetry(buildPayload, 'Background save');
       }
     };
 

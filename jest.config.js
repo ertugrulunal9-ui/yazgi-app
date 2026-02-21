@@ -4,13 +4,7 @@ module.exports = {
   setupFilesAfterEnv: ['<rootDir>/__tests__/setup.ts'],
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
-      tsconfig: {
-        jsx: 'react',
-        esModuleInterop: true,
-        module: 'commonjs',
-        moduleResolution: 'node',
-        types: ['jest', 'node'],
-      },
+      tsconfig: '<rootDir>/tsconfig.tests.json',
     }],
   },
   testMatch: ['**/__tests__/**/*.test.(ts|tsx)'],

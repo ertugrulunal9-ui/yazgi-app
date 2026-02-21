@@ -9,10 +9,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // çünkü singleton pattern test isolation'ı zorlaştırıyor
 import { generateChecksum, validateChecksum } from '../../src/utils/checksum';
 import { compressSaveData, decompressSaveData } from '../../src/save/SaveCompression';
-import { SAVE_VERSION, createEmptySlot, getSlotKey, getMetadataKey } from '../../src/save/SaveSlot';
+import { SAVE_VERSION, SaveSlotData, createEmptySlot, getSlotKey, getMetadataKey } from '../../src/save/SaveSlot';
+import { GameState, Stats } from '../../src/types';
 
 // Mock data
-const mockStats = {
+const mockStats: Stats = {
   health: 70,
   intelligence: 50,
   charisma: 40,
@@ -22,7 +23,7 @@ const mockStats = {
   familyRelation: 60,
 };
 
-const mockGameState = {
+const mockGameState: GameState = {
   age: 10,
   turn: 25,
   phase: 'HUB' as const,
@@ -59,8 +60,11 @@ const mockGameState = {
   npcs: [],
   selectedNpcId: null,
   innerThought: '',
+  innerThoughtType: 'IDLE',
   floatingTexts: [],
   totalTurns: 25,
+  sessionCount: 1,
+  adaptivePacingStreak: 0,
   lastInteracted: {},
   recentEvents: [],
   memories: [],
@@ -79,6 +83,12 @@ const mockGameState = {
   socialReputation: 50,
   examsTakenThisYear: [],
   isExamPeriod: false,
+  childhood: {
+    completed: false,
+    sceneIndex: 0,
+    memories: [],
+    selectedMemoryId: null,
+  },
 };
 
 describe('SaveManager - Checksum Validation', () => {
@@ -147,7 +157,7 @@ describe('SaveManager - Checksum Validation', () => {
 });
 
 describe('SaveManager - Data Compression', () => {
-  const mockSaveData = {
+  const mockSaveData: SaveSlotData = {
     metadata: {
       slotId: '1',
       characterName: 'Test',
@@ -231,10 +241,25 @@ describe('SaveManager - Data Compression', () => {
     });
 
     it('should handle complex nested data', () => {
-      const complexGameState = {
+      const complexGameState: GameState = {
         ...mockGameState,
         npcs: [
-          { id: 'npc1', name: 'Ali', role: 'FRIEND', relationship: 50, romance: 0, gender: 'MALE', age: 10, personality: 'FRIENDLY', traits: ['LOYAL'], metAge: 5, metTurn: 10, lastInteraction: 20, sharedMemories: [], isInPlayerGroup: false },
+          {
+            id: 'npc1',
+            name: 'Ali',
+            role: 'FRIEND',
+            relationship: 50,
+            romance: 0,
+            gender: 'MALE',
+            age: 10,
+            personality: 'FRIENDLY',
+            traits: ['LOYAL'],
+            metAge: 5,
+            metTurn: 10,
+            lastInteraction: 20,
+            sharedMemories: [],
+            isInPlayerGroup: false,
+          },
         ],
         memories: [
           { id: 'mem1', eventId: 'evt1', choiceId: 'choice1', age: 8, emotion: 'PRIDE' as const, weight: 'HIGH' as const, turnTimestamp: 15 },

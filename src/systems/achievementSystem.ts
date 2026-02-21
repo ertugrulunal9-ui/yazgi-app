@@ -1,6 +1,7 @@
 import { Achievement, UnlockedAchievement, Stats, GameState, Skills, SchoolGrades, AchievementProgress } from '../types';
 import { ACHIEVEMENTS } from './achievementDefinitions';
 import { analyticsService } from '../services/analytics';
+import { devLog } from '../utils/devLogger';
 
 const STORAGE_KEY = '@yazgi/achievements/v1';
 const hasAsyncStorage = typeof localStorage === 'undefined';
@@ -93,7 +94,7 @@ export const unlockAchievement = async (
     age: gameState.age,
   });
 
-  console.log(`🏆 Achievement Unlocked: ${achievement.name}`);
+  devLog.log(`🏆 Achievement Unlocked: ${achievement.name}`);
 
   // Floating Text Feedback
   if (showFloatingText) {
@@ -260,7 +261,7 @@ export const resetAchievements = async (): Promise<void> => {
       await AsyncStorage.removeItem(STORAGE_KEY);
     }
 
-    console.log('✅ Achievements reset');
+    devLog.log('✅ Achievements reset');
   } catch (error) {
     console.error('Failed to reset achievements:', error);
   }

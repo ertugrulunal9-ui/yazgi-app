@@ -77,7 +77,6 @@ export const useExamHandler = (options: UseExamHandlerOptions): UseExamHandlerRe
 
   // Handle exam cancellation
   const handleExamCancel = useCallback(() => {
-    console.log('[useExamHandler] Exam cancelled');
     setExamGameVisible(false);
     setCurrentExamType(null);
   }, []);
@@ -96,9 +95,7 @@ export const useExamHandler = (options: UseExamHandlerOptions): UseExamHandlerRe
 
   // Open exam game
   const openExamGame = useCallback((examType: ExamGameType) => {
-    console.log('[useExamHandler] Opening exam game:', examType);
     const difficulty = calculateDifficulty();
-    console.log('[useExamHandler] Setting exam state:', { type: examType, difficulty, age });
 
     setCurrentExamType(examType);
     setExamDifficulty(difficulty);
@@ -139,14 +136,6 @@ export const useExamHandler = (options: UseExamHandlerOptions): UseExamHandlerRe
     if (onExamComplete) {
       onExamComplete(result);
     }
-
-    console.log('[useExamHandler] Exam completed:', {
-      type: result.type,
-      subject,
-      gradeBonus: result.gradeBonus,
-      correctAnswers: result.correctAnswers,
-      totalQuestions: result.totalQuestions,
-    });
   }, [schoolGrades, updateSchoolGrades, markExamTaken, updateStats, onExamComplete, skills, updateSkills, traitIds]);
 
   return {
