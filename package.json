@@ -22,6 +22,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:ci": "jest --ci --coverage --maxWorkers=2",
+    "test:critical": "jest --ci --runInBand __tests__/critical/P0CriticalScenarios.test.ts __tests__/critical/P1CriticalScenarios.test.ts",
     "test:verbose": "jest --verbose",
     "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
     "simulate:game": "node scripts/run-simulate-game.cjs",
@@ -52,6 +53,7 @@
     "expo-image": "~3.0.11",
     "expo-linear-gradient": "~15.0.8",
     "expo-linking": "~8.0.11",
+    "expo-localization": "~17.0.8",
     "expo-router": "~6.0.23",
     "expo-secure-store": "~15.0.8",
     "expo-sharing": "~14.0.8",
@@ -64,7 +66,6 @@
     "react-native-gesture-handler": "~2.28.0",
     "react-native-get-random-values": "~1.11.0",
     "react-native-google-mobile-ads": "^16.0.3",
-    "react-native-purchases": "^9.9.0",
     "react-native-qrcode-svg": "^6.3.21",
     "react-native-reanimated": "~4.1.1",
     "react-native-safe-area-context": "~5.6.0",
@@ -105,8 +106,6 @@
   },
   "private": true,
   "overrides": {
-    "glob": "^10.4.5",
-    "minimatch": "^10.2.2",
     "fast-xml-parser": "^5.3.6"
   }
 }

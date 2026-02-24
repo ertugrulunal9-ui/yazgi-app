@@ -8,63 +8,19 @@ import { FateTokenDisplay, hasNegativeOutcome } from './FateTokenDisplay';
 import { TraitProgressChip } from './TraitProgressChip';
 import { buildPrimaryFeedbackMessage, EventOutcomeSummary } from '../utils/feedbackPrioritizer';
 
-const STAT_LABELS: Record<string, string> = {
-  health: 'Saglik',
-  energy: 'Enerji',
-  intelligence: 'Zeka',
-  charisma: 'Karizma',
-  discipline: 'Disiplin',
-  money: 'Para',
-  familyRelation: 'Aile',
-};
+const STAT_KEYS = ['health', 'energy', 'intelligence', 'charisma', 'discipline', 'money', 'familyRelation'] as const;
+const SKILL_KEYS = ['coding', 'music', 'sports', 'design', 'athletics', 'logic', 'reading', 'teamwork', 'art', 'writing', 'work_ethic', 'business'] as const;
+const GRADE_KEYS = ['math', 'science', 'language', 'turkish', 'history', 'geography', 'art', 'music'] as const;
+const PERSONALITY_KEYS: (keyof Personality)[] = ['openness', 'courage', 'empathy', 'patience', 'conformity'];
+const CHOICE_TYPE_KEYS: NonNullable<Choice['choiceType']>[] = ['PASSIVE', 'CHALLENGE', 'BREAKDOWN', 'NEUTRAL'];
+const FATE_OUTCOME_KEYS = ['BLESSED', 'FORTUNATE', 'NEUTRAL', 'UNLUCKY', 'CURSED'] as const;
 
-const SKILL_LABELS: Record<string, string> = {
-  coding: 'Yazilim',
-  music: 'Muzik',
-  sports: 'Spor',
-  design: 'Tasarim',
-  athletics: 'Atletizm',
-  logic: 'Mantik',
-  reading: 'Okuma',
-  teamwork: 'Takim',
-  art: 'Sanat',
-  writing: 'Yazarlik',
-  work_ethic: 'Caliskanlik',
-  business: 'Is',
-};
-
-const GRADE_LABELS: Record<string, string> = {
-  math: 'Matematik',
-  science: 'Fen Bilgisi',
-  language: 'Dil',
-  turkish: 'Turkce',
-  history: 'Tarih',
-  geography: 'Cografya',
-  art: 'Sanat',
-  music: 'Muzik',
-};
-
-const PERSONALITY_AXIS_LABELS: Record<keyof Personality, string> = {
-  openness: 'Aciklik',
-  courage: 'Cesaret',
-  empathy: 'Empati',
-  patience: 'Sabir',
-  conformity: 'Uyum',
-};
-
-const CHOICE_TYPE_LABELS: Record<NonNullable<Choice['choiceType']>, string> = {
-  PASSIVE: 'Guvenli tercih',
-  CHALLENGE: 'Zorlayici tercih',
-  BREAKDOWN: 'Stres patlamasi',
-  NEUTRAL: 'Notr tercih',
-};
-
-const FATE_OUTCOME_LABELS: Record<string, string> = {
-  BLESSED: 'Mukemmel sans',
-  FORTUNATE: 'Iyi sans',
-  NEUTRAL: 'Notr sans',
-  UNLUCKY: 'Sanssiz',
-  CURSED: 'Kotu sans',
+const buildLabels = (keys: readonly string[], prefix: string, t: (key: string, params?: Record<string, string | number | boolean>, fallback?: string) => string): Record<string, string> => {
+  const result: Record<string, string> = {};
+  for (const key of keys) {
+    result[key] = t(`${prefix}.${key}`, undefined, key);
+  }
+  return result;
 };
 
 interface FeedbackOverlayProps {
@@ -81,7 +37,10 @@ interface FeedbackOverlayProps {
   fate: FateState | undefined;
   canReroll: boolean;
   buttonEnabled: boolean;
+  hasCrisisRecoveryOption: boolean;
+  crisisRecoveryLoading: boolean;
   onContinue: () => void;
+  onRecoverWithAd: () => void;
   onReroll: () => void;
 }
 
@@ -99,9 +58,19 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
   fate,
   canReroll,
   buttonEnabled,
+  hasCrisisRecoveryOption,
+  crisisRecoveryLoading,
   onContinue,
+  onRecoverWithAd,
   onReroll,
 }) => {
+  const STAT_LABELS = useMemo(() => buildLabels(STAT_KEYS, 'labels.stats', t), [t]);
+  const SKILL_LABELS = useMemo(() => buildLabels(SKILL_KEYS, 'labels.skills', t), [t]);
+  const GRADE_LABELS = useMemo(() => buildLabels(GRADE_KEYS, 'labels.grades', t), [t]);
+  const PERSONALITY_AXIS_LABELS = useMemo(() => buildLabels(PERSONALITY_KEYS, 'labels.personality', t), [t]) as Record<keyof Personality, string>;
+  const CHOICE_TYPE_LABELS = useMemo(() => buildLabels(CHOICE_TYPE_KEYS, 'labels.choiceTypes', t), [t]) as Record<NonNullable<Choice['choiceType']>, string>;
+  const FATE_OUTCOME_LABELS = useMemo(() => buildLabels(FATE_OUTCOME_KEYS, 'labels.fate', t), [t]);
+
   const overlayStyle = useMemo(() => ({
     position: 'absolute' as const,
     top: 0,
@@ -174,17 +143,17 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
     const drivers: string[] = [];
 
     if (currentEvent?.personalityCategory) {
-      drivers.push(`Event tipi: ${currentEvent.personalityCategory.toLowerCase()}`);
+      drivers.push(`${t('ui.feedbackOverlay.eventType')}${currentEvent.personalityCategory.toLowerCase()}`);
     }
 
     if (currentEvent?.challengesAxis) {
       const axis = currentEvent.challengesAxis;
       const axisValue = personality[axis];
-      drivers.push(`${PERSONALITY_AXIS_LABELS[axis]} ekseni (${Math.round(axisValue)}) sonucu etkiledi`);
+      drivers.push(`${PERSONALITY_AXIS_LABELS[axis]} (${Math.round(axisValue)}) ${t('ui.feedbackOverlay.axisInfluence')}`);
     }
 
     if (selectedChoice?.choiceType && selectedChoice.choiceType !== 'NEUTRAL') {
-      drivers.push(`Secim tipi: ${CHOICE_TYPE_LABELS[selectedChoice.choiceType]}`);
+      drivers.push(`${t('ui.feedbackOverlay.choiceType')}${CHOICE_TYPE_LABELS[selectedChoice.choiceType]}`);
     }
 
     if (selectedChoice?.reqStats) {
@@ -193,7 +162,7 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
         .map(([key, value]) => `${STAT_LABELS[key] ?? key} ${(stats[key as keyof Stats] ?? 0)}/${value}`);
 
       if (matchedStatReqs.length > 0) {
-        drivers.push(`Stat kosulu: ${matchedStatReqs.slice(0, 2).join(', ')}`);
+        drivers.push(`${t('ui.feedbackOverlay.statRequirement')}${matchedStatReqs.slice(0, 2).join(', ')}`);
       }
     }
 
@@ -203,7 +172,7 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
         .map(([key, value]) => `${SKILL_LABELS[key] ?? key} ${(skills[key as keyof Skills] ?? 0)}/${value}`);
 
       if (matchedSkillReqs.length > 0) {
-        drivers.push(`Beceri kosulu: ${matchedSkillReqs.slice(0, 2).join(', ')}`);
+        drivers.push(`${t('ui.feedbackOverlay.skillRequirement')}${matchedSkillReqs.slice(0, 2).join(', ')}`);
       }
     }
 
@@ -220,14 +189,14 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
         .join(', ');
 
       if (reqPreview) {
-        drivers.push(`Kisilik kosulu: ${reqPreview}`);
+        drivers.push(`${t('ui.feedbackOverlay.personalityRequirement')}${reqPreview}`);
       }
     }
 
     const fateRoll = lastResult.fateRoll;
     if (fateRoll) {
       const outcomeLabel = FATE_OUTCOME_LABELS[fateRoll.outcome] ?? fateRoll.outcome;
-      drivers.push(`Kader etkisi: ${outcomeLabel} (rulo ${fateRoll.modifiedRoll})`);
+      drivers.push(`${t('ui.feedbackOverlay.fateInfluence')}${outcomeLabel} (${fateRoll.modifiedRoll})`);
     }
 
     return drivers.slice(0, 4);
@@ -235,7 +204,7 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
 
   const rawFeedback = lastResult?.feedback || t('event.defaultFeedback', undefined, 'Devam ediyorsun...');
   const wasDramatic = (currentEvent?.difficulty ?? 0) >= 4;
-  const feedbackText = wasDramatic ? `Bu karar\u0131n hayat\u0131n\u0131 de\u011Fi\u015Ftirdi. ${rawFeedback}` : rawFeedback;
+  const feedbackText = wasDramatic ? `${t('ui.feedbackOverlay.dramaticDecision')} ${rawFeedback}` : rawFeedback;
 
   return (
     <View style={overlayStyle}>
@@ -284,7 +253,7 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
         {outcomeDrivers.length > 0 && (
           <Card style={{ marginBottom: 16, borderRadius: 14 }} padded>
             <Text style={{ color: theme.textPrimary, fontSize: 14, fontWeight: '700', marginBottom: 8 }}>
-              Neden bu sonuc?
+              {t('ui.feedbackOverlay.whyThisOutcome')}
             </Text>
             {outcomeDrivers.map((line, index) => (
               <Text
@@ -309,7 +278,7 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
         {lastResult?.traitChanges && lastResult.traitChanges.length > 0 && (
           <Card style={{ marginBottom: 16, borderRadius: 14 }} padded>
             <Text style={{ color: theme.textPrimary, fontSize: 14, fontWeight: '700', marginBottom: 8 }}>
-              Ozellik degisimi
+              {t('ui.feedbackOverlay.traitChanges')}
             </Text>
             {lastResult.traitChanges.map((change, index, arr) => (
               <View key={`${change.changeType}_${change.traitId}_${index}`} style={{ marginBottom: index === arr.length - 1 ? 0 : 10 }}>
@@ -324,12 +293,33 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
                 </Text>
                 {change.guidance && (
                   <Text style={{ color: theme.textSecondary, fontSize: 12, lineHeight: 17, marginTop: 3 }}>
-                    Ipuclari: {change.guidance}
+                    {t('ui.feedbackOverlay.hints')} {change.guidance}
                   </Text>
                 )}
               </View>
             ))}
           </Card>
+        )}
+
+        {hasCrisisRecoveryOption && (
+          <AnimatedButton
+            onPress={onRecoverWithAd}
+            disabled={crisisRecoveryLoading}
+            animationType="pressScale"
+            style={{
+              ...buttonStyle,
+              backgroundColor: theme.surfaceRaised,
+              borderColor: '#22c55e',
+              opacity: crisisRecoveryLoading ? 0.75 : 1,
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('ui.feedbackOverlay.crisisRecoveryAdButton')}
+            accessibilityHint={t('ui.feedbackOverlay.recoverPercentage')}
+          >
+            <Text style={{ ...buttonTextStyle, color: '#22c55e' }}>
+              {crisisRecoveryLoading ? t('ui.feedbackOverlay.adPreparing') : t('ui.feedbackOverlay.watchAdRecover')}
+            </Text>
+          </AnimatedButton>
         )}
 
         <AnimatedButton
