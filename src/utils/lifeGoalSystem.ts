@@ -1,4 +1,5 @@
 import { Choice, GameEvent, GameState, LifeGoal } from '../types';
+import { tRuntime } from '../i18n/strings';
 
 export const LIFE_GOAL_SELECTION_EVENT_ID = 'life_goal_selection_10';
 export const LIFE_GOAL_PIVOT_EVENT_ID = 'life_goal_pivot_16';
@@ -45,16 +46,64 @@ export const LIFE_GOAL_META: Record<LifeGoal, LifeGoalMeta> = {
   },
 };
 
+const GOAL_KEY_PATHS: Record<LifeGoal, {
+  label: string;
+  shortLabel: string;
+  statHint: string;
+  feedback: string;
+}> = {
+  ACADEMIC: {
+    label: 'goals.ACADEMIC.label',
+    shortLabel: 'goals.ACADEMIC.shortLabel',
+    statHint: 'goals.ACADEMIC.statHint',
+    feedback: 'goals.feedback.ACADEMIC',
+  },
+  ATHLETIC: {
+    label: 'goals.ATHLETIC.label',
+    shortLabel: 'goals.ATHLETIC.shortLabel',
+    statHint: 'goals.ATHLETIC.statHint',
+    feedback: 'goals.feedback.ATHLETIC',
+  },
+  CREATIVE: {
+    label: 'goals.CREATIVE.label',
+    shortLabel: 'goals.CREATIVE.shortLabel',
+    statHint: 'goals.CREATIVE.statHint',
+    feedback: 'goals.feedback.CREATIVE',
+  },
+  WEALTH: {
+    label: 'goals.WEALTH.label',
+    shortLabel: 'goals.WEALTH.shortLabel',
+    statHint: 'goals.WEALTH.statHint',
+    feedback: 'goals.feedback.WEALTH',
+  },
+  SOCIAL: {
+    label: 'goals.SOCIAL.label',
+    shortLabel: 'goals.SOCIAL.shortLabel',
+    statHint: 'goals.SOCIAL.statHint',
+    feedback: 'goals.feedback.SOCIAL',
+  },
+};
+
 const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
 
 export const getLifeGoalMeta = (goal?: LifeGoal | null): LifeGoalMeta | null => {
   if (!goal) return null;
-  return LIFE_GOAL_META[goal] ?? null;
+  const fallback = LIFE_GOAL_META[goal];
+  if (!fallback) return null;
+
+  const keyPaths = GOAL_KEY_PATHS[goal];
+
+  return {
+    label: tRuntime(keyPaths.label, undefined, fallback.label),
+    shortLabel: tRuntime(keyPaths.shortLabel, undefined, fallback.shortLabel),
+    accentColor: fallback.accentColor,
+    statHint: tRuntime(keyPaths.statHint, undefined, fallback.statHint),
+  };
 };
 
 export const getLifeGoalLabel = (goal?: LifeGoal | null): string => {
   const meta = getLifeGoalMeta(goal);
-  return meta?.label ?? 'Hedef Belirsiz';
+  return meta?.label ?? tRuntime('goals.unknown', undefined, 'Hedef Belirsiz');
 };
 
 export const mapEndingGoalToLifeGoal = (
@@ -106,12 +155,16 @@ const GOAL_EFFECTS: Record<LifeGoal, Choice['effect']> = {
   SOCIAL: { charisma: 2, familyRelation: 2, energy: -2 },
 };
 
-const GOAL_FEEDBACK: Record<LifeGoal, string> = {
-  ACADEMIC: 'Kendine net bir akademik rota cizdin.',
-  ATHLETIC: 'Sporcu hedefin artik yol haritan oldu.',
-  CREATIVE: 'Yaratici hedefin icin risk almayi kabul ettin.',
-  WEALTH: 'Finansal hedefin artik kararlarini yonlendiriyor.',
-  SOCIAL: 'Insan odakli bir gelecek plani yaptin.',
+const getGoalFeedback = (goal: LifeGoal): string => {
+  const key = GOAL_KEY_PATHS[goal].feedback;
+  const fallbackByGoal: Record<LifeGoal, string> = {
+    ACADEMIC: 'Kendine net bir akademik rota cizdin.',
+    ATHLETIC: 'Sporcu hedefin artik yol haritan oldu.',
+    CREATIVE: 'Yaratici hedefin icin risk almayi kabul ettin.',
+    WEALTH: 'Finansal hedefin artik kararlarini yonlendiriyor.',
+    SOCIAL: 'Insan odakli bir gelecek plani yaptin.',
+  };
+  return tRuntime(key, undefined, fallbackByGoal[goal]);
 };
 
 const buildGoalChoice = (
@@ -122,19 +175,25 @@ const buildGoalChoice = (
   }
 ): Choice => {
   const prefix = options?.prefix ?? 'goal_select';
-  const textPrefix = options?.textPrefix ?? 'Hedefi sec:';
+  const textPrefix = options?.textPrefix ?? tRuntime('goals.selectPrefix', undefined, 'Hedefi sec:');
+  const localizedMeta = getLifeGoalMeta(goal) ?? LIFE_GOAL_META[goal];
+
   return {
     id: `${prefix}_${goal.toLowerCase()}`,
-    text: `${textPrefix} ${LIFE_GOAL_META[goal].shortLabel}`,
+    text: `${textPrefix} ${localizedMeta.shortLabel}`,
     effect: GOAL_EFFECTS[goal],
     setSelectedGoal: goal,
-    feedback: GOAL_FEEDBACK[goal],
+    feedback: getGoalFeedback(goal),
   };
 };
 
 export const buildInitialLifeGoalEvent = (): GameEvent => ({
   id: LIFE_GOAL_SELECTION_EVENT_ID,
-  text: '10 yasina girdin. Artik gelecekte neyin pesinden kosacagina karar vermelisin.',
+  text: tRuntime(
+    'goals.lifeGoalEventText',
+    undefined,
+    '10 yasina girdin. Artik gelecekte neyin pesinden kosacagina karar vermelisin.'
+  ),
   minAge: 10,
   maxAge: 99,
   rarity: 'RARE',
@@ -164,16 +223,20 @@ export const buildPivotLifeGoalEvent = (
 
   const keepChoice: Choice = {
     id: 'goal_keep_current',
-    text: `${currentLabel} hedefine sadik kal`,
+    text: tRuntime('goals.keepCurrent', { currentLabel }, `${currentLabel} hedefine sadik kal`),
     effect: { discipline: 2, energy: -2 },
     setSelectedGoal: currentGoal,
-    feedback: 'Planini degistirmedin. Bundan sonra tercihlerin daha kritik olacak.',
+    feedback: tRuntime(
+      'goals.keepCurrentFeedback',
+      undefined,
+      'Planini degistirmedin. Bundan sonra tercihlerin daha kritik olacak.'
+    ),
   };
 
   const pivotChoices = alternatives.map((goal, index) => {
     const textPrefix = index === 0 && goal === suggestedGoal
-      ? `Rota degistir (${suggestedLabel})`
-      : 'Hedefi guncelle:';
+      ? tRuntime('goals.pivotSuggested', { suggestedLabel }, `Rota degistir (${suggestedLabel})`)
+      : tRuntime('goals.pivotUpdate', undefined, 'Hedefi guncelle:');
     return buildGoalChoice(goal, {
       prefix: 'goal_pivot',
       textPrefix,
@@ -182,7 +245,14 @@ export const buildPivotLifeGoalEvent = (
 
   return {
     id: LIFE_GOAL_PIVOT_EVENT_ID,
-    text: `${currentLabel} hedefinle mevcut gelisimin arasinda ciddi bir fark olustu (fark: ${Math.round(mismatchGap)}). Yeni bir rota secmek ister misin?`,
+    text: tRuntime(
+      'goals.pivotEventText',
+      {
+        currentLabel,
+        gap: Math.round(mismatchGap),
+      },
+      `${currentLabel} hedefinle mevcut gelisimin arasinda ciddi bir fark olustu (fark: ${Math.round(mismatchGap)}). Yeni bir rota secmek ister misin?`
+    ),
     minAge: 16,
     maxAge: 99,
     rarity: 'RARE',

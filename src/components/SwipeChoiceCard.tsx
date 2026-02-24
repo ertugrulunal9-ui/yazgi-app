@@ -19,6 +19,7 @@ import { Feather } from '@expo/vector-icons';
 import { Choice, PersonalityState, Stats } from '../types';
 import { selectionHaptic, importantDecision } from '../animations';
 import { getMomentumDialogueTag } from '../utils/momentumDialogue';
+import { tRuntime } from '../i18n/strings';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SWIPE_THRESHOLD = 120;
@@ -50,14 +51,14 @@ const CHOICE_TYPE_COLORS: Record<string, string> = {
   NEUTRAL: '#94a3b8',
 };
 
-const STAT_ICONS: Partial<Record<keyof Stats, { icon: string; label: string }>> = {
-  health: { icon: 'heart', label: 'Sag' },
-  intelligence: { icon: 'book', label: 'Zeka' },
-  charisma: { icon: 'star', label: 'Kar' },
-  discipline: { icon: 'target', label: 'Dis' },
-  money: { icon: 'dollar-sign', label: 'Para' },
-  energy: { icon: 'zap', label: 'Ener' },
-  familyRelation: { icon: 'home', label: 'Aile' },
+const STAT_ICONS: Partial<Record<keyof Stats, { icon: string }>> = {
+  health: { icon: 'heart' },
+  intelligence: { icon: 'book' },
+  charisma: { icon: 'star' },
+  discipline: { icon: 'target' },
+  money: { icon: 'dollar-sign' },
+  energy: { icon: 'zap' },
+  familyRelation: { icon: 'home' },
 };
 
 export const SwipeChoiceCard: React.FC<SwipeChoiceCardProps> = React.memo(({
@@ -158,6 +159,7 @@ export const SwipeChoiceCard: React.FC<SwipeChoiceCardProps> = React.memo(({
 
   const choiceTypeColor = CHOICE_TYPE_COLORS[choice.choiceType || 'NEUTRAL'];
   const dialogueTag = getMomentumDialogueTag(choice, personalityState);
+  const swipeHint = tRuntime('events.swipe.swipeHint', undefined, 'kaydir');
 
   // Stat hints from choice.effect
   const statHints = Object.entries(choice.effect || {}).filter(
@@ -248,7 +250,7 @@ export const SwipeChoiceCard: React.FC<SwipeChoiceCardProps> = React.memo(({
           <View style={styles.swipeHint}>
             <Feather name="chevrons-left" size={14} color={theme.textSecondary} />
             <Text style={[styles.swipeHintText, { color: theme.textSecondary }]}>
-              kaydir
+              {swipeHint}
             </Text>
             <Feather name="chevrons-right" size={14} color={theme.textSecondary} />
           </View>

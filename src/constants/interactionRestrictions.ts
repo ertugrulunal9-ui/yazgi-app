@@ -1,7 +1,8 @@
 // =================================================================
-// SOSYAL ETKİLEŞİM YAŞ KISITLAMALARI
-// Her etkileşim türü için minimum yaş gereksinimleri
+// SOCIAL INTERACTION AGE RESTRICTIONS
 // =================================================================
+
+import { tRuntime } from '../i18n/strings';
 
 export type InteractionType = 'CHAT' | 'HANGOUT' | 'GIFT' | 'STUDY' | 'FLIRT' | 'HELP' | 'COMPETE' | 'GOSSIP';
 
@@ -13,59 +14,80 @@ export interface InteractionRestriction {
   lockedMessage: string;
 }
 
-// Yaşa göre kademeli açılan etkileşimler
 export const INTERACTION_AGE_RESTRICTIONS: Record<InteractionType, InteractionRestriction> = {
   CHAT: {
     minAge: 3,
     label: 'Sohbet Et',
-    description: 'Dostça sohbet',
-    lockedMessage: 'Henüz konuşmayı öğrenmedin',
+    description: 'Dostca sohbet',
+    lockedMessage: 'Henuz konusmayi ogrenmedin',
   },
   HANGOUT: {
     minAge: 5,
-    label: 'Takıl',
-    description: 'Birlikte vakit geçir',
-    lockedMessage: 'Henüz dışarıda takılmak için küçüksün',
+    label: 'Takil',
+    description: 'Birlikte vakit gecir',
+    lockedMessage: 'Henuz disarida takilmak icin kucuksun',
   },
   HELP: {
     minAge: 5,
-    label: 'Yardım Et',
-    description: 'İhtiyacında yardım',
-    lockedMessage: 'Henüz yardım edebilecek yaşta değilsin',
+    label: 'Yardim Et',
+    description: 'Ihtiyacinda yardim',
+    lockedMessage: 'Henuz yardim edebilecek yasta degilsin',
   },
   GIFT: {
     minAge: 6,
     label: 'Hediye Ver',
-    description: 'Özel hediye',
-    lockedMessage: 'Hediye vermeyi henüz öğrenmedin',
+    description: 'Ozel hediye',
+    lockedMessage: 'Hediye vermeyi henuz ogrenmedin',
   },
   STUDY: {
     minAge: 7,
-    label: 'Ders Çalış',
+    label: 'Ders Calis',
     description: 'Birlikte ders',
-    lockedMessage: 'Henüz okula başlamadın',
+    lockedMessage: 'Henuz okula baslamadin',
   },
   COMPETE: {
     minAge: 7,
-    label: 'Yarış',
+    label: 'Yaris',
     description: 'Rekabet et',
-    lockedMessage: 'Yarışmak için biraz daha büyümelisin',
+    lockedMessage: 'Yarismak icin biraz daha buyumelisin',
   },
   GOSSIP: {
     minAge: 10,
     label: 'Dedikodu',
-    description: 'Başkaları hakkında',
-    lockedMessage: 'Dedikodu yapmak için çok küçüksün',
+    description: 'Baskalari hakkinda',
+    lockedMessage: 'Dedikodu yapmak icin cok kucuksun',
   },
   FLIRT: {
     minAge: 12,
-    label: 'Flört Et',
+    label: 'Flort Et',
     description: 'Romantik ilgi',
-    lockedMessage: 'Flört etmek için ergenliğe girmelisin',
+    lockedMessage: 'Flort etmek icin ergenlige girmelisin',
   },
 };
 
-// Belirli bir yaş için hangi etkileşimlerin açık olduğunu kontrol et
+const INTERACTION_I18N_KEY_MAP: Record<InteractionType, string> = {
+  CHAT: 'social.interactions.CHAT',
+  HANGOUT: 'social.interactions.HANGOUT',
+  GIFT: 'social.interactions.GIFT',
+  STUDY: 'social.interactions.STUDY',
+  FLIRT: 'social.interactions.FLIRT',
+  HELP: 'social.interactions.HELP',
+  COMPETE: 'social.interactions.COMPETE',
+  GOSSIP: 'social.interactions.GOSSIP',
+};
+
+export const getLocalizedInteractionRestriction = (type: InteractionType): InteractionRestriction => {
+  const fallback = INTERACTION_AGE_RESTRICTIONS[type];
+  const keyBase = INTERACTION_I18N_KEY_MAP[type];
+
+  return {
+    ...fallback,
+    label: tRuntime(`${keyBase}.label`, undefined, fallback.label),
+    description: tRuntime(`${keyBase}.description`, undefined, fallback.description),
+    lockedMessage: tRuntime(`${keyBase}.lockedMessage`, undefined, fallback.lockedMessage),
+  };
+};
+
 export const isInteractionAvailable = (type: InteractionType, playerAge: number): boolean => {
   const restriction = INTERACTION_AGE_RESTRICTIONS[type];
   if (!restriction) return false;
@@ -74,16 +96,18 @@ export const isInteractionAvailable = (type: InteractionType, playerAge: number)
   return true;
 };
 
-// Belirli bir yaş için tüm açık etkileşimleri getir
-export const getAvailableInteractions = (playerAge: number): InteractionType[] => {
-  return (Object.keys(INTERACTION_AGE_RESTRICTIONS) as InteractionType[])
-    .filter(type => isInteractionAvailable(type, playerAge));
-};
+export const getAvailableInteractions = (playerAge: number): InteractionType[] => (
+  (Object.keys(INTERACTION_AGE_RESTRICTIONS) as InteractionType[])
+    .filter(type => isInteractionAvailable(type, playerAge))
+);
 
-// Kilitli etkileşim için mesaj getir
 export const getLockedMessage = (type: InteractionType): string => {
-  return INTERACTION_AGE_RESTRICTIONS[type]?.lockedMessage || 'Bu etkileşim kilitli';
+  const fallback = INTERACTION_AGE_RESTRICTIONS[type]?.lockedMessage || 'Bu etkilesim kilitli';
+  const keyBase = INTERACTION_I18N_KEY_MAP[type];
+  if (!keyBase) {
+    return tRuntime('social.interactions.fallbackLocked', undefined, fallback);
+  }
+  return tRuntime(`${keyBase}.lockedMessage`, undefined, fallback);
 };
 
-// Sosyal menünün kendisi için minimum yaş (en düşük etkileşim yaşı)
 export const SOCIAL_MENU_MIN_AGE = 3;

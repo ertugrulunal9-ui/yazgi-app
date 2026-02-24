@@ -1417,10 +1417,14 @@ export const turkishCities = [
   "Şanlıurfa", "Şırnak", "Tekirdağ", "Tokat", "Trabzon", "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"
 ];
 
-// Türkçe ay isimleri
 export const turkishMonths = [
-  "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
-  "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"
+  'Ocak', 'Subat', 'Mart', 'Nisan', 'Mayis', 'Haziran',
+  'Temmuz', 'Agustos', 'Eylul', 'Ekim', 'Kasim', 'Aralik',
+];
+
+export const englishMonths = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
 // Burç bilgileri
@@ -1529,6 +1533,130 @@ export const zodiacInfo: Record<ZodiacSign, {
     challenge: "Catismada net sinir",
   },
 };
+export const zodiacInfoEn: Record<ZodiacSign, {
+  name: string;
+  emoji: string;
+  dateRange: string;
+  personality: string;
+  strength: string;
+  challenge: string;
+}> = {
+  KOC: {
+    name: 'Aries',
+    emoji: '\u2648',
+    dateRange: 'March 21 - April 19',
+    personality: 'Bold in risk, fast in growth, and quick to ignite during conflict.',
+    strength: 'Courage and quick decisions',
+    challenge: 'Patience during conflict',
+  },
+  BOGA: {
+    name: 'Taurus',
+    emoji: '\u2649',
+    dateRange: 'April 20 - May 20',
+    personality: 'Steady, loyal to values, and careful around uncertainty.',
+    strength: 'Stability and trust',
+    challenge: 'Taking bold steps in ambiguity',
+  },
+  IKIZLER: {
+    name: 'Gemini',
+    emoji: '\u264A',
+    dateRange: 'May 21 - June 20',
+    personality: 'Social and agile, quick to spot opportunities but tested by consistency.',
+    strength: 'Communication and adaptability',
+    challenge: 'Value consistency',
+  },
+  YENGEC: {
+    name: 'Cancer',
+    emoji: '\u264B',
+    dateRange: 'June 21 - July 22',
+    personality: 'Emotionally warm and loyal, yet tends to retreat under pressure.',
+    strength: 'Care and emotional bonding',
+    challenge: 'Standing firm in tension',
+  },
+  ASLAN: {
+    name: 'Leo',
+    emoji: '\u264C',
+    dateRange: 'July 23 - August 22',
+    personality: 'Strong on stage, fearless in conflict, learning to balance empathy.',
+    strength: 'Leadership and influence',
+    challenge: 'Measured empathy',
+  },
+  BASAK: {
+    name: 'Virgo',
+    emoji: '\u264D',
+    dateRange: 'August 23 - September 22',
+    personality: 'Disciplined and ethical, with controlled risk-taking.',
+    strength: 'Structured growth',
+    challenge: 'Leaving the comfort zone',
+  },
+  TERAZI: {
+    name: 'Libra',
+    emoji: '\u264E',
+    dateRange: 'September 23 - October 22',
+    personality: 'Builds social balance and fairness, but can hesitate in hard conflicts.',
+    strength: 'Harmony and justice',
+    challenge: 'Decisiveness under pressure',
+  },
+  AKREP: {
+    name: 'Scorpio',
+    emoji: '\u264F',
+    dateRange: 'October 23 - November 21',
+    personality: 'Powerful in conflict and risk, but challenged in soft social balance.',
+    strength: 'Resolve and intensity',
+    challenge: 'Empathy and openness',
+  },
+  YAY: {
+    name: 'Sagittarius',
+    emoji: '\u2650',
+    dateRange: 'November 22 - December 21',
+    personality: 'Curious and adventure-seeking, with growth drive and a need for discipline.',
+    strength: 'Exploration and optimism',
+    challenge: 'Long-term consistency',
+  },
+  OGLAK: {
+    name: 'Capricorn',
+    emoji: '\u2651',
+    dateRange: 'December 22 - January 19',
+    personality: 'Patient and strategic with strong ethical grounding.',
+    strength: 'Patience and planning',
+    challenge: 'Taking bold risks',
+  },
+  KOVA: {
+    name: 'Aquarius',
+    emoji: '\u2652',
+    dateRange: 'January 20 - February 18',
+    personality: 'Innovative and socially aware, sometimes distant in direct tension.',
+    strength: 'Vision and innovation',
+    challenge: 'Emotional grounding in conflict',
+  },
+  BALIK: {
+    name: 'Pisces',
+    emoji: '\u2653',
+    dateRange: 'February 19 - March 20',
+    personality: 'Deeply empathetic and intuitive, but can struggle with hard boundaries.',
+    strength: 'Empathy and intuition',
+    challenge: 'Clear boundaries in conflict',
+  },
+};
+
+export type LocalizedDisplayLocale = 'tr' | 'en';
+
+export const getLocalizedMonths = (locale: LocalizedDisplayLocale): string[] => (
+  locale === 'en' ? englishMonths : turkishMonths
+);
+
+export const getLocalizedZodiacInfo = (
+  locale: LocalizedDisplayLocale
+): Record<ZodiacSign, {
+  name: string;
+  emoji: string;
+  dateRange: string;
+  personality: string;
+  strength: string;
+  challenge: string;
+}> => (
+  locale === 'en' ? zodiacInfoEn : zodiacInfo
+);
 
 /** Ay ve güne göre burç hesaplar */
 export const calculateZodiacSign = (month: number, day: number): ZodiacSign => {
@@ -1595,6 +1723,11 @@ export const getMaxDaysInMonth = (month: number): number => {
   const maxDays = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
   return maxDays[month - 1] || 31;
 };
+
+
+
+
+
 
 
 

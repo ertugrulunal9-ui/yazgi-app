@@ -9,12 +9,14 @@ import { EventScreen } from '../screens/EventScreen';
 import { GameOverScreen } from '../screens/GameOverScreen';
 import { GameScreen } from '../screens/GameScreen';
 import { MainMenuScreen } from '../screens/MainMenuScreen';
+import { AppLocale, t as translateStatic } from '../i18n/strings';
 
 interface AppNavigatorProps {
   appState: AppNavigationState;
   gameState: GameState;
   theme: ReturnType<typeof getThemeTokens>;
   metrics: ReturnType<typeof getDensityMetrics>;
+  locale: AppLocale;
   onGameStart: () => void;
   onRestart: () => void;
   onTabChange: (tab: AppTab) => void;
@@ -26,13 +28,18 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
   gameState,
   theme,
   metrics,
+  locale,
   onGameStart,
   onRestart,
   onTabChange,
   onToggleSettings,
 }) => {
+  const tStatic = (key: string, fallback: string): string => (
+    translateStatic(locale, key, undefined, fallback)
+  );
+
   if (!appState.gameStarted) {
-    return <MainMenuScreen theme={theme} metrics={metrics} onGameStart={onGameStart} />;
+    return <MainMenuScreen theme={theme} metrics={metrics} locale={locale} onGameStart={onGameStart} />;
   }
 
   if (gameState.phase === 'GAME_OVER') {
@@ -83,7 +90,7 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
           }),
         }}
         onPress={onToggleSettings}
-        accessibilityLabel="Ayarlari ac"
+        accessibilityLabel={tStatic('app.openSettings', 'Ayarlari ac')}
         accessibilityRole="button"
       >
         <Feather name="settings" color={theme.textPrimary} size={22} />

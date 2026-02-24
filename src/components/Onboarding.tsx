@@ -11,14 +11,16 @@ import { ThemeTokens } from '../utils/themeUtils';
 import { DensityMetrics } from '../utils/themeUtils';
 import { LifeGoal } from '../types';
 import { getLifeGoalMeta } from '../utils/lifeGoalSystem';
+import { AppLocale, t as translateStatic } from '../i18n/strings';
 
 interface OnboardingProps {
   theme: ThemeTokens;
   metrics: DensityMetrics;
+  locale?: AppLocale;
   onComplete: () => void;
 }
 
-// Simple typewriter that doesn't depend on UIProvider
+// Simple typewriter that does not depend on UIProvider.
 const SimpleTypewriter: React.FC<{
   text: string;
   style: object;
@@ -48,7 +50,7 @@ const SimpleTypewriter: React.FC<{
   return <Text style={style}>{text.slice(0, count)}</Text>;
 };
 
-// Interactive stat bar for slide 2
+// Interactive stat bar for slide 2.
 const DemoStatBar: React.FC<{
   label: string;
   value: number;
@@ -86,24 +88,17 @@ const DemoStatBar: React.FC<{
 };
 
 const GOAL_ICONS: Record<LifeGoal, string> = {
-  ACADEMIC: '🧠',
-  ATHLETIC: '🏃',
-  CREATIVE: '🎨',
-  WEALTH: '💼',
-  SOCIAL: '🤝',
-};
-
-const GOAL_STAT_HINTS: Record<LifeGoal, string[]> = {
-  ACADEMIC: ['🧠 Zeka', '📚 Disiplin'],
-  ATHLETIC: ['💪 Saglik', '📚 Disiplin'],
-  CREATIVE: ['🎨 Yaraticilik', '🧠 Zeka'],
-  WEALTH: ['💰 Para', '📚 Disiplin'],
-  SOCIAL: ['✨ Karizma', '🏠 Aile Iliskisi'],
+  ACADEMIC: '\u{1F9E0}',
+  ATHLETIC: '\u{1F3C3}',
+  CREATIVE: '\u{1F3A8}',
+  WEALTH: '\u{1F4BC}',
+  SOCIAL: '\u{1F91D}',
 };
 
 interface GoalVisionOnboardingProps {
   theme: ThemeTokens;
   metrics: DensityMetrics;
+  locale?: AppLocale;
   selectedGoal: LifeGoal;
   onContinue: () => void;
   onBack?: () => void;
@@ -112,20 +107,35 @@ interface GoalVisionOnboardingProps {
 export const GoalVisionOnboarding: React.FC<GoalVisionOnboardingProps> = ({
   theme,
   metrics,
+  locale = 'tr',
   selectedGoal,
   onContinue,
   onBack,
 }) => {
+  const tStatic = useCallback(
+    (key: string, params?: Record<string, string | number | boolean>, fallback?: string) =>
+      translateStatic(locale, key, params, fallback),
+    [locale]
+  );
+
   const goalMeta = getLifeGoalMeta(selectedGoal);
-  const goalLabel = goalMeta?.label ?? 'Hedef';
+  const goalLabel = goalMeta?.label ?? tStatic('goals.unknown', undefined, 'Hedef');
   const accentColor = goalMeta?.accentColor ?? theme.accentBrand;
-  const statHints = GOAL_STAT_HINTS[selectedGoal];
   const icon = GOAL_ICONS[selectedGoal];
+  const rawHint = goalMeta?.statHint ?? tStatic(
+    'onboardingFlow.slides.requirementFallback',
+    undefined,
+    'Temel statlarini gelistir'
+  );
+  const statHints = rawHint
+    .split('+')
+    .map(part => part.trim())
+    .filter(Boolean);
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.appBg, paddingHorizontal: metrics.pad * 1.6, justifyContent: 'center' }}>
       <Text style={{ color: theme.textSecondary, textAlign: 'center', marginBottom: 8, fontSize: 12 }}>
-        Bu Hayatta Hayalin
+        {tStatic('onboardingFlow.slides.dreamTitle', undefined, 'Bu Hayatta Hayalin')}
       </Text>
 
       <View style={{
@@ -140,7 +150,7 @@ export const GoalVisionOnboarding: React.FC<GoalVisionOnboardingProps> = ({
           {goalLabel}
         </Text>
         <Text style={{ color: theme.textSecondary, textAlign: 'center', marginBottom: 12 }}>
-          Bunun icin gereken:
+          {tStatic('onboardingFlow.slides.requirementTitle', undefined, 'Bunun icin gereken:')}
         </Text>
         <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
           {statHints.map((hint) => (
@@ -175,25 +185,35 @@ export const GoalVisionOnboarding: React.FC<GoalVisionOnboardingProps> = ({
         }}
         activeOpacity={0.85}
       >
-        <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: 15 }}>Devam Et</Text>
+        <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: 15 }}>
+          {tStatic('onboardingFlow.slides.continue', undefined, 'Devam Et')}
+        </Text>
       </TouchableOpacity>
 
       {onBack ? (
         <TouchableOpacity onPress={onBack} style={{ marginTop: 10, alignItems: 'center' }} activeOpacity={0.85}>
-          <Text style={{ color: theme.textSecondary, fontSize: 12 }}>Geri Don</Text>
+          <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
+            {tStatic('onboardingFlow.slides.back', undefined, 'Geri Don')}
+          </Text>
         </TouchableOpacity>
       ) : null}
     </View>
   );
 };
 
-export const Onboarding: React.FC<OnboardingProps> = ({ theme, metrics, onComplete }) => {
+export const Onboarding: React.FC<OnboardingProps> = ({ theme, metrics, locale = 'tr', onComplete }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
-  // Slide 2 interactive state
+  // Slide 2 interactive state.
   const [demoChoice, setDemoChoice] = useState<'A' | 'B' | null>(null);
-  const [demoStats, setDemoStats] = useState({ zeka: 20, karisma: 20 });
+  const [demoStats, setDemoStats] = useState({ intelligence: 20, charisma: 20 });
+
+  const tStatic = useCallback(
+    (key: string, params?: Record<string, string | number | boolean>, fallback?: string) =>
+      translateStatic(locale, key, params, fallback),
+    [locale]
+  );
 
   const horizontalPad = useMemo(() => Math.max(20, metrics.pad * 1.6), [metrics.pad]);
   const footerPad = useMemo(() => Math.max(28, metrics.pad * 2), [metrics.pad]);
@@ -234,9 +254,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ theme, metrics, onComple
   const handleDemoChoice = (choice: 'A' | 'B') => {
     setDemoChoice(choice);
     if (choice === 'A') {
-      setDemoStats({ zeka: 65, karisma: 30 });
+      setDemoStats({ intelligence: 65, charisma: 30 });
     } else {
-      setDemoStats({ zeka: 30, karisma: 65 });
+      setDemoStats({ intelligence: 30, charisma: 65 });
     }
   };
 
@@ -246,7 +266,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ theme, metrics, onComple
         return (
           <View style={styles.slideContent}>
             <SimpleTypewriter
-              text="Bir hayat başlayacak..."
+              text={tStatic('onboardingFlow.slides.introLine', undefined, 'Bir hayat baslayacak...')}
               style={{
                 fontSize: 30,
                 fontWeight: '800',
@@ -263,7 +283,11 @@ export const Onboarding: React.FC<OnboardingProps> = ({ theme, metrics, onComple
               textAlign: 'center',
               lineHeight: 24,
             }}>
-              Doğumdan mezuniyete, her anı{'\n'}senin seçimlerin belirleyecek.
+              {tStatic(
+                'onboardingFlow.slides.introBody',
+                undefined,
+                'Dogumdan mezuniyete, her ani senin secimlerin belirleyecek.'
+              )}
             </Text>
           </View>
         );
@@ -279,7 +303,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ theme, metrics, onComple
               textAlign: 'center',
               marginBottom: 24,
             }}>
-              Her seçim seni değiştirir
+              {tStatic('onboardingFlow.slides.choiceHeader', undefined, 'Her secim seni degistirir')}
             </Text>
 
             <View style={{
@@ -298,7 +322,11 @@ export const Onboarding: React.FC<OnboardingProps> = ({ theme, metrics, onComple
                 textAlign: 'center',
                 marginBottom: 16,
               }}>
-                Arkadaşın seni dışarı çağırıyor. Ne yaparsın?
+                {tStatic(
+                  'onboardingFlow.slides.choicePrompt',
+                  undefined,
+                  'Arkadasin seni disari cagiriyor. Ne yaparsin?'
+                )}
               </Text>
 
               <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -314,7 +342,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ theme, metrics, onComple
                   onPress={() => handleDemoChoice('A')}
                 >
                   <Text style={{ fontSize: 13, fontFamily: theme.fontBody, color: theme.textPrimary, textAlign: 'center' }}>
-                    📚 Ders çalışırım
+                    {'\u{1F4DA}'} {tStatic('onboardingFlow.slides.choiceStudy', undefined, 'Ders calisirim')}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -329,7 +357,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ theme, metrics, onComple
                   onPress={() => handleDemoChoice('B')}
                 >
                   <Text style={{ fontSize: 13, fontFamily: theme.fontBody, color: theme.textPrimary, textAlign: 'center' }}>
-                    🎉 Arkadaşlarla buluşurum
+                    {'\u{1F389}'} {tStatic('onboardingFlow.slides.choiceSocial', undefined, 'Arkadaslarla bulusurum')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -337,8 +365,18 @@ export const Onboarding: React.FC<OnboardingProps> = ({ theme, metrics, onComple
 
             {demoChoice && (
               <View style={{ width: '100%' }}>
-                <DemoStatBar label="🧠 Zeka" value={demoStats.zeka} color={theme.accentSkill} theme={theme} />
-                <DemoStatBar label="✨ Karisma" value={demoStats.karisma} color={theme.accentEvent} theme={theme} />
+                <DemoStatBar
+                  label={`${'\u{1F9E0}'} ${tStatic('labels.stats.intelligence', undefined, 'Zeka')}`}
+                  value={demoStats.intelligence}
+                  color={theme.accentSkill}
+                  theme={theme}
+                />
+                <DemoStatBar
+                  label={`${'\u2728'} ${tStatic('labels.stats.charisma', undefined, 'Karizma')}`}
+                  value={demoStats.charisma}
+                  color={theme.accentEvent}
+                  theme={theme}
+                />
                 <Text style={{
                   fontSize: 12,
                   fontFamily: theme.fontBody,
@@ -347,8 +385,16 @@ export const Onboarding: React.FC<OnboardingProps> = ({ theme, metrics, onComple
                   marginTop: 8,
                 }}>
                   {demoChoice === 'A'
-                    ? 'Zekan arttı! Ama sosyal hayatın biraz geriledi.'
-                    : 'Karizma arttı! Ama derslerden geri kaldın.'}
+                    ? tStatic(
+                      'onboardingFlow.slides.choiceStudyResult',
+                      undefined,
+                      'Zekan artti! Ama sosyal hayatin biraz geriledi.'
+                    )
+                    : tStatic(
+                      'onboardingFlow.slides.choiceSocialResult',
+                      undefined,
+                      'Karizma artti! Ama derslerden geri kaldin.'
+                    )}
                 </Text>
               </View>
             )}
@@ -367,7 +413,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ theme, metrics, onComple
               letterSpacing: 3,
               marginBottom: 12,
             }}>
-              Yazgı
+              {tStatic('app.title', undefined, 'Yazgi')}
             </Text>
             <Text style={{
               fontSize: 18,
@@ -376,7 +422,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ theme, metrics, onComple
               textAlign: 'center',
               marginBottom: 8,
             }}>
-              Yazgın senin elinde.
+              {tStatic('app.tagline', undefined, 'Kaderini sen yaz.')}
             </Text>
             <Text style={{
               fontSize: 14,
@@ -385,7 +431,11 @@ export const Onboarding: React.FC<OnboardingProps> = ({ theme, metrics, onComple
               textAlign: 'center',
               lineHeight: 22,
             }}>
-              Hayat simülasyonunda kararlar ver,{'\n'}karakterini oluştur, kaderini belirle.
+              {tStatic(
+                'onboardingFlow.slides.outroBody',
+                undefined,
+                'Hayat simulasyonunda kararlar ver, karakterini olustur, kaderini belirle.'
+              )}
             </Text>
           </View>
         );
@@ -397,7 +447,6 @@ export const Onboarding: React.FC<OnboardingProps> = ({ theme, metrics, onComple
 
   return (
     <View style={[styles.container, { backgroundColor: theme.appBg }]}>
-      {/* Skip button */}
       <View style={[styles.header, { paddingHorizontal: horizontalPad, paddingTop: headerTop }]}>
         <View style={styles.dotsContainer}>
           {[0, 1, 2].map(i => (
@@ -415,17 +464,15 @@ export const Onboarding: React.FC<OnboardingProps> = ({ theme, metrics, onComple
         </View>
         <TouchableOpacity onPress={handleComplete} style={styles.skipButton}>
           <Text style={{ fontSize: 13, fontFamily: theme.fontBody, color: theme.textSecondary }}>
-            Atla
+            {tStatic('onboardingFlow.slides.skip', undefined, 'Atla')}
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Content */}
       <Animated.View style={[styles.content, { opacity: fadeAnim, paddingHorizontal: horizontalPad }]}>
         {renderSlide()}
       </Animated.View>
 
-      {/* Navigation */}
       <View style={[styles.footer, { paddingHorizontal: horizontalPad, paddingBottom: footerPad }]}>
         <TouchableOpacity
           onPress={handleNext}
@@ -437,7 +484,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ theme, metrics, onComple
             fontFamily: theme.fontHeading,
             fontSize: 16,
           }}>
-            {currentSlide === 2 ? 'Hayatına Başla' : 'Devam'}
+            {currentSlide === 2
+              ? tStatic('onboardingFlow.slides.startLife', undefined, 'Hayatina Basla')
+              : tStatic('onboardingFlow.slides.next', undefined, 'Devam')}
           </Text>
         </TouchableOpacity>
       </View>

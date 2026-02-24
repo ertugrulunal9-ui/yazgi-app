@@ -46,6 +46,7 @@ import {
   shouldTriggerPivotLifeGoalEvent,
 } from '../utils/lifeGoalSystem';
 import { getGoalChainStage } from '../data/goalChainEvents';
+import { tRuntime } from '../i18n/strings';
 
 const getEventById = (eventId: string): GameEvent | undefined =>
   EVENTS.find(evt => evt.id === eventId);
@@ -194,7 +195,11 @@ export const useEvents = () => {
       baseText = evt.text;
     }
 
-    return buildMemoryAwareEventText(baseText, ctx.memories, {
+    const localizedText = evt.textKey
+      ? tRuntime(evt.textKey, undefined, baseText)
+      : baseText;
+
+    return buildMemoryAwareEventText(localizedText, ctx.memories, {
       eventId: evt.id,
       personalityCategory: evt.personalityCategory,
       currentAge: ctx.age,
@@ -202,19 +207,43 @@ export const useEvents = () => {
     });
   }, [buildEventContext]);
 
+  const localizeChoiceContent = useCallback((choice: Choice): Choice => ({
+    ...choice,
+    text: choice.textKey
+      ? tRuntime(choice.textKey, undefined, choice.text)
+      : choice.text,
+    feedback: choice.feedbackKey
+      ? tRuntime(choice.feedbackKey, undefined, choice.feedback)
+      : choice.feedback,
+    conditionalOutcomes: choice.conditionalOutcomes?.map(outcome => ({
+      ...outcome,
+      feedback: outcome.feedbackKey
+        ? tRuntime(outcome.feedbackKey, undefined, outcome.feedback)
+        : outcome.feedback,
+    })),
+  }), []);
+
   const resolveChoice = useCallback((choice: Choice | ((ctx: EventContext) => Choice)): Choice => {
     if (typeof choice === 'function') {
       try {
         const ctx = buildEventContext();
-        return choice(ctx);
+        return localizeChoiceContent(choice(ctx));
       } catch (err) {
         console.error('Error resolving dynamic choice:', err);
         // Return a safe fallback if execution fails
-        return { text: "Devam Et", effect: {}, feedback: "Bir hata olu\u015Ftu ama devam ediyorsun." };
+        return {
+          text: tRuntime('events.fallback.continueChoice', undefined, 'Devam Et'),
+          effect: {},
+          feedback: tRuntime(
+            'events.fallback.continueFeedback',
+            undefined,
+            'Bir hata olustu ama devam ediyorsun.'
+          ),
+        };
       }
     }
-    return choice;
-  }, [buildEventContext]);
+    return localizeChoiceContent(choice);
+  }, [buildEventContext, localizeChoiceContent]);
 
   const selectNewEvent = useCallback(() => {
     const ctx = buildEventContext();

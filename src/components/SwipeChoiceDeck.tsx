@@ -1,6 +1,6 @@
 /**
- * SwipeChoiceDeck — Kart yığını yöneticisi.
- * 3+ seçenekte swipe kartlar, 1-2 seçenekte klasik buton fallback.
+ * SwipeChoiceDeck manages swipe card stacks.
+ * Uses swipe cards for 3+ options and button fallback for 1-2 options.
  */
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
@@ -13,8 +13,9 @@ import { ChoiceCard } from './ChoiceCard';
 import { AnimatedButton } from '../animations/ButtonAnimations';
 import { StaggeredFadeIn, buttonPress, importantDecision } from '../animations';
 import { getMomentumDialogueTag } from '../utils/momentumDialogue';
+import { tRuntime } from '../i18n/strings';
 
-/** Raritet bazlı minimum okuma süresi (ms). Swipe bu geçmeden kilitli kalır. */
+/** Minimum read time by rarity (ms). Swipe stays locked until this elapses. */
 const MIN_READ_TIME_MS: Record<EventRarity | 'BREAKDOWN', number> = {
   COMMON: 1500,
   UNCOMMON: 2500,
@@ -29,9 +30,9 @@ interface SwipeChoiceDeckProps {
   isBreakdownEvent: boolean;
   originalChoices: (Choice | ((ctx: EventContext) => Choice))[];
   personalityState?: Partial<PersonalityState>;
-  /** Mevcut event'in rarity değeri — swipe kilit süresini belirler */
+  /** Current event rarity for swipe lock duration */
   eventRarity?: EventRarity;
-  /** Event kimliği — event değiştiğinde kilidi sıfırlar */
+  /** Event id resets lock state when event changes */
   eventId?: string;
 }
 
@@ -51,10 +52,10 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
   const { theme, metrics } = useUI();
   const [activeIndex, setActiveIndex] = useState(0);
 
-  // RARE/BREAKDOWN event'lerde seçimi klasik butonlara düşür
+  // Force button fallback for RARE/BREAKDOWN events
   const forceButtonFallback = isBreakdownEvent || eventRarity === 'RARE';
 
-  // Swipe kilidi: event gösterildiğinden bu yana MIN_READ_TIME geçmeden swipe kapalı
+  // Swipe lock: disabled until MIN_READ_TIME has passed since event display
   const [swipeLocked, setSwipeLocked] = useState(true);
   const [lockRemainingMs, setLockRemainingMs] = useState(0);
   useEffect(() => {
@@ -77,6 +78,9 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
     return () => clearInterval(interval);
   }, [eventId, isBreakdownEvent, eventRarity]);
   const lockCountdownText = swipeLocked ? `${Math.ceil(lockRemainingMs / 1000)}s` : '';
+  const swipeChoiceHint = tRuntime('events.swipe.choiceHint', undefined, 'Bu secim karakterini etkiler');
+  const selectHint = tRuntime('events.swipe.selectHint', undefined, 'Bu secimi onayla');
+  const selectText = tRuntime('events.swipe.select', undefined, 'Sec');
 
   const resolvedChoices = useMemo(
     () => choices.map(c => resolveChoice(c)),
@@ -95,7 +99,7 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
     );
   }, [resolvedChoices.length]);
 
-  // Fallback: 2 veya daha az seçenek YA DA RARE/BREAKDOWN → klasik butonlar
+  // Fallback: <=2 choices or RARE/BREAKDOWN -> classic buttons
   if (resolvedChoices.length <= 2 || forceButtonFallback) {
     return (
       <StaggeredFadeIn>
@@ -121,7 +125,7 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
               }}
               accessibilityRole="button"
               accessibilityLabel={resolved.text}
-              accessibilityHint="Bu secim karakterini etkiler"
+              accessibilityHint={swipeChoiceHint}
             >
               <View>
                 <Text style={[buttonFallbackStyles.buttonText, {
@@ -143,7 +147,7 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
     );
   }
 
-  // Swipe kart yığını
+  // Swipe card stack
   return (
     <GestureHandlerRootView style={styles.container}>
       <View style={styles.deckContainer}>
@@ -184,7 +188,7 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
         })}
       </View>
 
-      {/* Dokunarak seçim fallback (accessibility) */}
+      {/* Tap-to-select fallback (accessibility) */}
       <View style={styles.tapFallback}>
         <AnimatedButton
           onPress={() => {
@@ -199,11 +203,21 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
             backgroundColor: swipeLocked ? theme.border : theme.accentEvent,
           }}
           accessibilityRole="button"
-          accessibilityLabel={swipeLocked ? `Karar vermek icin ${lockCountdownText} bekle` : `Sec: ${resolvedChoices[activeIndex]?.text}`}
-          accessibilityHint="Bu secimi onayla"
+          accessibilityLabel={swipeLocked
+            ? tRuntime(
+              'events.swipe.waitToDecide',
+              { seconds: lockCountdownText },
+              `Karar vermek icin ${lockCountdownText} bekle`
+            )
+            : tRuntime(
+              'events.swipe.selectAria',
+              { text: resolvedChoices[activeIndex]?.text ?? '' },
+              `Sec: ${resolvedChoices[activeIndex]?.text ?? ''}`
+            )}
+          accessibilityHint={selectHint}
         >
           <Text style={styles.selectButtonText}>
-            {swipeLocked ? lockCountdownText : 'Seç'}
+            {swipeLocked ? lockCountdownText : selectText}
           </Text>
         </AnimatedButton>
       </View>

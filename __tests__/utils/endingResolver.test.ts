@@ -1,5 +1,6 @@
 import { EndingGoal, resolveEnding, calculateEndingErrorDebt, calculateAllGoalScores, generateFutureVision } from '../../src/utils/endingResolver';
 import { GameState, Stats } from '../../src/types';
+import { setRuntimeLocale } from '../../src/i18n/strings';
 
 const baseStats: Stats = {
   health: 60,
@@ -129,6 +130,10 @@ const createGameState = (overrides: Partial<GameState> = {}): GameState => {
 };
 
 describe('endingResolver', () => {
+  beforeEach(() => {
+    setRuntimeLocale('tr');
+  });
+
   it('produces a stat-driven athletic ending for high sports profile', () => {
     const gameState = createGameState({
       selectedGoal: 'ATHLETIC',
@@ -361,6 +366,24 @@ describe('endingResolver', () => {
     expect(['SUCCESS', 'LEGENDARY']).toContain(resolution.tier);
     expect(resolution.result.title).toContain('Surpriz');
     expect(resolution.goal).toBe('ACADEMIC');
+  });
+
+  it('returns english ending copy when runtime locale is switched to en', () => {
+    setRuntimeLocale('en');
+
+    const gameState = createGameState({
+      selectedGoal: 'ATHLETIC',
+      skills: {
+        ...createGameState().skills,
+        sports: 96,
+      },
+    });
+    const stats = { ...baseStats, health: 92, discipline: 85 };
+
+    const resolution = resolveEnding({ gameState, stats });
+
+    expect(resolution.result.title).toMatch(/Athlete|National/);
+    expect(resolution.result.description).toMatch(/training|discipline|Olympic|professional/i);
   });
 
   it('adds versatility penalty note for single-track action history', () => {

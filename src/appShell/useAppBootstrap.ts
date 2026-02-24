@@ -57,7 +57,7 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
   });
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [checkingOnboarding, setCheckingOnboarding] = useState(true);
-  const splashQuote = getLoadingQuoteByAge(0);
+  const splashQuote = useMemo(() => getLoadingQuoteByAge(0, locale), [locale]);
 
   useEffect(() => {
     const loadUIPrefs = async () => {

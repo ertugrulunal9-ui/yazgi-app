@@ -101,6 +101,7 @@ export interface ConditionalOutcome {
   weight: number;
   statChanges: Partial<Stats>;
   feedback: string;
+  feedbackKey?: string;
   personalityEffects?: PersonalityEffect[];
   momentumTag?: PersonalityMomentumSignal;
   memoryEmotion?: MemoryEmotion;
@@ -114,6 +115,7 @@ export interface ConditionalOutcome {
 export interface Choice {
   id?: string;
   text: string;
+  textKey?: string;
   effect: Partial<Stats>;
   icon?: string;
   grantTraits?: string[];
@@ -122,6 +124,7 @@ export interface Choice {
   inventoryAdd?: string[];
   setSelectedGoal?: LifeGoal | null;
   feedback: string;
+  feedbackKey?: string;
   reqStats?: Partial<Stats>;
   reqFamily?: {
     wealth?: FamilyWealth[];
@@ -185,6 +188,7 @@ export interface EventContext {
 export interface GameEvent {
   id: string;
   text: string | ((context: EventContext) => string);
+  textKey?: string;
   minAge: number;
   maxAge: number;
   continuationEventId?: string;

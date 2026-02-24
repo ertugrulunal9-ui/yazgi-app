@@ -18,11 +18,12 @@ import { AppNavigationState } from '../types';
 import { logTutorialCompleted, logSessionStart, logSessionEnd } from '../utils/analyticsEvents';
 import { clearSlotSave, getCurrentSlotId, setCurrentSlotId } from '../utils/gameUtils';
 import { stripRuntimeGameStateCaches } from '../utils/gameStateAdapter';
-import { getOnboardingCohort, isInOnboardingWindow, COHORT_DISPLAY_NAMES } from '../utils/onboardingGuidance';
+import { getOnboardingCohort, isInOnboardingWindow, getCohortDisplayMeta } from '../utils/onboardingGuidance';
 import { AnalyticsTracker } from './AnalyticsTracker';
 import { AppNavigator } from './AppNavigator';
 import { SettingsPanel } from './SettingsPanel';
 import { useAppBootstrap } from './useAppBootstrap';
+import { t as translateStatic } from '../i18n/strings';
 
 const AUDIO_SETTINGS_KEY = '@yazgi/audio_settings/v1';
 const ONBOARDING_KEY = '@yazgi/onboarding_completed';
@@ -87,6 +88,11 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
     setAnalyticsEnabled,
     setPersonalizedAdsEnabled,
   } = useAppBootstrap();
+  const tStatic = useCallback(
+    (key: string, params?: Record<string, string | number | boolean>, fallback?: string) =>
+      translateStatic(locale, key, params, fallback),
+    [locale]
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -210,7 +216,7 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
   const cohortMeta = useMemo(() => {
     if (!isInOnboardingWindow(gameState)) return null;
     const cohort = getOnboardingCohort(gameState);
-    return COHORT_DISPLAY_NAMES[cohort];
+    return getCohortDisplayMeta(cohort);
   }, [gameState]);
 
   const tutorial = useTutorial(
@@ -277,12 +283,12 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
 
   const handleResetGame = useCallback(() => {
     Alert.alert(
-      'Emin misin?',
-      'Oyun yeniden baslayacak. Kayit slotlarin silinmeyecek.',
+      tStatic('app.resetConfirmTitle', undefined, 'Emin misin?'),
+      tStatic('app.resetConfirmDescription', undefined, 'Oyun yeniden baslayacak. Kayit slotlarin silinmeyecek.'),
       [
-        { text: 'Iptal', onPress: () => {} },
+        { text: tStatic('app.cancel', undefined, 'Iptal'), onPress: () => {} },
         {
-          text: 'Yeni Hayat',
+          text: tStatic('settings.newLife', undefined, 'Yeni Hayat'),
           onPress: async () => {
             await clearSlotSave('auto');
             setCurrentSlotId('auto');
@@ -292,7 +298,7 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
         },
       ]
     );
-  }, [resetGame]);
+  }, [resetGame, tStatic]);
 
   useEffect(() => {
     if (!isLoading && playerName && !appState.gameStarted) {
@@ -396,7 +402,7 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
             color: theme.accentBrand,
             letterSpacing: 2,
           }}>
-            Yazgı
+            {tStatic('app.title', undefined, 'Yazgi')}
           </Text>
           <Text style={{
             color: theme.textSecondary,
@@ -406,7 +412,7 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
             marginBottom: 6,
             fontStyle: 'italic',
           }}>
-            Kaderini sen yaz.
+            {tStatic('app.tagline', undefined, 'Kaderini sen yaz.')}
           </Text>
           <Text style={{
             color: theme.textSecondary,
@@ -461,7 +467,7 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
                   fontWeight: '800',
                   textAlign: 'center',
                 }}>
-                  Tutorial
+                  {tStatic('app.tutorial.title', undefined, 'Tutorial')}
                 </Text>
                 <Text style={{
                   color: theme.textSecondary,
@@ -472,12 +478,16 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
                   marginTop: 10,
                   marginBottom: 16,
                 }}>
-                  Ilk kez oynuyorsan kisa tutorial ile mekanikleri hizlica ogrenebilirsin.
+                  {tStatic(
+                    'app.tutorial.intro',
+                    undefined,
+                    'Ilk kez oynuyorsan kisa tutorial ile mekanikleri hizlica ogrenebilirsin.'
+                  )}
                 </Text>
 
                 <TouchableOpacity
                   accessibilityRole="button"
-                  accessibilityLabel="Tutorialu baslat"
+                  accessibilityLabel={tStatic('app.tutorial.startAria', undefined, 'Tutorialu baslat')}
                   onPress={handleStartOnboarding}
                   style={{
                     minHeight: 50,
@@ -494,13 +504,13 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
                     fontSize: 15,
                     fontWeight: '700',
                   }}>
-                    Tutorial'u Baslat
+                    {tStatic('app.tutorial.start', undefined, "Tutorial'u Baslat")}
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   accessibilityRole="button"
-                  accessibilityLabel="Tutorialu atla"
+                  accessibilityLabel={tStatic('app.tutorial.skipAria', undefined, 'Tutorialu atla')}
                   onPress={handleSkipOnboarding}
                   style={{
                     minHeight: 48,
@@ -520,7 +530,7 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
                     fontSize: 14,
                     fontWeight: '600',
                   }}>
-                    Skip ve Oyuna Gec
+                    {tStatic('app.tutorial.skip', undefined, 'Skip ve Oyuna Gec')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -534,6 +544,7 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
       <Onboarding
         theme={theme}
         metrics={metrics}
+        locale={locale}
         onComplete={handleOnboardingComplete}
       />
     );
@@ -581,6 +592,7 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
         gameState={gameState}
         theme={theme}
         metrics={metrics}
+        locale={locale}
         onGameStart={handleGameStart}
         onRestart={() => {
           resetGame();

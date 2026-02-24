@@ -1,4 +1,5 @@
 import { GameState } from '../types';
+import { tRuntime } from '../i18n/strings';
 
 export type OnboardingCohort = 'SOCIALIZER' | 'SCHOLAR' | 'STRIVER' | 'GENERALIST';
 
@@ -14,9 +15,9 @@ export const hasActionPrefix = (gameState: GameState, prefixes: string[]): boole
   return ids.some(id => prefixes.some(prefix => id.startsWith(prefix)));
 };
 
-const getPrefixScore = (ids: string[], prefixes: string[]): number => {
-  return ids.reduce((score, id) => score + (prefixes.some(prefix => id.startsWith(prefix)) ? 1 : 0), 0);
-};
+const getPrefixScore = (ids: string[], prefixes: string[]): number => (
+  ids.reduce((score, id) => score + (prefixes.some(prefix => id.startsWith(prefix)) ? 1 : 0), 0)
+);
 
 const getUniqueActionRoots = (ids: string[]): Set<string> => {
   const roots = ids.map(id => id.split('_')[0]).filter(Boolean);
@@ -80,22 +81,35 @@ export const hasBalancedOnboardingRoutine = (gameState: GameState): boolean => {
   return uniqueRoots.size >= 3 && hasEventMomentum && hasEnergySafety;
 };
 
-/** Turkish display names for cohort types */
-export const COHORT_DISPLAY_NAMES: Record<OnboardingCohort, { label: string; message: string }> = {
+const COHORT_DISPLAY_FALLBACK: Record<OnboardingCohort, { label: string; message: string }> = {
   SOCIALIZER: {
     label: 'Sosyal Kelebek',
-    message: 'Sosyal yönün çok güçlü! Arkadaşlıklar kurarak ilerle.',
+    message: 'Sosyal yonun cok guclu! Arkadasliklar kurarak ilerle.',
   },
   SCHOLAR: {
     label: 'Akademisyen',
-    message: 'Akademik yeteneğin parlıyor! Ders çalışmaya devam et.',
+    message: 'Akademik yetenegin parliyor! Ders calismaya devam et.',
   },
   STRIVER: {
-    label: 'Girişimci Ruh',
-    message: 'İş dünyasına yatkınsın! Çalışarak kendini geliştir.',
+    label: 'Girisimci Ruh',
+    message: 'Is dunyasina yatkinsin! Calisarak kendini gelistir.',
   },
   GENERALIST: {
-    label: 'Keşifçi',
-    message: 'Dengeli oynuyorsun! Farklı alanları keşfetmeye devam et.',
+    label: 'Kesifci',
+    message: 'Dengeli oynuyorsun! Farkli alanlari kesfetmeye devam et.',
   },
 };
+
+export const getCohortDisplayMeta = (cohort: OnboardingCohort): { label: string; message: string } => {
+  const fallback = COHORT_DISPLAY_FALLBACK[cohort];
+  return {
+    label: tRuntime(`onboardingFlow.cohorts.${cohort}.label`, undefined, fallback.label),
+    message: tRuntime(`onboardingFlow.cohorts.${cohort}.message`, undefined, fallback.message),
+  };
+};
+
+/**
+ * Backward-compatible fallback map.
+ * Use `getCohortDisplayMeta` for runtime locale-aware values.
+ */
+export const COHORT_DISPLAY_NAMES = COHORT_DISPLAY_FALLBACK;

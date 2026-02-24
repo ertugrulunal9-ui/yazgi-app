@@ -1,7 +1,7 @@
 import React from 'react';
 import { render } from '@testing-library/react-native';
 import { MainMenuScreen } from '../../src/screens/MainMenuScreen';
-import { zodiacInfo } from '../../src/utils/gameUtils';
+import { zodiacInfo, zodiacInfoEn } from '../../src/utils/gameUtils';
 import { useGame } from '../../src/context/GameContext';
 import { useMetaProgression } from '../../src/context/MetaProgressionContext';
 import { useLegacyBonuses } from '../../src/hooks/useGameSelectors';
@@ -92,6 +92,7 @@ describe('MainMenuScreen zodiac panel', () => {
       <MainMenuScreen
         theme={theme as any}
         metrics={metrics as any}
+        locale="tr"
         onGameStart={jest.fn()}
       />
     );
@@ -100,5 +101,22 @@ describe('MainMenuScreen zodiac panel', () => {
     expect(getByText(new RegExp(escapeRegExp(expectedZodiac.personality)))).toBeTruthy();
     expect(getByText(/Guclu:/)).toBeTruthy();
     expect(getByText(/Zorluk:/)).toBeTruthy();
+  });
+
+  it('renders localized zodiac content in English locale', () => {
+    const expectedZodiac = zodiacInfoEn.OGLAK;
+    const { getByText } = render(
+      <MainMenuScreen
+        theme={theme as any}
+        metrics={metrics as any}
+        locale="en"
+        onGameStart={jest.fn()}
+      />
+    );
+
+    expect(getByText(new RegExp(escapeRegExp(expectedZodiac.dateRange)))).toBeTruthy();
+    expect(getByText(new RegExp(escapeRegExp(expectedZodiac.personality)))).toBeTruthy();
+    expect(getByText(/Strength:/)).toBeTruthy();
+    expect(getByText(/Challenge:/)).toBeTruthy();
   });
 });

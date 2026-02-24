@@ -5,6 +5,7 @@
 
 import { LifeGoal } from '../types';
 import { getLifeGoalMeta } from '../utils/lifeGoalSystem';
+import { tRuntime } from '../i18n/strings';
 
 export type TutorialStep =
   | 'GOAL_VISION'
@@ -113,7 +114,11 @@ const getGoalVisionMessage = (context?: TutorialContentContext): string => {
   const goalName = goalMeta?.shortLabel ?? 'guclu bir rota';
   const keyStats = goalMeta?.statHint ?? 'temel statlarini';
 
-  return `Bu hayatta ${goalName} olmayi hedefliyorsun. Bunun icin ${keyStats} gelistirmeni gerekiyor.`;
+  return tRuntime(
+    'onboardingFlow.tutorial.step.GOAL_VISION.message',
+    { goalName, keyStats },
+    `Bu hayatta ${goalName} olmayi hedefliyorsun. Bunun icin ${keyStats} gelistirmeni gerekiyor.`
+  );
 };
 
 /**
@@ -123,24 +128,38 @@ export const getTutorialContent = (step: TutorialStep, context?: TutorialContent
   if (step === 'COMPLETED') return null;
 
   const content = STEP_CONTENT[step];
+  const i18nBase = `onboardingFlow.tutorial.step.${step}`;
   const stepIndex = TUTORIAL_STEPS_ORDER.indexOf(step);
   const isReturning = (context?.sessionNumber ?? 1) > 1;
 
-  let title = content.title;
+  let title = tRuntime(`${i18nBase}.title`, undefined, content.title);
   let message: string;
 
   if (step === 'GOAL_VISION') {
     if (isReturning && content.returningMessage) {
       const goalMeta = getLifeGoalMeta(context?.selectedGoal ?? null);
       const goalName = goalMeta?.shortLabel ?? 'guclu bir rota';
-      message = content.returningMessage.replace('{goalName}', goalName);
-      if (content.returningTitle) title = content.returningTitle;
+      message = tRuntime(
+        `${i18nBase}.returningMessage`,
+        { goalName },
+        content.returningMessage.replace('{goalName}', goalName)
+      );
+      if (content.returningTitle) {
+        title = tRuntime(`${i18nBase}.returningTitle`, undefined, content.returningTitle);
+      }
     } else {
       message = getGoalVisionMessage(context);
     }
   } else {
-    message = isReturning && content.returningMessage ? content.returningMessage : content.message;
-    if (isReturning && content.returningTitle) title = content.returningTitle;
+    const fallbackMessage = isReturning && content.returningMessage ? content.returningMessage : content.message;
+    const messageKey = isReturning && content.returningMessage
+      ? `${i18nBase}.returningMessage`
+      : `${i18nBase}.message`;
+    message = tRuntime(messageKey, undefined, fallbackMessage);
+
+    if (isReturning && content.returningTitle) {
+      title = tRuntime(`${i18nBase}.returningTitle`, undefined, content.returningTitle);
+    }
   }
 
   return {

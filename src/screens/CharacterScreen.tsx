@@ -7,6 +7,7 @@ import { ensureTextContrast } from '../utils/colorContrast';
 import { getFamilyAtmosphereLabel } from '../utils/familyNarrative';
 import { getTraitName } from '../data/traits';
 import { ProgressBonus } from '../components/ProgressBonus';
+import { tRuntime } from '../i18n/strings';
 
 interface ThemeTokens {
   textPrimary: string;
@@ -51,45 +52,82 @@ interface CharacterSectionTitleProps {
   theme: ThemeTokens;
 }
 
-const STAT_CONFIG = [
-  { key: 'health', label: 'Saglik', emoji: '❤️', color: '#ef4444', max: 100 },
-  { key: 'energy', label: 'Enerji', emoji: '⚡', color: '#ca8a04', max: 100 },
-  { key: 'intelligence', label: 'Zeka', emoji: '🧠', color: '#2563eb', max: 100 },
-  { key: 'charisma', label: 'Karizma', emoji: '✨', color: '#7e22ce', max: 100 },
-  { key: 'discipline', label: 'Disiplin', emoji: '📚', color: '#0f766e', max: 100 },
-  { key: 'familyRelation', label: 'Aile Iliskisi', emoji: '👨‍👩‍👧', color: '#be185d', max: 100 },
-] as const;
+const STAT_CONFIG: Array<{
+  key: keyof Stats;
+  labelKey: string;
+  fallbackLabel: string;
+  emoji: string;
+  color: string;
+  max: number;
+}> = [
+  { key: 'health', labelKey: 'labels.stats.health', fallbackLabel: 'Saglik', emoji: '\u2764\uFE0F', color: '#ef4444', max: 100 },
+  { key: 'energy', labelKey: 'labels.stats.energy', fallbackLabel: 'Enerji', emoji: '\u26A1', color: '#ca8a04', max: 100 },
+  { key: 'intelligence', labelKey: 'labels.stats.intelligence', fallbackLabel: 'Zeka', emoji: '\u{1F9E0}', color: '#2563eb', max: 100 },
+  { key: 'charisma', labelKey: 'labels.stats.charisma', fallbackLabel: 'Karizma', emoji: '\u2728', color: '#7e22ce', max: 100 },
+  { key: 'discipline', labelKey: 'labels.stats.discipline', fallbackLabel: 'Disiplin', emoji: '\u{1F4DA}', color: '#0f766e', max: 100 },
+  { key: 'familyRelation', labelKey: 'labels.stats.familyRelation', fallbackLabel: 'Aile Iliskisi', emoji: '\u{1F46A}', color: '#be185d', max: 100 },
+];
 
-const SUBJECT_CONFIG = [
-  { key: 'math', label: 'Matematik', emoji: '🔢', color: '#2563eb' },
-  { key: 'turkish', label: 'Turkce', emoji: '📝', color: '#7e22ce' },
-  { key: 'science', label: 'Fen Bilgisi', emoji: '🔬', color: '#047857' },
-  { key: 'language', label: 'Yabanci Dil', emoji: '🌍', color: '#b45309' },
-  { key: 'history', label: 'Tarih', emoji: '📜', color: '#be185d' },
-  { key: 'geography', label: 'Cografya', emoji: '🗺️', color: '#0e7490' },
-  { key: 'art', label: 'Gorsel Sanatlar', emoji: '🎨', color: '#c2410c' },
-  { key: 'music', label: 'Muzik', emoji: '🎵', color: '#15803d' },
-] as const;
+const SUBJECT_CONFIG: Array<{
+  key: keyof SchoolGrades;
+  labelKey: string;
+  fallbackLabel: string;
+  emoji: string;
+  color: string;
+}> = [
+  { key: 'math', labelKey: 'labels.grades.math', fallbackLabel: 'Matematik', emoji: '\u{1F522}', color: '#2563eb' },
+  { key: 'turkish', labelKey: 'labels.grades.turkish', fallbackLabel: 'Turkce', emoji: '\u{1F4DD}', color: '#7e22ce' },
+  { key: 'science', labelKey: 'labels.grades.science', fallbackLabel: 'Fen Bilgisi', emoji: '\u{1F52C}', color: '#047857' },
+  { key: 'language', labelKey: 'labels.grades.language', fallbackLabel: 'Yabanci Dil', emoji: '\u{1F30D}', color: '#b45309' },
+  { key: 'history', labelKey: 'labels.grades.history', fallbackLabel: 'Tarih', emoji: '\u{1F4DC}', color: '#be185d' },
+  { key: 'geography', labelKey: 'labels.grades.geography', fallbackLabel: 'Cografya', emoji: '\u{1F5FA}\uFE0F', color: '#0e7490' },
+  { key: 'art', labelKey: 'labels.grades.art', fallbackLabel: 'Gorsel Sanatlar', emoji: '\u{1F3A8}', color: '#c2410c' },
+  { key: 'music', labelKey: 'labels.grades.music', fallbackLabel: 'Muzik', emoji: '\u{1F3B5}', color: '#15803d' },
+];
+
+type PassiveBonusKey =
+  | 'sportsEnergy'
+  | 'sportsHealth'
+  | 'schoolEnergy'
+  | 'schoolIntelligence'
+  | 'mathScienceGrade'
+  | 'languageGrade'
+  | 'writingIntelligence'
+  | 'artCharisma'
+  | 'socialEnergy'
+  | 'relationshipGain'
+  | 'computerEnergy'
+  | 'codingIntelligence'
+  | 'designCharisma'
+  | 'workEnergy'
+  | 'workIncome'
+  | 'shoppingDiscount';
+
+const getPassiveBonusLabel = (key: PassiveBonusKey): string => tRuntime(
+  `character.screen.passiveBonus.${key}`,
+  undefined,
+  key
+);
 
 const getFamilyWealthLabel = (wealth: Family['wealth']): string => {
   switch (wealth) {
     case 'POOR':
-      return 'Dar Gelirli';
+      return tRuntime('character.screen.family.wealth.POOR', undefined, 'Dar Gelirli');
     case 'RICH':
-      return 'Varlikli';
+      return tRuntime('character.screen.family.wealth.RICH', undefined, 'Varlikli');
     default:
-      return 'Orta Halli';
+      return tRuntime('character.screen.family.wealth.MIDDLE', undefined, 'Orta Halli');
   }
 };
 
 const getFamilyDynamicLabel = (dynamic: Family['dynamic']): string => {
   switch (dynamic) {
     case 'STRICT':
-      return 'Otoriter';
+      return tRuntime('character.screen.family.dynamic.STRICT', undefined, 'Otoriter');
     case 'CHAOTIC':
-      return 'Kaotik';
+      return tRuntime('character.screen.family.dynamic.CHAOTIC', undefined, 'Kaotik');
     default:
-      return 'Destekleyici';
+      return tRuntime('character.screen.family.dynamic.SUPPORTIVE', undefined, 'Destekleyici');
   }
 };
 
@@ -139,9 +177,11 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
   onOpenAchievements,
   achievementSummary,
 }) => {
-  const statConfig = STAT_CONFIG.map(stat =>
-    stat.key === 'energy' ? { ...stat, max: Math.max(1, maxEnergy) } : stat
-  );
+  const statConfig = STAT_CONFIG.map(stat => ({
+    ...stat,
+    max: stat.key === 'energy' ? Math.max(1, maxEnergy) : stat.max,
+    label: tRuntime(stat.labelKey, undefined, stat.fallbackLabel),
+  }));
 
   const getSkillRatio = (value: number) => Math.max(0, Math.min(1, value / 100));
   const athleticsRatio = getSkillRatio(skills.athletics);
@@ -164,22 +204,22 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
     }
   };
 
-  pushBonus('Spor Enerji', -15 * athleticsRatio);
-  pushBonus('Spor Saglik', 20 * athleticsRatio);
-  pushBonus('Okul Enerji', -8 * logicRatio);
-  pushBonus('Okul Zeka', 20 * logicRatio);
-  pushBonus('Mat/Fen Notu', 15 * logicRatio);
-  pushBonus('Dil Notu', 15 * readingRatio);
-  pushBonus('Yazma Zeka', 15 * writingRatio);
-  pushBonus('Sanat Karizma', 15 * artRatio);
-  pushBonus('Sosyal Enerji', -8 * teamworkRatio);
-  pushBonus('Iliski Kazanimi', 20 * teamworkRatio);
-  pushBonus('Bilgisayar Enerji', -8 * codingRatio);
-  pushBonus('Kodlama Zeka', 12 * codingRatio);
-  pushBonus('Tasarim Karizma', 12 * designRatio);
-  pushBonus('Is Enerji', -8 * workEthicRatio);
-  pushBonus('Is Geliri', 20 * combinedWorkRatio);
-  pushBonus('Alisveris Indirim', -15 * businessRatio);
+  pushBonus(getPassiveBonusLabel('sportsEnergy'), -15 * athleticsRatio);
+  pushBonus(getPassiveBonusLabel('sportsHealth'), 20 * athleticsRatio);
+  pushBonus(getPassiveBonusLabel('schoolEnergy'), -8 * logicRatio);
+  pushBonus(getPassiveBonusLabel('schoolIntelligence'), 20 * logicRatio);
+  pushBonus(getPassiveBonusLabel('mathScienceGrade'), 15 * logicRatio);
+  pushBonus(getPassiveBonusLabel('languageGrade'), 15 * readingRatio);
+  pushBonus(getPassiveBonusLabel('writingIntelligence'), 15 * writingRatio);
+  pushBonus(getPassiveBonusLabel('artCharisma'), 15 * artRatio);
+  pushBonus(getPassiveBonusLabel('socialEnergy'), -8 * teamworkRatio);
+  pushBonus(getPassiveBonusLabel('relationshipGain'), 20 * teamworkRatio);
+  pushBonus(getPassiveBonusLabel('computerEnergy'), -8 * codingRatio);
+  pushBonus(getPassiveBonusLabel('codingIntelligence'), 12 * codingRatio);
+  pushBonus(getPassiveBonusLabel('designCharisma'), 12 * designRatio);
+  pushBonus(getPassiveBonusLabel('workEnergy'), -8 * workEthicRatio);
+  pushBonus(getPassiveBonusLabel('workIncome'), 20 * combinedWorkRatio);
+  pushBonus(getPassiveBonusLabel('shoppingDiscount'), -15 * businessRatio);
 
   const averageGrade = calculateGradeAverage(schoolGrades);
   const readableAccentEvent = ensureTextContrast(theme.accentEvent, theme.surfaceBase, 4.5);
@@ -197,9 +237,14 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
 
   return (
     <FadeInUpView delay={100}>
-      <CharacterSection title="Karakter Statlari" icon="📊" cardStyle={cardStyle} theme={theme}>
+      <CharacterSection
+        title={tRuntime('character.screen.sections.stats', undefined, 'Karakter Statlari')}
+        icon={'\u{1F4CA}'}
+        cardStyle={cardStyle}
+        theme={theme}
+      >
         {statConfig.map((stat, index) => {
-          const value = stats[stat.key as keyof Stats] || 0;
+          const value = stats[stat.key] || 0;
           const percentage = Math.min(100, (Number(value) / Math.max(1, stat.max)) * 100);
           const readableColor = getReadableStatColor(stat.color, theme);
 
@@ -245,28 +290,44 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
           alignItems: 'center',
         }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text style={{ fontSize: 18 }}>💰</Text>
-            <Text style={{ color: theme.textPrimary, fontWeight: '600', fontSize: 14 }}>Para</Text>
+            <Text style={{ fontSize: 18 }}>{'\u{1F4B0}'}</Text>
+            <Text style={{ color: theme.textPrimary, fontWeight: '600', fontSize: 14 }}>
+              {tRuntime('labels.stats.money', undefined, 'Para')}
+            </Text>
           </View>
           <Text style={{ color: ensureTextContrast('#15803d', theme.surfaceBase, 4.5), fontWeight: '700', fontSize: 18 }}>
-            ₺{stats.money}
+            \u20BA{stats.money}
           </Text>
         </View>
       </CharacterSection>
 
-      <CharacterSection title="Davranissal Ivme" icon=">>" cardStyle={cardStyle} theme={theme}>
+      <CharacterSection
+        title={tRuntime('character.screen.sections.momentum', undefined, 'Davranissal Ivme')}
+        icon=">>"
+        cardStyle={cardStyle}
+        theme={theme}
+      >
         <View style={{ gap: 10 }}>
           <ProgressBonus personalityState={personalityState} tendency="HELPFUL" />
           <ProgressBonus personalityState={personalityState} tendency="PRAGMATIC" />
           <ProgressBonus personalityState={personalityState} tendency="AGGRESSIVE" />
         </View>
         <Text style={{ color: theme.textSecondary, fontSize: 11, marginTop: 10 }}>
-          Tutarli secimler ivme yaratir: ozel eventler ve etiketli diyalog secenekleri acilir.
+          {tRuntime(
+            'character.screen.momentumHint',
+            undefined,
+            'Tutarli secimler ivme yaratir: ozel eventler ve etiketli diyalog secenekleri acilir.'
+          )}
         </Text>
       </CharacterSection>
 
       {family ? (
-        <CharacterSection title="Aile Durumu" icon="🏡" cardStyle={cardStyle} theme={theme}>
+        <CharacterSection
+          title={tRuntime('character.screen.sections.family', undefined, 'Aile Durumu')}
+          icon={'\u{1F3E1}'}
+          cardStyle={cardStyle}
+          theme={theme}
+        >
           <View style={{
             backgroundColor: theme.surfaceOverlay,
             borderRadius: 12,
@@ -276,36 +337,55 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
             gap: 10,
           }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ color: theme.textSecondary, fontSize: 13 }}>Ekonomik</Text>
+              <Text style={{ color: theme.textSecondary, fontSize: 13 }}>
+                {tRuntime('character.screen.family.economic', undefined, 'Ekonomik')}
+              </Text>
               <Text style={{ color: familyWealthColor, fontWeight: '700', fontSize: 13 }}>
                 {getFamilyWealthLabel(family.wealth)}
               </Text>
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ color: theme.textSecondary, fontSize: 13 }}>Dinamik</Text>
+              <Text style={{ color: theme.textSecondary, fontSize: 13 }}>
+                {tRuntime('character.screen.family.dynamicLabel', undefined, 'Dinamik')}
+              </Text>
               <Text style={{ color: familyDynamicColor, fontWeight: '700', fontSize: 13 }}>
                 {getFamilyDynamicLabel(family.dynamic)}
               </Text>
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ color: theme.textSecondary, fontSize: 13 }}>Atmosfer</Text>
+              <Text style={{ color: theme.textSecondary, fontSize: 13 }}>
+                {tRuntime('character.screen.family.atmosphere', undefined, 'Atmosfer')}
+              </Text>
               <Text style={{ color: theme.textPrimary, fontWeight: '700', fontSize: 13 }}>
                 {familyAtmosphere}
               </Text>
             </View>
             <View style={{ marginTop: 2, paddingTop: 10, borderTopWidth: 1, borderTopColor: theme.border }}>
               <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
-                Harclik Baz Tutari: ₺{family.allowance} / istek
+                {tRuntime(
+                  'character.screen.family.allowanceBase',
+                  { amount: family.allowance },
+                  `Harclik Baz Tutari: \u20BA${family.allowance} / istek`
+                )}
               </Text>
               <Text style={{ color: theme.textSecondary, fontSize: 11, marginTop: 4 }}>
-                Not: Gercek miktar aile dinamikleri ve iliski puanina gore degisir.
+                {tRuntime(
+                  'character.screen.family.allowanceNote',
+                  undefined,
+                  'Not: Gercek miktar aile dinamikleri ve iliski puanina gore degisir.'
+                )}
               </Text>
             </View>
           </View>
         </CharacterSection>
       ) : null}
 
-      <CharacterSection title="Ozellikler" icon="✨" cardStyle={cardStyle} theme={theme}>
+      <CharacterSection
+        title={tRuntime('character.screen.sections.traits', undefined, 'Ozellikler')}
+        icon={'\u2728'}
+        cardStyle={cardStyle}
+        theme={theme}
+      >
         {traits.length > 0 ? (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {traits.map((traitId, index) => (
@@ -327,19 +407,33 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
           </View>
         ) : (
           <Text style={{ color: theme.textSecondary, fontStyle: 'italic' }}>
-            Henuz ozellik kazanmadin
+            {tRuntime('character.screen.noTraits', undefined, 'Henuz ozellik kazanmadin')}
           </Text>
         )}
       </CharacterSection>
+
       {achievementSummary ? (
-        <CharacterSection title="Basarilar" icon="🏆" cardStyle={cardStyle} theme={theme}>
+        <CharacterSection
+          title={tRuntime('character.screen.sections.achievements', undefined, 'Basarilar')}
+          icon={'\u{1F3C6}'}
+          cardStyle={cardStyle}
+          theme={theme}
+        >
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <View>
               <Text style={{ color: theme.textPrimary, fontWeight: '700', fontSize: 16 }}>
-                {achievementSummary.unlocked}/{achievementSummary.total} Acildi
+                {tRuntime(
+                  'character.screen.achievements.unlockedSummary',
+                  { unlocked: achievementSummary.unlocked, total: achievementSummary.total },
+                  `${achievementSummary.unlocked}/${achievementSummary.total} Acildi`
+                )}
               </Text>
               <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 4 }}>
-                %{achievementSummary.percentage} tamamlandi
+                {tRuntime(
+                  'character.screen.achievements.completion',
+                  { percentage: achievementSummary.percentage },
+                  `%${achievementSummary.percentage} tamamlandi`
+                )}
               </Text>
             </View>
             <View style={{
@@ -369,19 +463,24 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
                 backgroundColor: theme.surfaceOverlay,
                 alignItems: 'center',
               }}
-              accessibilityLabel="Basarilari goruntule"
-              accessibilityHint="Acilan panelde tum basarimlarini ve ilerlemeni gosterir"
+              accessibilityLabel={tRuntime('character.screen.achievements.openAria', undefined, 'Basarilari goruntule')}
+              accessibilityHint={tRuntime('character.screen.achievements.openHint', undefined, 'Acilan panelde tum basarimlarini ve ilerlemeni gosterir')}
               accessibilityRole="button"
             >
               <Text style={{ color: theme.textPrimary, fontWeight: '700', fontSize: 13 }}>
-                Basarilari Gor
+                {tRuntime('character.screen.achievements.openButton', undefined, 'Basarilari Gor')}
               </Text>
             </TouchableOpacity>
           ) : null}
         </CharacterSection>
       ) : null}
 
-      <CharacterSection title="Pasif Bonuslar" icon="💠" cardStyle={cardStyle} theme={theme}>
+      <CharacterSection
+        title={tRuntime('character.screen.sections.passiveBonuses', undefined, 'Pasif Bonuslar')}
+        icon={'\u{1F4A0}'}
+        cardStyle={cardStyle}
+        theme={theme}
+      >
         {passiveBonuses.length > 0 ? (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {passiveBonuses.map((bonus, index) => {
@@ -417,16 +516,21 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
           </View>
         ) : (
           <Text style={{ color: theme.textSecondary, fontStyle: 'italic' }}>
-            Henuz pasif bonus yok
+            {tRuntime('character.screen.noPassiveBonuses', undefined, 'Henuz pasif bonus yok')}
           </Text>
         )}
         <Text style={{ color: theme.textSecondary, fontSize: 11, marginTop: 10, fontStyle: 'italic' }}>
-          💡 Bonuslar beceri seviyelerine gore otomatik uygulanir.
+          {'\u{1F4A1}'} {tRuntime('character.screen.passiveBonusHint', undefined, 'Bonuslar beceri seviyelerine gore otomatik uygulanir.')}
         </Text>
       </CharacterSection>
 
       {age >= 7 ? (
-        <CharacterSection title="Okul Notlari" icon="📚" cardStyle={cardStyle} theme={theme}>
+        <CharacterSection
+          title={tRuntime('character.screen.sections.schoolGrades', undefined, 'Okul Notlari')}
+          icon={'\u{1F4DA}'}
+          cardStyle={cardStyle}
+          theme={theme}
+        >
           <View style={{
             backgroundColor: theme.surfaceOverlay,
             borderRadius: 12,
@@ -434,7 +538,9 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
             marginBottom: 16,
             alignItems: 'center',
           }}>
-            <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 4 }}>Genel Ortalama</Text>
+            <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 4 }}>
+              {tRuntime('character.screen.school.average', undefined, 'Genel Ortalama')}
+            </Text>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
               <Text style={{
                 fontSize: 36,
@@ -462,12 +568,13 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
           </View>
 
           {SUBJECT_CONFIG.map((subject, index) => {
-            const value = schoolGrades[subject.key as keyof SchoolGrades] || 0;
+            const value = schoolGrades[subject.key] || 0;
             const percentage = Math.min(100, value);
             const letterGrade = getLetterGrade(value);
             const baseGradeColor = value >= 70 ? '#15803d' : value >= 50 ? '#b45309' : '#b91c1c';
             const gradeColor = ensureTextContrast(baseGradeColor, theme.surfaceBase, 4.5);
             const readableSubjectColor = ensureTextContrast(subject.color, theme.surfaceBase, 4.5);
+            const subjectLabel = tRuntime(subject.labelKey, undefined, subject.fallbackLabel);
 
             return (
               <FadeInUpView key={subject.key} delay={index * 40}>
@@ -476,7 +583,7 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <Text style={{ fontSize: 16 }}>{subject.emoji}</Text>
                       <Text style={{ color: theme.textPrimary, fontWeight: '600', fontSize: 13 }}>
-                        {subject.label}
+                        {subjectLabel}
                       </Text>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -522,7 +629,11 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
             borderTopColor: theme.border,
           }}>
             <Text style={{ color: theme.textSecondary, fontSize: 11, fontStyle: 'italic', textAlign: 'center' }}>
-              💡 Notlarini yukseltmek icin Okul kategorisinden ders calis veya sinavlara gir.
+              {'\u{1F4A1}'} {tRuntime(
+                'character.screen.school.hint',
+                undefined,
+                'Notlarini yukseltmek icin Okul kategorisinden ders calis veya sinavlara gir.'
+              )}
             </Text>
           </View>
         </CharacterSection>

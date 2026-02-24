@@ -27,6 +27,8 @@
     "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
     "simulate:game": "node scripts/run-simulate-game.cjs",
     "simulate:ci": "node scripts/run-simulate-game.cjs --ci",
+    "i18n:check": "node scripts/localization/check-i18n-parity.cjs",
+    "i18n:extract": "node scripts/localization/extract-localization-catalog.cjs",
     "cloudsync:server": "node backend/server.cjs"
   },
   "dependencies": {

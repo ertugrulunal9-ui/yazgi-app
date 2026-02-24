@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform, StatusB
 import { Feather } from '@expo/vector-icons';
 import { ExamSubject, ALL_EXAM_SUBJECTS } from '../types';
 import { ExamGameType } from '../data/actions';
+import { tRuntime } from '../i18n/strings';
 
 interface ExamPeriodModalProps {
   visible: boolean;
@@ -11,16 +12,21 @@ interface ExamPeriodModalProps {
   onClose: () => void;
 }
 
-// Map from ExamSubject to display info
-const EXAM_INFO: Record<ExamSubject, { label: string; emoji: string; color: string; examType: ExamGameType }> = {
-  math: { label: 'Matematik', emoji: '🔢', color: '#3b82f6', examType: 'MATH' },
-  turkish: { label: 'Türkçe', emoji: '📝', color: '#8b5cf6', examType: 'TURKISH' },
-  science: { label: 'Fen Bilgisi', emoji: '🔬', color: '#10b981', examType: 'SCIENCE' },
-  language: { label: 'Yabancı Dil', emoji: '🌍', color: '#f59e0b', examType: 'ENGLISH' },
-  history: { label: 'Tarih', emoji: '📜', color: '#ec4899', examType: 'HISTORY' },
-  geography: { label: 'Coğrafya', emoji: '🗺️', color: '#06b6d4', examType: 'GEOGRAPHY' },
-  art: { label: 'Görsel Sanatlar', emoji: '🎨', color: '#f97316', examType: 'ART' },
-  music: { label: 'Müzik', emoji: '🎵', color: '#22c55e', examType: 'MUSIC' },
+const EXAM_INFO: Record<ExamSubject, {
+  labelKey: string;
+  fallback: string;
+  emoji: string;
+  color: string;
+  examType: ExamGameType;
+}> = {
+  math: { labelKey: 'labels.grades.math', fallback: 'Matematik', emoji: '\u{1F522}', color: '#3b82f6', examType: 'MATH' },
+  turkish: { labelKey: 'labels.grades.turkish', fallback: 'Turkce', emoji: '\u{1F4DD}', color: '#8b5cf6', examType: 'TURKISH' },
+  science: { labelKey: 'labels.grades.science', fallback: 'Fen Bilgisi', emoji: '\u{1F52C}', color: '#10b981', examType: 'SCIENCE' },
+  language: { labelKey: 'labels.grades.language', fallback: 'Yabanci Dil', emoji: '\u{1F30D}', color: '#f59e0b', examType: 'ENGLISH' },
+  history: { labelKey: 'labels.grades.history', fallback: 'Tarih', emoji: '\u{1F4DC}', color: '#ec4899', examType: 'HISTORY' },
+  geography: { labelKey: 'labels.grades.geography', fallback: 'Cografya', emoji: '\u{1F5FA}\uFE0F', color: '#06b6d4', examType: 'GEOGRAPHY' },
+  art: { labelKey: 'labels.grades.art', fallback: 'Gorsel Sanatlar', emoji: '\u{1F3A8}', color: '#f97316', examType: 'ART' },
+  music: { labelKey: 'labels.grades.music', fallback: 'Muzik', emoji: '\u{1F3B5}', color: '#22c55e', examType: 'MUSIC' },
 };
 
 export const ExamPeriodModal: React.FC<ExamPeriodModalProps> = ({
@@ -42,44 +48,55 @@ export const ExamPeriodModal: React.FC<ExamPeriodModalProps> = ({
     Math.round((completedCount / totalCount) * 100),
   [completedCount, totalCount]);
 
-  // Modal yerine absolute positioning kullan (Android uyumluluğu için)
   if (!visible) return null;
 
   const statusBarHeight = Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0;
+  const title = tRuntime('app.examPeriod.title', undefined, 'Sinav Donemi');
+  const subtitle = tRuntime(
+    'app.examPeriod.subtitle',
+    undefined,
+    'Karne aciklanmadan once tum sinavlara girmelisin!'
+  );
+  const progressText = tRuntime(
+    'app.examPeriod.progressText',
+    { completed: completedCount, total: totalCount },
+    `${completedCount}/${totalCount} sinav tamamlandi`
+  );
+  const completedStatus = tRuntime('app.examPeriod.completedStatus', undefined, 'Tamamlandi');
+  const takeExamStatus = tRuntime('app.examPeriod.takeExamStatus', undefined, 'Sinava gir');
+  const viewReport = tRuntime('app.examPeriod.viewReport', undefined, 'Karneye Bak');
+  const completeAllWarning = tRuntime(
+    'app.examPeriod.completeAllWarning',
+    undefined,
+    'Karne gormek icin tum sinavlari tamamla'
+  );
 
   return (
     <View style={[styles.overlay, { paddingTop: statusBarHeight }]}>
       <View style={styles.container}>
-        {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerIcon}>
-            <Text style={{ fontSize: 32 }}>📚</Text>
+            <Text style={{ fontSize: 32 }}>{'\u{1F4DA}'}</Text>
           </View>
-          <Text style={styles.title}>Sınav Dönemi</Text>
-          <Text style={styles.subtitle}>
-            Karne açıklanmadan önce tüm sınavlara girmelisin!
-          </Text>
+          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.subtitle}>{subtitle}</Text>
         </View>
 
-        {/* Progress Bar */}
         <View style={styles.progressContainer}>
           <View style={styles.progressHeader}>
-            <Text style={styles.progressText}>
-              {completedCount}/{totalCount} sınav tamamlandı
-            </Text>
+            <Text style={styles.progressText}>{progressText}</Text>
             <Text style={styles.progressPercent}>{progressPercentage}%</Text>
           </View>
           <View style={styles.progressBar}>
             <View
               style={[
                 styles.progressFill,
-                { width: `${progressPercentage}%` }
+                { width: `${progressPercentage}%` },
               ]}
             />
           </View>
         </View>
 
-        {/* Exam List */}
         <ScrollView
           style={styles.examList}
           contentContainerStyle={styles.examListContent}
@@ -88,6 +105,7 @@ export const ExamPeriodModal: React.FC<ExamPeriodModalProps> = ({
           {ALL_EXAM_SUBJECTS.map((subject) => {
             const info = EXAM_INFO[subject];
             const isCompleted = examsTaken.includes(subject);
+            const label = tRuntime(info.labelKey, undefined, info.fallback);
 
             return (
               <TouchableOpacity
@@ -101,7 +119,7 @@ export const ExamPeriodModal: React.FC<ExamPeriodModalProps> = ({
                 activeOpacity={0.7}
               >
                 <View style={styles.examItemLeft}>
-                  <View style={[styles.examEmoji, { backgroundColor: info.color + '20' }]}>
+                  <View style={[styles.examEmoji, { backgroundColor: `${info.color}20` }]}>
                     <Text style={{ fontSize: 24 }}>{info.emoji}</Text>
                   </View>
                   <View style={styles.examInfo}>
@@ -109,10 +127,10 @@ export const ExamPeriodModal: React.FC<ExamPeriodModalProps> = ({
                       styles.examLabel,
                       isCompleted && styles.examLabelCompleted,
                     ]}>
-                      {info.label}
+                      {label}
                     </Text>
                     <Text style={styles.examStatus}>
-                      {isCompleted ? '✓ Tamamlandı' : 'Sınava gir →'}
+                      {isCompleted ? `${'\u2713'} ${completedStatus}` : `${takeExamStatus} ${'\u2192'}`}
                     </Text>
                   </View>
                 </View>
@@ -131,7 +149,6 @@ export const ExamPeriodModal: React.FC<ExamPeriodModalProps> = ({
           })}
         </ScrollView>
 
-        {/* Footer */}
         <View style={styles.footer}>
           {allCompleted ? (
             <TouchableOpacity
@@ -140,15 +157,13 @@ export const ExamPeriodModal: React.FC<ExamPeriodModalProps> = ({
               activeOpacity={0.8}
             >
               <Text style={styles.continueButtonText}>
-                ✨ Karneye Bak
+                {'\u2728'} {viewReport}
               </Text>
             </TouchableOpacity>
           ) : (
             <View style={styles.warningBox}>
               <Feather name="alert-circle" size={18} color="#f59e0b" />
-              <Text style={styles.warningText}>
-                Karne görmek için tüm sınavları tamamla
-              </Text>
+              <Text style={styles.warningText}>{completeAllWarning}</Text>
             </View>
           )}
         </View>
@@ -265,28 +280,29 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   examEmoji: {
-    width: 48,
-    height: 48,
+    width: 44,
+    height: 44,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
   examInfo: {
     flex: 1,
   },
   examLabel: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#fff',
+    fontWeight: '700',
+    color: '#f8fafc',
     marginBottom: 2,
   },
   examLabelCompleted: {
-    color: '#10b981',
+    color: '#86efac',
   },
   examStatus: {
     fontSize: 12,
-    color: '#64748b',
+    color: '#94a3b8',
+    fontWeight: '600',
   },
   examBadge: {
     width: 32,
@@ -294,41 +310,42 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    marginLeft: 10,
   },
   examBadgeCompleted: {
     backgroundColor: '#10b981',
   },
   footer: {
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 16,
   },
   continueButton: {
     backgroundColor: '#10b981',
     borderRadius: 12,
-    paddingVertical: 16,
+    paddingVertical: 14,
     alignItems: 'center',
   },
   continueButtonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '700',
   },
   warningBox: {
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.35)',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(245, 158, 11, 0.1)',
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
     gap: 8,
   },
   warningText: {
-    color: '#f59e0b',
-    fontSize: 13,
-    fontWeight: '500',
+    color: '#fcd34d',
+    fontSize: 12,
+    fontWeight: '600',
+    flex: 1,
   },
 });
-
-export default ExamPeriodModal;

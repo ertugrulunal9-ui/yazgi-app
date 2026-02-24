@@ -21,6 +21,7 @@ import {
   generateFutureVision,
 } from '../../src/utils/endingResolver';
 import { GameState, Stats } from '../../src/types';
+import { setRuntimeLocale } from '../../src/i18n/strings';
 
 // ============================================================
 // YARDIMCI: Test boyunca kullanılan temel state
@@ -105,6 +106,9 @@ const createGameState = (overrides: Partial<GameState> = {}): GameState => ({
 });
 
 describe('endingResolver — Edge Cases', () => {
+  beforeEach(() => {
+    setRuntimeLocale('tr');
+  });
 
   // ==========================================================
   // 1) TÜM STATLAR SIFIR
@@ -365,7 +369,18 @@ describe('endingResolver — Edge Cases', () => {
       );
 
       expect(vision.at30).toContain('Sen');
-      expect(vision.at50).toContain('Sen');
+    });
+
+    it('runtime locale en iken fallback isim "You" olur', () => {
+      setRuntimeLocale('en');
+      const vision = generateFutureVision(
+        baseStats,
+        { goal: 'ACADEMIC', tier: 'SUCCESS' } as any,
+        ''
+      );
+
+      expect(vision.at30).toContain('You');
+      expect(vision.at50).toContain('You');
     });
 
     it('sadece boşluk olan isim → fallback', () => {
@@ -434,3 +449,4 @@ describe('endingResolver — Edge Cases', () => {
     });
   });
 });
+

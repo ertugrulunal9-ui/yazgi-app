@@ -5,13 +5,13 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   Easing,
-  withDelay
+  withDelay,
 } from 'react-native-reanimated';
 import { Skills, Talent } from '../types';
 import { getThemeTokens, getDensityMetrics } from '../utils/themeUtils';
 import { MilestoneDetailModal } from './MilestoneDetailModal';
 import { selectionHaptic, milestoneHaptic } from '../animations/HapticFeedback';
-import { UI_TEXT } from '../constants/uiText';
+import { tRuntime } from '../i18n/strings';
 
 interface SkillTreeProps {
   skills: Skills;
@@ -30,12 +30,20 @@ interface Milestone {
   benefits?: string[];
 }
 
-interface OtherSkillConfig {
+interface MilestoneTemplate {
+  lvl: number;
+  text: string;
+  desc: string;
+  benefits?: string[];
+}
+
+interface SkillConfig {
   key: keyof Skills;
   title: string;
   icon: string;
   accent: string;
-  milestones: Omit<Milestone, 'unlocked'>[];
+  talent?: Talent;
+  milestones: MilestoneTemplate[];
 }
 
 interface SkillColumnProps {
@@ -43,9 +51,11 @@ interface SkillColumnProps {
   icon: string;
   level: number;
   previousLevel?: number;
-  color: 'cyan' | 'pink' | 'orange';
+  accentColor: string;
   hasTalent: boolean;
   milestones: Milestone[];
+  talentBadgeLabel: string;
+  milestonesLabel: string;
   theme: ReturnType<typeof getThemeTokens>;
   metrics: ReturnType<typeof getDensityMetrics>;
   onMilestonePress: (milestone: Milestone, skillName: string) => void;
@@ -57,129 +67,180 @@ interface MiniSkillCardProps {
   level: number;
   previousLevel?: number;
   accent: string;
-  milestones: Milestone[];
   theme: ReturnType<typeof getThemeTokens>;
-  onMilestonePress: (milestone: Milestone, skillName: string) => void;
 }
 
-const OTHER_SKILL_CONFIG: OtherSkillConfig[] = [
+const MAIN_SKILLS: SkillConfig[] = [
+  {
+    key: 'coding',
+    title: 'Yazilim',
+    icon: '\u{1F4BB}',
+    accent: '#0891b2',
+    talent: 'CODING',
+    milestones: [
+      { lvl: 30, text: 'Freelance Isler', desc: 'Basit web siteleri yaparak para kazanabilirsin.', benefits: ['+100$/proje kazanma', 'Evden calisma imkani'] },
+      { lvl: 50, text: 'Hackathon', desc: 'Zeka gerektiren ozel etkinlikler acilir.', benefits: ['Odullu yarismalar', 'Networking firsatlari'] },
+      { lvl: 70, text: 'Kidemli Muhendis', desc: 'Yazilim muhendisligi kariyeri garantilenir.', benefits: ['Yuksek maasli is firsatlari', 'Startup kurma sansi'] },
+      { lvl: 100, text: 'Teknoloji Devi', desc: 'Kendi sirketini kurma potansiyeli acilir.', benefits: ['Milyar dolarlik sirket kurma', 'Teknoloji lideri unvani'] },
+    ],
+  },
+  {
+    key: 'music',
+    title: 'Muzik',
+    icon: '\u{1F3B8}',
+    accent: '#db2777',
+    talent: 'MUSIC',
+    milestones: [
+      { lvl: 30, text: 'Sokak Muzigi', desc: 'Sokakta gitar calarak harclik cikarirsin.', benefits: ['Gunluk harclik kazanma', 'Karizma artisi'] },
+      { lvl: 50, text: 'Bestekar', desc: 'Konservatuvar teklifi alma sansi dogar.', benefits: ['Muzik kariyeri yolu', 'Telif geliri'] },
+      { lvl: 85, text: 'Rockstar', desc: 'Dunyaca unlu bir muzisyen olma yolu acilir.', benefits: ['Konser gelirleri', 'Fan kitlesi'] },
+      { lvl: 100, text: 'Virtuoz', desc: 'Adini muzik tarihine yazdirirsin.', benefits: ['Efsane statusu', 'Muzik okulu acma'] },
+    ],
+  },
+  {
+    key: 'sports',
+    title: 'Spor',
+    icon: '\u26BD',
+    accent: '#ea580c',
+    talent: 'SPORTS',
+    milestones: [
+      { lvl: 40, text: 'Okul Takimi', desc: 'Okul takimina secilme sansi dogar.', benefits: ['Popularite artisi', 'Burs imkani'] },
+      { lvl: 60, text: 'Kaptan', desc: 'Fiziksel olaylarda ustunluk saglarsin.', benefits: ['Liderlik bonusu', 'Fiziksel guc'] },
+      { lvl: 90, text: 'Milli Sporcu', desc: 'Olimpiyat seviyesinde kariyer yolu acilir.', benefits: ['Milli gelir', 'Ulke taninirligi'] },
+      { lvl: 100, text: 'Efsane', desc: 'Spor tarihinde iz birakirsin.', benefits: ['Efsane statu', 'Spor liderligi sansi'] },
+    ],
+  },
+];
+
+const OTHER_SKILLS: SkillConfig[] = [
   {
     key: 'athletics',
     title: 'Atletizm',
-    icon: '🏃',
+    icon: '\u{1F3C3}',
     accent: '#22c55e',
     milestones: [
-      { lvl: 30, text: 'Dayanıklılık', desc: 'Spor aktivitelerinde enerji tasarrufu artar.', benefits: ['Spor enerji maliyeti azalır', 'Sağlık kazanımı artar'] },
-      { lvl: 60, text: 'Formda', desc: 'Fiziksel dayanıklılığın üst seviyeye çıkar.', benefits: ['Disiplin artışında bonus', 'Fiziksel güç artışı'] },
-      { lvl: 90, text: 'Elit Sporcu', desc: 'Spor kariyerlerinde zirveye yaklaşılır.', benefits: ['Takım seçmelerinde avantaj', 'Spor bursu şansı'] },
+      { lvl: 30, text: 'Dayaniklilik', desc: 'Spor aktivitelerinde enerji tasarrufu artar.', benefits: ['Spor enerji maliyeti azalir', 'Saglik kazanimi artar'] },
+      { lvl: 60, text: 'Formda', desc: 'Fiziksel dayanikliligin ust seviyeye cikar.', benefits: ['Disiplin artisinda bonus', 'Fiziksel guc artisi'] },
+      { lvl: 90, text: 'Elit Sporcu', desc: 'Spor kariyerlerinde zirveye yaklasilir.', benefits: ['Takim secmelerinde avantaj', 'Spor bursu sansi'] },
     ],
   },
   {
     key: 'logic',
-    title: 'Mantık',
-    icon: '🧩',
+    title: 'Mantik',
+    icon: '\u{1F9E9}',
     accent: '#0ea5e9',
     milestones: [
-      { lvl: 30, text: 'Hızlı Kavrama', desc: 'Ders çalışırken zeka artışı hızlanır.', benefits: ['Okul zeka artışı', 'Mat/Fen desteği'] },
-      { lvl: 60, text: 'Analitik Zihin', desc: 'Zor problemleri çözmek kolaylaşır.', benefits: ['Sınavlarda avantaj', 'Not artışında bonus'] },
-      { lvl: 90, text: 'Stratejist', desc: 'Akıl oyunlarında ustalaşırsın.', benefits: ['Yüksek zeka bonusu', 'Özel etkinlikler'] },
+      { lvl: 30, text: 'Hizli Kavrama', desc: 'Ders calisirken zeka artisi hizlanir.', benefits: ['Okul zeka artisi', 'Mat/Fen destegi'] },
+      { lvl: 60, text: 'Analitik Zihin', desc: 'Zor problemleri cozmek kolaylasir.', benefits: ['Sinavlarda avantaj', 'Not artisinda bonus'] },
+      { lvl: 90, text: 'Stratejist', desc: 'Akil oyunlarinda ustalasirsin.', benefits: ['Yuksek zeka bonusu', 'Ozel etkinlikler'] },
     ],
   },
   {
     key: 'reading',
     title: 'Okuma',
-    icon: '📚',
+    icon: '\u{1F4DA}',
     accent: '#a855f7',
     milestones: [
-      { lvl: 30, text: 'Hızlı Okur', desc: 'Metinleri daha hızlı kavrarsın.', benefits: ['Dil notu artışı', 'Kitap etkinlikleri'] },
-      { lvl: 60, text: 'Kültürlü', desc: 'Bilgi birikimin dikkat çeker.', benefits: ['Sosyal diyaloglarda avantaj', 'Araştırma fırsatları'] },
-      { lvl: 90, text: 'Bilge', desc: 'Derin analiz yeteneği kazanırsın.', benefits: ['Dil notu zirvesi', 'Özel görevler'] },
+      { lvl: 30, text: 'Hizli Okur', desc: 'Metinleri daha hizli kavrarsin.', benefits: ['Dil notu artisi', 'Kitap etkinlikleri'] },
+      { lvl: 60, text: 'Kulturlu', desc: 'Bilgi birikimin dikkat ceker.', benefits: ['Sosyal diyaloglarda avantaj', 'Arastirma firsatlari'] },
+      { lvl: 90, text: 'Bilge', desc: 'Derin analiz yetenegi kazanirsin.', benefits: ['Dil notu zirvesi', 'Ozel gorevler'] },
     ],
   },
   {
     key: 'teamwork',
-    title: 'Takım',
-    icon: '🤝',
+    title: 'Takim',
+    icon: '\u{1F91D}',
     accent: '#f97316',
     milestones: [
-      { lvl: 30, text: 'Uyum', desc: 'Takım çalışmalarında verimin artar.', benefits: ['Sosyal enerji tasarrufu', 'İlişki artışı'] },
-      { lvl: 60, text: 'Kaptan', desc: 'Grup liderliğinde öne çıkarsın.', benefits: ['Takım etkinliklerinde avantaj', 'Liderlik bonusu'] },
-      { lvl: 90, text: 'Birleştirici', desc: 'Herkesi motive edersin.', benefits: ['Yüksek ilişki artışı', 'Zor etkinliklerde başarı'] },
+      { lvl: 30, text: 'Uyum', desc: 'Takim calismalarinda verimin artar.', benefits: ['Sosyal enerji tasarrufu', 'Iliski artisi'] },
+      { lvl: 60, text: 'Kaptanlik', desc: 'Grup liderliginde one cikarsin.', benefits: ['Takim etkinliklerinde avantaj', 'Liderlik bonusu'] },
+      { lvl: 90, text: 'Birle�tirici', desc: 'Herkesi motive eden bir rol kazanirsin.', benefits: ['Yuksek iliski artisi', 'Zor etkinliklerde basari'] },
     ],
   },
   {
     key: 'art',
     title: 'Sanat',
-    icon: '🎨',
+    icon: '\u{1F3A8}',
     accent: '#ec4899',
     milestones: [
-      { lvl: 30, text: 'Estetik Göz', desc: 'Sanat aktivitelerinde karizma artar.', benefits: ['Karizma bonusu', 'Atölye etkinlikleri'] },
-      { lvl: 60, text: 'Sahne Işığı', desc: 'Yaratıcılığın dikkat çeker.', benefits: ['Sergi fırsatı', 'Sanat etkinliklerinde bonus'] },
-      { lvl: 90, text: 'Usta Sanatçı', desc: 'Sanat dünyasında ün kazanırsın.', benefits: ['Prestij artışı', 'Özel projeler'] },
+      { lvl: 30, text: 'Estetik Goz', desc: 'Sanat aktivitelerinde karizma artar.', benefits: ['Karizma bonusu', 'Atolye etkinlikleri'] },
+      { lvl: 60, text: 'Sahne Isigi', desc: 'Yaraticiligin dikkat ceker.', benefits: ['Sergi firsati', 'Sanat etkinliklerinde bonus'] },
+      { lvl: 90, text: 'Usta Sanatci', desc: 'Sanat dunyasinda un kazanirsin.', benefits: ['Prestij artisi', 'Ozel projeler'] },
     ],
   },
   {
     key: 'writing',
-    title: 'Yazarlık',
-    icon: '✍️',
+    title: 'Yazarlik',
+    icon: '\u270D\uFE0F',
     accent: '#ef4444',
     milestones: [
-      { lvl: 30, text: 'Kısa Hikaye', desc: 'Yazma aktivitelerinde hızlanırsın.', benefits: ['Yazma zeka bonusu', 'Blog fırsatı'] },
-      { lvl: 60, text: 'Yazar', desc: 'Yazıların ilgi görmeye başlar.', benefits: ['Yayın şansı', 'Yeni etkinlikler'] },
-      { lvl: 90, text: 'Romancı', desc: 'Geniş kitlelere ulaşırsın.', benefits: ['Yüksek zeka bonusu', 'Kitap teklifi'] },
+      { lvl: 30, text: 'Kisa Hikaye', desc: 'Yazma aktivitelerinde hizlanirsin.', benefits: ['Yazma zeka bonusu', 'Blog firsati'] },
+      { lvl: 60, text: 'Yazar', desc: 'Yazilarin ilgi gormeye baslar.', benefits: ['Yayin sansi', 'Yeni etkinlikler'] },
+      { lvl: 90, text: 'Romanci', desc: 'Genis kitlelere ulasirsin.', benefits: ['Yuksek zeka bonusu', 'Kitap teklifi'] },
     ],
   },
   {
     key: 'work_ethic',
-    title: 'Çalışkanlık',
-    icon: '💼',
+    title: 'Caliskanlik',
+    icon: '\u{1F4BC}',
     accent: '#64748b',
     milestones: [
-      { lvl: 30, text: 'Düzenli', desc: 'Çalışma temposunu oturtursun.', benefits: ['İş enerji tasarrufu', 'Gelir artışı'] },
-      { lvl: 60, text: 'Güvenilir', desc: 'İş yerinde tercih edilirsin.', benefits: ['Terfi şansı', 'Kazanç bonusu'] },
-      { lvl: 90, text: 'Disiplin Ustası', desc: 'Çalışma disiplini zirvede.', benefits: ['Yüksek gelir bonusu', 'Özel iş fırsatları'] },
+      { lvl: 30, text: 'Duzenli', desc: 'Calisma temposunu oturtursun.', benefits: ['Is enerji tasarrufu', 'Gelir artisi'] },
+      { lvl: 60, text: 'Guvenilir', desc: 'Is yerinde tercih edilirsin.', benefits: ['Terfi sansi', 'Kazanc bonusu'] },
+      { lvl: 90, text: 'Disiplin Ustasi', desc: 'Calisma disiplini zirveye cikar.', benefits: ['Yuksek gelir bonusu', 'Ozel is firsatlari'] },
     ],
   },
   {
     key: 'business',
-    title: 'İş',
-    icon: '📈',
+    title: 'Is',
+    icon: '\u{1F4C8}',
     accent: '#14b8a6',
     milestones: [
-      { lvl: 30, text: 'Pazarlıkçı', desc: 'Alışverişte fiyat düşürürsün.', benefits: ['İndirim bonusu', 'Ek tasarruf'] },
-      { lvl: 60, text: 'Yatırımcı', desc: 'Para yönetiminde ilerlersin.', benefits: ['Kazanç artışı', 'Yatırım fırsatları'] },
-      { lvl: 90, text: 'Girişimci', desc: 'Kendi işini kurma yolu açılır.', benefits: ['Büyük gelir fırsatları', 'Özel etkinlikler'] },
+      { lvl: 30, text: 'Pazarlikci', desc: 'Alisveriste fiyat dusurursun.', benefits: ['Indirim bonusu', 'Ek tasarruf'] },
+      { lvl: 60, text: 'Yatirimci', desc: 'Para yonetiminde ilerlersin.', benefits: ['Kazanc artisi', 'Yatirim firsatlari'] },
+      { lvl: 90, text: 'Girisimci', desc: 'Kendi isini kurma yolu acilir.', benefits: ['Buyuk gelir firsatlari', 'Ozel etkinlikler'] },
     ],
   },
   {
     key: 'design',
-    title: 'Tasarım',
-    icon: '🖌️',
+    title: 'Tasarim',
+    icon: '\u{1F58C}\uFE0F',
     accent: '#fb7185',
     milestones: [
-      { lvl: 30, text: 'Görsel Düşünce', desc: 'Tasarım işlerinde hızlanırsın.', benefits: ['Tasarım karizma bonusu', 'Mini projeler'] },
-      { lvl: 60, text: 'Portfolyo', desc: 'Profesyonel işler gelmeye başlar.', benefits: ['Freelance işler', 'Daha iyi kazanç'] },
-      { lvl: 90, text: 'Yaratıcı Yönetmen', desc: 'Büyük projelerde liderlik edersin.', benefits: ['Prestij artışı', 'Özel projeler'] },
+      { lvl: 30, text: 'Gorsel Dusunce', desc: 'Tasarim islerinde hizlanirsin.', benefits: ['Tasarim karizma bonusu', 'Mini projeler'] },
+      { lvl: 60, text: 'Portfolyo', desc: 'Profesyonel isler gelmeye baslar.', benefits: ['Freelance isler', 'Daha iyi kazanc'] },
+      { lvl: 90, text: 'Yaratici Yonetmen', desc: 'Buyuk projelerde liderlik edersin.', benefits: ['Prestij artisi', 'Ozel projeler'] },
     ],
   },
 ];
 
+const localizeMilestones = (
+  keyPrefix: string,
+  milestones: MilestoneTemplate[],
+  level: number
+): Milestone[] => (
+  milestones.map((milestone, index) => ({
+    lvl: milestone.lvl,
+    text: tRuntime(`skillTree.${keyPrefix}.milestones.${index}.text`, undefined, milestone.text),
+    desc: tRuntime(`skillTree.${keyPrefix}.milestones.${index}.desc`, undefined, milestone.desc),
+    benefits: milestone.benefits?.map((benefit, benefitIndex) => (
+      tRuntime(`skillTree.${keyPrefix}.milestones.${index}.benefits.${benefitIndex}`, undefined, benefit)
+    )),
+    unlocked: level >= milestone.lvl,
+  }))
+);
+
 /**
  * SkillTree - React Native Version
- * 
- * Displays the player's skill progression in a tree format.
- * Shows three skill categories (Coding, Music, Sports) with milestones.
- * 
- * Usage:
- * ```tsx
- * <SkillTree 
- *   skills={gameState.skills} 
- *   talent={gameState.talent}
- *   onBack={() => setPhase('HUB')}
- * />
- * ```
  */
-export const SkillTree = React.memo<SkillTreeProps>(({ skills, previousSkills, talent, onBack, theme: themeOverride, metrics: metricsOverride }) => {
+export const SkillTree = React.memo<SkillTreeProps>(({
+  skills,
+  previousSkills,
+  talent,
+  onBack,
+  theme: themeOverride,
+  metrics: metricsOverride,
+}) => {
   const theme = themeOverride || getThemeTokens('dark');
   const metrics = metricsOverride || getDensityMetrics('standard');
 
@@ -191,12 +252,19 @@ export const SkillTree = React.memo<SkillTreeProps>(({ skills, previousSkills, t
   } | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
+  const tSkill = useCallback(
+    (key: string, fallback: string, params?: Record<string, string | number | boolean>) =>
+      tRuntime(`skillTree.${key}`, params, fallback),
+    []
+  );
+
   const handleMilestonePress = useCallback((milestone: Milestone, skillName: string) => {
     if (milestone.unlocked) {
       milestoneHaptic();
     } else {
       selectionHaptic();
     }
+
     setSelectedMilestone({
       level: milestone.lvl,
       benefits: milestone.benefits || [milestone.desc],
@@ -206,16 +274,28 @@ export const SkillTree = React.memo<SkillTreeProps>(({ skills, previousSkills, t
     setModalVisible(true);
   }, []);
 
-  const otherSkills = OTHER_SKILL_CONFIG.map(skill => {
+  const talentBadgeLabel = tSkill('talentBadge', 'YETENEK');
+  const milestonesLabel = tSkill('milestones', 'Taslar');
+
+  const mainSkills = MAIN_SKILLS.map(skill => {
     const level = skills[skill.key] || 0;
     return {
       ...skill,
+      title: tSkill(`skills.${skill.key}.title`, skill.title),
       level,
       previousLevel: previousSkills?.[skill.key],
-      milestones: skill.milestones.map(milestone => ({
-        ...milestone,
-        unlocked: level >= milestone.lvl,
-      })),
+      milestones: localizeMilestones(`skills.${skill.key}`, skill.milestones, level),
+    };
+  });
+
+  const otherSkills = OTHER_SKILLS.map(skill => {
+    const level = skills[skill.key] || 0;
+    return {
+      ...skill,
+      title: tSkill(`skills.${skill.key}.title`, skill.title),
+      level,
+      previousLevel: previousSkills?.[skill.key],
+      milestones: localizeMilestones(`skills.${skill.key}`, skill.milestones, level),
     };
   });
 
@@ -229,7 +309,6 @@ export const SkillTree = React.memo<SkillTreeProps>(({ skills, previousSkills, t
         overScrollMode="never"
         bounces={false}
       >
-        {/* Header with Back Button */}
         <View style={styles.header}>
           <TouchableOpacity
             onPress={onBack}
@@ -237,79 +316,44 @@ export const SkillTree = React.memo<SkillTreeProps>(({ skills, previousSkills, t
               backgroundColor: theme.surfaceRaised,
               borderColor: theme.border,
             }]}
-            accessibilityLabel="Geri dön"
+            accessibilityLabel={tSkill('backAria', 'Geri don')}
             accessibilityRole="button"
           >
-            <Text style={[styles.backButtonText, { color: theme.textPrimary }]}>← {UI_TEXT.buttons.back}</Text>
+            <Text style={[styles.backButtonText, { color: theme.textPrimary }]}>
+              {'\u2190'} {tSkill('buttons.back', 'Geri')}
+            </Text>
           </TouchableOpacity>
 
           <View style={styles.titleContainer}>
             <View style={[styles.titleBadge, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}>
-              <Text style={[styles.titleText, { color: theme.textPrimary }]}>{UI_TEXT.skillTree.title}</Text>
+              <Text style={[styles.titleText, { color: theme.textPrimary }]}>{tSkill('title', 'Yetenek')}</Text>
             </View>
           </View>
         </View>
 
-        {/* Skill Columns */}
         <View style={styles.skillsGrid}>
-          <SkillColumn
-            title="Yazılım"
-            icon="💻"
-            level={skills.coding}
-            previousLevel={previousSkills?.coding}
-            color="cyan"
-            hasTalent={talent === 'CODING'}
-            theme={theme}
-            metrics={metrics}
-            onMilestonePress={handleMilestonePress}
-            milestones={[
-              { lvl: 30, text: "Freelance İşler", desc: "Basit web siteleri yaparak para kazanabilirsin.", unlocked: skills.coding >= 30, benefits: ["+100$/proje kazanma", "Evden çalışma imkanı"] },
-              { lvl: 50, text: "Hackathon", desc: "Zeka gerektiren özel etkinlikler açılır.", unlocked: skills.coding >= 50, benefits: ["Ödüllü yarışmalar", "Networking fırsatları"] },
-              { lvl: 70, text: "Kıdemli Müh.", desc: "Yazılım Mühendisliği kariyeri garantilenir.", unlocked: skills.coding >= 70, benefits: ["Yüksek maaşlı iş garantisi", "Startup kurma şansı"] },
-              { lvl: 100, text: "Teknoloji Devi", desc: "Kendi şirketini kurma potansiyeli.", unlocked: skills.coding >= 100, benefits: ["Milyar dolarlık şirket kurma", "Teknoloji lideri unvanı"] }
-            ]}
-          />
-
-          <SkillColumn
-            title="Müzik"
-            icon="🎸"
-            level={skills.music}
-            previousLevel={previousSkills?.music}
-            color="pink"
-            hasTalent={talent === 'MUSIC'}
-            theme={theme}
-            metrics={metrics}
-            onMilestonePress={handleMilestonePress}
-            milestones={[
-              { lvl: 30, text: "Sokak Müziği", desc: "İstiklal'de gitar çalarak harçlık çıkar.", unlocked: skills.music >= 30, benefits: ["Günlük harçlık kazanma", "Karizma artışı"] },
-              { lvl: 50, text: "Bestekar", desc: "Konservatuar teklifi alma şansı.", unlocked: skills.music >= 50, benefits: ["Müzik kariyeri yolu", "Telif geliri"] },
-              { lvl: 85, text: "Rockstar", desc: "Dünyaca ünlü bir müzisyen olma yolu.", unlocked: skills.music >= 85, benefits: ["Konser gelirleri", "Fan kitlesi"] },
-              { lvl: 100, text: "Virtüöz", desc: "Adını müzik tarihine altın harflerle yazdır.", unlocked: skills.music >= 100, benefits: ["Efsane statüsü", "Müzik okulu açma"] }
-            ]}
-          />
-
-          <SkillColumn
-            title="Spor"
-            icon="⚽"
-            level={skills.sports}
-            previousLevel={previousSkills?.sports}
-            color="orange"
-            hasTalent={talent === 'SPORTS'}
-            theme={theme}
-            metrics={metrics}
-            onMilestonePress={handleMilestonePress}
-            milestones={[
-              { lvl: 40, text: "Okul Takımı", desc: "Okul takımına seçilme şansı.", unlocked: skills.sports >= 40, benefits: ["Popülarite artışı", "Burs imkanı"] },
-              { lvl: 60, text: "Kaptan", desc: "Fiziksel olaylarda (kavga vb.) üstünlük.", unlocked: skills.sports >= 60, benefits: ["Liderlik bonusu", "Fiziksel güç"] },
-              { lvl: 90, text: "Milli Sporcu", desc: "Olimpiyat seviyesinde bir kariyer.", unlocked: skills.sports >= 90, benefits: ["Milli maaş", "Ülke tanınırlığı"] },
-              { lvl: 100, text: "Efsane", desc: "Heykelin dikilir.", unlocked: skills.sports >= 100, benefits: ["Ölümsüzlük (mecazi)", "Spor bakanı olma şansı"] }
-            ]}
-          />
+          {mainSkills.map(skill => (
+            <SkillColumn
+              key={skill.key}
+              title={skill.title}
+              icon={skill.icon}
+              level={skill.level}
+              previousLevel={skill.previousLevel}
+              accentColor={skill.accent}
+              hasTalent={skill.talent === talent}
+              milestones={skill.milestones}
+              talentBadgeLabel={talentBadgeLabel}
+              milestonesLabel={milestonesLabel}
+              theme={theme}
+              metrics={metrics}
+              onMilestonePress={handleMilestonePress}
+            />
+          ))}
         </View>
 
         <View style={styles.otherSkillsSection}>
           <Text style={[styles.otherSkillsTitle, { color: theme.textSecondary }]}>
-            {UI_TEXT.skillTree.otherSkills}
+            {tSkill('otherSkills', 'Diger')}
           </Text>
           <View style={styles.otherSkillsGrid}>
             {otherSkills.map(skill => (
@@ -320,9 +364,7 @@ export const SkillTree = React.memo<SkillTreeProps>(({ skills, previousSkills, t
                 level={skill.level}
                 previousLevel={skill.previousLevel}
                 accent={skill.accent}
-                milestones={skill.milestones}
                 theme={theme}
-                onMilestonePress={handleMilestonePress}
               />
             ))}
           </View>
@@ -346,22 +388,15 @@ const SkillColumn: React.FC<SkillColumnProps> = ({
   icon,
   level,
   previousLevel,
-  color,
+  accentColor,
   hasTalent,
   milestones,
+  talentBadgeLabel,
+  milestonesLabel,
   theme,
   metrics,
-  onMilestonePress
+  onMilestonePress,
 }) => {
-  const getPalette = (): { accentColor: string; headerBg: string } => {
-    if (color === 'cyan') return { accentColor: '#0891b2', headerBg: 'rgba(8, 145, 178, 0.12)' };
-    if (color === 'pink') return { accentColor: '#db2777', headerBg: 'rgba(219, 39, 119, 0.12)' };
-    return { accentColor: '#ea580c', headerBg: 'rgba(234, 88, 12, 0.12)' };
-  };
-
-  const { accentColor, headerBg } = getPalette();
-
-  // Animation for progress bar
   const progressWidth = useSharedValue(0);
 
   useEffect(() => {
@@ -371,11 +406,9 @@ const SkillColumn: React.FC<SkillColumnProps> = ({
     }));
   }, [level, progressWidth]);
 
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      width: `${progressWidth.value}%`,
-    };
-  });
+  const animatedStyle = useAnimatedStyle(() => ({
+    width: `${progressWidth.value}%`,
+  }));
 
   const levelDifference = previousLevel !== undefined ? level - previousLevel : 0;
 
@@ -386,23 +419,23 @@ const SkillColumn: React.FC<SkillColumnProps> = ({
         backgroundColor: theme.surfaceBase,
         borderColor: hasTalent ? '#fbbf24' : theme.border,
         borderWidth: hasTalent ? 2 : 1,
-      }
+      },
     ]}>
       <View
         style={[
           styles.columnHeader,
           {
-            backgroundColor: headerBg,
+            backgroundColor: `${accentColor}20`,
             borderBottomColor: `${accentColor}66`,
             borderBottomWidth: 1,
           },
         ]}
       >
-        {hasTalent && (
+        {hasTalent ? (
           <View style={styles.talentBadge}>
-            <Text style={styles.talentBadgeText}>{UI_TEXT.skillTree.talentBadge}</Text>
+            <Text style={styles.talentBadgeText}>{talentBadgeLabel}</Text>
           </View>
-        )}
+        ) : null}
 
         <Text style={styles.iconText}>{icon}</Text>
         <Text style={[styles.columnTitle, { color: theme.textPrimary }]}>{title}</Text>
@@ -411,25 +444,21 @@ const SkillColumn: React.FC<SkillColumnProps> = ({
           <Text style={[styles.levelNumber, { color: accentColor }]}>{level}</Text>
           <Text style={[styles.levelMax, { color: theme.textSecondary }]}>/100</Text>
 
-          {/* Comparison Badge */}
-          {levelDifference !== 0 && (
+          {levelDifference !== 0 ? (
             <View style={[
               styles.diffBadge,
-              { backgroundColor: levelDifference > 0 ? '#10b981' : '#ef4444' }
+              { backgroundColor: levelDifference > 0 ? '#10b981' : '#ef4444' },
             ]}>
               <Text style={styles.diffText}>
                 {levelDifference > 0 ? '+' : ''}{levelDifference}
               </Text>
             </View>
-          )}
+          ) : null}
         </View>
       </View>
 
-      {/* Milestones - Compact Chips */}
       <View style={[styles.compactBody, { padding: metrics.pad }]}>
-        <Text style={[styles.milestoneLabel, { color: theme.textSecondary }]}>
-          {UI_TEXT.skillTree.milestones}
-        </Text>
+        <Text style={[styles.milestoneLabel, { color: theme.textSecondary }]}>{milestonesLabel}</Text>
         <View style={styles.milestoneChips}>
           {milestones.map((milestone, idx) => (
             <TouchableOpacity
@@ -441,12 +470,12 @@ const SkillColumn: React.FC<SkillColumnProps> = ({
                 {
                   borderColor: milestone.unlocked ? accentColor : theme.border,
                   backgroundColor: milestone.unlocked ? `${accentColor}20` : theme.surfaceOverlay,
-                }
+                },
               ]}
             >
               <Text style={[
                 styles.milestoneChipText,
-                { color: milestone.unlocked ? accentColor : theme.textSecondary }
+                { color: milestone.unlocked ? accentColor : theme.textSecondary },
               ]}>
                 {milestone.lvl}
               </Text>
@@ -454,7 +483,7 @@ const SkillColumn: React.FC<SkillColumnProps> = ({
           ))}
         </View>
       </View>
-      {/* Progress Bar */}
+
       <View style={[styles.progressBarContainer, { backgroundColor: theme.surfaceOverlay }]}>
         <Animated.View style={[styles.progressBar, animatedStyle]}>
           <View style={{ flex: 1, backgroundColor: accentColor }} />
@@ -477,7 +506,7 @@ const MiniSkillCard: React.FC<MiniSkillCardProps> = ({
   return (
     <View style={[
       styles.miniSkillCard,
-      { backgroundColor: theme.surfaceBase, borderColor: theme.border }
+      { backgroundColor: theme.surfaceBase, borderColor: theme.border },
     ]}>
       <View style={styles.miniHeader}>
         <Text style={styles.miniIcon}>{icon}</Text>
@@ -485,25 +514,23 @@ const MiniSkillCard: React.FC<MiniSkillCardProps> = ({
           <Text style={[styles.miniTitle, { color: theme.textPrimary }]}>{title}</Text>
           <Text style={[styles.miniLevel, { color: theme.textSecondary }]}>{level}/100</Text>
         </View>
-        {levelDifference !== 0 && (
+        {levelDifference !== 0 ? (
           <View style={[
             styles.miniDiffBadge,
-            { backgroundColor: levelDifference > 0 ? '#10b981' : '#ef4444' }
+            { backgroundColor: levelDifference > 0 ? '#10b981' : '#ef4444' },
           ]}>
             <Text style={styles.miniDiffText}>
               {levelDifference > 0 ? '+' : ''}{levelDifference}
             </Text>
           </View>
-        )}
+        ) : null}
       </View>
-
-      
 
       <View style={[styles.miniProgressTrack, { backgroundColor: theme.surfaceOverlay }]}>
         <View
           style={[
             styles.miniProgressFill,
-            { width: `${Math.min(100, Math.max(0, level))}%`, backgroundColor: accent }
+            { width: `${Math.min(100, Math.max(0, level))}%`, backgroundColor: accent },
           ]}
         />
       </View>
@@ -521,8 +548,6 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingBottom: 20,
   },
-
-  // Header
   header: {
     marginBottom: 24,
     position: 'relative',
@@ -558,15 +583,12 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     textAlign: 'center',
   },
-
-  // Skills Grid
   skillsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     gap: 12,
   },
-
   otherSkillsSection: {
     marginTop: 12,
   },
@@ -582,8 +604,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 12,
   },
-
-  // Skill Column
   skillColumn: {
     borderRadius: 16,
     overflow: 'hidden',
@@ -635,8 +655,6 @@ const styles = StyleSheet.create({
     opacity: 0.8,
     marginBottom: 2,
   },
-
-  // Compact Milestones
   compactBody: {
     paddingTop: 8,
   },
@@ -664,8 +682,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
-
-  // Progress Bar
   progressBarContainer: {
     height: 8,
     width: '100%',
@@ -673,8 +689,6 @@ const styles = StyleSheet.create({
   progressBar: {
     height: '100%',
   },
-
-  // Comparison Badge
   diffBadge: {
     marginLeft: 8,
     paddingHorizontal: 6,
@@ -686,7 +700,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
-
   miniSkillCard: {
     borderRadius: 14,
     borderWidth: 1,
@@ -721,21 +734,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
-  miniMilestones: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  miniMilestoneChip: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  miniMilestoneText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
   miniProgressTrack: {
     height: 6,
     borderRadius: 6,
@@ -749,10 +747,3 @@ const styles = StyleSheet.create({
 });
 
 export default SkillTree;
-
-
-
-
-
-
-

@@ -7,6 +7,7 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Modal, Pressable, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { Stats } from '../types';
+import { tRuntime } from '../i18n/strings';
 
 interface DaySummaryModalProps {
   visible: boolean;
@@ -20,12 +21,12 @@ interface DaySummaryModalProps {
   onContinue: () => void;
 }
 
-const getEnergyLabel = (energy: number, maxEnergy: number): string => {
+const getEnergyState = (energy: number, maxEnergy: number): 'energetic' | 'normal' | 'tired' | 'exhausted' => {
   const ratio = energy / Math.max(1, maxEnergy);
-  if (ratio >= 0.7) return 'Enerjik';
-  if (ratio >= 0.4) return 'Normal';
-  if (ratio >= 0.15) return 'Yorgun';
-  return 'Tukenmis';
+  if (ratio >= 0.7) return 'energetic';
+  if (ratio >= 0.4) return 'normal';
+  if (ratio >= 0.15) return 'tired';
+  return 'exhausted';
 };
 
 const getEnergyColor = (energy: number, maxEnergy: number): string => {
@@ -46,32 +47,36 @@ export const DaySummaryModal: React.FC<DaySummaryModalProps> = ({
   theme,
   onContinue,
 }) => {
-  const energyLabel = useMemo(() => getEnergyLabel(energy, maxEnergy), [energy, maxEnergy]);
+  const energyState = useMemo(() => getEnergyState(energy, maxEnergy), [energy, maxEnergy]);
   const energyColor = useMemo(() => getEnergyColor(energy, maxEnergy), [energy, maxEnergy]);
+  const energyLabel = tRuntime(`app.energyState.${energyState}`, undefined, energyState);
+  const summaryTitle = tRuntime('app.summaryTitle', undefined, 'Gun Sonu Ozeti');
+  const dayCompleted = tRuntime('app.dayCompleted', { age }, `${age} yasinda - gun tamamlandi`);
+  const summaryContinue = tRuntime('app.summaryContinue', undefined, 'Devam Et');
 
   const summaryItems = useMemo(() => {
     const items: { icon: string; label: string; value: string; color: string }[] = [
       {
         icon: 'checkbox-marked-circle-outline',
-        label: 'Kararlar',
-        value: `${dailyDecisionCount} karar`,
+        label: tRuntime('app.summaryDecisions', undefined, 'Kararlar'),
+        value: tRuntime('app.summaryDecisionsCount', { count: dailyDecisionCount }, `${dailyDecisionCount} karar`),
         color: dailyDecisionCount >= 3 ? '#22c55e' : '#eab308',
       },
       {
         icon: 'lightning-bolt',
-        label: 'Enerji',
+        label: tRuntime('app.summaryEnergy', undefined, 'Enerji'),
         value: `${Math.round(energy)}/${maxEnergy} (${energyLabel})`,
         color: energyColor,
       },
       {
         icon: 'heart-pulse',
-        label: 'Saglik',
+        label: tRuntime('app.summaryHealth', undefined, 'Saglik'),
         value: `%${Math.round(stats.health)}`,
         color: stats.health >= 50 ? '#22c55e' : '#ef4444',
       },
       {
         icon: 'brain',
-        label: 'Zeka',
+        label: tRuntime('app.summaryIntelligence', undefined, 'Zeka'),
         value: `%${Math.round(stats.intelligence)}`,
         color: '#3b82f6',
       },
@@ -94,10 +99,10 @@ export const DaySummaryModal: React.FC<DaySummaryModalProps> = ({
           <View style={[styles.handle, { backgroundColor: theme.border }]} />
 
           <Text style={[styles.title, { color: theme.textPrimary }]}>
-            {'\u{1F319}'} Gun Sonu Ozeti
+            {'\u{1F319}'} {summaryTitle}
           </Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            {age} yasinda — gun tamamlandi
+            {dayCompleted}
           </Text>
 
           <View style={styles.itemsContainer}>
@@ -124,9 +129,9 @@ export const DaySummaryModal: React.FC<DaySummaryModalProps> = ({
             onPress={onContinue}
             style={[styles.continueButton, { backgroundColor: theme.accentEvent }]}
             accessibilityRole="button"
-            accessibilityLabel="Devam et"
+            accessibilityLabel={summaryContinue}
           >
-            <Text style={styles.continueText}>Devam Et</Text>
+            <Text style={styles.continueText}>{summaryContinue}</Text>
           </TouchableOpacity>
         </View>
       </View>

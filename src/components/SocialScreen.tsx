@@ -5,10 +5,12 @@ import { getThemeTokens, getDensityMetrics } from '../utils/themeUtils';
 import { selectionHaptic, buttonPress } from '../animations/HapticFeedback';
 import { applySkillsToSocialCost } from '../utils/gameUtils';
 import {
+  getLocalizedInteractionRestriction,
   isInteractionAvailable,
   InteractionType,
 } from '../constants/interactionRestrictions';
 import { ensureTextContrast } from '../utils/colorContrast';
+import { tRuntime } from '../i18n/strings';
 
 interface SocialScreenProps {
   npcs: NPC[];
@@ -38,6 +40,15 @@ interface SocialResourceBarProps {
   theme: ReturnType<typeof getThemeTokens>;
 }
 
+interface InteractionOption {
+  type: InteractionType;
+  icon: string;
+  label: string;
+  description: string;
+  energy: number;
+  money: number;
+}
+
 interface SocialNPCCardProps {
   npc: NPC;
   selected: boolean;
@@ -45,42 +56,56 @@ interface SocialNPCCardProps {
   theme: ReturnType<typeof getThemeTokens>;
   getRelationshipColor: (value: number) => string;
   onSelect: (npc: NPC) => void;
-  availableInteractions: typeof INTERACTION_OPTIONS;
+  availableInteractions: InteractionOption[];
   canAfford: (energy: number, money: number) => boolean;
   skills?: Skills;
   onInteract: (type: InteractionType) => void;
 }
 
-const ROLE_CONFIG: Record<string, { emoji: string; color: string; name: string }> = {
-  ACQUAINTANCE: { emoji: '👤', color: '#64748b', name: 'Tanidik' },
-  FRIEND: { emoji: '🤝', color: '#047857', name: 'Arkadas' },
-  BEST_FRIEND: { emoji: '💎', color: '#2563eb', name: 'En Iyi Arkadas' },
-  CRUSH: { emoji: '💕', color: '#be185d', name: 'Hoslandigin' },
-  PARTNER: { emoji: '❤️', color: '#dc2626', name: 'Sevgili' },
-  RIVAL: { emoji: '⚔️', color: '#b45309', name: 'Rakip' },
-  ENEMY: { emoji: '😡', color: '#b91c1c', name: 'Dusman' },
+const ROLE_META: Record<string, { emoji: string; color: string; key: string; fallback: string }> = {
+  ACQUAINTANCE: { emoji: '\u{1F464}', color: '#64748b', key: 'social.roles.ACQUAINTANCE', fallback: 'Tanidik' },
+  FRIEND: { emoji: '\u{1F91D}', color: '#047857', key: 'social.roles.FRIEND', fallback: 'Arkadas' },
+  BEST_FRIEND: { emoji: '\u{1F48E}', color: '#2563eb', key: 'social.roles.BEST_FRIEND', fallback: 'En Iyi Arkadas' },
+  CRUSH: { emoji: '\u{1F495}', color: '#be185d', key: 'social.roles.CRUSH', fallback: 'Hoslandigin' },
+  PARTNER: { emoji: '\u2764\uFE0F', color: '#dc2626', key: 'social.roles.PARTNER', fallback: 'Sevgili' },
+  RIVAL: { emoji: '\u2694\uFE0F', color: '#b45309', key: 'social.roles.RIVAL', fallback: 'Rakip' },
+  ENEMY: { emoji: '\u{1F621}', color: '#b91c1c', key: 'social.roles.ENEMY', fallback: 'Dusman' },
 };
 
 const PERSONALITY_EMOJI: Record<string, string> = {
-  FRIENDLY: '😊',
-  SHY: '😳',
-  AGGRESSIVE: '😤',
-  POPULAR: '⭐',
-  NERDY: '🤓',
-  ARTISTIC: '🎨',
-  ATHLETIC: '💪',
+  FRIENDLY: '\u{1F60A}',
+  SHY: '\u{1F633}',
+  AGGRESSIVE: '\u{1F624}',
+  POPULAR: '\u2B50',
+  NERDY: '\u{1F913}',
+  ARTISTIC: '\u{1F3A8}',
+  ATHLETIC: '\u{1F4AA}',
 };
 
-const INTERACTION_OPTIONS = [
-  { type: 'CHAT' as const, icon: '💬', label: 'Sohbet Et', energy: 10, money: 0, desc: 'Dostca sohbet' },
-  { type: 'HANGOUT' as const, icon: '🎉', label: 'Takil', energy: 15, money: 0, desc: 'Birlikte vakit gecir' },
-  { type: 'GIFT' as const, icon: '🎁', label: 'Hediye Ver', energy: 5, money: 50, desc: 'Ozel hediye' },
-  { type: 'STUDY' as const, icon: '📚', label: 'Ders Calis', energy: 20, money: 0, desc: 'Birlikte ders' },
-  { type: 'FLIRT' as const, icon: '😘', label: 'Flort Et', energy: 12, money: 0, desc: 'Romantik ilgi' },
-  { type: 'HELP' as const, icon: '🤝', label: 'Yardim Et', energy: 18, money: 0, desc: 'Ihtiyacinda yardim' },
-  { type: 'COMPETE' as const, icon: '🏆', label: 'Yaris', energy: 15, money: 0, desc: 'Rekabet et' },
-  { type: 'GOSSIP' as const, icon: '🗣️', label: 'Dedikodu', energy: 8, money: 0, desc: 'Baskalari hakkinda' },
+const INTERACTION_BASE_OPTIONS: Array<{
+  type: InteractionType;
+  icon: string;
+  energy: number;
+  money: number;
+}> = [
+  { type: 'CHAT', icon: '\u{1F4AC}', energy: 10, money: 0 },
+  { type: 'HANGOUT', icon: '\u{1F389}', energy: 15, money: 0 },
+  { type: 'GIFT', icon: '\u{1F381}', energy: 5, money: 50 },
+  { type: 'STUDY', icon: '\u{1F4DA}', energy: 20, money: 0 },
+  { type: 'FLIRT', icon: '\u{1F618}', energy: 12, money: 0 },
+  { type: 'HELP', icon: '\u{1F91D}', energy: 18, money: 0 },
+  { type: 'COMPETE', icon: '\u{1F3C6}', energy: 15, money: 0 },
+  { type: 'GOSSIP', icon: '\u{1F5E3}\uFE0F', energy: 8, money: 0 },
 ];
+
+const resolveRoleConfig = (role: string): { emoji: string; color: string; name: string } => {
+  const meta = ROLE_META[role] || ROLE_META.ACQUAINTANCE;
+  return {
+    emoji: meta.emoji,
+    color: meta.color,
+    name: tRuntime(meta.key, undefined, meta.fallback),
+  };
+};
 
 const SocialHeader: React.FC<SocialHeaderProps> = ({ onBack, theme }) => (
   <View style={styles.header}>
@@ -94,15 +119,19 @@ const SocialHeader: React.FC<SocialHeaderProps> = ({ onBack, theme }) => (
         },
       ]}
       accessibilityRole="button"
-      accessibilityLabel="Hub ekranina don"
-      accessibilityHint="Sosyal ekrandan cikarak ana oyun ekranina doner"
+      accessibilityLabel={tRuntime('social.screen.backAria', undefined, 'Hub ekranina don')}
+      accessibilityHint={tRuntime('social.screen.backHint', undefined, 'Sosyal ekrandan cikarak ana oyun ekranina doner')}
     >
-      <Text style={[styles.backButtonText, { color: theme.textPrimary }]}>← Geri</Text>
+      <Text style={[styles.backButtonText, { color: theme.textPrimary }]}>
+        {'\u2190'} {tRuntime('social.screen.back', undefined, 'Geri')}
+      </Text>
     </TouchableOpacity>
 
     <View style={styles.titleContainer}>
       <View style={[styles.titleBadge, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}>
-        <Text style={[styles.titleText, { color: theme.textPrimary }]}>👥 Sosyal Cevre</Text>
+        <Text style={[styles.titleText, { color: theme.textPrimary }]}>
+          {'\u{1F465}'} {tRuntime('social.screen.title', undefined, 'Sosyal Cevre')}
+        </Text>
       </View>
     </View>
   </View>
@@ -110,8 +139,12 @@ const SocialHeader: React.FC<SocialHeaderProps> = ({ onBack, theme }) => (
 
 const SocialResourceBar: React.FC<SocialResourceBarProps> = ({ currentEnergy, currentMoney, theme }) => (
   <View style={[styles.resourceBar, { backgroundColor: theme.surfaceBase, borderColor: theme.border }]}>
-    <Text style={[styles.resourceText, { color: theme.textPrimary }]}>⚡ {currentEnergy}</Text>
-    <Text style={[styles.resourceText, { color: theme.textPrimary }]}>💰 ₺{currentMoney}</Text>
+    <Text style={[styles.resourceText, { color: theme.textPrimary }]}>
+      {'\u26A1'} {currentEnergy}
+    </Text>
+    <Text style={[styles.resourceText, { color: theme.textPrimary }]}>
+      {'\u{1F4B0}'} \u20BA{currentMoney}
+    </Text>
   </View>
 );
 
@@ -145,7 +178,9 @@ const SocialNPCCard: React.FC<SocialNPCCardProps> = React.memo(({
       activeOpacity={0.7}
       accessibilityRole="button"
       accessibilityLabel={`${npc.name}, ${roleConfig.name}`}
-      accessibilityHint={selected ? 'Kart acik, etkileşim secenekleri asagida' : 'Detaylari ve etkileşim seceneklerini acar'}
+      accessibilityHint={selected
+        ? tRuntime('social.screen.npcSelectedHint', undefined, 'Kart acik, etkilesim secenekleri asagida')
+        : tRuntime('social.screen.npcDefaultHint', undefined, 'Detaylari ve etkilesim seceneklerini acar')}
       accessibilityState={{ selected }}
     >
       <View style={styles.npcHeader}>
@@ -157,15 +192,17 @@ const SocialNPCCard: React.FC<SocialNPCCardProps> = React.memo(({
           </View>
         </View>
         <View style={styles.npcInfo}>
-          <Text style={styles.personalityEmoji}>{PERSONALITY_EMOJI[npc.personality] || '🙂'}</Text>
+          <Text style={styles.personalityEmoji}>{PERSONALITY_EMOJI[npc.personality] || '\u{1F642}'}</Text>
           <Text style={[styles.npcAge, { color: theme.textSecondary }]}>
-            {npc.gender === 'MALE' ? '👦' : '👧'} {npc.age}
+            {npc.gender === 'MALE' ? '\u{1F466}' : '\u{1F467}'} {npc.age}
           </Text>
         </View>
       </View>
 
       <View style={styles.relationRow}>
-        <Text style={[styles.relationLabel, { color: theme.textSecondary }]}>Iliski</Text>
+        <Text style={[styles.relationLabel, { color: theme.textSecondary }]}>
+          {tRuntime('social.screen.relationship', undefined, 'Iliski')}
+        </Text>
         <Text style={[styles.relationValue, { color: relationColor }]}>
           {npc.relationship > 0 ? '+' : ''}{npc.relationship}
         </Text>
@@ -184,10 +221,12 @@ const SocialNPCCard: React.FC<SocialNPCCardProps> = React.memo(({
 
       {selected ? (
         <View style={styles.actionButtons}>
-          <Text style={[styles.actionTitle, { color: theme.textPrimary }]}>Etkilesim Sec:</Text>
+          <Text style={[styles.actionTitle, { color: theme.textPrimary }]}>
+            {tRuntime('social.screen.selectInteraction', undefined, 'Etkilesim Sec:')}
+          </Text>
           {availableInteractions.length === 0 ? (
             <Text style={[styles.noInteractionsText, { color: theme.textSecondary }]}>
-              Henuz etkilesim seceneklerin yok. Biraz daha buyumelisin.
+              {tRuntime('social.screen.noInteractions', undefined, 'Henuz etkilesim seceneklerin yok. Biraz daha buyumelisin.')}
             </Text>
           ) : (
             <View style={styles.actionGrid}>
@@ -200,6 +239,13 @@ const SocialNPCCard: React.FC<SocialNPCCardProps> = React.memo(({
                 const actionColor = affordable
                   ? ensureTextContrast(roleConfig.color, theme.surfaceBase, 4.5)
                   : theme.border;
+
+                const energyCostText = adjustedCost.energy > 0
+                  ? tRuntime('social.screen.energyCost', { value: adjustedCost.energy }, `${adjustedCost.energy} enerji`)
+                  : tRuntime('social.screen.energyCostZero', undefined, '0 enerji');
+                const moneyCostText = adjustedCost.money > 0
+                  ? tRuntime('social.screen.moneyCost', { value: adjustedCost.money }, `${adjustedCost.money} para`)
+                  : '';
 
                 return (
                   <TouchableOpacity
@@ -215,12 +261,22 @@ const SocialNPCCard: React.FC<SocialNPCCardProps> = React.memo(({
                     onPress={() => onInteract(option.type)}
                     disabled={!affordable}
                     accessibilityRole="button"
-                    accessibilityLabel={`${npc.name} ile ${option.label}`}
-                    accessibilityHint={
-                      affordable
-                        ? `${option.desc}. ${adjustedCost.energy > 0 ? `${adjustedCost.energy} enerji` : '0 enerji'}${adjustedCost.money > 0 ? ` ve ${adjustedCost.money} para` : ''} harcar`
-                        : 'Bu etkileşim su an kilitli, kaynaklarin yetersiz'
-                    }
+                    accessibilityLabel={tRuntime(
+                      'social.screen.actionAria',
+                      { npcName: npc.name, action: option.label },
+                      `${npc.name} ile ${option.label}`
+                    )}
+                    accessibilityHint={affordable
+                      ? tRuntime(
+                        'social.screen.actionHintAffordable',
+                        {
+                          description: option.description,
+                          energyCost: energyCostText,
+                          moneyCost: moneyCostText ? ` ${moneyCostText}` : '',
+                        },
+                        `${option.description}. ${energyCostText}${moneyCostText ? ` ${moneyCostText}` : ''} harcar`
+                      )
+                      : tRuntime('social.screen.actionHintLocked', undefined, 'Bu etkilesim su an kilitli, kaynaklarin yetersiz')}
                     accessibilityState={{ disabled: !affordable }}
                   >
                     <Text style={styles.actionIcon}>{option.icon}</Text>
@@ -233,8 +289,8 @@ const SocialNPCCard: React.FC<SocialNPCCardProps> = React.memo(({
                         { color: affordable ? theme.textSecondary : ensureTextContrast('#b91c1c', theme.surfaceBase, 4.5) },
                       ]}
                     >
-                      {adjustedCost.energy > 0 && `⚡${adjustedCost.energy}`}
-                      {adjustedCost.money > 0 && ` 💰₺${adjustedCost.money}`}
+                      {adjustedCost.energy > 0 && `\u26A1${adjustedCost.energy}`}
+                      {adjustedCost.money > 0 && ` \u{1F4B0}\u20BA${adjustedCost.money}`}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -264,9 +320,20 @@ const SocialScreenRoot: React.FC<SocialScreenProps> = ({
   const metrics = metricsOverride || getDensityMetrics('standard');
   const [selectedNPC, setSelectedNPC] = useState<NPC | null>(null);
 
+  const interactionOptions = useMemo<InteractionOption[]>(() => (
+    INTERACTION_BASE_OPTIONS.map(base => {
+      const localized = getLocalizedInteractionRestriction(base.type);
+      return {
+        ...base,
+        label: localized.label,
+        description: localized.description,
+      };
+    })
+  ), []);
+
   const availableInteractions = useMemo(
-    () => INTERACTION_OPTIONS.filter(option => isInteractionAvailable(option.type, playerAge)),
-    [playerAge]
+    () => interactionOptions.filter(option => isInteractionAvailable(option.type, playerAge)),
+    [interactionOptions, playerAge]
   );
 
   const canAfford = useCallback((energy: number, money: number) => {
@@ -295,9 +362,9 @@ const SocialScreenRoot: React.FC<SocialScreenProps> = ({
     buttonPress();
     const result = onInteract(selectedNPC.id, actionType);
     if (result.success) {
-      Alert.alert('Basarili', result.message);
+      Alert.alert(tRuntime('social.screen.successTitle', undefined, 'Basarili'), result.message);
     } else {
-      Alert.alert('Hata', result.message);
+      Alert.alert(tRuntime('social.screen.errorTitle', undefined, 'Hata'), result.message);
     }
   }, [selectedNPC, onInteract]);
 
@@ -305,14 +372,17 @@ const SocialScreenRoot: React.FC<SocialScreenProps> = ({
     buttonPress();
     const result = onMeetNew();
     if (result.success && result.npc) {
-      Alert.alert('Yeni Tanisma', `${result.npc.name} ile tanistin!`);
+      Alert.alert(
+        tRuntime('social.screen.newContactTitle', undefined, 'Yeni Tanisma'),
+        tRuntime('social.screen.newContactMessage', { npcName: result.npc.name }, '{npcName} ile tanistin!')
+      );
     }
   }, [onMeetNew]);
 
   const meetColor = ensureTextContrast('#047857', theme.surfaceBase, 4.5);
 
   const renderNPCItem = useCallback(({ item: npc }: ListRenderItemInfo<NPC>) => {
-    const roleConfig = ROLE_CONFIG[npc.role] || ROLE_CONFIG.ACQUAINTANCE;
+    const roleConfig = resolveRoleConfig(npc.role);
     const isSelected = selectedNPC?.id === npc.id;
 
     return (
@@ -343,14 +413,16 @@ const SocialScreenRoot: React.FC<SocialScreenProps> = ({
         onPress={handleMeetNew}
         disabled={currentEnergy < 12}
         accessibilityRole="button"
-        accessibilityLabel="Yeni biri ile tanis"
-        accessibilityHint={currentEnergy < 12 ? 'Bu aksiyon icin en az 12 enerji gerekir' : 'Yeni bir NPC ile tanismani saglar'}
+        accessibilityLabel={tRuntime('social.screen.meetNewAria', undefined, 'Yeni biri ile tanis')}
+        accessibilityHint={currentEnergy < 12
+          ? tRuntime('social.screen.meetNewHintDisabled', undefined, 'Bu aksiyon icin en az 12 enerji gerekir')
+          : tRuntime('social.screen.meetNewHintEnabled', undefined, 'Yeni bir NPC ile tanismani saglar')}
         accessibilityState={{ disabled: currentEnergy < 12 }}
       >
-        <Text style={styles.meetNewIcon}>👋</Text>
+        <Text style={styles.meetNewIcon}>{'\u{1F44B}'}</Text>
         <View>
-          <Text style={styles.meetNewText}>Yeni Biri ile Tanis</Text>
-          <Text style={styles.meetNewCost}>⚡12 enerji</Text>
+          <Text style={styles.meetNewText}>{tRuntime('social.screen.meetNewLabel', undefined, 'Yeni Biri ile Tanis')}</Text>
+          <Text style={styles.meetNewCost}>{tRuntime('social.screen.meetNewCost', undefined, '\u26A112 enerji')}</Text>
         </View>
       </TouchableOpacity>
     </>
@@ -358,12 +430,12 @@ const SocialScreenRoot: React.FC<SocialScreenProps> = ({
 
   const emptyComponent = useMemo(() => (
     <View style={[styles.emptyState, { backgroundColor: theme.surfaceBase }]}>
-      <Text style={styles.emptyEmoji}>👥</Text>
+      <Text style={styles.emptyEmoji}>{'\u{1F465}'}</Text>
       <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>
-        Henuz kimseyi tanimiyorsun
+        {tRuntime('social.screen.emptyTitle', undefined, 'Henuz kimseyi tanimiyorsun')}
       </Text>
       <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
-        "Yeni Biri ile Tanis" butonuna tikla.
+        {tRuntime('social.screen.emptySubtitle', undefined, '"Yeni Biri ile Tanis" butonuna tikla.')}
       </Text>
     </View>
   ), [theme]);

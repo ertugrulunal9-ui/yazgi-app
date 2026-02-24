@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { tRuntime } from '../i18n/strings';
 
 interface AudioSettingsProps {
   isOpen: boolean;
@@ -18,12 +19,16 @@ export const AudioSettings: React.FC<AudioSettingsProps> = ({ isOpen, onClose })
     >
       <View style={styles.backdrop}>
         <View style={styles.card}>
-          <Text style={styles.title}>Ses Ayarlari</Text>
+          <Text style={styles.title}>
+            {tRuntime('app.audioSettingsTitle', undefined, 'Ses Ayarlari')}
+          </Text>
           <Text style={styles.description}>
-            Bu ekran mobil surumde kullanilmiyor.
+            {tRuntime('app.audioSettingsDescription', undefined, 'Bu ekran mobil surumde kullanilmiyor.')}
           </Text>
           <TouchableOpacity style={styles.button} onPress={onClose}>
-            <Text style={styles.buttonText}>Kapat</Text>
+            <Text style={styles.buttonText}>
+              {tRuntime('app.audioSettingsClose', undefined, 'Kapat')}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>

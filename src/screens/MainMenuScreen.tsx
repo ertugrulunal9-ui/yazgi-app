@@ -17,14 +17,15 @@ import { useGame } from '../context/GameContext';
 import { useMetaProgression } from '../context/MetaProgressionContext';
 import { useLegacyBonuses } from '../hooks/useGameSelectors';
 import { CharacterInfo, LifeGoal, PlayerGender } from '../types';
-import { LIFE_GOAL_META, LIFE_GOAL_ORDER } from '../utils/lifeGoalSystem';
+import { getLifeGoalMeta, LIFE_GOAL_ORDER } from '../utils/lifeGoalSystem';
+import { AppLocale, t as translateStatic } from '../i18n/strings';
 import {
   calculateZodiacSign,
   generateRandomCharacter,
+  getLocalizedMonths,
+  getLocalizedZodiacInfo,
   getMaxDaysInMonth,
   turkishCities,
-  turkishMonths,
-  zodiacInfo,
 } from '../utils/gameUtils';
 import { getDensityMetrics, getThemeTokens } from '../utils/themeUtils';
 import {
@@ -37,15 +38,16 @@ import {
 interface MainMenuScreenProps {
   theme: ReturnType<typeof getThemeTokens>;
   metrics: ReturnType<typeof getDensityMetrics>;
+  locale?: AppLocale;
   onGameStart: () => void;
 }
 
 const GOAL_PICKER_ICONS: Record<LifeGoal, string> = {
-  ACADEMIC: '🧠',
-  ATHLETIC: '🏃',
-  CREATIVE: '🎨',
-  WEALTH: '💼',
-  SOCIAL: '🤝',
+  ACADEMIC: '\u{1F9E0}',
+  ATHLETIC: '\u{1F3C3}',
+  CREATIVE: '\u{1F3A8}',
+  WEALTH: '\u{1F4BC}',
+  SOCIAL: '\u{1F91D}',
 };
 
 interface DropdownPickerProps {
@@ -145,7 +147,7 @@ const DropdownPicker: React.FC<DropdownPickerProps> = ({
   );
 };
 
-export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme, metrics, onGameStart }) => {
+export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme, metrics, locale = 'tr', onGameStart }) => {
   const { startNewGame, updateGameState } = useGame();
   const { metaProgression } = useMetaProgression();
   const legacyBonuses = useLegacyBonuses();
@@ -160,11 +162,19 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
   const [selectedGoal, setSelectedGoal] = useState<LifeGoal | null>(null);
   const [showGoalVision, setShowGoalVision] = useState(false);
 
+  const tStatic = useCallback(
+    (key: string, params?: Record<string, string | number | boolean>, fallback?: string) =>
+      translateStatic(locale, key, params, fallback),
+    [locale]
+  );
+
   const maxDays = useMemo(() => getMaxDaysInMonth(birthMonth), [birthMonth]);
   const dayOptions = useMemo(
     () => Array.from({ length: maxDays }, (_, index) => String(index + 1)),
     [maxDays]
   );
+  const monthOptions = useMemo(() => getLocalizedMonths(locale), [locale]);
+  const zodiacInfo = useMemo(() => getLocalizedZodiacInfo(locale), [locale]);
   const zodiacSign = useMemo(() => calculateZodiacSign(birthMonth, birthDay), [birthMonth, birthDay]);
   const zodiac = zodiacInfo[zodiacSign];
 
@@ -201,13 +211,20 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
   const handleStartGame = useCallback(() => {
     if (!isFormReady || !selectedGoal) {
       buttonPress();
-      Alert.alert('Eksik Bilgi', 'Baslamak icin ad, soyad, sehir ve hedef secimi gerekli.');
+      Alert.alert(
+        tStatic('app.missingInfoTitle', undefined, 'Eksik Bilgi'),
+        tStatic(
+          'app.completeRequiredFields',
+          undefined,
+          'Baslamak icin ad, soyad, sehir ve hedef secimi gerekli.'
+        )
+      );
       return;
     }
 
     buttonPress();
     setShowGoalVision(true);
-  }, [isFormReady, selectedGoal]);
+  }, [isFormReady, selectedGoal, tStatic]);
 
   const handleGoalVisionContinue = useCallback(() => {
     if (!selectedGoal) return;
@@ -290,13 +307,13 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
               textAlign: 'center',
             }}
           >
-            Yazgi
+            {tStatic('app.title', undefined, 'Yazgi')}
           </Text>
         </FadeInDownView>
 
         <FadeInUpView delay={90}>
           <Text style={{ fontSize: 13, color: theme.textSecondary, textAlign: 'center' }}>
-            Kaderini sen yaz.
+            {tStatic('app.tagline', undefined, 'Kaderini sen yaz.')}
           </Text>
         </FadeInUpView>
       </View>
@@ -308,10 +325,10 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
             style={tabButtonStyle('play')}
             activeOpacity={0.85}
             accessibilityRole="button"
-            accessibilityLabel="Basla sekmesi"
+            accessibilityLabel={tStatic('app.openHubTab', undefined, 'Basla sekmesi')}
           >
             <Text style={{ color: activeTab === 'play' ? theme.textPrimary : theme.textSecondary, fontWeight: '700' }}>
-              Basla
+              {tStatic('app.tabStart', undefined, 'Basla')}
             </Text>
           </TouchableOpacity>
 
@@ -320,10 +337,10 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
             style={tabButtonStyle('lives')}
             activeOpacity={0.85}
             accessibilityRole="button"
-            accessibilityLabel="Hayatlar sekmesi"
+            accessibilityLabel={tStatic('app.openLivesTab', undefined, 'Hayatlar sekmesi')}
           >
             <Text style={{ color: activeTab === 'lives' ? theme.textPrimary : theme.textSecondary, fontWeight: '700' }}>
-              Hayatlar
+              {tStatic('app.tabLives', undefined, 'Hayatlar')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -351,20 +368,20 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
               }}
             >
               <Text style={{ color: theme.accentEvent, fontWeight: '700', fontSize: 12 }}>
-                Rastgele Karakter
+                {tStatic('app.randomCharacter', undefined, 'Rastgele Karakter')}
               </Text>
             </TouchableOpacity>
 
             <View style={sectionStyle}>
               <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
-                Kimlik
+                {tStatic('app.identity', undefined, 'Kimlik')}
               </Text>
               <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
                 <TextInput
                   value={firstName}
                   onChangeText={setFirstName}
                   style={[inputStyle, { flex: 1 }]}
-                  placeholder="Ad"
+                  placeholder={tStatic('app.firstName', undefined, 'Ad')}
                   placeholderTextColor={theme.textSecondary}
                   autoCapitalize="words"
                 />
@@ -372,7 +389,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
                   value={lastName}
                   onChangeText={setLastName}
                   style={[inputStyle, { flex: 1 }]}
-                  placeholder="Soyad"
+                  placeholder={tStatic('app.lastName', undefined, 'Soyad')}
                   placeholderTextColor={theme.textSecondary}
                   autoCapitalize="words"
                 />
@@ -393,7 +410,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
                   }}
                 >
                   <Text style={{ color: gender === 'MALE' ? '#ffffff' : theme.textPrimary, fontWeight: '700', fontSize: 13 }}>
-                    Erkek
+                    {tStatic('app.genderMale', undefined, 'Erkek')}
                   </Text>
                 </TouchableOpacity>
 
@@ -411,7 +428,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
                   }}
                 >
                   <Text style={{ color: gender === 'FEMALE' ? '#ffffff' : theme.textPrimary, fontWeight: '700', fontSize: 13 }}>
-                    Kadin
+                    {tStatic('app.genderFemale', undefined, 'Kadin')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -419,32 +436,36 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
 
             <View style={sectionStyle}>
               <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
-                Dogum Bilgisi
+                {tStatic('app.birthInfo', undefined, 'Dogum Bilgisi')}
               </Text>
               <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: theme.textSecondary, fontSize: 11, marginBottom: 4 }}>Ay</Text>
+                  <Text style={{ color: theme.textSecondary, fontSize: 11, marginBottom: 4 }}>
+                    {tStatic('app.month', undefined, 'Ay')}
+                  </Text>
                   <DropdownPicker
-                    value={turkishMonths[birthMonth - 1]}
-                    options={turkishMonths}
+                    value={monthOptions[birthMonth - 1]}
+                    options={monthOptions}
                     onSelect={(monthLabel) => {
-                      const monthIndex = turkishMonths.indexOf(monthLabel);
+                      const monthIndex = monthOptions.indexOf(monthLabel);
                       if (monthIndex >= 0) {
                         setBirthMonth(monthIndex + 1);
                       }
                     }}
-                    placeholder="Ay sec"
+                    placeholder={tStatic('app.selectMonth', undefined, 'Ay sec')}
                     theme={theme}
                     metrics={metrics}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: theme.textSecondary, fontSize: 11, marginBottom: 4 }}>Gun</Text>
+                  <Text style={{ color: theme.textSecondary, fontSize: 11, marginBottom: 4 }}>
+                    {tStatic('app.day', undefined, 'Gun')}
+                  </Text>
                   <DropdownPicker
                     value={String(birthDay)}
                     options={dayOptions}
                     onSelect={(day) => setBirthDay(Number(day))}
-                    placeholder="Gun sec"
+                    placeholder={tStatic('app.selectDay', undefined, 'Gun sec')}
                     theme={theme}
                     metrics={metrics}
                   />
@@ -452,12 +473,14 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
               </View>
 
               <View style={{ marginBottom: 10 }}>
-                <Text style={{ color: theme.textSecondary, fontSize: 11, marginBottom: 4 }}>Sehir</Text>
+                <Text style={{ color: theme.textSecondary, fontSize: 11, marginBottom: 4 }}>
+                  {tStatic('app.city', undefined, 'Sehir')}
+                </Text>
                 <DropdownPicker
                   value={birthCity}
                   options={turkishCities}
                   onSelect={setBirthCity}
-                  placeholder="Sehir sec"
+                  placeholder={tStatic('app.selectCity', undefined, 'Sehir sec')}
                   theme={theme}
                   metrics={metrics}
                 />
@@ -479,18 +502,20 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
                   "{zodiac.personality}"
                 </Text>
                 <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
-                  {'\u{1F4AA}'} Guclu: {zodiac.strength}   {'\u26A0\uFE0F'} Zorluk: {zodiac.challenge}
+                  {'\u{1F4AA}'} {tStatic('app.zodiacStrong', undefined, 'Guclu')}: {zodiac.strength}   {'\u26A0\uFE0F'} {tStatic('app.zodiacChallenge', undefined, 'Zorluk')}: {zodiac.challenge}
                 </Text>
               </View>
             </View>
 
             <View style={sectionStyle}>
               <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
-                Bu Hayattaki Hedefin
+                {tStatic('app.goalHeader', undefined, 'Bu Hayattaki Hedefin')}
               </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {LIFE_GOAL_ORDER.map((goal) => {
-                  const goalMeta = LIFE_GOAL_META[goal];
+                  const goalMeta = getLifeGoalMeta(goal);
+                  if (!goalMeta) return null;
+
                   const isSelected = selectedGoal === goal;
                   const goalColor = goalMeta.accentColor;
 
@@ -530,29 +555,29 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
             {legacyBonuses.visible && (
               <View style={sectionStyle}>
                 <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
-                  Miras Avantajlari
+                  {tStatic('app.legacyAdvantages', undefined, 'Miras Avantajlari')}
                 </Text>
                 <Text style={{ color: theme.textPrimary, fontWeight: '700', marginBottom: 8 }}>
-                  Legacy Seviye {legacyBonuses.level}
+                  {tStatic('app.legacyLevel', { level: legacyBonuses.level }, `Legacy Seviye ${legacyBonuses.level}`)}
                 </Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                   <View style={{ backgroundColor: theme.surfaceOverlay, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}>
-                    <Text style={{ color: theme.textPrimary, fontSize: 12 }}>Saglik +{legacyBonuses.health}</Text>
+                    <Text style={{ color: theme.textPrimary, fontSize: 12 }}>{tStatic('labels.stats.health', undefined, 'Saglik')} +{legacyBonuses.health}</Text>
                   </View>
                   <View style={{ backgroundColor: theme.surfaceOverlay, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}>
-                    <Text style={{ color: theme.textPrimary, fontSize: 12 }}>Zeka +{legacyBonuses.intelligence}</Text>
+                    <Text style={{ color: theme.textPrimary, fontSize: 12 }}>{tStatic('labels.stats.intelligence', undefined, 'Zeka')} +{legacyBonuses.intelligence}</Text>
                   </View>
                   <View style={{ backgroundColor: theme.surfaceOverlay, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}>
-                    <Text style={{ color: theme.textPrimary, fontSize: 12 }}>Karizma +{legacyBonuses.charisma}</Text>
+                    <Text style={{ color: theme.textPrimary, fontSize: 12 }}>{tStatic('labels.stats.charisma', undefined, 'Karizma')} +{legacyBonuses.charisma}</Text>
                   </View>
                   <View style={{ backgroundColor: theme.surfaceOverlay, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}>
-                    <Text style={{ color: theme.textPrimary, fontSize: 12 }}>Disiplin +{legacyBonuses.discipline}</Text>
+                    <Text style={{ color: theme.textPrimary, fontSize: 12 }}>{tStatic('labels.stats.discipline', undefined, 'Disiplin')} +{legacyBonuses.discipline}</Text>
                   </View>
                   <View style={{ backgroundColor: theme.surfaceOverlay, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}>
-                    <Text style={{ color: theme.textPrimary, fontSize: 12 }}>Aile +{legacyBonuses.familyRelation}</Text>
+                    <Text style={{ color: theme.textPrimary, fontSize: 12 }}>{tStatic('labels.stats.familyRelation', undefined, 'Aile')} +{legacyBonuses.familyRelation}</Text>
                   </View>
                   <View style={{ backgroundColor: theme.surfaceOverlay, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}>
-                    <Text style={{ color: theme.textPrimary, fontSize: 12 }}>Para +{legacyBonuses.money} TL</Text>
+                    <Text style={{ color: theme.textPrimary, fontSize: 12 }}>{tStatic('labels.stats.money', undefined, 'Para')} +{legacyBonuses.money} TL</Text>
                   </View>
                 </View>
               </View>
@@ -573,12 +598,12 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
                 opacity: isFormReady ? 1 : 0.65,
               }}
               activeOpacity={0.85}
-              accessibilityLabel="Oyuna basla"
+              accessibilityLabel={tStatic('app.startGameAria', undefined, 'Oyuna basla')}
               accessibilityRole="button"
               accessibilityState={{ disabled: !isFormReady }}
             >
               <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: metrics.font }}>
-                Hayata Basla
+                {tStatic('app.startLife', undefined, 'Hayata Basla')}
               </Text>
             </TouchableOpacity>
           </ScrollView>
@@ -609,6 +634,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
           <GoalVisionOnboarding
             theme={theme}
             metrics={metrics}
+            locale={locale}
             selectedGoal={selectedGoal}
             onContinue={handleGoalVisionContinue}
             onBack={() => setShowGoalVision(false)}
