@@ -2,6 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "types": ["jest", "node"],
+    "jsx": "react-jsx",
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noEmit": true

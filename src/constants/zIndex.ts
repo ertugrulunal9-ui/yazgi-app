@@ -18,7 +18,7 @@ export const Z_INDEX = {
   /** Event screen overlay */
   EVENT_OVERLAY: 100,
 
-  /** Standard modals (SaveSlotPicker, ShopModal) */
+  /** Standard modals (SaveSlotPicker) */
   MODAL: 200,
 
   /** Nested modals (SaveExportModal inside SaveSlotPicker) */

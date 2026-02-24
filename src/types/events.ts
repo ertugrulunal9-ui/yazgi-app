@@ -240,6 +240,11 @@ export interface ResultData {
   traitChanges?: TraitChangeFeedback[];
   fateRoll?: FateRollResult;
   statNarrativeFeedback?: string[];
+  /**
+   * TurnMediator decides recovery gating. When true, useEvents injects
+   * a lightweight recovery mini-event after result continue.
+   */
+  shouldForceRecovery?: boolean;
 }
 
 // =================================================================

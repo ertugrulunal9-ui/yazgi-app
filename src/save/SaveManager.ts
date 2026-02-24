@@ -14,7 +14,6 @@ import {
   SAVE_SCHEMA_VERSION,
   SAVE_EXPORT_VERSION,
   MAX_BACKUP_HISTORY,
-  MAX_FREE_SLOTS,
   MAX_TOTAL_SLOTS,
   AUTO_SAVE_SLOT_ID,
   createEmptySlot,
@@ -239,7 +238,7 @@ class SaveManager {
         status: 'offline',
         pendingSlots: [],
       },
-      isPremiumUnlocked: false,
+      isPremiumUnlocked: true,
       adsDisabled: false,
     };
     this.metaProgression = createInitialMetaProgression();
@@ -974,11 +973,11 @@ class SaveManager {
 
   async getAllSlotMetadata(): Promise<SaveSlotMetadata[]> {
     const metadata: SaveSlotMetadata[] = [];
-    const maxSlots = this.state.isPremiumUnlocked ? MAX_TOTAL_SLOTS : MAX_FREE_SLOTS;
+    const maxSlots = MAX_TOTAL_SLOTS;
 
     for (let i = 1; i <= maxSlots; i++) {
       const slotId = i.toString();
-      const meta = this.state.metadata[slotId] || createEmptySlot(slotId, i > MAX_FREE_SLOTS);
+      const meta = this.state.metadata[slotId] || createEmptySlot(slotId, false);
       metadata.push(meta);
     }
 
@@ -1058,10 +1057,7 @@ class SaveManager {
       // Acquire lock
       this.saveLocks.set(slotId, true);
 
-      const isPremium = parseInt(slotId) > MAX_FREE_SLOTS;
-      if (isPremium && !this.state.isPremiumUnlocked && slotId !== AUTO_SAVE_SLOT_ID) {
-        throw new Error('Premium slot locked');
-      }
+      const isPremium = false;
 
       const existingMeta = {
         ...(this.state.metadata[slotId] || {}),
@@ -1476,7 +1472,7 @@ class SaveManager {
   }
 
   getAvailableSlots(): number {
-    return this.state.isPremiumUnlocked ? MAX_TOTAL_SLOTS : MAX_FREE_SLOTS;
+    return MAX_TOTAL_SLOTS;
   }
 
   private async createBackup(slotId: string, saveData: SaveSlotData): Promise<void> {
@@ -1575,7 +1571,7 @@ class SaveManager {
 
   private async loadAllSlotMetadata(): Promise<void> {
     try {
-      const maxSlots = this.state.isPremiumUnlocked ? MAX_TOTAL_SLOTS : MAX_FREE_SLOTS;
+      const maxSlots = MAX_TOTAL_SLOTS;
 
       for (let i = 1; i <= maxSlots; i++) {
         const slotId = i.toString();

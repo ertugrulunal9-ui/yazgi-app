@@ -1,10 +1,6 @@
 import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
 
-/** Bir turda oyuncuya garanti edilen minimum karar sayısı */
-const MIN_DECISIONS_PER_DAY = 3;
-/** Bu enerji altına düşünce recovery tetiklenebilir */
-const RECOVERY_ENERGY_THRESHOLD = 5;
-import { View, Text, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { Alert, View, Text, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGame } from '../context/GameContext';
 import { useUI } from '../context/UIContext';
@@ -42,15 +38,31 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { CharacterScreen } from './CharacterScreen';
 import { AchievementList } from '../components/AchievementList';
 import { AchievementToast } from '../components/AchievementToast';
-import { RewardedAdButton } from '../components/RewardedAdButton';
-import ShopModal from '../components/ShopModal';
+// ShopModal removed — monetization is ad-only
+import * as Sharing from 'expo-sharing';
+import { createTraitShareText, createAchievementShareText, formatShareMessage } from '../utils/shareUtils';
 import { useAchievements } from '../hooks/useAchievements';
-import { logAchievementUnlocked, logHubAction, logTraitChanges, logTraitFormed } from '../utils/analyticsEvents';
+import {
+  logAchievementUnlocked,
+  logHubAction,
+  logInterstitialOpportunity,
+  logInterstitialResult,
+  logRewardedAdRequested,
+  logRewardedAdResult,
+  logTraitChanges,
+  logTraitFormed,
+} from '../utils/analyticsEvents';
 import { HubActionCommand } from '../commands/ActionCommand';
 import { TabContent } from '../components/ui';
 import { calculateEndingErrorDebt, calculateSelectedGoalStatProgress } from '../utils/endingResolver';
 import { checkTraitFormation, getMaxEnergy, resolveTraitChanges } from '../utils/gameUtils';
 import { buildTraitChangeFeedback } from '../utils/traitFeedback';
+import { getTraitName } from '../data/traits';
+import {
+  getRemainingRewardedAds,
+  showContextualRewardedAd,
+  showInterstitialAdDetailed,
+} from '../services/monetization';
 import {
   MiniGameContainer,
   MathExamGame,
@@ -64,6 +76,7 @@ import {
 } from '../components/exams';
 import ReportCard from '../components/ReportCard';
 import { ExamPeriodModal } from '../components/ExamPeriodModal';
+import { DaySummaryModal } from '../components/DaySummaryModal';
 
 interface GameScreenProps {
   onPhaseChange: (tab: AppTab) => void;
@@ -106,6 +119,8 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
       achievementIds.forEach(id => {
         void logAchievementUnlocked(id);
       });
+      const achievementMilestone = createAchievementShareText();
+      void triggerMilestoneShare(formatShareMessage(achievementMilestone));
     }
   );
 
@@ -124,7 +139,9 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
   const [achievementToastIds, setAchievementToastIds] = useState<string[]>([]);
   const [achievementToastVisible, setAchievementToastVisible] = useState(false);
   const [achievementsOpen, setAchievementsOpen] = useState(false);
-  const [shopOpen, setShopOpen] = useState(false);
+  // shopOpen state removed — IAP disabled
+  const [daySummaryVisible, setDaySummaryVisible] = useState(false);
+  const [examPrepBoostApplied, setExamPrepBoostApplied] = useState(0);
   const unlockedAchievementIds = useMemo(
     () => unlockedAchievements.map(a => a.achievementId),
     [unlockedAchievements]
@@ -158,38 +175,112 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     return guidance ? `${summary}\nIpuclari: ${guidance}` : summary;
   }, []);
 
-  const monetizationTheme = useMemo(() => ({
-    appBg: theme.appBg,
-    surfaceBase: theme.surfaceBase,
-    surfaceRaised: theme.surfaceRaised,
-    textPrimary: theme.textPrimary,
-    textSecondary: theme.textSecondary,
-    border: theme.border,
-    accentEvent: theme.accentEvent,
-  }), [theme.appBg, theme.surfaceBase, theme.surfaceRaised, theme.textPrimary, theme.textSecondary, theme.border, theme.accentEvent]);
+  const triggerMilestoneShare = useCallback(async (message: string) => {
+    try {
+      const available = await Sharing.isAvailableAsync();
+      if (!available) return;
+      // expo-sharing requires a file URI; for text-only sharing, use clipboard fallback
+      // For now we just show a toast with the share text — full share integration requires a file
+      enqueueToast(message, 'info');
+    } catch {
+      // Sharing not available — silently ignore
+    }
+  }, [enqueueToast]);
 
-  const handleRewardClaimed = useCallback((reward: { type: 'energy' | 'intelligence' | 'money'; amount: number }) => {
-    if (reward.type === 'energy') {
-      const clampedEnergy = Math.min(gameState.maxEnergy, stats.energy + reward.amount);
-      const delta = Math.max(0, clampedEnergy - stats.energy);
-      if (delta > 0) {
-        updateStats({ energy: delta });
-        enqueueToast(`+${delta} enerji kazandin`, 'success');
-      } else {
-        enqueueToast('Enerjin zaten dolu', 'info');
-      }
+  const claimEnergyRecoveryAd = useCallback(async () => {
+    const remainingBefore = getRemainingRewardedAds();
+    void logRewardedAdRequested({
+      placement: 'energy_depleted',
+      rewardType: 'energy',
+      remainingBefore,
+    });
+
+    const adResult = await showContextualRewardedAd('energy_depleted');
+    const remainingAfter = getRemainingRewardedAds();
+
+    if (!adResult.success) {
+      enqueueToast(adResult.error || 'Reklam gosterilemedi', 'error');
+      void logRewardedAdResult({
+        placement: 'energy_depleted',
+        rewardType: 'energy',
+        success: false,
+        remainingAfter,
+        errorMessage: adResult.error,
+      });
       return;
     }
 
-    if (reward.type === 'intelligence') {
-      updateStats({ intelligence: reward.amount });
-      enqueueToast(`+${reward.amount} zeka kazandin`, 'success');
-      return;
+    const rewardAmount = adResult.amount || 25;
+    const clampedEnergy = Math.min(gameState.maxEnergy, stats.energy + rewardAmount);
+    const delta = Math.max(0, clampedEnergy - stats.energy);
+
+    if (delta > 0) {
+      updateStats({ energy: delta });
+      enqueueToast(`+${delta} enerji kazandin`, 'success');
+    } else {
+      enqueueToast('Enerjin zaten dolu', 'info');
     }
 
-    updateStats({ money: reward.amount });
-    enqueueToast(`+${reward.amount} para kazandin`, 'success');
+    void logRewardedAdResult({
+      placement: 'energy_depleted',
+      rewardType: 'energy',
+      success: true,
+      amount: delta,
+      remainingAfter,
+    });
   }, [enqueueToast, gameState.maxEnergy, stats.energy, updateStats]);
+
+  const clearExamPrepBoost = useCallback(() => {
+    if (examPrepBoostApplied <= 0) return;
+    updateStats({ intelligence: -examPrepBoostApplied });
+    setExamPrepBoostApplied(0);
+  }, [examPrepBoostApplied, updateStats]);
+
+  const claimExamPrepBoostAd = useCallback(async (): Promise<number> => {
+    const remainingBefore = getRemainingRewardedAds();
+    void logRewardedAdRequested({
+      placement: 'exam_prep',
+      rewardType: 'intelligence',
+      remainingBefore,
+    });
+
+    const adResult = await showContextualRewardedAd('exam_prep');
+    const remainingAfter = getRemainingRewardedAds();
+
+    if (!adResult.success) {
+      enqueueToast(adResult.error || 'Reklam gosterilemedi', 'error');
+      void logRewardedAdResult({
+        placement: 'exam_prep',
+        rewardType: 'intelligence',
+        success: false,
+        remainingAfter,
+        errorMessage: adResult.error,
+      });
+      return 0;
+    }
+
+    const rewardAmount = adResult.amount || 15;
+    const appliedBoost = Math.max(0, Math.min(100, stats.intelligence + rewardAmount) - stats.intelligence);
+
+    if (appliedBoost > 0) {
+      updateStats({ intelligence: appliedBoost });
+      setExamPrepBoostApplied(appliedBoost);
+      enqueueToast(`Sinav odagi aktif: +${appliedBoost} zeka`, 'success');
+    } else {
+      setExamPrepBoostApplied(0);
+      enqueueToast('Zeka zaten maksimum, odak bonusu sinirda kaldi', 'info');
+    }
+
+    void logRewardedAdResult({
+      placement: 'exam_prep',
+      rewardType: 'intelligence',
+      success: true,
+      amount: appliedBoost,
+      remainingAfter,
+    });
+
+    return appliedBoost;
+  }, [enqueueToast, stats.intelligence, updateStats]);
 
   useEffect(() => {
     if (achievementsLoading) return;
@@ -218,6 +309,15 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
   useEffect(() => {
     if (gameState.age > previousAgeRef.current) {
       levelUp();
+      void (async () => {
+        void logInterstitialOpportunity({ placement: 'age_transition' });
+        const interstitial = await showInterstitialAdDetailed();
+        void logInterstitialResult({
+          placement: 'age_transition',
+          shown: interstitial.shown,
+          reason: interstitial.reason,
+        });
+      })();
     }
     previousAgeRef.current = gameState.age;
   }, [gameState.age]);
@@ -278,8 +378,17 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
         `Puan: ${result.finalScore}`,
         accuracy >= 50 ? 'success' : 'warning'
       );
+      if (examPrepBoostApplied > 0) {
+        clearExamPrepBoost();
+        enqueueToast('Sinav odak takviyesi sona erdi', 'info');
+      }
     },
   });
+
+  const handleExamCancelWithBoostReset = useCallback(() => {
+    clearExamPrepBoost();
+    handleExamCancel();
+  }, [clearExamPrepBoost, handleExamCancel]);
 
   const cardStyle = useMemo(() => ({
     backgroundColor: theme.surfaceBase,
@@ -310,10 +419,12 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     () => calculateSelectedGoalStatProgress(gameState.selectedGoal ?? null, stats),
     [gameState.selectedGoal, stats]
   );
-  const riskPercent = useMemo(
-    () => calculateEndingErrorDebt(gameState, stats).total,
+  const riskData = useMemo(
+    () => calculateEndingErrorDebt(gameState, stats),
     [gameState, stats]
   );
+  const riskPercent = riskData.total;
+  const riskReasons = riskData.reasons;
 
   // Calculate available categories based on age
   const availableCategories = useMemo(() => {
@@ -335,6 +446,34 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     setSelectedCategory(null);
   }, []);
 
+  const promptExamPrepAndStartExam = useCallback((examType: ExamGameType) => {
+    const startExam = () => {
+      clearExamPrepBoost();
+      openExamGame(examType);
+    };
+
+    Alert.alert(
+      'Sinav Hazirligi',
+      'Sinav oncesi reklam izleyip gecici +15 zeka odagi almak ister misin?',
+      [
+        {
+          text: 'Direkt Basla',
+          onPress: startExam,
+        },
+        {
+          text: 'Reklam Izle',
+          onPress: () => {
+            void (async () => {
+              clearExamPrepBoost();
+              await claimExamPrepBoostAd();
+              openExamGame(examType);
+            })();
+          },
+        },
+      ]
+    );
+  }, [claimExamPrepBoostAd, clearExamPrepBoost, openExamGame]);
+
   const handleActionSelect = useCallback((action: SubAction) => {
     buttonPress();
     selectionHaptic();
@@ -351,12 +490,27 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
         result.feedbackMessage,
         isHardResourceBlock ? 'error' : 'warning'
       );
+      if (result.errorType === 'NOT_ENOUGH_ENERGY') {
+        Alert.alert(
+          'Enerjin bitti',
+          'Bir reklam izleyerek +25 enerji kazanmak ister misin?',
+          [
+            { text: 'Vazgec', style: 'cancel' },
+            {
+              text: 'Reklam Izle',
+              onPress: () => {
+                void claimEnergyRecoveryAd();
+              },
+            },
+          ]
+        );
+      }
       return;
     }
 
     if (result.status === 'open_exam') {
       if (result.opensExamGame) {
-        openExamGame(result.opensExamGame);
+        promptExamPrepAndStartExam(result.opensExamGame);
       }
       handleCloseBottomSheet();
       return;
@@ -369,22 +523,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
       } else if (moneyDelta < 0) {
         moneyLoss();
       }
-
-      // === MİNİMUM KARAR GARANTİSİ ===
-      // Enerji ilk kez tükendiyse ama yeterince karar alınmadıysa küçük bir recovery ver
-      const energyWasOk = stats.energy > RECOVERY_ENERGY_THRESHOLD;
-      const energyNowLow = result.newStats.energy <= RECOVERY_ENERGY_THRESHOLD;
-      const newDecisionCount = (gameState.dailyDecisionCount ?? 0) + 1;
-      const needsRecovery = energyWasOk && energyNowLow && newDecisionCount < MIN_DECISIONS_PER_DAY;
-
-      if (needsRecovery) {
-        const recoveryAmount = 20;
-        const recoveredEnergy = Math.min(gameState.maxEnergy, result.newStats.energy + recoveryAmount);
-        setStats({ ...result.newStats, energy: recoveredEnergy });
-        enqueueToast('Kısa bir mola vererek enerji topladın!', 'info');
-      } else {
-        setStats(result.newStats);
-      }
+      setStats(result.newStats);
     }
 
     updateGameState(result.gameStateUpdates);
@@ -404,6 +543,8 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     if (result.newTraits.length > 0) {
       result.newTraits.forEach(traitId => {
         void logTraitFormed(traitId, gameState.age);
+        const milestone = createTraitShareText(getTraitName(traitId));
+        void triggerMilestoneShare(formatShareMessage(milestone));
       });
     }
     if (result.traitChanges && result.traitChanges.length > 0) {
@@ -432,7 +573,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     }
 
     handleCloseBottomSheet();
-  }, [gameState, stats, updateGameState, handleCloseBottomSheet, meetNewNPC, openExamGame, setStats, enqueueToast, buildTraitToastMessage]);
+  }, [gameState, stats, updateGameState, handleCloseBottomSheet, meetNewNPC, promptExamPrepAndStartExam, setStats, enqueueToast, buildTraitToastMessage, claimEnergyRecoveryAd]);
 
   // Handle report card close
   const handleReportCardClose = useCallback(() => {
@@ -442,8 +583,8 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
 
   // Handle exam period - s\u0131nav d\u00F6neminden s\u0131nava girme
   const handleExamPeriodExam = useCallback((examType: ExamGameType) => {
-    openExamGame(examType);
-  }, [openExamGame]);
+    promptExamPrepAndStartExam(examType);
+  }, [promptExamPrepAndStartExam]);
 
   // Handle exam period close
   const handleExamPeriodClose = useCallback(() => {
@@ -453,44 +594,13 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
   const renderHubContent = useCallback(() => {
     return (
       <FadeInUpView>
-        <View style={{ marginBottom: 12 }}>
-          <TouchableOpacity
-            onPress={() => setShopOpen(true)}
-            style={{
-              backgroundColor: theme.surfaceRaised,
-              borderWidth: 1,
-              borderColor: theme.border,
-              borderRadius: 12,
-              paddingHorizontal: 14,
-              paddingVertical: 12,
-              marginBottom: 10,
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Premium magaza"
-            accessibilityHint="Oyun ici premium urunleri goruntuler"
-          >
-            <Text style={{ color: theme.textPrimary, fontWeight: '700', fontSize: 14 }}>
-              Premium Magaza
-            </Text>
-            <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>
-              Reklamsiz deneyim, premium slotlar ve guclendiriciler
-            </Text>
-          </TouchableOpacity>
-
-          <RewardedAdButton
-            onRewardClaimed={handleRewardClaimed}
-            currentEnergy={stats.energy}
-            theme={monetizationTheme}
-          />
-        </View>
-
         <ActionGrid
           categories={availableCategories}
           onCategoryPress={handleCategoryPress}
         />
       </FadeInUpView>
     );
-  }, [availableCategories, handleCategoryPress, handleRewardClaimed, monetizationTheme, stats.energy, theme.border, theme.surfaceRaised, theme.textPrimary, theme.textSecondary]);
+  }, [availableCategories, handleCategoryPress]);
 
   // Styles
   const safeAreaStyle = useMemo(() => ({
@@ -573,6 +683,18 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
   const handleEndDay = useCallback(() => {
     buttonPress();
     selectionHaptic();
+    setDaySummaryVisible(true);
+  }, []);
+
+  const handleDaySummaryContinue = useCallback(async () => {
+    setDaySummaryVisible(false);
+    void logInterstitialOpportunity({ placement: 'day_summary' });
+    const interstitial = await showInterstitialAdDetailed();
+    void logInterstitialResult({
+      placement: 'day_summary',
+      shown: interstitial.shown,
+      reason: interstitial.reason,
+    });
     turnAdvance();
     try {
       advanceTurn();
@@ -599,6 +721,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
               selectedGoal={gameState.selectedGoal ?? null}
               dreamProgress={dreamProgress}
               riskPercent={riskPercent}
+              riskReasons={riskReasons}
               theme={theme}
             />
           </View>
@@ -732,6 +855,8 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
                       if (traitResolution.gainedTraits.length > 0) {
                         traitResolution.gainedTraits.forEach(traitId => {
                           void logTraitFormed(traitId, gameState.age);
+                          const milestone = createTraitShareText(getTraitName(traitId));
+                          void triggerMilestoneShare(formatShareMessage(milestone));
                         });
                       }
                       if (traitChanges.length > 0) {
@@ -827,13 +952,6 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
         familyWealth={gameState.family?.wealth}
       />
 
-      <ShopModal
-        isOpen={shopOpen}
-        onClose={() => setShopOpen(false)}
-        placement="hub"
-        theme={monetizationTheme}
-      />
-
       {/* Toasts */}
       {toasts.map((toast, index) => (
         <MessageToast
@@ -890,7 +1008,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
               difficulty={examDifficulty}
               age={gameState.age}
               onComplete={examHandlerComplete}
-              onCancel={handleExamCancel}
+              onCancel={handleExamCancelWithBoostReset}
             >
               {(() => {
                 switch (currentExamType) {
@@ -933,6 +1051,19 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
         examsTaken={gameState.examsTakenThisYear || []}
         onTakeExam={handleExamPeriodExam}
         onClose={handleExamPeriodClose}
+      />
+
+      {/* Day Summary Modal */}
+      <DaySummaryModal
+        visible={daySummaryVisible}
+        age={gameState.age}
+        turn={gameState.turn}
+        dailyDecisionCount={gameState.dailyDecisionCount ?? 0}
+        energy={stats.energy}
+        maxEnergy={gameState.maxEnergy}
+        stats={stats}
+        theme={theme}
+        onContinue={handleDaySummaryContinue}
       />
     </View>
   );

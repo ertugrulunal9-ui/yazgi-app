@@ -222,7 +222,7 @@ describe('endingResolver', () => {
     expect(resolution.result.title).toMatch(/Tip|Hukuk|Muhendislik|Yazilim/);
   });
 
-  it('forces mismatch failure when selected goal and developed profile diverge', () => {
+  it('routes mismatch to surpriz kariyer instead of hard failure', () => {
     const gameState = createGameState({
       selectedGoal: 'ATHLETIC',
       actionHistory: [
@@ -258,8 +258,9 @@ describe('endingResolver', () => {
     const resolution = resolveEnding({ gameState, stats });
 
     expect(resolution.mismatchFailure).toBe(true);
-    expect(resolution.tier).toBe('FAILURE');
-    expect(resolution.result.title).toContain('Uyumsuz');
+    expect(resolution.tier).not.toBe('FAILURE');
+    expect(resolution.result.title).toContain('Surpriz');
+    expect(resolution.id).toBe('athletic_mismatch_failure');
   });
 
   it('keeps legendary tier when selected academic goal is perfectly aligned', () => {
@@ -311,7 +312,7 @@ describe('endingResolver', () => {
     expect(resolution.tier).toBe('LEGENDARY');
   });
 
-  it('still fails with mismatch even when dominant profile is otherwise legendary', () => {
+  it('keeps high-tier outcome for mismatch when dominant profile is strong', () => {
     const gameState = createGameState({
       selectedGoal: 'ATHLETIC',
       actionHistory: [
@@ -357,8 +358,50 @@ describe('endingResolver', () => {
     });
 
     expect(resolution.mismatchFailure).toBe(true);
-    expect(resolution.tier).toBe('FAILURE');
-    expect(resolution.result.title).toContain('Uyumsuz');
+    expect(['SUCCESS', 'LEGENDARY']).toContain(resolution.tier);
+    expect(resolution.result.title).toContain('Surpriz');
+    expect(resolution.goal).toBe('ACADEMIC');
+  });
+
+  it('adds versatility penalty note for single-track action history', () => {
+    const gameState = createGameState({
+      selectedGoal: 'ACADEMIC',
+      actionHistory: Array.from({ length: 24 }, (_, index) => ({
+        actionId: 'study_math',
+        age: 16 + Math.floor(index / 12),
+        turn: 50 + index,
+      })),
+      schoolGrades: {
+        math: 95,
+        science: 93,
+        language: 85,
+        turkish: 82,
+        history: 80,
+        geography: 78,
+        art: 55,
+        music: 55,
+      },
+      skills: {
+        ...createGameState().skills,
+        logic: 84,
+        reading: 84,
+        coding: 82,
+      },
+    });
+    const stats = {
+      ...baseStats,
+      intelligence: 92,
+      discipline: 88,
+      health: 78,
+      charisma: 65,
+      familyRelation: 72,
+      money: 3500,
+    };
+
+    const resolution = resolveEnding({ gameState, stats });
+
+    expect(resolution.result.influences?.some(line => line.includes('Cesitlilik cezasi'))).toBe(true);
+    expect(resolution.result.influences?.some(line => line.includes('Zorluk duzeltmesi'))).toBe(true);
   });
 
   it('accepts achievement ids as a plain string list', () => {

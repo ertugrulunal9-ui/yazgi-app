@@ -34,7 +34,6 @@ export const SaveSlotCard: React.FC<SaveSlotCardProps> = ({
 }) => {
   const isEmpty = metadata.status === 'empty';
   const isCorrupted = metadata.status === 'corrupted';
-  const isLocked = metadata.isPremium && metadata.status === 'empty';
 
   const getStatusStyle = () => {
     if (isCorrupted) return { borderColor: '#ef4444', backgroundColor: 'rgba(127, 29, 29, 0.2)' };
@@ -44,47 +43,28 @@ export const SaveSlotCard: React.FC<SaveSlotCardProps> = ({
   };
 
   const handleLoad = () => {
-    if (!isEmpty && !isCorrupted && !isLocked) {
+    if (!isEmpty && !isCorrupted) {
       onLoad(metadata.slotId);
     }
   };
 
   const handleSave = () => {
-    if (!isLocked) {
-      onSave(metadata.slotId);
-    }
+    onSave(metadata.slotId);
   };
 
   const handleDelete = () => {
-    if (!isEmpty && !isAutoSave && !isLocked) {
+    if (!isEmpty && !isAutoSave) {
       onDelete(metadata.slotId);
     }
   };
 
   const handleExport = () => {
-    if (!isEmpty && !isCorrupted && !isLocked) {
+    if (!isEmpty && !isCorrupted) {
       onExport(metadata.slotId);
     }
   };
 
   const statusStyle = getStatusStyle();
-
-  if (isLocked) {
-    return (
-      <View style={[styles.card, { borderColor: statusStyle.borderColor, backgroundColor: statusStyle.backgroundColor }]}>
-        <View style={styles.lockedOverlay}>
-          <Feather name="lock" size={48} color="#eab308" />
-          <Text style={styles.lockedTitle}>Premium Slot</Text>
-          <Text style={styles.lockedSubtitle}>Unlock to use</Text>
-        </View>
-        <View style={styles.lockedContent}>
-          <View style={styles.headerRow}>
-            <Text style={styles.lockedSlotText}>Slot {metadata.slotId}</Text>
-          </View>
-        </View>
-      </View>
-    );
-  }
 
   if (isEmpty) {
     return (
@@ -200,33 +180,6 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     minHeight: 160,
-  },
-  lockedOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
-  },
-  lockedTitle: {
-    color: '#eab308',
-    fontWeight: '700',
-    fontSize: 14,
-    marginTop: 8,
-  },
-  lockedSubtitle: {
-    color: '#9ca3af',
-    fontSize: 13,
-    marginTop: 2,
-  },
-  lockedContent: {
-    opacity: 0.2,
-  },
-  lockedSlotText: {
-    color: '#6b7280',
-    fontWeight: '700',
-    fontSize: 14,
   },
   headerRow: {
     flexDirection: 'row',

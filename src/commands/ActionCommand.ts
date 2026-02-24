@@ -20,11 +20,24 @@ import { applyPersonalityEffects, getPersonalityAxisName, updateStress } from '.
 import { buildTraitChangeFeedback } from '../utils/traitFeedback';
 
 const TURN_LIMITED_ACTIONS = new Set(['baby_eat', 'baby_sleep', 'ask_allowance']);
-const MONEY_GAIN_MULTIPLIER_BY_WEALTH: Record<FamilyWealth, number> = {
-  POOR: 0.38,
+const BASE_MONEY_GAIN_MULTIPLIER_BY_WEALTH: Record<'MIDDLE' | 'RICH', number> = {
   MIDDLE: 1,
   RICH: 1.15,
 };
+const POOR_MONEY_GAIN_MULTIPLIER_BY_AGE: Array<{ maxAge: number; multiplier: number }> = [
+  { maxAge: 7, multiplier: 0.55 },
+  { maxAge: 12, multiplier: 0.57 },
+  { maxAge: 99, multiplier: 0.6 },
+];
+const RICH_DIMINISHING_RETURN_THRESHOLD = 500;
+const RICH_DIMINISHING_RETURN_MULTIPLIER = 0.95;
+const FORCED_RECOVERY_PRIORITY = 950;
+const POOR_RECOVERY_EVENT_IDS = [
+  'econ_poor_scholarship_offer',
+  'econ_poor_mentor_support',
+  'econ_poor_community_aid',
+] as const;
+type PoorRecoveryEventId = typeof POOR_RECOVERY_EVENT_IDS[number];
 
 type ActionResultStatus = 'success' | 'blocked' | 'open_exam';
 type ActionErrorType =
@@ -179,7 +192,7 @@ export class HubActionCommand implements ActionCommand {
       action.skillUpdates
     );
     effectiveEffect = bonusAdjusted.effect;
-    effectiveEffect = this.applyFamilyWealthEconomy(action.id, effectiveEffect, gameState);
+    effectiveEffect = this.applyFamilyWealthEconomy(action.id, effectiveEffect, gameState, currentStats.money);
     const effectiveSkillUpdates = bonusAdjusted.skillUpdates;
 
     const momentumResult = applyMomentumSignal(
@@ -312,6 +325,10 @@ export class HubActionCommand implements ActionCommand {
     const feedbackMessage = statChanges.length > 0
       ? `${feedbackBase}\n\n${statChanges.join(' | ')}`
       : feedbackBase;
+    const recoverySchedule = this.maybeSchedulePoorRecoveryEvent(action.id, gameState, finalStats.money);
+    const finalFeedbackMessage = recoverySchedule
+      ? `${feedbackMessage}\n\n${recoverySchedule.feedback}`
+      : feedbackMessage;
 
     const totalSkillGain = effectiveSkillUpdates
       ? Object.values(effectiveSkillUpdates).reduce(
@@ -341,8 +358,9 @@ export class HubActionCommand implements ActionCommand {
         personalityState: momentumResult.nextState,
         dailyDecisionCount: (gameState.dailyDecisionCount ?? 0) + 1,
         ...(action.purchaseItemId ? { inventory: nextInventory } : {}),
+        ...(recoverySchedule ? { scheduledEvents: recoverySchedule.scheduledEvents } : {}),
       },
-      feedbackMessage,
+      feedbackMessage: finalFeedbackMessage,
       traitProgressUpdates: traitResult.progressUpdates,
       newTraits: traitResolution.gainedTraits,
       removedTraits: traitResolution.removedTraits,
@@ -495,16 +513,21 @@ export class HubActionCommand implements ActionCommand {
   private applyFamilyWealthEconomy(
     actionId: string,
     effect: Partial<Stats>,
-    gameState: GameState
+    gameState: GameState,
+    currentMoney: number
   ): Partial<Stats> {
     const family = gameState.family;
     if (!family) return effect;
     const baseMoneyDelta = typeof effect.money === 'number' ? effect.money : 0;
-    const upkeepCost = family.wealth === 'POOR' && actionId !== 'ask_allowance' ? 3 : 0;
+    const upkeepCost = this.resolvePoorUpkeepCost(family.wealth, gameState.age, actionId);
     let adjustedMoney = baseMoneyDelta - upkeepCost;
 
     if (adjustedMoney > 0) {
-      const wealthMultiplier = MONEY_GAIN_MULTIPLIER_BY_WEALTH[family.wealth] ?? 1;
+      const wealthMultiplier = this.resolveMoneyGainMultiplier(
+        family.wealth,
+        gameState.age,
+        currentMoney
+      );
       const sourceMultiplier = actionId.startsWith('work_') ? 1 : 0.85;
       adjustedMoney = Math.max(1, Math.round(adjustedMoney * wealthMultiplier * sourceMultiplier));
     }
@@ -517,6 +540,95 @@ export class HubActionCommand implements ActionCommand {
       ...effect,
       money: adjustedMoney,
     };
+  }
+
+  private resolveMoneyGainMultiplier(
+    wealth: FamilyWealth,
+    age: number,
+    currentMoney: number
+  ): number {
+    if (wealth === 'POOR') {
+      return this.resolvePoorMoneyGainMultiplier(age);
+    }
+
+    if (wealth === 'RICH') {
+      if (currentMoney >= RICH_DIMINISHING_RETURN_THRESHOLD) {
+        return RICH_DIMINISHING_RETURN_MULTIPLIER;
+      }
+      return BASE_MONEY_GAIN_MULTIPLIER_BY_WEALTH.RICH;
+    }
+
+    return BASE_MONEY_GAIN_MULTIPLIER_BY_WEALTH.MIDDLE;
+  }
+
+  private resolvePoorMoneyGainMultiplier(age: number): number {
+    const ageBand = POOR_MONEY_GAIN_MULTIPLIER_BY_AGE.find(entry => age <= entry.maxAge);
+    return ageBand?.multiplier ?? 0.55;
+  }
+
+  private resolvePoorUpkeepCost(
+    wealth: FamilyWealth,
+    age: number,
+    actionId: string
+  ): number {
+    if (wealth !== 'POOR' || actionId === 'ask_allowance') return 0;
+    if (age <= 12) return 0;
+    if (age <= 15) return 1;
+    return 2;
+  }
+
+  private maybeSchedulePoorRecoveryEvent(
+    actionId: string,
+    gameState: GameState,
+    moneyAfterAction: number
+  ): { scheduledEvents: GameState['scheduledEvents']; feedback: string } | null {
+    const family = gameState.family;
+    if (!family || family.wealth !== 'POOR') return null;
+    if (gameState.age < 8) return null;
+    if (moneyAfterAction > this.resolvePoorRecoveryMoneyThreshold(gameState.age)) return null;
+
+    const scheduledEvents = gameState.scheduledEvents || [];
+    const hasPendingRecovery = scheduledEvents.some(evt =>
+      POOR_RECOVERY_EVENT_IDS.includes(evt.eventId as PoorRecoveryEventId)
+    );
+    if (hasPendingRecovery) return null;
+
+    const seenEvents = new Set(gameState.eventChoiceHistory || []);
+    const nextRecoveryEventId = POOR_RECOVERY_EVENT_IDS.find(eventId => !seenEvents.has(eventId));
+    if (!nextRecoveryEventId) return null;
+
+    const triggerChance = this.resolvePoorRecoveryTriggerChance(gameState.age, moneyAfterAction);
+    if (Math.random() > triggerChance) return null;
+
+    return {
+      scheduledEvents: [
+        ...scheduledEvents,
+        {
+          id: `scheduled_${nextRecoveryEventId}_${gameState.turn}_${Date.now().toString(36)}`,
+          eventId: nextRecoveryEventId,
+          remainingTurns: 0,
+          priority: FORCED_RECOVERY_PRIORITY,
+          sourceEventId: actionId,
+        },
+      ],
+      feedback: 'Mahallede bir destek kapisi acildi. Gunu bitirince yeni bir firsat cikabilir.',
+    };
+  }
+
+  private resolvePoorRecoveryTriggerChance(age: number, moneyAfterAction: number): number {
+    let chance = age <= 11 ? 0.24 : age <= 15 ? 0.2 : 0.16;
+    if (moneyAfterAction <= 30) {
+      chance += 0.14;
+    } else if (moneyAfterAction <= 70) {
+      chance += 0.08;
+    }
+    return Math.min(0.45, chance);
+  }
+
+  private resolvePoorRecoveryMoneyThreshold(age: number): number {
+    if (age <= 11) return 110;
+    if (age <= 15) return 150;
+    return 190;
   }
 
   private createBlockedResult(

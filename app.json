@@ -35,7 +35,8 @@
       ],
       "expo-secure-store",
       "expo-audio",
-      "@react-native-firebase/crashlytics"
+      "@react-native-firebase/crashlytics",
+      "expo-localization"
     ],
     "jsEngine": "hermes",
     "ios": {
@@ -51,56 +52,16 @@
       "googleServicesFile": "./google-services.json"
     },
     "extra": {
-      "revenueCat": {
-        "androidApiKey": "",
-        "iosApiKey": "",
-        "productIds": {
-          "premium_traits": {
-            "android": "premium_traits",
-            "ios": "premium_traits"
-          },
-          "save_slots_premium": {
-            "android": "save_slots_premium",
-            "ios": "save_slots_premium"
-          },
-          "cosmetics_pack": {
-            "android": "cosmetics_pack",
-            "ios": "cosmetics_pack"
-          },
-          "energy_refill": {
-            "android": "energy_refill",
-            "ios": "energy_refill"
-          },
-          "season_pass": {
-            "android": "season_pass",
-            "ios": "season_pass"
-          },
-          "remove_ads": {
-            "android": "remove_ads",
-            "ios": "remove_ads"
-          }
-        },
-        "entitlements": {
-          "premium": "save_slots_premium",
-          "premium_slots": "save_slots_premium",
-          "no_ads": "remove_ads",
-          "season_pass": "season_pass"
-        }
-      },
+      "_admob_note": "LAUNCH CHECKLIST: Replace test app IDs in plugins.react-native-google-mobile-ads AND fill ad unit IDs below with production values from AdMob console (admob.google.com)",
       "admob": {
-        "androidRewardedUnitId": "",
-        "iosRewardedUnitId": "",
-        "androidInterstitialUnitId": "",
-        "iosInterstitialUnitId": ""
+        "androidRewardedUnitId": "TODO_REPLACE_WITH_ADMOB_ANDROID_REWARDED_UNIT_ID",
+        "iosRewardedUnitId": "TODO_REPLACE_WITH_ADMOB_IOS_REWARDED_UNIT_ID",
+        "androidInterstitialUnitId": "TODO_REPLACE_WITH_ADMOB_ANDROID_INTERSTITIAL_UNIT_ID",
+        "iosInterstitialUnitId": "TODO_REPLACE_WITH_ADMOB_IOS_INTERSTITIAL_UNIT_ID"
       },
       "monetization": {
         "interstitialSessionLimit": 2,
-        "interstitialCooldownMs": 180000,
-        "remoteConfigUrl": "",
-        "entitlementApiBaseUrl": "",
-        "requireServerAuthority": true,
-        "entitlementRefreshOnStartup": false,
-        "entitlementRequestTimeoutMs": 2000
+        "interstitialCooldownMs": 180000
       },
       "cloudSync": {
         "enabled": false

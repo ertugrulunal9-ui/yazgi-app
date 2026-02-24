@@ -1,4 +1,4 @@
-import { GameEvent, EventContext, NPC, NPCRole } from '../types';
+import { Choice, EventContext, FutureEventConfig, GameEvent, NPC, NPCRole } from '../types';
 
 /**
  * NPC Questline Event'leri — 24 event
@@ -980,9 +980,182 @@ const betrayalEvents: GameEvent[] = [
 // EXPORT
 // =================================================================
 
-export const NPC_QUESTLINE_EVENTS: GameEvent[] = [
+interface QuestlineChoiceChainPatch {
+  eventId: string;
+  choiceIndex: number;
+  futureEvent: FutureEventConfig;
+}
+
+interface QuestlineEventGatePatch {
+  eventId: string;
+  reqEventIds?: string[];
+  blockEventIds?: string[];
+  tags?: string[];
+}
+
+const QUESTLINE_DELAYED_CHAIN_PATCHES: QuestlineChoiceChainPatch[] = [
+  {
+    eventId: 'npcq_friend_shared_crisis',
+    choiceIndex: 0,
+    futureEvent: { trigger: 'TURNS', turnsLater: 3, eventId: 'npcq_friend_loyalty_test', priority: 'HIGH' },
+  },
+  {
+    eventId: 'npcq_friend_shared_crisis',
+    choiceIndex: 1,
+    futureEvent: { trigger: 'TURNS', turnsLater: 3, eventId: 'npcq_friend_drift_apart', priority: 'HIGH' },
+  },
+  {
+    eventId: 'npcq_friend_shared_crisis',
+    choiceIndex: 2,
+    futureEvent: { trigger: 'TURNS', turnsLater: 3, eventId: 'npcq_friend_adventure', priority: 'HIGH' },
+  },
+  {
+    eventId: 'npcq_romance_confession',
+    choiceIndex: 0,
+    futureEvent: { trigger: 'TURNS', turnsLater: 3, eventId: 'npcq_romance_first_date', priority: 'HIGH' },
+  },
+  {
+    eventId: 'npcq_romance_confession',
+    choiceIndex: 2,
+    futureEvent: { trigger: 'TURNS', turnsLater: 3, eventId: 'npcq_romance_mature_breakup', priority: 'HIGH' },
+  },
+  {
+    eventId: 'npcq_rival_first_challenge',
+    choiceIndex: 0,
+    futureEvent: { trigger: 'TURNS', turnsLater: 3, eventId: 'npcq_rival_showdown', priority: 'HIGH' },
+  },
+  {
+    eventId: 'npcq_betray_first_doubt',
+    choiceIndex: 1,
+    futureEvent: { trigger: 'TURNS', turnsLater: 3, eventId: 'npcq_betray_gossip_heard', priority: 'HIGH' },
+  },
+];
+
+const QUESTLINE_EVENT_GATE_PATCHES: QuestlineEventGatePatch[] = [
+  {
+    eventId: 'npcq_friend_adventure',
+    reqEventIds: ['npcq_friend_shared_crisis'],
+    tags: ['scheduled_only'],
+  },
+  {
+    eventId: 'npcq_friend_loyalty_test',
+    reqEventIds: ['npcq_friend_shared_crisis'],
+    blockEventIds: ['npcq_friend_drift_apart'],
+    tags: ['scheduled_only'],
+  },
+  {
+    eventId: 'npcq_friend_drift_apart',
+    reqEventIds: ['npcq_friend_shared_crisis'],
+    blockEventIds: ['npcq_friend_loyalty_test'],
+    tags: ['scheduled_only'],
+  },
+  {
+    eventId: 'npcq_romance_first_date',
+    reqEventIds: ['npcq_romance_confession'],
+    blockEventIds: ['npcq_romance_mature_breakup'],
+    tags: ['scheduled_only'],
+  },
+  {
+    eventId: 'npcq_romance_mature_breakup',
+    reqEventIds: ['npcq_romance_confession'],
+    blockEventIds: ['npcq_romance_first_date'],
+    tags: ['scheduled_only'],
+  },
+  {
+    eventId: 'npcq_rival_showdown',
+    reqEventIds: ['npcq_rival_first_challenge'],
+    tags: ['scheduled_only'],
+  },
+  {
+    eventId: 'npcq_betray_gossip_heard',
+    reqEventIds: ['npcq_betray_first_doubt'],
+    tags: ['scheduled_only'],
+  },
+];
+
+const mergeUniqueStrings = (...groups: (string[] | undefined)[]): string[] | undefined => {
+  const merged = groups.flatMap(group => group ?? []);
+  if (merged.length === 0) return undefined;
+  return Array.from(new Set(merged));
+};
+
+const upsertFutureEvent = (
+  futureEvents: FutureEventConfig[] | undefined,
+  patch: FutureEventConfig
+): FutureEventConfig[] => {
+  const next = [...(futureEvents ?? [])];
+  const index = next.findIndex(event => event.eventId === patch.eventId && event.trigger === patch.trigger);
+  if (index >= 0) {
+    next[index] = { ...next[index], ...patch };
+  } else {
+    next.push(patch);
+  }
+  return next;
+};
+
+const patchChoiceFutureEvent = (
+  choice: Choice | ((context: EventContext) => Choice),
+  futureEvent: FutureEventConfig
+): Choice | ((context: EventContext) => Choice) => {
+  if (typeof choice === 'function') return choice;
+  return {
+    ...choice,
+    futureEvents: upsertFutureEvent(choice.futureEvents, futureEvent),
+  };
+};
+
+const applyQuestlineBranching = (events: GameEvent[]): GameEvent[] => {
+  const choicePatches = new Map<string, QuestlineChoiceChainPatch[]>();
+  QUESTLINE_DELAYED_CHAIN_PATCHES.forEach(patch => {
+    const current = choicePatches.get(patch.eventId) ?? [];
+    choicePatches.set(patch.eventId, [...current, patch]);
+  });
+
+  const gatePatches = new Map<string, QuestlineEventGatePatch>();
+  QUESTLINE_EVENT_GATE_PATCHES.forEach(patch => {
+    gatePatches.set(patch.eventId, patch);
+  });
+
+  return events.map(event => {
+    const gatePatch = gatePatches.get(event.id);
+    let nextEvent: GameEvent = event;
+
+    if (gatePatch) {
+      const reqEventIds = mergeUniqueStrings(event.reqEventIds, gatePatch.reqEventIds);
+      const blockEventIds = mergeUniqueStrings(event.blockEventIds, gatePatch.blockEventIds);
+      const tags = mergeUniqueStrings(event.tags, gatePatch.tags);
+      nextEvent = {
+        ...event,
+        ...(reqEventIds ? { reqEventIds } : {}),
+        ...(blockEventIds ? { blockEventIds } : {}),
+        ...(tags ? { tags } : {}),
+      };
+    }
+
+    const eventChoicePatches = choicePatches.get(event.id);
+    if (!eventChoicePatches || eventChoicePatches.length === 0) return nextEvent;
+
+    const choices = nextEvent.choices.map((choice, choiceIndex) => {
+      const matchingPatches = eventChoicePatches.filter(patch => patch.choiceIndex === choiceIndex);
+      if (matchingPatches.length === 0) return choice;
+      return matchingPatches.reduce(
+        (patchedChoice, patch) => patchChoiceFutureEvent(patchedChoice, patch.futureEvent),
+        choice
+      );
+    });
+
+    return {
+      ...nextEvent,
+      choices,
+    };
+  });
+};
+
+const NPC_QUESTLINE_BASE_EVENTS: GameEvent[] = [
   ...friendshipEvents,
   ...romanceEvents,
   ...rivalryEvents,
   ...betrayalEvents,
 ];
+
+export const NPC_QUESTLINE_EVENTS: GameEvent[] = applyQuestlineBranching(NPC_QUESTLINE_BASE_EVENTS);

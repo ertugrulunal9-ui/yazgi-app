@@ -42,6 +42,8 @@ describe('goalChainEvents', () => {
 
   it('renders goal-specific stage text after goal selection', () => {
     const stage1 = GOAL_CHAIN_EVENTS[0];
+    const stage2 = GOAL_CHAIN_EVENTS[1];
+    const stage3 = GOAL_CHAIN_EVENTS[2];
     const athleticText = typeof stage1.text === 'function'
       ? stage1.text(buildContext('ATHLETIC'))
       : stage1.text;
@@ -51,6 +53,8 @@ describe('goalChainEvents', () => {
 
     expect(athleticText).toContain('Antrenor');
     expect(academicText).toContain('Ogretmenin');
+    expect(stage2.reqEventIds).toEqual(['goal_chain_stage1_discovery']);
+    expect(stage3.reqEventIds).toEqual(['goal_chain_stage2_first_competition']);
     expect(GOAL_CHAIN_ARC.events).toHaveLength(3);
   });
 });

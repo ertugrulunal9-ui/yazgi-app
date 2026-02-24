@@ -196,6 +196,39 @@ describe('TurnMediator', () => {
     expect(personalityState?.HELPFUL.multiplier).toBe(1);
   });
 
+  it('shows momentum flavor feedback when streak reaches 10+', () => {
+    let gameState = {
+      ...createBaseGameState(),
+      fate: undefined,
+    };
+    let stats = createBaseStats();
+    const choice: Choice = {
+      id: 'ch_helpful_chain',
+      text: 'Tutarlilikla yardim et',
+      effect: {},
+      feedback: 'Yine yardim ettin.',
+      personalityEffects: [{ axis: 'empathy', change: 2 }],
+    };
+
+    let latestResult: ReturnType<TurnMediator['processEventChoice']> | undefined;
+    for (let i = 0; i < 10; i++) {
+      latestResult = mediator.processEventChoice({
+        choice,
+        gameState,
+        stats,
+        choiceIndex: 0,
+      });
+      gameState = {
+        ...gameState,
+        ...latestResult.gameStateUpdates,
+      } as GameState;
+      stats = latestResult.newStats;
+    }
+
+    expect(latestResult?.momentumFeedback?.streak).toBe(10);
+    expect(latestResult?.momentumFeedback?.feedbackText).toContain('ruhun gucleniyor');
+  });
+
   it('writes selectedGoal to game state updates when choice carries goal metadata', () => {
     const gameState = createBaseGameState();
     const stats = createBaseStats();

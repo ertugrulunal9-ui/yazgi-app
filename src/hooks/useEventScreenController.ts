@@ -4,10 +4,12 @@ import { eventStart, buttonPress, importantDecision, badOutcomeHaptic, milestone
 import { Choice, EventContext } from '../types';
 import { useGame } from '../context/GameContext';
 import { useEvents } from './useEvents';
-import { useGameActions, useFloatingTexts, usePlayerStats } from './useGameSelectors';
+import { useFloatingTexts, usePlayerStats } from './useGameSelectors';
 import { getEventChoiceSet } from '../utils/gameStateAdapter';
 import { getChoicesToRender } from '../utils/eventChoiceFilter';
 import { devLog } from '../utils/devLogger';
+import { getRemainingRewardedAds, showContextualRewardedAd } from '../services/monetization';
+import { logRewardedAdRequested, logRewardedAdResult } from '../utils/analyticsEvents';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const MIN_RESULT_DISPLAY_TIME = 1000;
@@ -15,15 +17,24 @@ const MIN_RESULT_DISPLAY_TIME = 1000;
 export const useEventScreenController = () => {
   const { gameState } = useGame();
   const { stats } = usePlayerStats();
-  const { updateGameState } = useGameActions();
   const { showFloatingText } = useFloatingTexts();
-  const { handleEventChoice, rerollChoice, resolveEventText, resolveChoice } = useEvents();
+  const {
+    handleEventChoice,
+    rerollChoice,
+    continueAfterResult,
+    resolveEventText,
+    resolveChoice,
+    getCrisisRecoveryPreview,
+    applyCrisisRecovery,
+  } = useEvents();
 
   const continueHandledRef = useRef(false);
   const resultPhaseEnteredAtRef = useRef(0);
   const lastSelectedChoiceRef = useRef<{ choice: Choice; index: number } | null>(null);
   const breakdownShakeX = useRef(new Animated.Value(0)).current;
   const [buttonEnabled, setButtonEnabled] = useState(false);
+  const [crisisRecoveryLoading, setCrisisRecoveryLoading] = useState(false);
+  const [crisisRecoveryClaimed, setCrisisRecoveryClaimed] = useState(false);
 
   devLog.log('[EventScreen] Render - phase:', gameState.phase, 'hasEvent:', !!gameState.currentEvent, 'lastResult:', !!gameState.lastResult);
 
@@ -33,6 +44,7 @@ export const useEventScreenController = () => {
     continueHandledRef.current = false;
     resultPhaseEnteredAtRef.current = Date.now();
     setButtonEnabled(false);
+    setCrisisRecoveryClaimed(false);
 
     const timer = setTimeout(() => {
       setButtonEnabled(true);
@@ -41,6 +53,15 @@ export const useEventScreenController = () => {
 
     return () => clearTimeout(timer);
   }, [gameState.phase]);
+
+  useEffect(() => {
+    if (gameState.phase !== 'RESULT') {
+      setCrisisRecoveryLoading(false);
+      setCrisisRecoveryClaimed(false);
+      return;
+    }
+    setCrisisRecoveryLoading(false);
+  }, [gameState.currentEvent?.id, gameState.phase]);
 
   useEffect(() => {
     if (gameState.phase !== 'RESULT') return;
@@ -105,12 +126,75 @@ export const useEventScreenController = () => {
 
     continueHandledRef.current = true;
     buttonPress();
-    updateGameState({
-      phase: 'HUB',
-      lastResult: null,
-      currentEvent: null,
+    continueAfterResult();
+  }, [continueAfterResult]);
+
+  const crisisRecoveryPreview = useMemo(
+    () => getCrisisRecoveryPreview(),
+    [getCrisisRecoveryPreview]
+  );
+
+  const hasCrisisRecoveryOption = useMemo(() => (
+    !crisisRecoveryClaimed && Object.keys(crisisRecoveryPreview).length > 0
+  ), [crisisRecoveryClaimed, crisisRecoveryPreview]);
+
+  const handleCrisisRecoveryAd = useCallback(async () => {
+    if (crisisRecoveryLoading || !hasCrisisRecoveryOption) return;
+
+    setCrisisRecoveryLoading(true);
+    const remainingBefore = getRemainingRewardedAds();
+    void logRewardedAdRequested({
+      placement: 'crisis_recovery',
+      rewardType: 'utility',
+      remainingBefore,
     });
-  }, [updateGameState]);
+
+    try {
+      const adResult = await showContextualRewardedAd('crisis_recovery');
+      const remainingAfter = getRemainingRewardedAds();
+
+      if (!adResult.success) {
+        void logRewardedAdResult({
+          placement: 'crisis_recovery',
+          rewardType: 'utility',
+          success: false,
+          remainingAfter,
+          errorMessage: adResult.error,
+        });
+        return;
+      }
+
+      const recovered = applyCrisisRecovery();
+      const recoveredTotal = Object.values(recovered).reduce((sum, value) => {
+        if (typeof value !== 'number') return sum;
+        return sum + Math.max(0, value);
+      }, 0);
+
+      if (recoveredTotal > 0) {
+        showFloatingText(
+          `+${recoveredTotal} toparlanma`,
+          SCREEN_WIDTH * 0.24,
+          118,
+          '#86efac',
+          {
+            animationType: 'curve',
+            duration: 1800,
+          }
+        );
+      }
+
+      setCrisisRecoveryClaimed(true);
+      void logRewardedAdResult({
+        placement: 'crisis_recovery',
+        rewardType: 'utility',
+        success: true,
+        amount: recoveredTotal,
+        remainingAfter,
+      });
+    } finally {
+      setCrisisRecoveryLoading(false);
+    }
+  }, [applyCrisisRecovery, crisisRecoveryLoading, hasCrisisRecoveryOption, showFloatingText]);
 
   const isBreakdownEvent = gameState.phase === 'EVENT' && gameState.currentEvent?.personalityCategory === 'BREAKDOWN';
   const isDramaticEvent = gameState.phase === 'EVENT' && gameState.currentEvent != null && (
@@ -181,14 +265,16 @@ export const useEventScreenController = () => {
     resolveChoice,
     handleChoice,
     handleContinue,
+    handleCrisisRecoveryAd,
     handleReroll,
     selectedChoice: lastSelectedChoiceRef.current?.choice ?? null,
     canReroll: !!lastSelectedChoiceRef.current,
     buttonEnabled,
+    hasCrisisRecoveryOption,
+    crisisRecoveryLoading,
     breakdownShakeX,
     isBreakdownEvent,
     isDramaticEvent,
     eventText,
   };
 };
-

@@ -56,15 +56,27 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
 
   // Swipe kilidi: event gösterildiğinden bu yana MIN_READ_TIME geçmeden swipe kapalı
   const [swipeLocked, setSwipeLocked] = useState(true);
+  const [lockRemainingMs, setLockRemainingMs] = useState(0);
   useEffect(() => {
     setSwipeLocked(true);
     const rarityKey: EventRarity | 'BREAKDOWN' = isBreakdownEvent
       ? 'BREAKDOWN'
       : (eventRarity ?? 'COMMON');
     const delay = MIN_READ_TIME_MS[rarityKey];
-    const timer = setTimeout(() => setSwipeLocked(false), delay);
-    return () => clearTimeout(timer);
+    setLockRemainingMs(delay);
+    const startTime = Date.now();
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, delay - elapsed);
+      setLockRemainingMs(remaining);
+      if (remaining <= 0) {
+        setSwipeLocked(false);
+        clearInterval(interval);
+      }
+    }, 100);
+    return () => clearInterval(interval);
   }, [eventId, isBreakdownEvent, eventRarity]);
+  const lockCountdownText = swipeLocked ? `${Math.ceil(lockRemainingMs / 1000)}s` : '';
 
   const resolvedChoices = useMemo(
     () => choices.map(c => resolveChoice(c)),
@@ -187,11 +199,11 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
             backgroundColor: swipeLocked ? theme.border : theme.accentEvent,
           }}
           accessibilityRole="button"
-          accessibilityLabel={swipeLocked ? 'Karar vermek için bekle...' : `Sec: ${resolvedChoices[activeIndex]?.text}`}
+          accessibilityLabel={swipeLocked ? `Karar vermek icin ${lockCountdownText} bekle` : `Sec: ${resolvedChoices[activeIndex]?.text}`}
           accessibilityHint="Bu secimi onayla"
         >
           <Text style={styles.selectButtonText}>
-            {swipeLocked ? '...' : 'Seç'}
+            {swipeLocked ? lockCountdownText : 'Seç'}
           </Text>
         </AnimatedButton>
       </View>

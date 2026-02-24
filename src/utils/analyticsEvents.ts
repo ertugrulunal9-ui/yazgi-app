@@ -338,6 +338,12 @@ export type MonetizationPlacement =
   | 'hub'
   | 'save_slots'
   | 'game_over_restart'
+  | 'exam_prep'
+  | 'energy_depleted'
+  | 'crisis_recovery'
+  | 'ending_alternative'
+  | 'day_summary'
+  | 'age_transition'
   | 'settings'
   | 'unknown';
 
@@ -461,7 +467,7 @@ export const logPurchaseResult = async (meta: {
 
 export const logRewardedAdRequested = async (meta: {
   placement: MonetizationPlacement;
-  rewardType: 'energy' | 'intelligence' | 'money';
+  rewardType: 'energy' | 'intelligence' | 'money' | 'utility';
   remainingBefore?: number;
 }) => {
   await logCustomEvent(MONETIZATION_DASHBOARD_SCHEMA.rewarded, {
@@ -474,7 +480,7 @@ export const logRewardedAdRequested = async (meta: {
 
 export const logRewardedAdResult = async (meta: {
   placement: MonetizationPlacement;
-  rewardType: 'energy' | 'intelligence' | 'money';
+  rewardType: 'energy' | 'intelligence' | 'money' | 'utility';
   success: boolean;
   amount?: number;
   remainingAfter?: number;

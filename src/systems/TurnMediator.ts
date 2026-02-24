@@ -12,6 +12,7 @@ import {
 import {
   Choice,
   EventContext,
+  FateOutcome,
   FateRollResult,
   FateState,
   GameState,
@@ -38,6 +39,7 @@ export interface ChoiceContext {
   gameState: GameState;
   stats: Stats;
   forceGoodFate?: boolean;
+  previousFateOutcome?: FateOutcome;
 }
 
 export interface TurnResult {
@@ -73,6 +75,30 @@ export interface MomentumFeedback {
 }
 
 const MOMENTUM_TENDENCIES: PersonalityTendency[] = ['HELPFUL', 'PRAGMATIC', 'AGGRESSIVE'];
+const MOMENTUM_FLAVOR_STREAK_THRESHOLD = 10;
+const MOMENTUM_FLAVOR_REPEAT_INTERVAL = 5;
+
+const MOMENTUM_FLAVOR_TEXTS: Record<PersonalityTendency, string> = {
+  HELPFUL: 'Yardimsever ruhun gucleniyor!',
+  PRAGMATIC: 'Pragmatik ruhun gucleniyor!',
+  AGGRESSIVE: 'Agresif ruhun gucleniyor!',
+};
+
+const FATE_OUTCOME_LABELS: Record<FateOutcome, string> = {
+  CURSED: 'Lanetli',
+  UNLUCKY: 'Sanssiz',
+  NEUTRAL: 'Notr',
+  FORTUNATE: 'Sansli',
+  BLESSED: 'Kutsanmis',
+};
+
+const FATE_OUTCOME_STRENGTH: Record<FateOutcome, number> = {
+  CURSED: 0,
+  UNLUCKY: 1,
+  NEUTRAL: 2,
+  FORTUNATE: 3,
+  BLESSED: 4,
+};
 
 const isTendencySignal = (
   signal: PersonalityMomentumSignal | null
@@ -81,6 +107,39 @@ const isTendencySignal = (
 );
 
 const roundTo2 = (value: number): number => Math.round(value * 100) / 100;
+
+const shouldShowMomentumFlavorFeedback = (
+  previousStreak: number,
+  nextStreak: number
+): boolean => {
+  if (nextStreak < MOMENTUM_FLAVOR_STREAK_THRESHOLD) return false;
+  if (previousStreak < MOMENTUM_FLAVOR_STREAK_THRESHOLD) return true;
+  return nextStreak % MOMENTUM_FLAVOR_REPEAT_INTERVAL === 0;
+};
+
+const buildForcedFateFeedback = (
+  previousOutcome: FateOutcome | undefined,
+  nextOutcome: FateOutcome
+): string => {
+  const nextLabel = FATE_OUTCOME_LABELS[nextOutcome];
+  if (!previousOutcome) {
+    return `Token kullandin: yeni kaderin ${nextLabel}.`;
+  }
+
+  const previousLabel = FATE_OUTCOME_LABELS[previousOutcome];
+  if (previousOutcome === nextOutcome) {
+    return `Token kullandin: kader sonucun ${nextLabel} olarak sabitlendi.`;
+  }
+
+  const previousStrength = FATE_OUTCOME_STRENGTH[previousOutcome];
+  const nextStrength = FATE_OUTCOME_STRENGTH[nextOutcome];
+
+  if (nextStrength > previousStrength) {
+    return `Token sayesinde sansin dondu: ${previousLabel} -> ${nextLabel}.`;
+  }
+
+  return `Token etkisi: ${previousLabel} -> ${nextLabel}.`;
+};
 
 const buildMomentumFeedback = (
   previousState: Partial<PersonalityState> | undefined,
@@ -95,6 +154,12 @@ const buildMomentumFeedback = (
     const nextEntry = next[signal];
     const multiplierDelta = roundTo2(nextEntry.multiplier - prevEntry.multiplier);
     const bonusPercent = Math.max(0, Math.round((nextEntry.multiplier - 1) * 100));
+    const shouldShowFlavor = shouldShowMomentumFlavorFeedback(prevEntry.streak, nextEntry.streak);
+    const feedbackText = shouldShowFlavor
+      ? `${MOMENTUM_FLAVOR_TEXTS[signal]} +%${bonusPercent} momentum bonusu!`
+      : (bonusPercent > 0
+        ? `+%${bonusPercent} Momentum Bonusu!`
+        : `${MOMENTUM_TENDENCY_LABELS[signal]} ritmi gucleniyor!`);
 
     return {
       tendency: signal,
@@ -106,9 +171,7 @@ const buildMomentumFeedback = (
       unlockedNow: prevEntry.multiplier < HIGH_MOMENTUM_THRESHOLD
         && nextEntry.multiplier >= HIGH_MOMENTUM_THRESHOLD,
       bonusPercent,
-      feedbackText: bonusPercent > 0
-        ? `+%${bonusPercent} Momentum Bonusu!`
-        : `${MOMENTUM_TENDENCY_LABELS[signal]} ritmi gucleniyor!`,
+      feedbackText,
     };
   }
 
@@ -135,7 +198,7 @@ const buildMomentumFeedback = (
 
 export class TurnMediator {
   processEventChoice(context: ChoiceContext): TurnResult {
-    const { choice, choiceIndex, gameState, stats, forceGoodFate } = context;
+    const { choice, choiceIndex, gameState, stats, forceGoodFate, previousFateOutcome } = context;
 
     const eventId = gameState.currentEvent?.id || '';
     const choiceKey = choice.id ?? (typeof choiceIndex === 'number' ? String(choiceIndex) : null);
@@ -159,6 +222,9 @@ export class TurnMediator {
       fateRollResult = fateRoll.result;
       updatedFate = fateRoll.nextState;
     }
+    const forcedFateFeedback = forceGoodFate && fateRollResult
+      ? buildForcedFateFeedback(previousFateOutcome, fateRollResult.outcome)
+      : undefined;
 
     // === KOŞULLU SONUÇ ÇÖZÜMLEME ===
     const eventContext: EventContext = {
@@ -356,6 +422,10 @@ export class TurnMediator {
     const nextDailyDecisionCount = energyDepleted && !shouldForceRecovery
       ? 0
       : nextDecisionCount;
+    const resultNarrativeFeedback = [
+      ...statNarrativeFeedback,
+      ...(forcedFateFeedback ? [forcedFateFeedback] : []),
+    ];
 
     return {
       eventId,
@@ -378,7 +448,7 @@ export class TurnMediator {
           traitProgressUpdates: traitResult.progressUpdates,
           traitChanges,
           fateRoll: fateRollResult,
-          ...(statNarrativeFeedback.length > 0 ? { statNarrativeFeedback } : {}),
+          ...(resultNarrativeFeedback.length > 0 ? { statNarrativeFeedback: resultNarrativeFeedback } : {}),
         },
         dailyDecisionCount: nextDailyDecisionCount,
         historyLog: [...gameState.historyLog, historyEntry],

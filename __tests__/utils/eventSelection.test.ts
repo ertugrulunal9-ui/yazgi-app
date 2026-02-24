@@ -105,6 +105,42 @@ describe('eventSelection', () => {
     expect(isEventEligible(event, baseContext, [], ['arc_1', 'bad_ending'])).toBe(false);
   });
 
+  it('keeps scheduled_only events hidden unless a due scheduled entry exists', () => {
+    const scheduledOnlyEvent: GameEvent = {
+      id: 'scheduled_only_result',
+      text: 'Scheduled result',
+      minAge: 10,
+      maxAge: 18,
+      tags: ['scheduled_only'],
+      choices: [{ text: 'Continue', effect: {}, feedback: 'ok' }],
+      rarity: 'UNCOMMON',
+      difficulty: 2,
+      isRepeatable: false,
+    };
+
+    const withPendingSchedule: EventContext = {
+      ...baseContext,
+      gameState: {
+        scheduledEvents: [
+          { id: 'sched_pending', eventId: 'scheduled_only_result', remainingTurns: 2, priority: 'HIGH' },
+        ],
+      } as any,
+    };
+
+    const withDueSchedule: EventContext = {
+      ...baseContext,
+      gameState: {
+        scheduledEvents: [
+          { id: 'sched_due', eventId: 'scheduled_only_result', remainingTurns: 0, priority: 'HIGH' },
+        ],
+      } as any,
+    };
+
+    expect(isEventEligible(scheduledOnlyEvent, baseContext, [], [])).toBe(false);
+    expect(isEventEligible(scheduledOnlyEvent, withPendingSchedule, [], [])).toBe(false);
+    expect(isEventEligible(scheduledOnlyEvent, withDueSchedule, [], [])).toBe(true);
+  });
+
   it('checks memory prerequisites with minimum weight', () => {
     const memoryEvent: GameEvent = {
       id: 'memory_gate',

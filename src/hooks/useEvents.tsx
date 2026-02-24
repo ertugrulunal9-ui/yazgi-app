@@ -82,8 +82,42 @@ const hasCriticalBurdenCrossed = (currentRisk: number, previousRisk: number): bo
   currentRisk > 85 && previousRisk <= 85
 );
 
+const FORCED_RECOVERY_EVENT_ID = 'forced_recovery_event';
+const FORCED_RECOVERY_ENERGY_GAIN = 20;
+const CRISIS_RECOVERY_RATIO = 0.5;
+const RECOVERABLE_STAT_KEYS: Array<keyof Stats> = [
+  'health',
+  'energy',
+  'intelligence',
+  'charisma',
+  'discipline',
+  'money',
+  'familyRelation',
+];
+
+const buildForcedRecoveryEvent = (): GameEvent => ({
+  id: FORCED_RECOVERY_EVENT_ID,
+  text: 'Nefesin daraldi. Kisa bir mola ile toparlanabilirsin.',
+  minAge: 0,
+  maxAge: 99,
+  rarity: 'COMMON',
+  isRepeatable: true,
+  personalityCategory: 'GROWTH',
+  difficulty: 1,
+  tags: ['recovery', 'pacing', 'forced'],
+  choices: [
+    {
+      id: 'forced_recovery_breath',
+      text: 'Kisa bir mola ver',
+      effect: { energy: FORCED_RECOVERY_ENERGY_GAIN, health: 2 },
+      feedback: 'Biraz dinlendin. Nefesin ve enerjin toparlaniyor.',
+      choiceType: 'PASSIVE',
+    },
+  ],
+});
+
 export const useEvents = () => {
-  const { gameState, stats, advanceTurnInContext, updateGameState, setStats } = useGame();
+  const { gameState, stats, advanceTurnInContext, updateGameState, updateStats, setStats } = useGame();
   const turnMediatorRef = useRef(new TurnMediator());
   const eligibilityCache = useRef<{ age: number; eligible: GameEvent[] }>({ age: -1, eligible: [] });
 
@@ -396,7 +430,17 @@ export const useEvents = () => {
       setStats(turnResult.newStats);
     }
 
-    updateGameState(turnResult.gameStateUpdates);
+    const nextGameStateUpdates = turnResult.shouldForceRecovery && turnResult.gameStateUpdates.lastResult
+      ? {
+        ...turnResult.gameStateUpdates,
+        lastResult: {
+          ...turnResult.gameStateUpdates.lastResult,
+          shouldForceRecovery: true,
+        },
+      }
+      : turnResult.gameStateUpdates;
+
+    updateGameState(nextGameStateUpdates);
 
     if (turnResult.eventId) {
       const eventName = typeof gameState.currentEvent?.text === 'string'
@@ -433,6 +477,71 @@ export const useEvents = () => {
     }
     return turnResult;
   }, [gameState, stats, updateGameState, resolveChoice, setStats]);
+
+  const continueAfterResult = useCallback(() => {
+    const shouldInjectRecoveryEvent = gameState.lastResult?.shouldForceRecovery === true;
+    if (shouldInjectRecoveryEvent) {
+      const recoveryEvent = buildForcedRecoveryEvent();
+      const windowSize = getRecencyWindowSize(gameState.age);
+      const updatedFrequency = {
+        ...gameState.eventFrequency,
+        [recoveryEvent.id]: {
+          count: ((gameState.eventFrequency ?? {})[recoveryEvent.id]?.count ?? 0) + 1,
+          lastSeenTurn: gameState.turn,
+        },
+      };
+
+      updateGameState({
+        phase: 'EVENT',
+        currentEvent: recoveryEvent,
+        lastResult: null,
+        recentEvents: [...gameState.recentEvents, recoveryEvent.id].slice(-windowSize),
+        eventFrequency: updatedFrequency,
+      });
+      return;
+    }
+
+    updateGameState({
+      phase: 'HUB',
+      lastResult: null,
+      currentEvent: null,
+    });
+  }, [gameState, updateGameState]);
+
+  const getCrisisRecoveryPreview = useCallback((): Partial<Stats> => {
+    if (gameState.phase !== 'RESULT') return {};
+    if (gameState.currentEvent?.personalityCategory !== 'BREAKDOWN') return {};
+    if (!gameState.lastResult?.changes) return {};
+
+    const preview: Partial<Stats> = {};
+    RECOVERABLE_STAT_KEYS.forEach((statKey) => {
+      const changeValue = gameState.lastResult?.changes?.[statKey];
+      if (typeof changeValue !== 'number' || changeValue >= 0) return;
+      const recoverAmount = Math.round(Math.abs(changeValue) * CRISIS_RECOVERY_RATIO);
+      if (recoverAmount > 0) {
+        preview[statKey] = recoverAmount;
+      }
+    });
+    return preview;
+  }, [gameState.currentEvent?.personalityCategory, gameState.lastResult?.changes, gameState.phase]);
+
+  const applyCrisisRecovery = useCallback((): Partial<Stats> => {
+    const preview = getCrisisRecoveryPreview();
+    if (Object.keys(preview).length === 0) return {};
+
+    updateStats(preview);
+
+    if (gameState.lastResult) {
+      updateGameState({
+        lastResult: {
+          ...gameState.lastResult,
+          feedback: `${gameState.lastResult.feedback} Krizin etkilerinin bir kismini toparladin.`,
+        },
+      });
+    }
+
+    return preview;
+  }, [gameState.lastResult, getCrisisRecoveryPreview, updateGameState, updateStats]);
 
   const advanceTurn = useCallback(() => {
     const newTurn = gameState.turn + 1;
@@ -1088,12 +1197,23 @@ export const useEvents = () => {
       gameState: { ...gameState, fate: fateAfterSpend },
       stats,
       forceGoodFate: true,
+      previousFateOutcome: gameState.lastResult?.fateRoll?.outcome,
     });
 
     if (turnResult.newStats !== stats) {
       setStats(turnResult.newStats);
     }
-    updateGameState(turnResult.gameStateUpdates);
+    const nextGameStateUpdates = turnResult.shouldForceRecovery && turnResult.gameStateUpdates.lastResult
+      ? {
+        ...turnResult.gameStateUpdates,
+        lastResult: {
+          ...turnResult.gameStateUpdates.lastResult,
+          shouldForceRecovery: true,
+        },
+      }
+      : turnResult.gameStateUpdates;
+
+    updateGameState(nextGameStateUpdates);
   }, [gameState, stats, setStats, updateGameState]);
 
   // S\u0131nav tamamland\u0131\u011F\u0131nda \u00E7a\u011Fr\u0131l\u0131r
@@ -1132,6 +1252,9 @@ export const useEvents = () => {
     currentEvent: gameState.currentEvent,
     selectNewEvent,
     handleEventChoice,
+    continueAfterResult,
+    getCrisisRecoveryPreview,
+    applyCrisisRecovery,
     rerollChoice,
     resolveChoice,
     resolveEventText,

@@ -19,6 +19,7 @@ interface StatusHeaderProps {
   selectedGoal?: LifeGoal | null;
   dreamProgress?: number;
   riskPercent?: number;
+  riskReasons?: string[];
   theme: any;
 }
 
@@ -37,6 +38,7 @@ interface TrackerProps {
   selectedGoal?: LifeGoal | null;
   dreamProgress: number;
   riskPercent: number;
+  riskReasons?: string[];
   theme: any;
   isLightTheme: boolean;
 }
@@ -151,6 +153,7 @@ const GoalAndRiskTracker: React.FC<TrackerProps> = ({
   selectedGoal,
   dreamProgress,
   riskPercent,
+  riskReasons,
   theme,
   isLightTheme,
 }) => {
@@ -237,6 +240,15 @@ const GoalAndRiskTracker: React.FC<TrackerProps> = ({
         <Text style={[styles.goalHint, { color: theme.textSecondary }]}>
           {getRiskHint(safeRisk)}
         </Text>
+        {riskReasons && riskReasons.length > 0 && safeRisk > 0 ? (
+          <View style={styles.riskReasonsContainer}>
+            {riskReasons.map((reason, idx) => (
+              <Text key={idx} style={[styles.riskReasonText, { color: safeRisk >= 50 ? '#fca5a5' : theme.textSecondary }]}>
+                {'\u2022'} {reason}
+              </Text>
+            ))}
+          </View>
+        ) : null}
         <View style={[styles.trackerBar, { backgroundColor: theme.border }]}>
           <View
             style={[
@@ -307,6 +319,7 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
   selectedGoal,
   dreamProgress = 0,
   riskPercent = 0,
+  riskReasons,
   theme,
 }) => {
   const safeMaxEnergy = Math.max(1, maxEnergy);
@@ -468,7 +481,7 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
     >
       <View style={styles.heroSection}>
         <View style={[styles.avatarContainer, { backgroundColor: accentBg, borderColor: theme.border }]}>
-          <MaterialCommunityIcons name={avatarIcon} size={34} color={theme.textPrimary} />
+          <MaterialCommunityIcons name={avatarIcon} size={26} color={theme.textPrimary} />
         </View>
 
         <View style={styles.infoContainer}>
@@ -582,19 +595,13 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
           />
           <MaterialCommunityIcons name="bell-outline" size={16} color={theme.textSecondary} />
           <Text style={[styles.notificationToggleText, { color: theme.textPrimary }]}>
-            Bildirimler
+            {safeRiskPercent >= 50 ? `Bildirimler · %${Math.round(safeRiskPercent)} risk` : 'Bildirimler'}
           </Text>
           <View style={[styles.notificationCountBadge, { backgroundColor: badgeIsUrgent ? '#ef4444' : theme.accentEvent }]}>
             <Text style={styles.notificationCountText}>{notificationCount}</Text>
           </View>
         </TouchableOpacity>
 
-        {safeRiskPercent >= 50 ? (
-          <View style={styles.riskBadge}>
-            <MaterialCommunityIcons name="alert" size={14} color="#ef4444" />
-            <Text style={styles.riskBadgeText}>%{Math.round(safeRiskPercent)} risk</Text>
-          </View>
-        ) : null}
       </View>
 
       {!notificationsOpen && isThoughtHighlight &&
@@ -624,6 +631,7 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
             selectedGoal={selectedGoal}
             dreamProgress={dreamProgress}
             riskPercent={riskPercent}
+            riskReasons={riskReasons}
             theme={theme}
             isLightTheme={isLightTheme}
           />
@@ -708,21 +716,21 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 14,
-    paddingTop: 8,
-    paddingBottom: 10,
+    paddingHorizontal: 12,
+    paddingTop: 6,
+    paddingBottom: 8,
     borderBottomWidth: 1,
   },
   heroSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 8,
+    gap: 10,
+    marginBottom: 6,
   },
   avatarContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
@@ -742,15 +750,15 @@ const styles = StyleSheet.create({
   statusRow: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    gap: 8,
-    marginBottom: 10,
+    gap: 6,
+    marginBottom: 8,
   },
   stressContainer: {
     borderWidth: 1,
-    borderRadius: 11,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    marginBottom: 10,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    marginBottom: 8,
   },
   stressHeader: {
     flexDirection: 'row',
@@ -785,9 +793,9 @@ const styles = StyleSheet.create({
   statusItem: {
     flex: 1,
     borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 7,
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 5,
     justifyContent: 'space-between',
   },
   statLabelRow: {
@@ -806,14 +814,14 @@ const styles = StyleSheet.create({
   },
   miniBar: {
     width: '100%',
-    height: 6,
-    borderRadius: 3,
+    height: 4,
+    borderRadius: 2,
     overflow: 'hidden',
-    marginTop: 6,
+    marginTop: 4,
   },
   miniFill: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: 2,
   },
   notificationToggleRow: {
     flexDirection: 'row',
@@ -918,6 +926,14 @@ const styles = StyleSheet.create({
   trackerFill: {
     height: '100%',
     borderRadius: 999,
+  },
+  riskReasonsContainer: {
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  riskReasonText: {
+    fontSize: 10,
+    lineHeight: 14,
   },
   alertDot: {
     position: 'absolute',

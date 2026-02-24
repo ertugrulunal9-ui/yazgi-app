@@ -31,6 +31,32 @@ jest.mock('../../src/audio/soundDefinitions', () => ({
       preload: true,
     },
   },
+  ALL_SOUNDS: [
+    {
+      id: 'menu',
+      category: 'music',
+      path: 'mocked-path',
+      volume: 0.6,
+      loop: true,
+      preload: true,
+    },
+    {
+      id: 'button_click',
+      category: 'ui',
+      path: 'mocked-path',
+      volume: 0.8,
+      loop: false,
+      preload: true,
+    },
+    {
+      id: 'success',
+      category: 'ui',
+      path: 'mocked-path',
+      volume: 0.7,
+      loop: false,
+      preload: true,
+    },
+  ],
   getSoundDefinition: jest.fn((id: string) => {
     const definitions: any = {
       menu: {
@@ -114,12 +140,15 @@ describe('AudioManager', () => {
   });
 
   describe('Sound Effects', () => {
-    it.skip('should play sound effect', async () => {
-      // Skip: Requires full sound pool mock setup
+    it('should play sound effect', async () => {
+      await audioManager.setMuted(false);
+
+      const manager = audioManager as any;
+      const activeBefore = manager.activeSounds.size;
+
       await audioManager.playSFX('button_click');
-      
-      const settings = audioManager.getSettings();
-      expect(settings.muted).toBe(false);
+
+      expect(manager.activeSounds.size).toBeGreaterThan(activeBefore);
     });
 
     it('should not play if muted', async () => {

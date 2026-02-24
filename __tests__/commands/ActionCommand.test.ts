@@ -325,4 +325,96 @@ describe('HubActionCommand', () => {
     expect(result.gameStateUpdates.traits).not.toContain('LAZY');
     expect(result.traitChanges?.some(change => change.changeType === 'REMOVED' && change.traitId === 'LAZY')).toBe(true);
   });
+
+  it('applies age-scaled POOR income multiplier and removes upkeep for children', () => {
+    const gameState = createBaseGameState();
+    gameState.age = 10;
+    gameState.family = { wealth: 'POOR', dynamic: 'SUPPORTIVE', allowance: 10 };
+    const stats = { ...createBaseStats(), money: 100 };
+
+    const result = command.execute({
+      action: createAction({
+        id: 'work_delivery',
+        text: 'Kuryelik Yap',
+        energyCost: 6,
+        effect: { money: 10, energy: -6 },
+      }),
+      currentStats: stats,
+      gameState,
+    });
+
+    expect(result.status).toBe('success');
+    expect(result.newStats.money).toBe(106);
+  });
+
+  it('reduces POOR upkeep cost during early-teen years', () => {
+    const gameState = createBaseGameState();
+    gameState.age = 14;
+    gameState.family = { wealth: 'POOR', dynamic: 'SUPPORTIVE', allowance: 10 };
+    const stats = { ...createBaseStats(), money: 100 };
+
+    const result = command.execute({
+      action: createAction({
+        id: 'family_help',
+        text: 'Evde Yardim Et',
+        energyCost: 5,
+        effect: { money: 10, energy: -5 },
+      }),
+      currentStats: stats,
+      gameState,
+    });
+
+    expect(result.status).toBe('success');
+    expect(result.newStats.money).toBe(105);
+  });
+
+  it('applies diminishing returns to RICH families with 500+ money', () => {
+    const gameState = createBaseGameState();
+    gameState.age = 15;
+    gameState.family = { wealth: 'RICH', dynamic: 'SUPPORTIVE', allowance: 80 };
+    const stats = { ...createBaseStats(), money: 520 };
+
+    const result = command.execute({
+      action: createAction({
+        id: 'work_freelance',
+        text: 'Freelance Is',
+        energyCost: 8,
+        effect: { money: 100, energy: -8 },
+      }),
+      currentStats: stats,
+      gameState,
+    });
+
+    expect(result.status).toBe('success');
+    expect(result.newStats.money).toBe(615);
+  });
+
+  it('schedules a POOR-exclusive recovery event when hardship trigger succeeds', () => {
+    const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0);
+    const gameState = createBaseGameState();
+    gameState.age = 13;
+    gameState.family = { wealth: 'POOR', dynamic: 'SUPPORTIVE', allowance: 8 };
+    gameState.scheduledEvents = [];
+    gameState.eventChoiceHistory = [];
+    const stats = { ...createBaseStats(), money: 15 };
+
+    const result = command.execute({
+      action: createAction({
+        id: 'work_part_time',
+        text: 'Yari Zamanli Is',
+        energyCost: 6,
+        effect: { money: 4, energy: -6 },
+      }),
+      currentStats: stats,
+      gameState,
+    });
+
+    expect(result.status).toBe('success');
+    expect(result.gameStateUpdates.scheduledEvents?.some(
+      event => event.eventId === 'econ_poor_scholarship_offer'
+    )).toBe(true);
+    expect(result.feedbackMessage).toContain('destek kapisi');
+
+    randomSpy.mockRestore();
+  });
 });

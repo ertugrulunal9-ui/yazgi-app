@@ -55,7 +55,7 @@ const generatedTierEndings: EndingCatalogEntry[] = GOAL_ENDING_CATALOG.flatMap(
 const generatedMismatchEndings: EndingCatalogEntry[] = GOAL_ENDING_CATALOG.map(
   ({ goal, prefix, label, icon }) => ({
     id: `${prefix}_mismatch_failure`,
-    title: `${label} - Rota Sapmasi`,
+    title: `${label} - Beklenmedik Yol`,
     icon,
     goal,
     tier: 'MISMATCH',
@@ -325,6 +325,74 @@ const GOAL_PROFILES: Record<EndingGoal, GoalProfile> = {
   },
 };
 
+const ACTION_VERSATILITY_BUCKETS: Array<{ id: string; prefixes: string[] }> = [
+  { id: 'study', prefixes: ['study_'] },
+  { id: 'sports', prefixes: ['sports_'] },
+  { id: 'arts', prefixes: ['arts_'] },
+  { id: 'work', prefixes: ['work_'] },
+  { id: 'social', prefixes: ['social_', 'family_'] },
+  { id: 'computer', prefixes: ['computer_'] },
+  { id: 'explore', prefixes: ['explore_'] },
+];
+
+const getActionCategory = (actionId: string): string => {
+  const bucket = ACTION_VERSATILITY_BUCKETS.find(({ prefixes }) => (
+    prefixes.some(prefix => actionId.startsWith(prefix))
+  ));
+  return bucket?.id ?? 'other';
+};
+
+const calculateActionVersatility = (gameState: GameState): ActionVersatilityAnalysis => {
+  const history = gameState.actionHistory || [];
+  if (history.length < 10) {
+    return {
+      entropy: 1,
+      dominantRatio: 0,
+      uniqueCategories: 0,
+      penalty: 0,
+    };
+  }
+
+  const categoryCounts: Record<string, number> = {};
+  history.forEach(({ actionId }) => {
+    const category = getActionCategory(actionId);
+    categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+  });
+
+  const counts = Object.values(categoryCounts);
+  const total = counts.reduce((sum, value) => sum + value, 0);
+  if (counts.length === 0 || total <= 0) {
+    return {
+      entropy: 1,
+      dominantRatio: 0,
+      uniqueCategories: 0,
+      penalty: 0,
+    };
+  }
+
+  let entropyRaw = 0;
+  let dominantRatio = 0;
+  counts.forEach((count) => {
+    const p = count / total;
+    if (p <= 0) return;
+    entropyRaw += -(p * Math.log2(p));
+    dominantRatio = Math.max(dominantRatio, p);
+  });
+
+  const maxEntropy = counts.length > 1 ? Math.log2(counts.length) : 0;
+  const normalizedEntropy = maxEntropy > 0 ? clamp(entropyRaw / maxEntropy, 0, 1) : 0;
+  const concentrationPenalty = clamp((dominantRatio - 0.56) * 30, 0, 13);
+  const entropyPenalty = clamp((0.58 - normalizedEntropy) * 20, 0, 8);
+  const penalty = clamp(round1(concentrationPenalty + entropyPenalty), 0, 18);
+
+  return {
+    entropy: round1(normalizedEntropy),
+    dominantRatio: round1(dominantRatio),
+    uniqueCategories: counts.length,
+    penalty,
+  };
+};
+
 const ACTION_DEBT_RISK_PREFIXES = ['study_', 'sports_', 'work_', 'computer_', 'arts_'];
 const ACTION_DEBT_RECOVERY_PREFIXES = ['baby_sleep', 'baby_eat', 'family_'];
 
@@ -370,6 +438,13 @@ interface GoalFitBreakdown {
   gradesFit: number;
   actionFit: number;
   score: number;
+}
+
+interface ActionVersatilityAnalysis {
+  entropy: number;
+  dominantRatio: number;
+  uniqueCategories: number;
+  penalty: number;
 }
 
 const getSelectedEndingGoal = (selectedGoal?: LifeGoal | null): EndingGoal | null => {
@@ -544,6 +619,30 @@ const calculateBaseErrorDebt = (
 
 const round1 = (value: number): number => Math.round(value * 10) / 10;
 
+const calculateDifficultyModifier = (
+  gameState: GameState,
+  stats: Stats,
+  errorDebt: EndingErrorDebt
+): number => {
+  const stress = gameState.stress || DEFAULT_STRESS;
+  const stressPressure = stress.threshold > 0
+    ? clamp((stress.current / stress.threshold) * 100, 0, 140)
+    : 0;
+  const healthPressure = clamp((55 - stats.health) * 1.4, 0, 100);
+  const socialPressure = clamp((55 - stats.familyRelation) * 1.2, 0, 100);
+  const moneyPressure = clamp((45 - normalizeMoney(stats.money)) * 1.6, 0, 100);
+  const debtPressure = clamp(errorDebt.total * 1.1, 0, 100);
+  const pressureScore = average([
+    stressPressure,
+    healthPressure,
+    socialPressure,
+    moneyPressure,
+    debtPressure,
+  ]);
+
+  return round1(clamp((pressureScore - 42) * 0.12, -4.5, 5.5));
+};
+
 const mergeErrorDebt = (
   base: EndingErrorDebt,
   override?: EndingErrorDebtInput
@@ -686,13 +785,15 @@ const buildFailureResult = (): CareerResult => ({
 
 const buildMismatchFailureResult = (
   selectedGoalLabel: string,
-  inferredGoalLabel: string
+  inferredGoalLabel: string,
+  surpriseCareer: CareerResult
 ): CareerResult => ({
-  title: 'Hedef Uyumsuzlugu',
-  description: `${selectedGoalLabel} hedefini sectin ama gelisim cizgin ${inferredGoalLabel} yonune kaydi. Son virajda hedefinle profilin ortusmedi.`,
-  emoji: '\u{26A0}\u{FE0F}',
-  type: 'FAILURE',
-  familyReaction: 'Ailen, daha erken rota duzeltmesi yapman gerektigini dusunuyor.',
+  title: 'Surpriz Kariyer',
+  description: `${selectedGoalLabel} hedefini secmistin; hayat cizgin ${inferredGoalLabel} yonune acildi. Yeni rotanda ${surpriseCareer.title} yolunu yakaladin.`,
+  emoji: '\u{1F9ED}',
+  type: surpriseCareer.type,
+  familyReaction: 'Ailen, rota degisse de dogru ritmi yakaladigini dusunuyor.',
+  influences: [`Yeni rota: ${surpriseCareer.title}`],
 });
 
 const buildCareerByGoal = (
@@ -812,6 +913,30 @@ const buildCareerByGoal = (
         },
       };
     }
+    if (skills.teamwork > 70 && personality.patience >= 55 && skills.sports > 60) {
+      return {
+        domainFit: average([skills.teamwork, personality.patience, skills.sports]),
+        result: {
+          title: 'Spor Egitmeni',
+          description: 'Sabrin ve takim ruhu anlayisin seni genc sporculara yol gosteren bir egitmene donusturdu.',
+          emoji: '\u{1F3C5}',
+          type: 'SUCCESS',
+          familyReaction: 'Ailen ogrencilerinin basarisini seninle birlikte kutluyor.',
+        },
+      };
+    }
+    if (skills.coding > 60 && skills.sports > 50 && stats.discipline > 70) {
+      return {
+        domainFit: average([skills.coding, skills.sports, stats.discipline]),
+        result: {
+          title: 'E-Spor Oyuncusu',
+          description: 'Dijital reflekslerin ve disiplinli antrenman rutinin seni profesyonel e-spor sahnesine tasidi.',
+          emoji: '\u{1F3AE}',
+          type: 'SUCCESS',
+          familyReaction: 'Ailen bilgisayar basinda gecirdigin saatlerin sonucunu gormeye basliyor.',
+        },
+      };
+    }
   }
 
   if (goal === 'CREATIVE') {
@@ -891,6 +1016,30 @@ const buildCareerByGoal = (
         },
       };
     }
+    if (stats.charisma > 70 && skills.coding > 50 && personality.openness >= 60) {
+      return {
+        domainFit: average([stats.charisma, skills.coding, personality.openness]),
+        result: {
+          title: 'Icerik Uretici',
+          description: 'Kameranin onunde dogal bir yetenegin var. Dijital platformlarda kendi kitlesini olusturuyorsun.',
+          emoji: '\u{1F4F1}',
+          type: 'SUCCESS',
+          familyReaction: 'Ailen videolarini izleyip gururlaniyor.',
+        },
+      };
+    }
+    if (skills.art > 70 && skills.design > 70 && stats.charisma > 55) {
+      return {
+        domainFit: average([skills.art, skills.design, stats.charisma]),
+        result: {
+          title: 'Moda Tasarimcisi',
+          description: 'Estetik gorusun ve tasarim yetenegin seni moda dunyasina tasidi.',
+          emoji: '\u{1F457}',
+          type: 'SUCCESS',
+          familyReaction: 'Ailen koleksiyonlarini merakla takip ediyor.',
+        },
+      };
+    }
   }
 
   if (goal === 'SOCIAL') {
@@ -918,6 +1067,30 @@ const buildCareerByGoal = (
         },
       };
     }
+    if (personality.empathy >= 70 && skills.business > 50 && stats.charisma > 60) {
+      return {
+        domainFit: average([personality.empathy, skills.business, stats.charisma]),
+        result: {
+          title: 'Sosyal Girisimci',
+          description: 'Toplumsal sorunlara cozum uretme tutkunla kendi sosyal girisimini kurdun.',
+          emoji: '\u{1F91D}',
+          type: 'SUCCESS',
+          familyReaction: 'Ailen hem isine hem ideallerine hayran.',
+        },
+      };
+    }
+    if (personality.patience >= 70 && personality.conformity >= 60 && grades.language > 70) {
+      return {
+        domainFit: average([personality.patience, personality.conformity, grades.language]),
+        result: {
+          title: 'Diplomat',
+          description: 'Sabrin, uzlasma yetenegin ve dil becerilerin seni diplomasi yoluna yoneltti.',
+          emoji: '\u{1F3DB}\uFE0F',
+          type: 'SUCCESS',
+          familyReaction: 'Ailen diplomatik yeteneklerinle gurur duyuyor.',
+        },
+      };
+    }
   }
 
   if (goal === 'ENTERPRISE') {
@@ -930,6 +1103,30 @@ const buildCareerByGoal = (
           emoji: '\u{1F4C8}',
           type: 'SUCCESS',
           familyReaction: 'Ailen isini merakla takip ediyor.',
+        },
+      };
+    }
+    if (grades.math > 70 && stats.discipline > 65 && personality.courage >= 55) {
+      return {
+        domainFit: average([grades.math, stats.discipline, personality.courage]),
+        result: {
+          title: 'Finans Uzmani',
+          description: 'Sayilarla aran ve sogukkanliligin seni finans sektorune yonlendirdi.',
+          emoji: '\u{1F4B9}',
+          type: 'SUCCESS',
+          familyReaction: 'Ailen piyasa haberlerini seninle konusmayi seviyor.',
+        },
+      };
+    }
+    if (skills.coding > 70 && skills.business > 60 && personality.courage >= 65) {
+      return {
+        domainFit: average([skills.coding, skills.business, personality.courage]),
+        result: {
+          title: 'Startup Kurucusu',
+          description: 'Teknik bilgin ve girisimci ruhun seni kendi teknoloji sirketini kurmaya yoneltti.',
+          emoji: '\u{1F680}',
+          type: 'SUCCESS',
+          familyReaction: 'Ailen sirketini heyecanla takip ediyor.',
         },
       };
     }
@@ -996,6 +1193,62 @@ const buildCareerByGoal = (
         },
       };
     }
+    if (skills.logic > 80 && skills.reading > 75 && stats.discipline > 65) {
+      return {
+        domainFit: average([skills.logic, skills.reading, stats.discipline]),
+        result: {
+          title: 'Arastirmaci',
+          description: 'Merakli zihnin ve disiplinli calisma aliskanliklarin seni akademik arastirma yoluna tasidi.',
+          emoji: '\u{1F52C}',
+          type: 'SUCCESS',
+          familyReaction: 'Ailen laboratuvardaki saatlerini saygiyla karsiluyor.',
+        },
+      };
+    }
+    if (personality.empathy >= 60 && personality.patience >= 60 && stats.intelligence > 60) {
+      return {
+        domainFit: average([personality.empathy, personality.patience, stats.intelligence]),
+        result: {
+          title: 'Ogretmen',
+          description: 'Sabrin ve empatin seni genc nesillere bilgi aktaran bir ogretmene donusturdu.',
+          emoji: '\u{1F4D6}',
+          type: 'SUCCESS',
+          familyReaction: 'Ailen ogrencilerinin sevgisini gormeye bayiliyor.',
+        },
+      };
+    }
+  }
+
+  if (goal === 'BALANCED') {
+    const skillsAbove60 = [
+      skills.coding, skills.music, skills.sports, skills.design,
+      skills.art, skills.writing, skills.reading, skills.teamwork,
+      skills.business, skills.logic,
+    ].filter(s => s > 60).length;
+    if (skillsAbove60 >= 4) {
+      return {
+        domainFit: average([stats.intelligence, stats.charisma, stats.discipline, stats.health]),
+        result: {
+          title: 'Cok Yonlu Profesyonel',
+          description: 'Tek bir alana kapanmak yerine bircok beceriyi harmanladin. Farkli sektorlerden teklifler aliyorsun.',
+          emoji: '\u{1F3AF}',
+          type: 'SUCCESS',
+          familyReaction: 'Ailen: Her konuda bi bilgisi var diyor gururla.',
+        },
+      };
+    }
+    if (personality.empathy >= 65 && skills.teamwork > 60 && stats.charisma > 55) {
+      return {
+        domainFit: average([personality.empathy, skills.teamwork, stats.charisma]),
+        result: {
+          title: 'Sivil Toplum Lideri',
+          description: 'Insanlari bir araya getirme yeteneginle toplumsal degisime oncuulk ediyorsun.',
+          emoji: '\u{1F30D}',
+          type: 'SUCCESS',
+          familyReaction: 'Ailen topluma katkin icin gururlu.',
+        },
+      };
+    }
   }
 
   if (personality.conformity >= 70 && traits.includes('DISCIPLINED') && stats.discipline > 70) {
@@ -1037,7 +1290,8 @@ const withFlavor = (
   errorDebt: EndingErrorDebt,
   achievementFlavor: string[],
   tier: CareerResult['type'],
-  mismatchNote?: string
+  mismatchNote?: string,
+  scoreNotes: string[] = []
 ): CareerResult => {
   const descriptionParts = [base.description, ...achievementFlavor].filter(Boolean);
   const mergedInfluences = [
@@ -1045,6 +1299,7 @@ const withFlavor = (
     `Hedef: ${goalLabel}`,
     `Hedef uyumu: %${Math.round(compatibilityScore)}`,
     `Hata borcu: ${Math.round(errorDebt.total)}`,
+    ...scoreNotes,
   ];
   if (mismatchNote) {
     mergedInfluences.push(mismatchNote);
@@ -1068,33 +1323,173 @@ export const calculateEndingErrorDebt = (
   return mergeErrorDebt(base, override);
 };
 
+interface SecretEndingResult {
+  id: string;
+  result: CareerResult;
+}
+
+const checkSecretEndings = (
+  gameState: GameState,
+  stats: Stats,
+): SecretEndingResult | null => {
+  const personality = { ...DEFAULT_PERSONALITY, ...(gameState.personality || {}) };
+  const skills = { ...DEFAULT_SKILLS, ...(gameState.skills || {}) };
+  const npcs = gameState.npcs || [];
+  const fateTokens = gameState.fate?.tokens ?? 0;
+  const hasPartner = npcs.some(n => n.role === 'PARTNER');
+  const npcCount = npcs.length;
+
+  // secret_true_balance: Tüm temel statlar 70+
+  if (
+    stats.health >= 70 && stats.intelligence >= 70 &&
+    stats.charisma >= 70 && stats.discipline >= 70 &&
+    stats.familyRelation >= 70
+  ) {
+    return {
+      id: 'secret_true_balance',
+      result: {
+        title: 'Gercek Denge Ustasi',
+        description: 'Hayatin her alaninda denge buldun. Bu basari cok az kisiye nasip olur.',
+        emoji: '\u{1F31F}',
+        type: 'LEGENDARY',
+        familyReaction: 'Ailen her alanda dengeli gelisiminden muhtesem gurur duyuyor.',
+      },
+    };
+  }
+
+  // secret_family_legacy: Aile ilişkisi çok yüksek
+  if (stats.familyRelation >= 90 && personality.empathy >= 70) {
+    return {
+      id: 'secret_family_legacy',
+      result: {
+        title: 'Aile Mirasini Geri Kazan',
+        description: 'Ailenle kurdugun derin bag hayatinin en degerli mirasi oldu.',
+        emoji: '\u{1F3DB}\uFE0F',
+        type: 'LEGENDARY',
+        familyReaction: 'Ailen: Sen bizim en buyuk gururumuzsun.',
+      },
+    };
+  }
+
+  // secret_fate_breaker: 10+ fate token biriktirme
+  if (fateTokens >= 10) {
+    return {
+      id: 'secret_fate_breaker',
+      result: {
+        title: 'Kader Kirici',
+        description: 'Kaderin sana bictigini kabul etmedin. Kendi yolunu kendin cizdin.',
+        emoji: '\u2694\uFE0F',
+        type: 'LEGENDARY',
+        familyReaction: 'Ailen: O hep kendi yolunu buldu diyor.',
+      },
+    };
+  }
+
+  // secret_love_and_glory: Partner + yüksek başarı
+  if (hasPartner && stats.charisma >= 75 && stats.intelligence >= 70) {
+    return {
+      id: 'secret_love_and_glory',
+      result: {
+        title: 'Ask ve Zafer',
+        description: 'Hem kalbin hem aklin dolu. Ask ve basariyi ayni anda yakaladin.',
+        emoji: '\u{1F497}',
+        type: 'LEGENDARY',
+        familyReaction: 'Ailen hem iliskinden hem basarindan mutlu.',
+      },
+    };
+  }
+
+  // secret_silent_legend: Az NPC etkileşimi ama yüksek beceri
+  if (
+    npcCount === 0 &&
+    stats.intelligence >= 85 &&
+    stats.discipline >= 80 &&
+    stats.health >= 60 &&
+    (skills.coding > 85 || skills.logic > 85 || skills.writing > 85)
+  ) {
+    return {
+      id: 'secret_silent_legend',
+      result: {
+        title: 'Sessiz Efsane',
+        description: 'Kimseye ihtiyac duymadan kendi yolunda sessizce efsanelesen biri oldun.',
+        emoji: '\u{1F52E}',
+        type: 'LEGENDARY',
+        familyReaction: 'Ailen: O hep kendi halinde ama cok yetenekli diyor.',
+      },
+    };
+  }
+
+  return null;
+};
+
 export const resolveEnding = ({
   gameState,
   stats,
   achievements,
   errorDebt,
 }: ResolveEndingParams): EndingResolution => {
+  // Secret ending kontrolü — normal ending'den önce
+  const secretEnding = checkSecretEndings(gameState, stats);
+  if (secretEnding) {
+    const resolvedDebt = calculateEndingErrorDebt(gameState, stats, errorDebt, 'ending');
+    const dominant = detectDominantGoal(gameState, stats);
+    const goalProfile = GOAL_PROFILES[dominant.goal];
+    return {
+      id: secretEnding.id,
+      goal: dominant.goal,
+      goalLabel: goalProfile.label,
+      selectedGoal: gameState.selectedGoal ?? null,
+      selectedGoalLabel: gameState.selectedGoal
+        ? GOAL_PROFILES[LIFE_GOAL_TO_ENDING_GOAL[gameState.selectedGoal]]?.label ?? goalProfile.label
+        : 'Hedef Secilmedi (Otomatik Rota)',
+      inferredGoal: dominant.goal,
+      inferredGoalLabel: goalProfile.label,
+      mismatchFailure: false,
+      compatibilityScore: round1(dominant.score),
+      score: 95,
+      tier: 'LEGENDARY',
+      errorDebt: resolvedDebt,
+      achievementFlavor: ['Gizli bir sonla tanistin!'],
+      result: secretEnding.result,
+    };
+  }
+
   const mismatchAnalysis = analyzeGoalMismatch(gameState, stats);
-  const goal = mismatchAnalysis.selectedGoal ?? mismatchAnalysis.dominantGoal;
+  const selectedOrFallbackGoal = mismatchAnalysis.selectedGoal ?? mismatchAnalysis.dominantGoal;
+  const goal = mismatchAnalysis.isMismatch ? mismatchAnalysis.dominantGoal : selectedOrFallbackGoal;
   const goalProfile = GOAL_PROFILES[goal];
   const inferredGoalProfile = GOAL_PROFILES[mismatchAnalysis.dominantGoal];
   const selectedGoalLabel = mismatchAnalysis.selectedGoal
     ? GOAL_PROFILES[mismatchAnalysis.selectedGoal].label
     : 'Hedef Secilmedi (Otomatik Rota)';
+  const selectedGoalScore = mismatchAnalysis.selectedGoal
+    ? calculateGoalFitBreakdown(gameState, stats, mismatchAnalysis.selectedGoal).score
+    : mismatchAnalysis.dominantScore;
   const compatibilityScore = calculateGoalFitBreakdown(gameState, stats, goal).score;
   const basePick = buildCareerByGoal(goal, gameState, stats);
   const resolvedDebt = calculateEndingErrorDebt(gameState, stats, errorDebt, 'ending');
   const achievementIdList = toAchievementIds(achievements, gameState);
   const achievementSet = new Set(achievementIdList);
+  const actionVersatility = calculateActionVersatility(gameState);
+  const difficultyModifier = calculateDifficultyModifier(gameState, stats, resolvedDebt);
 
   const achievementBonus = achievementBonusForGoal(goal, achievementSet);
   const rawScore = (compatibilityScore * 0.65) + (basePick.domainFit * 0.35);
   const debtPenalty = resolvedDebt.total * 0.65;
-  const mismatchPenalty = mismatchAnalysis.isMismatch ? 30 : 0;
-  const finalScore = clamp(rawScore + achievementBonus - debtPenalty - mismatchPenalty, 0, 100);
+  const mismatchPenalty = mismatchAnalysis.isMismatch ? 8 : 0;
+  const finalScore = clamp(
+    rawScore
+    + achievementBonus
+    + difficultyModifier
+    - debtPenalty
+    - mismatchPenalty
+    - actionVersatility.penalty,
+    0,
+    100
+  );
 
   let tier = calculateTier(finalScore, resolvedDebt);
-  if (!mismatchAnalysis.isMismatch && resolvedDebt.total < 70) { // FAILURE threshold ile senkronize
+  if (resolvedDebt.total < 70) { // FAILURE threshold ile senkronize
     if (basePick.result.type === 'LEGENDARY' && resolvedDebt.total < 65) {
       tier = 'LEGENDARY';
     }
@@ -1109,16 +1504,24 @@ export const resolveEnding = ({
     tier = 'SUCCESS';
   }
 
-  if (mismatchAnalysis.isMismatch) {
-    tier = 'FAILURE';
-  }
-
   const mismatchNote = mismatchAnalysis.isMismatch
-    ? `Uyumsuzluk: Gelisim cizgin ${inferredGoalProfile.label} ile daha yuksek uyum yakaladi.`
+    ? `Beklenmedik yol: Secilen hedefte uyum %${Math.round(selectedGoalScore)}, gelistirdigin rota ${inferredGoalProfile.label} ile %${Math.round(compatibilityScore)} uyum yakaladi.`
     : undefined;
 
+  const scoreNotes = [
+    `Zorluk duzeltmesi: ${difficultyModifier >= 0 ? '+' : ''}${difficultyModifier}`,
+  ];
+  if (actionVersatility.penalty > 0) {
+    scoreNotes.push(
+      `Cesitlilik cezasi: -${actionVersatility.penalty} (entropi ${Math.round(actionVersatility.entropy * 100)}%, baskin kategori ${Math.round(actionVersatility.dominantRatio * 100)}%)`
+    );
+  }
+  if (mismatchPenalty > 0) {
+    scoreNotes.push(`Rota sapmasi cezasi: -${mismatchPenalty}`);
+  }
+
   const baseResult = mismatchAnalysis.isMismatch
-    ? buildMismatchFailureResult(goalProfile.label, inferredGoalProfile.label)
+    ? buildMismatchFailureResult(selectedGoalLabel, inferredGoalProfile.label, basePick.result)
     : (tier === 'FAILURE' ? buildFailureResult() : basePick.result);
   const achievementFlavor = flavorByAchievements(baseResult, achievementSet, stats);
   const finalResult = withFlavor(
@@ -1128,12 +1531,13 @@ export const resolveEnding = ({
     resolvedDebt,
     achievementFlavor,
     tier,
-    mismatchNote
+    mismatchNote,
+    scoreNotes
   );
 
   return {
     id: mismatchAnalysis.isMismatch
-      ? `${goal.toLowerCase()}_mismatch_failure`
+      ? `${selectedOrFallbackGoal.toLowerCase()}_mismatch_failure`
       : `${goal.toLowerCase()}_${tier.toLowerCase()}`,
     goal,
     goalLabel: goalProfile.label,

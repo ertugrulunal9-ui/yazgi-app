@@ -3,9 +3,9 @@ import { GameState, Stats } from '../types';
 export const SAVE_VERSION = 1;
 export const SAVE_SCHEMA_VERSION = 2;
 export const SAVE_EXPORT_VERSION = 2;
-export const MAX_FREE_SLOTS = 3;
-export const MAX_PREMIUM_SLOTS = 3;
-export const MAX_TOTAL_SLOTS = MAX_FREE_SLOTS + MAX_PREMIUM_SLOTS;
+export const MAX_TOTAL_SLOTS = 6;
+export const MAX_PREMIUM_SLOTS = 0;
+export const MAX_FREE_SLOTS = MAX_TOTAL_SLOTS;
 export const AUTO_SAVE_SLOT_ID = 'auto';
 export const MAX_BACKUP_HISTORY = 5;
 

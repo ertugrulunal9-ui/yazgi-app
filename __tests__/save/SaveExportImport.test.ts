@@ -104,8 +104,8 @@ describe('SaveManager export/import compatibility', () => {
     const rawMeta = await AsyncStorage.getItem(getMetadataKey('1'));
     expect(rawSlot).toBeTruthy();
     expect(rawMeta).toBeTruthy();
-    expect(rawSlot?.startsWith('enc:v1:')).toBe(true);
-    expect(rawMeta?.startsWith('enc:v1:')).toBe(true);
+    expect(rawSlot).toMatch(/^enc:v[12]:/);
+    expect(rawMeta).toMatch(/^enc:v[12]:/);
     expect(rawSlot).not.toContain('EncryptedUser');
     expect(rawMeta).not.toContain('EncryptedUser');
 

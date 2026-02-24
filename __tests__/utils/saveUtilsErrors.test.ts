@@ -386,8 +386,41 @@ describe('SaveUtils - Error Handling & Edge Cases', () => {
       expect(result).toBeNull();
     });
 
-    it.skip('should handle FileReader error', async () => {
-      // Skipped: FileReader error simulation too complex in Node environment
+    it('should handle FileReader error', async () => {
+      const originalFileReader = (global as any).FileReader;
+
+      class MockFileReader {
+        onload: ((event: any) => void) | null = null;
+        onerror: ((event: any) => void) | null = null;
+
+        readAsText(_file: Blob): void {
+          if (this.onerror) {
+            this.onerror({ type: 'error' });
+          }
+        }
+      }
+
+      try {
+        (global as any).FileReader = MockFileReader as any;
+
+        const promise = readFile();
+
+        setTimeout(() => {
+          const mockFile = new Blob(['{invalid-json'], { type: 'application/json' });
+          const event = {
+            target: {
+              files: [mockFile],
+            },
+          } as any;
+
+          mockInput.onchange(event);
+        }, 0);
+
+        const result = await promise;
+        expect(result).toBeNull();
+      } finally {
+        (global as any).FileReader = originalFileReader;
+      }
     });
   });
 

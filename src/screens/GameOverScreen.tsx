@@ -7,11 +7,27 @@ import { useGame } from '../context/GameContext';
 import { useMetaProgression } from '../context/MetaProgressionContext';
 import { getThemeTokens, getDensityMetrics } from '../utils/themeUtils';
 import { getTraitName } from '../data/traits';
-import { calculateAllGoalScores, generateFutureVision, resolveEnding, TOTAL_ENDING_COUNT } from '../utils/endingResolver';
+import {
+  EndingGoal,
+  calculateAllGoalScores,
+  generateFutureVision,
+  resolveEnding,
+  TOTAL_ENDING_COUNT,
+} from '../utils/endingResolver';
 import { calculateLegacyPointsForRun, createInitialMetaProgression } from '../utils/metaProgression';
-import { showInterstitialAdDetailed } from '../services/monetization';
-import { logInterstitialOpportunity, logInterstitialResult, logShareEvent } from '../utils/analyticsEvents';
-import { NPC, PersonalityTendency } from '../types';
+import {
+  getRemainingRewardedAds,
+  showContextualRewardedAd,
+  showInterstitialAdDetailed,
+} from '../services/monetization';
+import {
+  logInterstitialOpportunity,
+  logInterstitialResult,
+  logRewardedAdRequested,
+  logRewardedAdResult,
+  logShareEvent,
+} from '../utils/analyticsEvents';
+import { LifeGoal, NPC, PersonalityTendency } from '../types';
 import { normalizePersonalityState } from '../systems/PersonalityMomentumEngine';
 import { ShareCard } from '../components/ShareCard';
 import {
@@ -72,6 +88,15 @@ const ALTERNATIVE_SUGGESTIONS: Record<string, string> = {
   BALANCED:   'Bir hedefi tüm kalbinle benimseseydin?',
 };
 
+const ENDING_GOAL_TO_LIFE_GOAL: Record<EndingGoal, LifeGoal | null> = {
+  ACADEMIC: 'ACADEMIC',
+  ATHLETIC: 'ATHLETIC',
+  CREATIVE: 'CREATIVE',
+  SOCIAL: 'SOCIAL',
+  ENTERPRISE: 'WEALTH',
+  BALANCED: null,
+};
+
 export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, onRestart, npcs: npcsProp }) => {
   const { gameState, playerName, stats } = useGame();
   const { metaProgression } = useMetaProgression();
@@ -112,13 +137,27 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
   ), [gameState.personalityState, playerName]);
 
   // Katman 3: En yüksek skorlu alternatif hedef önerisi
-  const alternativeSuggestion = useMemo(() => {
+  const bestAlternativeGoal = useMemo(() => {
     const allScores = calculateAllGoalScores(gameState, stats);
     const selectedEndingGoal = endingResolution.goal;
-    const best = allScores.find(s => s.goal !== selectedEndingGoal);
-    if (!best) return null;
-    return ALTERNATIVE_SUGGESTIONS[best.goal] ?? null;
+    return allScores.find(s => s.goal !== selectedEndingGoal) ?? null;
   }, [gameState, stats, endingResolution.goal]);
+
+  const alternativeSuggestion = useMemo(() => {
+    if (!bestAlternativeGoal) return null;
+    return ALTERNATIVE_SUGGESTIONS[bestAlternativeGoal.goal] ?? null;
+  }, [bestAlternativeGoal]);
+
+  const alternativeEndingPreview = useMemo(() => {
+    if (!bestAlternativeGoal) return null;
+    const mappedGoal = ENDING_GOAL_TO_LIFE_GOAL[bestAlternativeGoal.goal];
+    const simulatedState = { ...gameState, selectedGoal: mappedGoal };
+    return resolveEnding({
+      gameState: simulatedState,
+      stats,
+      achievements: gameState.unlockedAchievements,
+    });
+  }, [bestAlternativeGoal, gameState, stats]);
   const futureVision = useMemo(() => (
     generateFutureVision(stats, endingResolution, playerName)
   ), [endingResolution, playerName, stats]);
@@ -137,6 +176,8 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
 
   const shareCardRef = useRef<ViewShot | null>(null);
   const [isSharing, setIsSharing] = useState(false);
+  const [altEndingUnlocked, setAltEndingUnlocked] = useState(false);
+  const [altEndingUnlocking, setAltEndingUnlocking] = useState(false);
 
   const discoveredEndingCount = useMemo(() => {
     const discovered = new Set(safeMeta.lifetimeEndingIds || []);
@@ -176,6 +217,46 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
       Alert.alert('Paylasim basarisiz', 'Kart paylasimi tamamlanamadi.');
     } finally {
       setIsSharing(false);
+    }
+  };
+
+  const handleUnlockAlternativeEnding = async () => {
+    if (altEndingUnlocking || !bestAlternativeGoal) return;
+
+    setAltEndingUnlocking(true);
+    const remainingBefore = getRemainingRewardedAds();
+    void logRewardedAdRequested({
+      placement: 'ending_alternative',
+      rewardType: 'utility',
+      remainingBefore,
+    });
+
+    try {
+      const adResult = await showContextualRewardedAd('ending_alternative');
+      const remainingAfter = getRemainingRewardedAds();
+
+      if (!adResult.success) {
+        void logRewardedAdResult({
+          placement: 'ending_alternative',
+          rewardType: 'utility',
+          success: false,
+          remainingAfter,
+          errorMessage: adResult.error,
+        });
+        Alert.alert('Reklam gosterilemedi', adResult.error || 'Lutfen tekrar dene.');
+        return;
+      }
+
+      setAltEndingUnlocked(true);
+      void logRewardedAdResult({
+        placement: 'ending_alternative',
+        rewardType: 'utility',
+        success: true,
+        amount: 1,
+        remainingAfter,
+      });
+    } finally {
+      setAltEndingUnlocking(false);
     }
   };
 
@@ -324,8 +405,8 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                 </Text>
               )}
               {mismatchFailure && (
-                <Text style={{ color: '#ef4444', marginTop: 6, lineHeight: 18 }}>
-                  Profilin {inferredGoalLabel} yonune kaydi ve hedef uyumsuzlugu olustu.
+                <Text style={{ color: '#f97316', marginTop: 6, lineHeight: 18 }}>
+                  Beklenmedik Yol: secilen hedeften farkli olarak {inferredGoalLabel} rotasinda daha guclu bir profil olusturdun.
                 </Text>
               )}
               {errorDebt.reasons.length > 0 && (
@@ -478,6 +559,49 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                 <Text style={{ color: theme.textPrimary, fontWeight: '600', lineHeight: 20 }}>
                   {alternativeSuggestion}
                 </Text>
+
+                {!altEndingUnlocked && (
+                  <ShimmerButton
+                    onPress={handleUnlockAlternativeEnding}
+                    disabled={altEndingUnlocking}
+                    style={{
+                      marginTop: 12,
+                      paddingVertical: 10,
+                      borderRadius: 10,
+                      alignItems: 'center',
+                      overflow: 'hidden',
+                      backgroundColor: theme.surfaceBase,
+                      borderWidth: 1,
+                      borderColor: '#22c55e',
+                      opacity: altEndingUnlocking ? 0.7 : 1,
+                    }}
+                  >
+                    <Text style={{ color: '#22c55e', fontWeight: '700', fontSize: 13 }}>
+                      {altEndingUnlocking ? 'Reklam yukleniyor...' : 'Reklam Izle: Alternatif Sonu Goster'}
+                    </Text>
+                  </ShimmerButton>
+                )}
+
+                {altEndingUnlocked && alternativeEndingPreview && bestAlternativeGoal && (
+                  <View style={{
+                    marginTop: 12,
+                    borderWidth: 1,
+                    borderColor: '#22c55e55',
+                    borderRadius: 10,
+                    padding: 10,
+                    backgroundColor: '#052e16',
+                  }}>
+                    <Text style={{ color: '#86efac', fontWeight: '700', marginBottom: 4 }}>
+                      Alternatif Son ({bestAlternativeGoal.label})
+                    </Text>
+                    <Text style={{ color: '#dcfce7', fontWeight: '700', marginBottom: 4 }}>
+                      {alternativeEndingPreview.result.emoji} {alternativeEndingPreview.result.title}
+                    </Text>
+                    <Text style={{ color: '#bbf7d0', lineHeight: 18 }}>
+                      {alternativeEndingPreview.result.description}
+                    </Text>
+                  </View>
+                )}
               </View>
             </FadeInUpView>
           )}
@@ -550,6 +674,11 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
           endingTitle={result.title}
           traitIds={gameState.traits}
           legacyLevel={safeMeta.legacyLevel}
+          closestNpcName={highlightedRelations.length > 0 ? highlightedRelations[0].name : undefined}
+          topMemories={(gameState.memories || [])
+            .filter(m => m.weight === 'HIGH')
+            .slice(0, 2)
+            .map(m => m.eventId.replace(/_/g, ' '))}
         />
       </ViewShot>
     </View>

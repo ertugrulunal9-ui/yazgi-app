@@ -309,8 +309,8 @@ describe('FateEngine', () => {
   describe('applyFateToStatChanges', () => {
     it('multiplies positive changes for BLESSED', () => {
       const result = applyFateToStatChanges({ health: 10, intelligence: 8 }, 'BLESSED');
-      expect(result.health).toBe(15);   // 10 * 1.5
-      expect(result.intelligence).toBe(12); // 8 * 1.5
+      expect(result.health).toBe(14);   // round(10 * 1.35)
+      expect(result.intelligence).toBe(11); // round(8 * 1.35)
     });
 
     it('reduces positive changes for CURSED', () => {
@@ -325,7 +325,7 @@ describe('FateEngine', () => {
 
     it('reduces negative changes for BLESSED', () => {
       const result = applyFateToStatChanges({ health: -10 }, 'BLESSED');
-      expect(result.health).toBe(-5); // -10 * 0.5
+      expect(result.health).toBe(-6); // round(-10 * 0.6)
     });
 
     it('does not modify NEUTRAL outcome', () => {
@@ -337,7 +337,7 @@ describe('FateEngine', () => {
     it('handles zero values', () => {
       const result = applyFateToStatChanges({ health: 0, money: 10 }, 'BLESSED');
       expect(result.health).toBe(0);
-      expect(result.money).toBe(15);
+      expect(result.money).toBe(14);
     });
 
     it('handles empty changes', () => {

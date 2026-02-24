@@ -6,12 +6,14 @@ import { NPC_EVENTS } from './npcEvents';
 import { MILESTONE_EVENTS } from './relationshipMilestoneEvents';
 import { LATE_TEEN_EVENTS } from './lateTeenEvents';
 import { FAMILY_ARC_EVENTS } from './familyArcEvents';
+import { ECONOMIC_RECOVERY_EVENTS } from './economicRecoveryEvents';
 import { MEMORY_GATED_EVENTS } from './memoryGatedEvents';
 import { AGE_SPECIFIC_EVENTS } from './ageSpecificEvents';
 import { GOAL_CHAIN_EVENTS } from './goalChainEvents';
 import { NPC_QUESTLINE_EVENTS } from './npcQuestlineEvents';
 import { NPC_CHECKIN_EVENTS } from './npcCheckInEvents';
 import { CLIFFHANGER_EVENTS } from './cliffhangerEvents';
+import { applyProceduralEventBranching } from './eventBranchingEnhancer';
 import { EventBuilder } from '../builders/EventBuilder';
 import { validateEventGraph, validateEventTagStandard } from '../utils/eventValidation';
 
@@ -20,7 +22,7 @@ import { validateEventGraph, validateEventTagStandard } from '../utils/eventVali
 // Kişilik sistemiyle entegre, dinamik event havuzu
 // =================================================================
 
-export const EVENTS: GameEvent[] = [
+const BASE_EVENTS: GameEvent[] = [
   // Türkiye'ye özgü eventler (kişilik entegreli)
   ...TURKISH_EVENTS,
   // Ahlaki ikilem eventleri (kişilik entegreli)
@@ -35,6 +37,7 @@ export const EVENTS: GameEvent[] = [
   ...MILESTONE_EVENTS,
   ...LATE_TEEN_EVENTS,
   ...FAMILY_ARC_EVENTS,
+  ...ECONOMIC_RECOVERY_EVENTS,
   ...MEMORY_GATED_EVENTS,
   ...AGE_SPECIFIC_EVENTS,
   ...GOAL_CHAIN_EVENTS,
@@ -44,7 +47,14 @@ export const EVENTS: GameEvent[] = [
   ...CLIFFHANGER_EVENTS,
 ];
 
+const BRANCHED_EVENT_RESULT = applyProceduralEventBranching(BASE_EVENTS);
+export const EVENTS: GameEvent[] = BRANCHED_EVENT_RESULT.events;
+
 if (__DEV__) {
+  console.info(
+    `[EventBranching] gated=${BRANCHED_EVENT_RESULT.stats.gatedEvents}/${BRANCHED_EVENT_RESULT.stats.totalEvents}`
+      + ` blocked=${BRANCHED_EVENT_RESULT.stats.blockedEvents}`
+  );
   const eventValidationErrors = validateEventGraph(EVENTS);
   if (eventValidationErrors.length > 0) {
     console.error('[EventValidation] Event graph validation failed:');

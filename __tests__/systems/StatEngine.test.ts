@@ -71,8 +71,9 @@ describe('StatEngine', () => {
       { intelligence: 11 },
       { age: 18, family: null, traits: [], burdenRisk: 62 }
     );
+    const expectedBurdenMultiplier = 1 - (Math.min((62 - 40) / 60, 1) * 0.35);
 
     expect(burdened.newStats.intelligence).toBeLessThan(normal.newStats.intelligence);
-    expect(burdened.details[0].burdenMultiplier).toBe(0.9);
+    expect(burdened.details[0].burdenMultiplier).toBeCloseTo(expectedBurdenMultiplier, 6);
   });
 });

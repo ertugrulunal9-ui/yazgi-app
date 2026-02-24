@@ -234,7 +234,7 @@ export const useTraits = () => {
 
 /**
  * Sadece envanter değiştiğinde re-render
- * Kullanım: Inventory, ShopModal
+ * Kullanım: Inventory
  */
 export const useInventory = (): string[] => {
   const context = useContext(GameContext);

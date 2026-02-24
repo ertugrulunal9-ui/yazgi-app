@@ -18,10 +18,13 @@ export const EventScreen: React.FC = React.memo(() => {
     resolveChoice,
     handleChoice,
     handleContinue,
+    handleCrisisRecoveryAd,
     handleReroll,
     selectedChoice,
     canReroll,
     buttonEnabled,
+    hasCrisisRecoveryOption,
+    crisisRecoveryLoading,
     breakdownShakeX,
     isBreakdownEvent,
     isDramaticEvent,
@@ -66,7 +69,10 @@ export const EventScreen: React.FC = React.memo(() => {
         fate={gameState.fate}
         canReroll={canReroll}
         buttonEnabled={buttonEnabled}
+        hasCrisisRecoveryOption={hasCrisisRecoveryOption}
+        crisisRecoveryLoading={crisisRecoveryLoading}
         onContinue={handleContinue}
+        onRecoverWithAd={handleCrisisRecoveryAd}
         onReroll={handleReroll}
       />
     );
@@ -110,4 +116,3 @@ export const EventScreen: React.FC = React.memo(() => {
 });
 
 EventScreen.displayName = 'EventScreen';
-

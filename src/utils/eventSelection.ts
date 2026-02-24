@@ -169,6 +169,16 @@ const meetsMemory = (
   );
 };
 
+const isDueScheduledEvent = (context: EventContext, eventId: string): boolean => {
+  const scheduled = context.gameState?.scheduledEvents || [];
+  return scheduled.some(item => {
+    if (item.eventId !== eventId) return false;
+    if (typeof item.remainingTurns === 'number') return item.remainingTurns <= 0;
+    if (typeof item.triggerAge === 'number') return item.triggerAge <= context.age;
+    return true;
+  });
+};
+
 export const isEventEligible = (
   event: GameEvent,
   context: EventContext,
@@ -198,6 +208,7 @@ const isEventEligibleWithSets = (
   if (event.reqFamily && !meetsFamily(event.reqFamily, context.family)) return false;
   if (event.reqSkills && !meetsSkills(event.reqSkills, context.skills)) return false;
   if (event.reqMemory && !meetsMemory(event.reqMemory, context.memories)) return false;
+  if (event.tags?.includes('scheduled_only') && !isDueScheduledEvent(context, event.id)) return false;
   if (event.reqEventIds && !event.reqEventIds.every(id => allSeenSet.has(id))) return false;
   if (event.blockEventIds && event.blockEventIds.some(id => allSeenSet.has(id))) return false;
   if (event.reqNoItem && event.reqNoItem.some(itemId => context.inventory?.includes(itemId))) return false;

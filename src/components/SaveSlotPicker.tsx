@@ -43,7 +43,6 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportSlotId, setExportSlotId] = useState<string | null>(null);
   const [saveModalTab, setSaveModalTab] = useState<'export' | 'import'>('export');
-  const premiumUnlocked = SaveManager.getAvailableSlots() > 2;
 
   useEffect(() => {
     if (isOpen) {
@@ -168,18 +167,6 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
           </TouchableOpacity>
         </View>
 
-        {/* Premium Banner */}
-        <View style={styles.premiumBanner}>
-          <View style={styles.premiumLeft}>
-            <Feather name="lock" size={24} color="#eab308" />
-            <View>
-              <Text style={styles.premiumTitle}>Premium Slotlar</Text>
-              <Text style={styles.premiumSubtitle}>Magaza artik Hub ekraninda</Text>
-            </View>
-          </View>
-          <Text style={styles.premiumBannerTag}>{premiumUnlocked ? 'Premium Aktif' : 'Hub > Magaza'}</Text>
-        </View>
-
         {/* Refresh Button */}
         <View style={styles.refreshRow}>
           <TouchableOpacity
@@ -208,33 +195,16 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
           ) : (
             slots.map((metadata) => (
               <View key={metadata.slotId} style={styles.slotCardWrapper}>
-                {premiumUnlocked && metadata.isPremium && metadata.status === 'empty' ? (
-                  <TouchableOpacity
-                    onPress={() => handleSave(metadata.slotId)}
-                    style={[styles.unlockedPremiumCard, { backgroundColor: theme.surfaceBase, borderColor: theme.border }]}
-                    accessibilityLabel={`Premium slot ${metadata.slotId}, kaydetmek icin dokun`}
-                    accessibilityRole="button"
-                  >
-                    <View style={styles.unlockedPremiumHeader}>
-                      <Feather name="unlock" size={18} color="#eab308" />
-                      <Text style={styles.unlockedPremiumTitle}>Premium Slot {metadata.slotId}</Text>
-                    </View>
-                    <Text style={[styles.unlockedPremiumSubtitle, { color: theme.textSecondary }]}>
-                      Bu slota kaydetmek icin dokun
-                    </Text>
-                  </TouchableOpacity>
-                ) : (
-                  <SaveSlotCard
-                    metadata={metadata}
-                    onLoad={handleLoad}
-                    onSave={handleSave}
-                    onDelete={handleDelete}
-                    onExport={handleExport}
-                    isCurrentSlot={metadata.slotId === currentSlotId}
-                    isAutoSave={metadata.slotId === 'auto'}
-                    theme={theme}
-                  />
-                )}
+                <SaveSlotCard
+                  metadata={metadata}
+                  onLoad={handleLoad}
+                  onSave={handleSave}
+                  onDelete={handleDelete}
+                  onExport={handleExport}
+                  isCurrentSlot={metadata.slotId === currentSlotId}
+                  isAutoSave={metadata.slotId === 'auto'}
+                  theme={theme}
+                />
               </View>
             ))
           )}
@@ -358,53 +328,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  premiumBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    margin: 16,
-    marginBottom: 0,
-    padding: 16,
-    backgroundColor: 'rgba(234, 179, 8, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(234, 179, 8, 0.3)',
-    borderRadius: 16,
-  },
-  premiumLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  premiumTitle: {
-    color: '#eab308',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  premiumSubtitle: {
-    color: '#9ca3af',
-    fontSize: 13,
-    marginTop: 2,
-  },
-  premiumBannerTag: {
-    color: '#fde68a',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  premiumButton: {
-    backgroundColor: '#ca8a04',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#eab308',
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  premiumButtonText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 13,
-  },
   refreshRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
@@ -437,28 +360,6 @@ const styles = StyleSheet.create({
   },
   slotCardWrapper: {
     marginBottom: 12,
-  },
-  unlockedPremiumCard: {
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 16,
-    minHeight: 96,
-    justifyContent: 'center',
-  },
-  unlockedPremiumHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
-  },
-  unlockedPremiumTitle: {
-    color: '#eab308',
-    fontWeight: '700',
-    fontSize: 15,
-  },
-  unlockedPremiumSubtitle: {
-    fontSize: 13,
   },
   loadingContainer: {
     alignItems: 'center',
