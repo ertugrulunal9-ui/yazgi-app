@@ -1,5 +1,5 @@
-import React, { createContext, useCallback, useContext, useState } from 'react';
-import { AppLocale, t as translate } from '../i18n/strings';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { AppLocale, setRuntimeLocale, t as translate } from '../i18n/strings';
 import { FloatingText, FloatingTextAnimation } from '../types';
 import { DensityMetrics, ThemeTokens, UIPrefs } from '../utils/themeUtils';
 
@@ -44,6 +44,10 @@ export const UIProvider: React.FC<UIProviderProps> = ({
   children,
 }) => {
   const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
+
+  useEffect(() => {
+    setRuntimeLocale(locale);
+  }, [locale]);
 
   const t = useCallback(
     (key: string, params?: Record<string, string | number | boolean>, fallback?: string) =>

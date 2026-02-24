@@ -32,6 +32,7 @@ import { calculateEndingErrorDebt } from '../utils/endingResolver';
 import { calculateOutcomeScore, updateAdaptivePacingStreak } from '../utils/eventSelection';
 import { buildTraitChangeFeedback } from '../utils/traitFeedback';
 import { PACING_CONSTANTS } from '../constants/gameConstants';
+import { tRuntime } from '../i18n/strings';
 
 export interface ChoiceContext {
   choice: Choice;
@@ -100,6 +101,26 @@ const FATE_OUTCOME_STRENGTH: Record<FateOutcome, number> = {
   BLESSED: 4,
 };
 
+const getMomentumTendencyLabel = (tendency: PersonalityTendency): string => (
+  tRuntime(
+    `feedback.momentum.tendencies.${tendency}`,
+    undefined,
+    MOMENTUM_TENDENCY_LABELS[tendency]
+  )
+);
+
+const getMomentumFlavorText = (tendency: PersonalityTendency): string => (
+  tRuntime(
+    `feedback.momentum.flavor.${tendency}`,
+    undefined,
+    MOMENTUM_FLAVOR_TEXTS[tendency]
+  )
+);
+
+const getFateOutcomeLabel = (outcome: FateOutcome): string => (
+  tRuntime(`feedback.fateLabels.${outcome}`, undefined, FATE_OUTCOME_LABELS[outcome])
+);
+
 const isTendencySignal = (
   signal: PersonalityMomentumSignal | null
 ): signal is PersonalityTendency => (
@@ -121,24 +142,40 @@ const buildForcedFateFeedback = (
   previousOutcome: FateOutcome | undefined,
   nextOutcome: FateOutcome
 ): string => {
-  const nextLabel = FATE_OUTCOME_LABELS[nextOutcome];
+  const nextLabel = getFateOutcomeLabel(nextOutcome);
   if (!previousOutcome) {
-    return `Token kullandin: yeni kaderin ${nextLabel}.`;
+    return tRuntime(
+      'feedback.fateTokenUsed',
+      { outcome: nextLabel },
+      `Token kullandin: yeni kaderin ${nextLabel}.`
+    );
   }
 
-  const previousLabel = FATE_OUTCOME_LABELS[previousOutcome];
+  const previousLabel = getFateOutcomeLabel(previousOutcome);
   if (previousOutcome === nextOutcome) {
-    return `Token kullandin: kader sonucun ${nextLabel} olarak sabitlendi.`;
+    return tRuntime(
+      'feedback.fateTokenFixed',
+      { outcome: nextLabel },
+      `Token kullandin: kader sonucun ${nextLabel} olarak sabitlendi.`
+    );
   }
 
   const previousStrength = FATE_OUTCOME_STRENGTH[previousOutcome];
   const nextStrength = FATE_OUTCOME_STRENGTH[nextOutcome];
 
   if (nextStrength > previousStrength) {
-    return `Token sayesinde sansin dondu: ${previousLabel} -> ${nextLabel}.`;
+    return tRuntime(
+      'feedback.fateTokenImproved',
+      { from: previousLabel, to: nextLabel },
+      `Token sayesinde sansin dondu: ${previousLabel} -> ${nextLabel}`
+    );
   }
 
-  return `Token etkisi: ${previousLabel} -> ${nextLabel}.`;
+  return tRuntime(
+    'feedback.fateTokenChanged',
+    { from: previousLabel, to: nextLabel },
+    `Token etkisi: ${previousLabel} -> ${nextLabel}`
+  );
 };
 
 const buildMomentumFeedback = (
@@ -152,18 +189,31 @@ const buildMomentumFeedback = (
   if (isTendencySignal(signal)) {
     const prevEntry = previous[signal];
     const nextEntry = next[signal];
+    const tendencyLabel = getMomentumTendencyLabel(signal);
     const multiplierDelta = roundTo2(nextEntry.multiplier - prevEntry.multiplier);
     const bonusPercent = Math.max(0, Math.round((nextEntry.multiplier - 1) * 100));
     const shouldShowFlavor = shouldShowMomentumFlavorFeedback(prevEntry.streak, nextEntry.streak);
     const feedbackText = shouldShowFlavor
-      ? `${MOMENTUM_FLAVOR_TEXTS[signal]} +%${bonusPercent} momentum bonusu!`
+      ? `${getMomentumFlavorText(signal)} ${tRuntime(
+        'feedback.momentum.highMomentum',
+        { percent: bonusPercent },
+        '+{percent}% Momentum Bonusu!'
+      )}`
       : (bonusPercent > 0
-        ? `+%${bonusPercent} Momentum Bonusu!`
-        : `${MOMENTUM_TENDENCY_LABELS[signal]} ritmi gucleniyor!`);
+        ? tRuntime(
+          'feedback.momentum.highMomentum',
+          { percent: bonusPercent },
+          '+{percent}% Momentum Bonusu!'
+        )
+        : tRuntime(
+          'feedback.momentum.strengthening',
+          { tendency: tendencyLabel },
+          `${tendencyLabel} ritmi gucleniyor!`
+        ));
 
     return {
       tendency: signal,
-      tendencyLabel: MOMENTUM_TENDENCY_LABELS[signal],
+      tendencyLabel,
       multiplier: nextEntry.multiplier,
       multiplierDelta,
       streak: nextEntry.streak,
@@ -179,16 +229,21 @@ const buildMomentumFeedback = (
     const prevEntry = previous[tendency];
     const nextEntry = next[tendency];
     if (prevEntry.streak > nextEntry.streak && prevEntry.streak >= 3) {
+      const tendencyLabel = getMomentumTendencyLabel(tendency);
       return {
         tendency,
-        tendencyLabel: MOMENTUM_TENDENCY_LABELS[tendency],
+        tendencyLabel,
         multiplier: nextEntry.multiplier,
         multiplierDelta: roundTo2(nextEntry.multiplier - prevEntry.multiplier),
         streak: nextEntry.streak,
         streakBroken: true,
         unlockedNow: false,
         bonusPercent: Math.max(0, Math.round((nextEntry.multiplier - 1) * 100)),
-        feedbackText: `${MOMENTUM_TENDENCY_LABELS[tendency]} ivmesi kirildi!`,
+        feedbackText: tRuntime(
+          'feedback.momentum.streakBroken',
+          { tendency: tendencyLabel },
+          `${tendencyLabel} ritmi kirildi!`
+        ),
       };
     }
   }

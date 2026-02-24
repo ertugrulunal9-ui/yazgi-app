@@ -5,6 +5,7 @@ import ViewShot from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { useGame } from '../context/GameContext';
 import { useMetaProgression } from '../context/MetaProgressionContext';
+import { useUI } from '../context/UIContext';
 import { getThemeTokens, getDensityMetrics } from '../utils/themeUtils';
 import { getTraitName } from '../data/traits';
 import {
@@ -58,36 +59,6 @@ const getTierBadgeColor = (tier: string): string => {
   return '#ef4444';
 };
 
-// ── Katman 1: Personality-bazlı anlatı ───────────────────────────────
-const PERSONALITY_NARRATIVES: Record<PersonalityTendency, string> = {
-  HELPFUL:    'İnsanlarla kurduğun bağlar hayatının her köşesine işledi. Veriverdin, bazen kendine bile fırsat bırakmadan.',
-  PRAGMATIC:  'Hesaplı adımlar attın. Her kararında mantık vardı; duygular geride kalırdı.',
-  AGGRESSIVE: 'Sınırlarını sert çizdin. Bu sana hem güç hem bedel getirdi.',
-};
-
-const getFarewellNarrative = (
-  personalityState: Parameters<typeof normalizePersonalityState>[0],
-  playerName: string
-): string => {
-  const normalized = normalizePersonalityState(personalityState);
-  const dominant = (['HELPFUL', 'PRAGMATIC', 'AGGRESSIVE'] as PersonalityTendency[])
-    .slice()
-    .sort((a, b) => normalized[b].multiplier - normalized[a].multiplier)[0];
-
-  const base = dominant ? PERSONALITY_NARRATIVES[dominant] : 'Kendi yolunu kendi biçiminde yürüdün.';
-  return `${playerName}... ${base}`;
-};
-
-// ── Katman 3: Alternatif yol önerisi ─────────────────────────────────
-const ALTERNATIVE_SUGGESTIONS: Record<string, string> = {
-  ACADEMIC:   '"Sanatçı" yolunu denemeyi düşündün mü hiç?',
-  CREATIVE:   '"Sporcu" ruhuyla bambaşka bir hikaye seni bekliyor.',
-  ATHLETIC:   '"Akademisyen" gözlükleriyle dünyayı nasıl görürdün acaba?',
-  SOCIAL:     '"Girişimci" modunda ne kadar farklı olurdun?',
-  ENTERPRISE: '"Sosyal" önceliklerle ne değişirdi?',
-  BALANCED:   'Bir hedefi tüm kalbinle benimseseydin?',
-};
-
 const ENDING_GOAL_TO_LIFE_GOAL: Record<EndingGoal, LifeGoal | null> = {
   ACADEMIC: 'ACADEMIC',
   ATHLETIC: 'ATHLETIC',
@@ -99,6 +70,7 @@ const ENDING_GOAL_TO_LIFE_GOAL: Record<EndingGoal, LifeGoal | null> = {
 
 export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, onRestart, npcs: npcsProp }) => {
   const { gameState, playerName, stats } = useGame();
+  const { t } = useUI();
   const { metaProgression } = useMetaProgression();
   const safeMeta = metaProgression ?? createInitialMetaProgression();
   const npcs = npcsProp ?? gameState.npcs;
@@ -131,12 +103,17 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
     })
   ), [compatibilityScore, gameState.unlockedAchievements, tier]);
 
-  // Katman 1: Kişilik bazlı veda anlatısı
-  const farewellNarrative = useMemo(() => (
-    getFarewellNarrative(gameState.personalityState, playerName)
-  ), [gameState.personalityState, playerName]);
+  const farewellNarrative = useMemo(() => {
+    const normalized = normalizePersonalityState(gameState.personalityState);
+    const dominant = (['HELPFUL', 'PRAGMATIC', 'AGGRESSIVE'] as PersonalityTendency[])
+      .slice()
+      .sort((a, b) => normalized[b].multiplier - normalized[a].multiplier)[0];
+    const base = dominant
+      ? t(`endings.personalities.${dominant}`, undefined, '')
+      : t('endings.personalities.DEFAULT', undefined, 'You walked your own path in your own way.');
+    return `${playerName}... ${base}`;
+  }, [gameState.personalityState, playerName, t]);
 
-  // Katman 3: En yüksek skorlu alternatif hedef önerisi
   const bestAlternativeGoal = useMemo(() => {
     const allScores = calculateAllGoalScores(gameState, stats);
     const selectedEndingGoal = endingResolution.goal;
@@ -145,8 +122,8 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
 
   const alternativeSuggestion = useMemo(() => {
     if (!bestAlternativeGoal) return null;
-    return ALTERNATIVE_SUGGESTIONS[bestAlternativeGoal.goal] ?? null;
-  }, [bestAlternativeGoal]);
+    return t(`endings.suggestions.${bestAlternativeGoal.goal}`, undefined, '');
+  }, [bestAlternativeGoal, t]);
 
   const alternativeEndingPreview = useMemo(() => {
     if (!bestAlternativeGoal) return null;
@@ -192,19 +169,25 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
     try {
       const sharingAvailable = await Sharing.isAvailableAsync();
       if (!sharingAvailable) {
-        Alert.alert('Paylasim kullanilamiyor', 'Bu cihazda paylasim desteklenmiyor.');
+        Alert.alert(
+          t('messages.sharingUnavailable', undefined, 'Paylasim kullanilamiyor'),
+          t('messages.sharingNotSupported', undefined, 'Bu cihazda paylasim desteklenmiyor.')
+        );
         return;
       }
 
       const uri = await shareCardRef.current?.capture?.();
       if (!uri) {
-        Alert.alert('Paylasim hazir degil', 'Kart olusturulamadi, tekrar dene.');
+        Alert.alert(
+          t('messages.sharingNotReady', undefined, 'Paylasim hazir degil'),
+          t('messages.cardCreationFailed', undefined, 'Kart olusturulamadi, tekrar dene.')
+        );
         return;
       }
 
       await Sharing.shareAsync(uri, {
         mimeType: 'image/png',
-        dialogTitle: 'Yazgi - Hayatimi Paylas',
+        dialogTitle: t('messages.shareTitle', undefined, 'Yazgi - Hayatimi Paylas'),
       });
 
       void logShareEvent({
@@ -214,7 +197,10 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
       });
     } catch (error) {
       console.error('Failed to share life card:', error);
-      Alert.alert('Paylasim basarisiz', 'Kart paylasimi tamamlanamadi.');
+      Alert.alert(
+        t('messages.sharingFailed', undefined, 'Paylasim basarisiz'),
+        t('messages.cardSharingFailed', undefined, 'Kart paylasimi tamamlanamadi.')
+      );
     } finally {
       setIsSharing(false);
     }
@@ -243,7 +229,10 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
           remainingAfter,
           errorMessage: adResult.error,
         });
-        Alert.alert('Reklam gosterilemedi', adResult.error || 'Lutfen tekrar dene.');
+        Alert.alert(
+          t('messages.adNotShown', undefined, 'Reklam gosterilemedi'),
+          adResult.error || t('messages.tryAgain', undefined, 'Lutfen tekrar dene.')
+        );
         return;
       }
 
@@ -310,7 +299,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
               textAlign: 'center',
               marginBottom: 6,
             }}>
-              Yolun Sonu
+              {t('endings.title', undefined, 'Yolun Sonu')}
             </Text>
           </FadeInDownView>
 
@@ -322,11 +311,14 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
               marginBottom: 10,
               fontWeight: '700',
             }}>
-              {'\u{1F5DD}\uFE0F'} {discoveredEndingCount} / {TOTAL_ENDING_COUNT} son kesfedildi
+              {'\u{1F5DD}\uFE0F'} {t(
+                'endings.discoveredCount',
+                { discovered: discoveredEndingCount, total: TOTAL_ENDING_COUNT },
+                '{discovered} / {total} son kesfedildi'
+              )}
             </Text>
           </FadeInUpView>
 
-          {/* Katman 1 — Kişilik anlatısı */}
           <FadeInUpView delay={110}>
             <Text style={{
               color: theme.textSecondary,
@@ -342,14 +334,16 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
 
           <FadeInUpView delay={150}>
             <Text style={{ color: theme.textSecondary, fontFamily: theme.fontBody, textAlign: 'center', marginBottom: 8 }}>
-              {playerName} - {MAX_AGE} yaşını tamamladı
+              {t('endings.completedAge', { name: playerName, age: MAX_AGE }, '{name} {age} yasini tamamladi')}
             </Text>
           </FadeInUpView>
 
           <FadeInUpView delay={220}>
             <View style={{ alignItems: 'center', marginBottom: 12 }}>
               <View style={{ backgroundColor: `${tierColor}22`, borderColor: tierColor, borderWidth: 1, borderRadius: 999, paddingVertical: 4, paddingHorizontal: 12, marginBottom: 8 }}>
-                <Text style={{ color: tierColor, fontSize: 11, fontWeight: '700' }}>{tier}</Text>
+                <Text style={{ color: tierColor, fontSize: 11, fontWeight: '700' }}>
+                  {t(`endings.tiers.${tier}`, undefined, tier)}
+                </Text>
               </View>
               <Text style={{ color: theme.textPrimary, fontSize: 20, fontWeight: '700', textAlign: 'center', marginBottom: 8 }}>
                 {result.title}
@@ -362,7 +356,9 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
 
           <FadeInUpView delay={280}>
             <View style={{ marginBottom: 16 }}>
-              <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>Sonuc Analizi</Text>
+              <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
+                {t('endings.analysisTitle', undefined, 'Sonuc Analizi')}
+              </Text>
               <View style={{ flexDirection: 'row', justifyContent: 'space-around', paddingVertical: 8 }}>
                 <FadeInLeftView delay={330}>
                   <View style={{ alignItems: 'center' }}>
@@ -370,7 +366,9 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                       value={Math.round(compatibilityScore)}
                       style={{ color: theme.accentSkill, fontWeight: '700', fontSize: 18 }}
                     />
-                    <Text style={{ color: theme.textSecondary, fontSize: 11 }}>Hedef Uyumu</Text>
+                    <Text style={{ color: theme.textSecondary, fontSize: 11 }}>
+                      {t('endings.compatibilityScore', undefined, 'Hedef Uyumu')}
+                    </Text>
                   </View>
                 </FadeInLeftView>
                 <FadeInRightView delay={330}>
@@ -379,7 +377,9 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                       value={Math.round(errorDebt.total)}
                       style={{ color: theme.accentStat, fontWeight: '700', fontSize: 18 }}
                     />
-                    <Text style={{ color: theme.textSecondary, fontSize: 11 }}>Hata Borcu</Text>
+                    <Text style={{ color: theme.textSecondary, fontSize: 11 }}>
+                      {t('endings.errorDebt', undefined, 'Hata Borcu')}
+                    </Text>
                   </View>
                 </FadeInRightView>
                 <FadeInRightView delay={360}>
@@ -388,7 +388,9 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                       value={gameState.traits.length}
                       style={{ color: theme.accentGrade, fontWeight: '700', fontSize: 18 }}
                     />
-                    <Text style={{ color: theme.textSecondary, fontSize: 11 }}>Ozellik</Text>
+                    <Text style={{ color: theme.textSecondary, fontSize: 11 }}>
+                      {t('endings.traits', undefined, 'Ozellik')}
+                    </Text>
                   </View>
                 </FadeInRightView>
               </View>
@@ -397,21 +399,27 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
 
           <FadeInUpView delay={340}>
             <View style={{ marginBottom: 16 }}>
-              <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>Hedef</Text>
+              <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
+                {t('endings.goalLabel', undefined, 'Hedef')}
+              </Text>
               <Text style={{ color: theme.textPrimary, fontWeight: '600' }}>{selectedGoalLabel}</Text>
               {selectedGoalLabel !== goalLabel && (
                 <Text style={{ color: theme.textSecondary, marginTop: 2 }}>
-                  Aktif hesaplama: {goalLabel}
+                  {`${t('endings.activeCalculation', undefined, 'Aktif hesaplama: ')}${goalLabel}`}
                 </Text>
               )}
               {mismatchFailure && (
                 <Text style={{ color: '#f97316', marginTop: 6, lineHeight: 18 }}>
-                  Beklenmedik Yol: secilen hedeften farkli olarak {inferredGoalLabel} rotasinda daha guclu bir profil olusturdun.
+                  {t(
+                    'endings.unexpectedPath',
+                    { inferred: inferredGoalLabel },
+                    'Beklenmedik Yol: secilen hedeften farkli olarak {inferred} rotasinda daha guclu bir profil olusturdun.'
+                  )}
                 </Text>
               )}
               {errorDebt.reasons.length > 0 && (
                 <Text style={{ color: theme.textSecondary, marginTop: 6, lineHeight: 18 }}>
-                  Kritik borclar: {errorDebt.reasons.slice(0, 2).join(', ')}
+                  {`${t('endings.criticalDebts', undefined, 'Kritik borclar: ')}${errorDebt.reasons.slice(0, 2).join(', ')}`}
                 </Text>
               )}
             </View>
@@ -420,7 +428,9 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
           {achievementFlavor.length > 0 && (
             <FadeInUpView delay={380}>
               <View style={{ marginBottom: 16 }}>
-                <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>Basarim Etkisi</Text>
+                <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
+                  {t('endings.achievementImpact', undefined, 'Basarim Etkisi')}
+                </Text>
                 {achievementFlavor.slice(0, 2).map((line, index) => (
                   <Text key={`${line}_${index}`} style={{ color: theme.textPrimary, marginBottom: 4, lineHeight: 18 }}>
                     - {line}
@@ -433,7 +443,9 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
           {gameState.traits.length > 0 && (
             <FadeInUpView delay={420}>
               <View style={{ marginBottom: 16 }}>
-                <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>Kazanilan Ozellikler</Text>
+                <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
+                  {t('endings.gainedTraits', undefined, 'Kazanilan Ozellikler')}
+                </Text>
                 <StaggeredFadeIn>
                   {gameState.traits.map((traitId) => (
                     <View key={traitId} style={{
@@ -446,7 +458,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                       borderColor: theme.border,
                     }}>
                       <Text style={{ color: theme.accentEvent, fontWeight: '600', fontSize: 13 }}>
-                        ✨ {getTraitName(traitId)}
+                        {'\u2728'} {getTraitName(traitId)}
                       </Text>
                     </View>
                   ))}
@@ -458,20 +470,24 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
           {highlightedRelations.length > 0 && (
             <FadeInUpView delay={440}>
               <View style={{ marginBottom: 16 }}>
-                <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>Iliskiler</Text>
+                <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
+                  {t('endings.relationships', undefined, 'Iliskiler')}
+                </Text>
                 <View style={{ borderTopWidth: 1, borderTopColor: theme.border }}>
                   {highlightedRelations.map((npc) => {
                     const roleLabel = npc.role === 'PARTNER'
-                      ? 'Sevgili'
-                      : (npc.role === 'BEST_FRIEND' ? 'En Iyi Arkadas' : 'Dusman');
-                    const roleEmoji = npc.role === 'PARTNER'
-                      ? '💑'
-                      : (npc.role === 'BEST_FRIEND' ? '👥' : '⚔️');
-                    const relationLine = npc.role === 'PARTNER'
-                      ? `${npc.metAge} yasinda tanistin`
+                      ? t('labels.npcRoles.PARTNER', undefined, 'Sevgili')
                       : (npc.role === 'BEST_FRIEND'
-                        ? `${Math.max(1, gameState.age - npc.metAge)} yillik dostluk`
-                        : 'hic barismadin');
+                        ? t('labels.npcRoles.BEST_FRIEND', undefined, 'En Iyi Arkadas')
+                        : t('labels.npcRoles.ENEMY', undefined, 'Dusman'));
+                    const roleEmoji = npc.role === 'PARTNER'
+                      ? '\u{1F48D}'
+                      : (npc.role === 'BEST_FRIEND' ? '\u{1F465}' : '\u2694\uFE0F');
+                    const relationLine = npc.role === 'PARTNER'
+                      ? `${npc.metAge}${t('endings.metAtAge', undefined, ' yasinda tanistin')}`
+                      : (npc.role === 'BEST_FRIEND'
+                        ? `${Math.max(1, gameState.age - npc.metAge)}${t('endings.friendshipYears', undefined, ' yillik dostluk')}`
+                        : t('endings.neverMadeUp', undefined, 'hic barismadin'));
 
                     return (
                       <View
@@ -498,20 +514,25 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
 
           <FadeInUpView delay={460}>
             <View style={{ marginBottom: 16 }}>
-              <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>Legacy</Text>
+              <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
+                {t('endings.legacy', undefined, 'Legacy')}
+              </Text>
               <Text style={{ color: theme.textPrimary, marginBottom: 4 }}>
-                Bu kosu: +{runLegacyPoints} legacy puani
+                {t('endings.runLegacyPoints', { points: runLegacyPoints }, 'Bu kosu: +{points} legacy puani')}
               </Text>
               <Text style={{ color: theme.textSecondary, marginBottom: 2 }}>
-                Toplam kosu: {safeMeta.totalRunsCompleted} | Seviye: {safeMeta.legacyLevel}
+                {t(
+                  'endings.totalRunsLevel',
+                  { runs: safeMeta.totalRunsCompleted, level: safeMeta.legacyLevel },
+                  'Toplam kosu: {runs} | Seviye: {level}'
+                )}
               </Text>
               <Text style={{ color: theme.textSecondary }}>
-                Toplam legacy puani: {safeMeta.totalLegacyPoints}
+                {`${t('endings.totalLegacyPoints', undefined, 'Toplam legacy puani: ')}${safeMeta.totalLegacyPoints}`}
               </Text>
             </View>
           </FadeInUpView>
 
-          {/* Katman 2 - Gelecege bakis */}
           <FadeInUpView delay={470}>
             <View style={{
               marginBottom: 16,
@@ -522,7 +543,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
               padding: metrics.pad,
             }}>
               <Text style={{ color: theme.textPrimary, fontWeight: '700', fontSize: 15, marginBottom: 8 }}>
-                {'\u{1F4D6}'} Hayatinin Geri Kalani
+                {'\u{1F4D6}'} {t('endings.remainingLife', undefined, 'Hayatinin Geri Kalani')}
               </Text>
               <Text style={{ color: theme.textSecondary, lineHeight: 20, marginBottom: 10 }}>
                 {futureVision.at30}
@@ -530,7 +551,9 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
 
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
                 <View style={{ flex: 1, height: 1, backgroundColor: theme.border }} />
-                <Text style={{ color: theme.textSecondary, fontSize: 11, marginHorizontal: 8 }}>20 yil sonra</Text>
+                <Text style={{ color: theme.textSecondary, fontSize: 11, marginHorizontal: 8 }}>
+                  {t('endings.in20Years', undefined, '20 yil sonra')}
+                </Text>
                 <View style={{ flex: 1, height: 1, backgroundColor: theme.border }} />
               </View>
 
@@ -539,12 +562,11 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
               </Text>
 
               <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
-                {futureMoodIcon} Gelecek ruh hali: {futureVision.mood}
+                {`${futureMoodIcon} ${t('endings.futureMood', undefined, 'Gelecek ruh hali: ')}${futureVision.mood}`}
               </Text>
             </View>
           </FadeInUpView>
 
-          {/* Katman 3 - Yeniden oynama kancasi */}
           {alternativeSuggestion && (
             <FadeInUpView delay={480}>
               <View style={{
@@ -555,7 +577,9 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                 borderWidth: 1,
                 borderColor: theme.border,
               }}>
-                <Text style={{ color: theme.textSecondary, fontSize: 11, marginBottom: 4 }}>Peki ya farklı seçseydin?</Text>
+                <Text style={{ color: theme.textSecondary, fontSize: 11, marginBottom: 4 }}>
+                  {t('endings.whatIfDifferent', undefined, 'Peki ya farkli secseydin?')}
+                </Text>
                 <Text style={{ color: theme.textPrimary, fontWeight: '600', lineHeight: 20 }}>
                   {alternativeSuggestion}
                 </Text>
@@ -577,7 +601,9 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                     }}
                   >
                     <Text style={{ color: '#22c55e', fontWeight: '700', fontSize: 13 }}>
-                      {altEndingUnlocking ? 'Reklam yukleniyor...' : 'Reklam Izle: Alternatif Sonu Goster'}
+                      {altEndingUnlocking
+                        ? t('ui.adLoading', undefined, 'Reklam yukleniyor...')
+                        : t('buttons.watchAdAlternativeEnding', undefined, 'Reklam Izle: Alternatif Sonu Goster')}
                     </Text>
                   </ShimmerButton>
                 )}
@@ -592,7 +618,11 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                     backgroundColor: '#052e16',
                   }}>
                     <Text style={{ color: '#86efac', fontWeight: '700', marginBottom: 4 }}>
-                      Alternatif Son ({bestAlternativeGoal.label})
+                      {t(
+                        'endings.alternativeEndingTitle',
+                        { goal: bestAlternativeGoal.label },
+                        'Alternatif Son ({goal})'
+                      )}
                     </Text>
                     <Text style={{ color: '#dcfce7', fontWeight: '700', marginBottom: 4 }}>
                       {alternativeEndingPreview.result.emoji} {alternativeEndingPreview.result.title}
@@ -628,7 +658,9 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                 fontFamily: theme.fontHeading,
                 fontSize: 15,
               }}>
-                {isSharing ? 'Kart Hazirlaniyor...' : 'Hayatimi Paylas'}
+                {isSharing
+                  ? t('ui.cardPreparing', undefined, 'Kart Hazirlaniyor...')
+                  : t('buttons.shareLife', undefined, 'Hayatimi Paylas')}
               </Text>
             </ShimmerButton>
           </FadeInUpView>
@@ -652,7 +684,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                 fontFamily: theme.fontHeading,
                 fontSize: 16,
               }}>
-                Yeni Oyun
+                {t('buttons.newGame', undefined, 'Yeni Oyun')}
               </Text>
             </ShimmerButton>
           </FadeInUpView>

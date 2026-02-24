@@ -172,8 +172,10 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
 
     const summary = traitChanges.map(change => change.summary).join(' ');
     const guidance = traitChanges.find(change => !!change.guidance)?.guidance;
-    return guidance ? `${summary}\nIpuclari: ${guidance}` : summary;
-  }, []);
+    return guidance
+      ? `${summary}\n${t('ui.feedbackOverlay.hints', undefined, 'Ipuclari:')} ${guidance}`
+      : summary;
+  }, [t]);
 
   const triggerMilestoneShare = useCallback(async (message: string) => {
     try {
@@ -199,7 +201,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     const remainingAfter = getRemainingRewardedAds();
 
     if (!adResult.success) {
-      enqueueToast(adResult.error || 'Reklam gosterilemedi', 'error');
+      enqueueToast(adResult.error || t('messages.adNotShown', undefined, 'Reklam gosterilemedi'), 'error');
       void logRewardedAdResult({
         placement: 'energy_depleted',
         rewardType: 'energy',
@@ -216,9 +218,9 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
 
     if (delta > 0) {
       updateStats({ energy: delta });
-      enqueueToast(`+${delta} enerji kazandin`, 'success');
+      enqueueToast(t('messages.energyGained', { amount: delta }, `+{amount} enerji kazandin`), 'success');
     } else {
-      enqueueToast('Enerjin zaten dolu', 'info');
+      enqueueToast(t('messages.energyFull', undefined, 'Enerjin zaten dolu'), 'info');
     }
 
     void logRewardedAdResult({
@@ -228,7 +230,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
       amount: delta,
       remainingAfter,
     });
-  }, [enqueueToast, gameState.maxEnergy, stats.energy, updateStats]);
+  }, [enqueueToast, gameState.maxEnergy, stats.energy, t, updateStats]);
 
   const clearExamPrepBoost = useCallback(() => {
     if (examPrepBoostApplied <= 0) return;
@@ -248,7 +250,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     const remainingAfter = getRemainingRewardedAds();
 
     if (!adResult.success) {
-      enqueueToast(adResult.error || 'Reklam gosterilemedi', 'error');
+      enqueueToast(adResult.error || t('messages.adNotShown', undefined, 'Reklam gosterilemedi'), 'error');
       void logRewardedAdResult({
         placement: 'exam_prep',
         rewardType: 'intelligence',
@@ -265,10 +267,16 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     if (appliedBoost > 0) {
       updateStats({ intelligence: appliedBoost });
       setExamPrepBoostApplied(appliedBoost);
-      enqueueToast(`Sinav odagi aktif: +${appliedBoost} zeka`, 'success');
+      enqueueToast(
+        t('messages.examFocusActive', { boost: appliedBoost }, 'Sinav odagi aktif: +{boost} zeka'),
+        'success'
+      );
     } else {
       setExamPrepBoostApplied(0);
-      enqueueToast('Zeka zaten maksimum, odak bonusu sinirda kaldi', 'info');
+      enqueueToast(
+        t('messages.focusBonusLimitReached', undefined, 'Zeka zaten maksimum, odak bonusu sinirda kaldi'),
+        'info'
+      );
     }
 
     void logRewardedAdResult({
@@ -280,7 +288,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     });
 
     return appliedBoost;
-  }, [enqueueToast, stats.intelligence, updateStats]);
+  }, [enqueueToast, stats.intelligence, t, updateStats]);
 
   useEffect(() => {
     if (achievementsLoading) return;
@@ -371,16 +379,17 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
       // Show result toast
       const accuracy = Math.round((result.correctAnswers / result.totalQuestions) * 100);
       const gradeEmoji = accuracy >= 85 ? '\uD83C\uDFC6' : accuracy >= 70 ? '\uD83C\uDF89' : accuracy >= 50 ? '\u2705' : '\uD83D\uDE30';
+      const correctCount = `${result.correctAnswers}/${result.totalQuestions} (%${accuracy})`;
       enqueueToast(
-        `${gradeEmoji} S\u0131nav Bitti!\n\n` +
-        `Do\u011Fru: ${result.correctAnswers}/${result.totalQuestions} (%${accuracy})\n` +
-        `Not Bonusu: +${result.gradeBonus}\n` +
-        `Puan: ${result.finalScore}`,
+        `${gradeEmoji} ${t('messages.examFinished', undefined, 'Sinav Bitti!')}\n\n` +
+        `${t('messages.examCorrect', { count: correctCount }, 'Dogru: {count}')}\n` +
+        `${t('messages.examGradeBonus', { bonus: result.gradeBonus }, 'Not Bonusu: +{bonus}')}\n` +
+        `${t('messages.examScore', { score: result.finalScore }, 'Puan: {score}')}`,
         accuracy >= 50 ? 'success' : 'warning'
       );
       if (examPrepBoostApplied > 0) {
         clearExamPrepBoost();
-        enqueueToast('Sinav odak takviyesi sona erdi', 'info');
+        enqueueToast(t('messages.examFocusEnded', undefined, 'Sinav odak takviyesi sona erdi'), 'info');
       }
     },
   });
@@ -453,15 +462,15 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     };
 
     Alert.alert(
-      'Sinav Hazirligi',
-      'Sinav oncesi reklam izleyip gecici +15 zeka odagi almak ister misin?',
+      t('dialogs.examPrep.title', undefined, 'Sinav Hazirligi'),
+      t('dialogs.examPrep.description', undefined, 'Sinav oncesi reklam izleyip gecici +15 zeka odagi almak ister misin?'),
       [
         {
-          text: 'Direkt Basla',
+          text: t('buttons.startDirect', undefined, 'Direkt Basla'),
           onPress: startExam,
         },
         {
-          text: 'Reklam Izle',
+          text: t('buttons.watchAd', undefined, 'Reklam Izle'),
           onPress: () => {
             void (async () => {
               clearExamPrepBoost();
@@ -472,7 +481,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
         },
       ]
     );
-  }, [claimExamPrepBoostAd, clearExamPrepBoost, openExamGame]);
+  }, [claimExamPrepBoostAd, clearExamPrepBoost, openExamGame, t]);
 
   const handleActionSelect = useCallback((action: SubAction) => {
     buttonPress();
@@ -492,12 +501,12 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
       );
       if (result.errorType === 'NOT_ENOUGH_ENERGY') {
         Alert.alert(
-          'Enerjin bitti',
-          'Bir reklam izleyerek +25 enerji kazanmak ister misin?',
+          t('dialogs.outOfEnergy.title', undefined, 'Enerjin bitti'),
+          t('dialogs.outOfEnergy.description', undefined, 'Bir reklam izleyerek +25 enerji kazanmak ister misin?'),
           [
-            { text: 'Vazgec', style: 'cancel' },
+            { text: t('buttons.decline', undefined, 'Vazgec'), style: 'cancel' },
             {
-              text: 'Reklam Izle',
+              text: t('buttons.watchAd', undefined, 'Reklam Izle'),
               onPress: () => {
                 void claimEnergyRecoveryAd();
               },
@@ -568,12 +577,15 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     if (action.id === 'social_meet_new') {
       const socialResult = meetNewNPC();
       if (socialResult.success && socialResult.npc) {
-        enqueueToast(`${socialResult.npc.name} ile tanistin!`, 'success');
+        enqueueToast(
+          t('messages.metNPC', { name: socialResult.npc.name }, '{name} ile tanistin!'),
+          'success'
+        );
       }
     }
 
     handleCloseBottomSheet();
-  }, [gameState, stats, updateGameState, handleCloseBottomSheet, meetNewNPC, promptExamPrepAndStartExam, setStats, enqueueToast, buildTraitToastMessage, claimEnergyRecoveryAd]);
+  }, [gameState, stats, updateGameState, handleCloseBottomSheet, meetNewNPC, promptExamPrepAndStartExam, setStats, enqueueToast, buildTraitToastMessage, claimEnergyRecoveryAd, t]);
 
   // Handle report card close
   const handleReportCardClose = useCallback(() => {
@@ -699,9 +711,9 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     try {
       advanceTurn();
     } catch (error) {
-      console.error("Tur ilerliyor: HATA - advanceTurn s\u0131ras\u0131nda bir sorun olu\u015Ftu:", error);
+      console.error(t('errors.turnAdvanceError', undefined, 'Tur ilerliyor: HATA - advanceTurn sirasinda bir sorun olustu'), error);
     }
-  }, [advanceTurn]);
+  }, [advanceTurn, t]);
 
   const activeContentTab = currentTab === 'settings' ? 'hub' : currentTab;
 
@@ -723,6 +735,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
               riskPercent={riskPercent}
               riskReasons={riskReasons}
               theme={theme}
+              t={t}
             />
           </View>
 
@@ -916,7 +929,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
                 style={[endDayButtonStyle, { pointerEvents: isInteractionLocked ? 'none' : 'auto' }]}
                 accessibilityRole="button"
                 accessibilityLabel={t('game.endDay', undefined, 'Gunu Bitir')}
-                accessibilityHint="Siradaki tura gecer"
+                accessibilityHint={t('game.endDayHint', undefined, 'Siradaki tura gecer')}
               >
                 <Text style={{
                   color: isInteractionLocked ? theme.textSecondary : '#ffffff',

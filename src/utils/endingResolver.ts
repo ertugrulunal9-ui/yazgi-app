@@ -8,6 +8,7 @@ import {
   UnlockedAchievement,
 } from '../types';
 import { BURDEN_CONSTANTS } from '../constants/gameConstants';
+import { tRuntime } from '../i18n/strings';
 
 export type EndingGoal = 'ACADEMIC' | 'CREATIVE' | 'ATHLETIC' | 'SOCIAL' | 'ENTERPRISE' | 'BALANCED';
 
@@ -22,82 +23,172 @@ export interface EndingCatalogEntry {
 const GOAL_ENDING_CATALOG: {
   goal: EndingGoal;
   prefix: string;
-  label: string;
+  labelKey: string;
+  fallbackLabel: string;
   icon: string;
 }[] = [
-  { goal: 'ACADEMIC', prefix: 'academic', label: 'Akademik Yol', icon: '\u{1F393}' },
-  { goal: 'CREATIVE', prefix: 'creative', label: 'Yaratici Yol', icon: '\u{1F3A8}' },
-  { goal: 'ATHLETIC', prefix: 'athletic', label: 'Atletik Yol', icon: '\u{1F3C3}' },
-  { goal: 'SOCIAL', prefix: 'social', label: 'Sosyal Yol', icon: '\u{1F91D}' },
-  { goal: 'ENTERPRISE', prefix: 'enterprise', label: 'Girisim Yolu', icon: '\u{1F4BC}' },
-  { goal: 'BALANCED', prefix: 'balanced', label: 'Dengeli Yol', icon: '\u2696\uFE0F' },
+  {
+    goal: 'ACADEMIC',
+    prefix: 'academic',
+    labelKey: 'endings.catalog.goals.ACADEMIC',
+    fallbackLabel: 'Akademik Yol',
+    icon: '\u{1F393}',
+  },
+  {
+    goal: 'CREATIVE',
+    prefix: 'creative',
+    labelKey: 'endings.catalog.goals.CREATIVE',
+    fallbackLabel: 'Yaratici Yol',
+    icon: '\u{1F3A8}',
+  },
+  {
+    goal: 'ATHLETIC',
+    prefix: 'athletic',
+    labelKey: 'endings.catalog.goals.ATHLETIC',
+    fallbackLabel: 'Atletik Yol',
+    icon: '\u{1F3C3}',
+  },
+  {
+    goal: 'SOCIAL',
+    prefix: 'social',
+    labelKey: 'endings.catalog.goals.SOCIAL',
+    fallbackLabel: 'Sosyal Yol',
+    icon: '\u{1F91D}',
+  },
+  {
+    goal: 'ENTERPRISE',
+    prefix: 'enterprise',
+    labelKey: 'endings.catalog.goals.ENTERPRISE',
+    fallbackLabel: 'Girisim Yolu',
+    icon: '\u{1F4BC}',
+  },
+  {
+    goal: 'BALANCED',
+    prefix: 'balanced',
+    labelKey: 'endings.catalog.goals.BALANCED',
+    fallbackLabel: 'Dengeli Yol',
+    icon: '\u2696\uFE0F',
+  },
 ];
 
-const TIER_ENDING_CATALOG: { tier: CareerResult['type']; label: string }[] = [
-  { tier: 'FAILURE', label: 'Zor Son' },
-  { tier: 'NORMAL', label: 'Dengeli Son' },
-  { tier: 'SUCCESS', label: 'Basari Sonu' },
-  { tier: 'LEGENDARY', label: 'Efsane Son' },
+const TIER_ENDING_CATALOG: {
+  tier: CareerResult['type'];
+  labelKey: string;
+  fallbackLabel: string;
+}[] = [
+  { tier: 'FAILURE', labelKey: 'endings.catalog.tiers.FAILURE', fallbackLabel: 'Zor Son' },
+  { tier: 'NORMAL', labelKey: 'endings.catalog.tiers.NORMAL', fallbackLabel: 'Dengeli Son' },
+  { tier: 'SUCCESS', labelKey: 'endings.catalog.tiers.SUCCESS', fallbackLabel: 'Basari Sonu' },
+  { tier: 'LEGENDARY', labelKey: 'endings.catalog.tiers.LEGENDARY', fallbackLabel: 'Efsane Son' },
 ];
+
+const createLocalizedCatalogEntry = ({
+  titleResolver,
+  ...entry
+}: Omit<EndingCatalogEntry, 'title'> & { titleResolver: () => string }): EndingCatalogEntry => ({
+  ...entry,
+  get title() {
+    return titleResolver();
+  },
+});
 
 const generatedTierEndings: EndingCatalogEntry[] = GOAL_ENDING_CATALOG.flatMap(
-  ({ goal, prefix, label, icon }) => (
-    TIER_ENDING_CATALOG.map(({ tier, label: tierLabel }) => ({
-      id: `${prefix}_${tier.toLowerCase()}`,
-      title: `${label} - ${tierLabel}`,
-      icon,
-      goal,
-      tier,
-    }))
+  ({ goal, prefix, labelKey, fallbackLabel, icon }) => (
+    TIER_ENDING_CATALOG.map(({ tier, labelKey: tierLabelKey, fallbackLabel: tierFallbackLabel }) => (
+      createLocalizedCatalogEntry({
+        id: `${prefix}_${tier.toLowerCase()}`,
+        icon,
+        goal,
+        tier,
+        titleResolver: () => {
+          const goalLabel = tRuntime(labelKey, undefined, fallbackLabel);
+          const tierLabel = tRuntime(tierLabelKey, undefined, tierFallbackLabel);
+          return tRuntime(
+            'endings.catalog.titleTemplate',
+            { goal: goalLabel, tier: tierLabel },
+            `${goalLabel} - ${tierLabel}`
+          );
+        },
+      })
+    ))
   )
 );
 
 const generatedMismatchEndings: EndingCatalogEntry[] = GOAL_ENDING_CATALOG.map(
-  ({ goal, prefix, label, icon }) => ({
-    id: `${prefix}_mismatch_failure`,
-    title: `${label} - Beklenmedik Yol`,
-    icon,
-    goal,
-    tier: 'MISMATCH',
-  })
+  ({ goal, prefix, labelKey, fallbackLabel, icon }) => (
+    createLocalizedCatalogEntry({
+      id: `${prefix}_mismatch_failure`,
+      icon,
+      goal,
+      tier: 'MISMATCH',
+      titleResolver: () => {
+        const goalLabel = tRuntime(labelKey, undefined, fallbackLabel);
+        return tRuntime(
+          'endings.catalog.mismatchTitle',
+          { goal: goalLabel },
+          `${goalLabel} - Beklenmedik Yol`
+        );
+      },
+    })
+  )
 );
 
 const SECRET_ENDING_CATALOG: EndingCatalogEntry[] = [
-  {
+  createLocalizedCatalogEntry({
     id: 'secret_family_legacy',
-    title: 'Aile Mirasini Geri Kazan',
     icon: '\u{1F3DB}\uFE0F',
     goal: 'MYSTERY',
     tier: 'SECRET',
-  },
-  {
+    titleResolver: () => tRuntime(
+      'endings.content.careers.secretFamilyLegacy.title',
+      undefined,
+      'Aile Mirasini Geri Kazan'
+    ),
+  }),
+  createLocalizedCatalogEntry({
     id: 'secret_true_balance',
-    title: 'Gercek Denge Ustasi',
     icon: '\u{1F31F}',
     goal: 'MYSTERY',
     tier: 'SECRET',
-  },
-  {
+    titleResolver: () => tRuntime(
+      'endings.content.careers.secretTrueBalance.title',
+      undefined,
+      'Gercek Denge Ustasi'
+    ),
+  }),
+  createLocalizedCatalogEntry({
     id: 'secret_fate_breaker',
-    title: 'Kader Kirici',
     icon: '\u2694\uFE0F',
     goal: 'MYSTERY',
     tier: 'SECRET',
-  },
-  {
+    titleResolver: () => tRuntime(
+      'endings.content.careers.secretFateBreaker.title',
+      undefined,
+      'Kader Kirici'
+    ),
+  }),
+  createLocalizedCatalogEntry({
     id: 'secret_love_and_glory',
-    title: 'Ask ve Zafer',
     icon: '\u{1F497}',
     goal: 'MYSTERY',
     tier: 'SECRET',
-  },
-  {
+    titleResolver: () => tRuntime(
+      'endings.content.careers.secretLoveAndGlory.title',
+      undefined,
+      'Ask ve Zafer'
+    ),
+  }),
+  createLocalizedCatalogEntry({
     id: 'secret_silent_legend',
-    title: 'Sessiz Efsane',
     icon: '\u{1F52E}',
     goal: 'MYSTERY',
     tier: 'SECRET',
-  },
+    titleResolver: () => tRuntime(
+      'endings.content.careers.secretSilentLegend.title',
+      undefined,
+      'Sessiz Efsane'
+    ),
+  }),
 ];
 
 const ENDING_CATALOG = [
@@ -167,7 +258,7 @@ export interface GoalMismatchAnalysis {
 }
 
 interface GoalProfile {
-  label: string;
+  labelKey: string;
   statWeights: Partial<Record<keyof Stats, number>>;
   skillKeys: (keyof Skills)[];
   gradeKeys: (keyof SchoolGrades)[];
@@ -276,42 +367,42 @@ const gradeScore = (grades: SchoolGrades, keys: (keyof SchoolGrades)[]): number 
 
 const GOAL_PROFILES: Record<EndingGoal, GoalProfile> = {
   ACADEMIC: {
-    label: 'Akademik Hedef',
+    labelKey: 'endings.goals.ACADEMIC',
     statWeights: { intelligence: 0.45, discipline: 0.35, health: 0.1, familyRelation: 0.1 },
     skillKeys: ['logic', 'reading', 'writing', 'coding'],
     gradeKeys: ['math', 'science', 'language', 'history', 'geography'],
     actionPrefixes: ['study_'],
   },
   CREATIVE: {
-    label: 'Yaratici Hedef',
+    labelKey: 'endings.goals.CREATIVE',
     statWeights: { intelligence: 0.25, charisma: 0.35, discipline: 0.2, health: 0.1, familyRelation: 0.1 },
     skillKeys: ['music', 'art', 'design', 'writing'],
     gradeKeys: ['art', 'music', 'language'],
     actionPrefixes: ['arts_', 'study_art', 'study_music', 'computer_design'],
   },
   ATHLETIC: {
-    label: 'Atletik Hedef',
+    labelKey: 'endings.goals.ATHLETIC',
     statWeights: { health: 0.45, discipline: 0.25, energy: 0.2, charisma: 0.1 },
     skillKeys: ['sports', 'athletics', 'teamwork'],
     gradeKeys: [],
     actionPrefixes: ['sports_'],
   },
   SOCIAL: {
-    label: 'Sosyal Hedef',
+    labelKey: 'endings.goals.SOCIAL',
     statWeights: { charisma: 0.45, familyRelation: 0.3, health: 0.1, intelligence: 0.15 },
     skillKeys: ['teamwork', 'reading', 'music'],
     gradeKeys: ['language'],
     actionPrefixes: ['social_', 'family_', 'explore_playground'],
   },
   ENTERPRISE: {
-    label: 'Girisim Hedefi',
+    labelKey: 'endings.goals.ENTERPRISE',
     statWeights: { money: 0.35, intelligence: 0.25, discipline: 0.2, charisma: 0.2 },
     skillKeys: ['business', 'coding', 'work_ethic', 'design'],
     gradeKeys: ['math', 'language'],
     actionPrefixes: ['work_', 'computer_code', 'work_freelance', 'work_sell', 'shopping_'],
   },
   BALANCED: {
-    label: 'Dengeli Hedef',
+    labelKey: 'endings.goals.BALANCED',
     statWeights: {
       health: 0.2,
       intelligence: 0.2,
@@ -324,6 +415,10 @@ const GOAL_PROFILES: Record<EndingGoal, GoalProfile> = {
     actionPrefixes: ['study_', 'sports_', 'arts_', 'work_'],
   },
 };
+
+const getGoalLabel = (goal: EndingGoal): string => (
+  tRuntime(GOAL_PROFILES[goal].labelKey, undefined, goal)
+);
 
 const ACTION_VERSATILITY_BUCKETS: Array<{ id: string; prefixes: string[] }> = [
   { id: 'study', prefixes: ['study_'] },
@@ -545,7 +640,7 @@ export const calculateAllGoalScores = (
   return (Object.keys(GOAL_PROFILES) as EndingGoal[])
     .map((goal) => ({
       goal,
-      label: GOAL_PROFILES[goal].label,
+      label: getGoalLabel(goal),
       score: round1(calculateGoalFitBreakdown(gameState, stats, goal).score),
       isSelected: goal === selectedEndingGoal,
       isDominant: goal === dominant.goal,
@@ -562,13 +657,13 @@ const calculateBaseErrorDebt = (
   const reasons: string[] = [];
 
   const healthDebt = Math.max(0, 45 - stats.health);
-  if (healthDebt > 0) reasons.push('Saglik dengesi zayif');
+  if (healthDebt > 0) reasons.push(tRuntime('endings.errorReasons.healthWeak', undefined, 'Saglik dengesi zayif'));
 
   const disciplineDebt = Math.max(0, 45 - stats.discipline);
-  if (disciplineDebt > 0) reasons.push('Disiplin acigi var');
+  if (disciplineDebt > 0) reasons.push(tRuntime('endings.errorReasons.disciplineGap', undefined, 'Disiplin acigi var'));
 
   const socialDebt = Math.max(0, 40 - stats.familyRelation);
-  if (socialDebt > 0) reasons.push('Sosyal destek dusuk');
+  if (socialDebt > 0) reasons.push(tRuntime('endings.errorReasons.socialLow', undefined, 'Sosyal destek dusuk'));
 
   const avgGrades = average([
     grades.math || 0,
@@ -580,10 +675,10 @@ const calculateBaseErrorDebt = (
     grades.music || 0,
   ]);
   const academicDebt = Math.max(0, 55 - avgGrades);
-  if (academicDebt > 0) reasons.push('Akademik temel zayif');
+  if (academicDebt > 0) reasons.push(tRuntime('endings.errorReasons.academicWeak', undefined, 'Akademik temel zayif'));
 
   const moneyDebt = Math.max(0, 25 - normalizeMoney(stats.money)) * 0.4;
-  if (moneyDebt > 6) reasons.push('Finansal tampon kucuk');
+  if (moneyDebt > 6) reasons.push(tRuntime('endings.errorReasons.financialBuffer', undefined, 'Finansal tampon kucuk'));
 
   const stress = gameState.stress || DEFAULT_STRESS;
   const stressRatio = stress.threshold > 0
@@ -594,8 +689,8 @@ const calculateBaseErrorDebt = (
     ? calculateActionDerivedDebt(gameState, BURDEN_CONSTANTS.ACTION_DEBT_MULTIPLIER)
     : 0;
   const stressDebt = stressDebtBase + actionDebt;
-  if (stressDebtBase > 0) reasons.push('Stres seviyesi yuksek');
-  if (actionDebt > 4) reasons.push('Asiri tempo hata borcunu buyuttu');
+  if (stressDebtBase > 0) reasons.push(tRuntime('endings.errorReasons.stressHigh', undefined, 'Stres seviyesi yuksek'));
+  if (actionDebt > 4) reasons.push(tRuntime('endings.errorReasons.overextensionDebt', undefined, 'Asiri tempo hata borcunu buyuttu'));
 
   const total =
     (healthDebt * 0.9) +
@@ -731,6 +826,42 @@ const achievementBonusForGoal = (goal: EndingGoal, achievementIds: Set<string>):
   return bonus;
 };
 
+type TranslationParams = Record<string, string | number | boolean>;
+
+interface CareerContentFallback {
+  title: string;
+  description: string;
+  familyReaction: string;
+  influences?: string[];
+}
+
+const localizeCareerResult = (
+  key: string,
+  fallback: CareerContentFallback,
+  options: {
+    emoji: string;
+    type: CareerResult['type'];
+    params?: TranslationParams;
+  }
+): CareerResult => ({
+  title: tRuntime(`endings.content.careers.${key}.title`, options.params, fallback.title),
+  description: tRuntime(`endings.content.careers.${key}.description`, options.params, fallback.description),
+  emoji: options.emoji,
+  type: options.type,
+  familyReaction: tRuntime(
+    `endings.content.careers.${key}.familyReaction`,
+    options.params,
+    fallback.familyReaction
+  ),
+  ...(fallback.influences && fallback.influences.length > 0
+    ? {
+      influences: fallback.influences.map((line, index) => (
+        tRuntime(`endings.content.careers.${key}.influences.${index}`, options.params, line)
+      )),
+    }
+    : {}),
+});
+
 const flavorByAchievements = (
   baseResult: CareerResult,
   achievementIds: Set<string>,
@@ -743,25 +874,49 @@ const flavorByAchievements = (
     || hasAchievement(achievementIds, 'lover');
 
   if (hasRichAchievement && hasAchievement(achievementIds, 'saver')) {
-    lines.push('Paran var ama paylasim yerine biriktirmeyi seciyorsun; cevren seni mesafeli buluyor.');
+    lines.push(tRuntime(
+      'endings.content.flavor.richSaverDistant',
+      undefined,
+      'Paran var ama paylasim yerine biriktirmeyi seciyorsun; cevren seni mesafeli buluyor.'
+    ));
   } else if (hasRichAchievement && !hasSocialAnchor && stats.familyRelation < 50) {
-    lines.push('Paran var ama etrafinda gercekten guvendigin insanlar cok az.');
+    lines.push(tRuntime(
+      'endings.content.flavor.richLonely',
+      undefined,
+      'Paran var ama etrafinda gercekten guvendigin insanlar cok az.'
+    ));
   }
 
   if (hasAchievement(achievementIds, 'heartbreaker')) {
-    lines.push('Iliskilerde biraktigin kirik izler bugune kadar tasindi.');
+    lines.push(tRuntime(
+      'endings.content.flavor.heartbreaker',
+      undefined,
+      'Iliskilerde biraktigin kirik izler bugune kadar tasindi.'
+    ));
   }
 
   if (hasAchievement(achievementIds, 'rebel')) {
-    lines.push('Kurallara direnen tavrin hayatina hem hiz hem bedel getirdi.');
+    lines.push(tRuntime(
+      'endings.content.flavor.rebel',
+      undefined,
+      'Kurallara direnen tavrin hayatina hem hiz hem bedel getirdi.'
+    ));
   }
 
   if (baseResult.type === 'FAILURE' && (hasAchievement(achievementIds, 'studious') || hasAchievement(achievementIds, 'scholar'))) {
-    lines.push('Disiplinli gecmisin, bir sonraki denemede oyunu cevirmen icin guclu bir temel sunuyor.');
+    lines.push(tRuntime(
+      'endings.content.flavor.failureResilience',
+      undefined,
+      'Disiplinli gecmisin, bir sonraki denemede oyunu cevirmen icin guclu bir temel sunuyor.'
+    ));
   }
 
   if ((baseResult.type === 'SUCCESS' || baseResult.type === 'LEGENDARY') && hasAchievement(achievementIds, 'perfectionist')) {
-    lines.push('Mukemmeliyetci rutinin bu sonucu bir tesaduf olmaktan cikardi.');
+    lines.push(tRuntime(
+      'endings.content.flavor.perfectionist',
+      undefined,
+      'Mukemmeliyetci rutinin bu sonucu bir tesaduf olmaktan cikardi.'
+    ));
   }
 
   return lines;
@@ -775,25 +930,52 @@ const calculateTier = (score: number, errorDebt: EndingErrorDebt): CareerResult[
   return 'FAILURE';
 };
 
-const buildFailureResult = (): CareerResult => ({
-  title: 'Mezuna Kaldin / Issiz',
-  description: 'Sinav sonucun bekledigin gibi gelmedi.',
-  emoji: '\u{1F480}',
-  type: 'FAILURE',
-  familyReaction: 'Evde derin bir sessizlik var.',
-});
+const buildFailureResult = (): CareerResult => (
+  localizeCareerResult(
+    'failureUnemployed',
+    {
+      title: 'Mezuna Kaldin / Issiz',
+      description: 'Sinav sonucun bekledigin gibi gelmedi.',
+      familyReaction: 'Evde derin bir sessizlik var.',
+    },
+    {
+      emoji: '\u{1F480}',
+      type: 'FAILURE',
+    }
+  )
+);
 
 const buildMismatchFailureResult = (
   selectedGoalLabel: string,
   inferredGoalLabel: string,
   surpriseCareer: CareerResult
 ): CareerResult => ({
-  title: 'Surpriz Kariyer',
-  description: `${selectedGoalLabel} hedefini secmistin; hayat cizgin ${inferredGoalLabel} yonune acildi. Yeni rotanda ${surpriseCareer.title} yolunu yakaladin.`,
+  title: tRuntime(
+    'endings.content.mismatch.title',
+    undefined,
+    'Surpriz Kariyer'
+  ),
+  description: tRuntime(
+    'endings.content.mismatch.description',
+    {
+      selectedGoal: selectedGoalLabel,
+      inferredGoal: inferredGoalLabel,
+      career: surpriseCareer.title,
+    },
+    `${selectedGoalLabel} hedefini secmistin; hayat cizgin ${inferredGoalLabel} yonune acildi. Yeni rotanda ${surpriseCareer.title} yolunu yakaladin.`
+  ),
   emoji: '\u{1F9ED}',
   type: surpriseCareer.type,
-  familyReaction: 'Ailen, rota degisse de dogru ritmi yakaladigini dusunuyor.',
-  influences: [`Yeni rota: ${surpriseCareer.title}`],
+  familyReaction: tRuntime(
+    'endings.content.mismatch.familyReaction',
+    undefined,
+    'Ailen, rota degisse de dogru ritmi yakaladigini dusunuyor.'
+  ),
+  influences: [tRuntime(
+    'endings.content.mismatch.newRoute',
+    { career: surpriseCareer.title },
+    `Yeni rota: ${surpriseCareer.title}`
+  )],
 });
 
 const buildCareerByGoal = (
@@ -812,79 +994,110 @@ const buildCareerByGoal = (
   if (skills.sports > 90) {
     return {
       domainFit: average([skills.sports, stats.health, stats.discipline]),
-      result: {
-        title: 'Milli Sporcu',
-        description: 'Yillar suren antrenmanlarinin karsiligini aldin. Olimpiyatlara hazirlaniyorsun!',
-        emoji: '\u{1F947}',
-        type: 'LEGENDARY',
-        familyReaction: 'Ailen kupalarini gururla sergiliyor.',
-      },
+      result: localizeCareerResult(
+        'nationalAthlete',
+        {
+          title: 'Milli Sporcu',
+          description: 'Yillar suren antrenmanlarinin karsiligini aldin. Olimpiyatlara hazirlaniyorsun!',
+          familyReaction: 'Ailen kupalarini gururla sergiliyor.',
+        },
+        {
+          emoji: '\u{1F947}',
+          type: 'LEGENDARY',
+        }
+      ),
     };
   }
 
   if (skills.music > 85 && musicGrade >= 70) {
     return {
       domainFit: average([skills.music, musicGrade, stats.charisma]),
-      result: {
-        title: 'Rockstar / Virtuoz',
-        description: 'Konservatuari dereceyle bitirdin. Albumlerin yok satiyor.',
-        emoji: '\u{1F3B8}',
-        type: 'LEGENDARY',
-        familyReaction: 'Ailen her konserinde en onde.',
-        influences: [`Muzik notun (${musicGrade}) konservatuar yolunu guclendirdi.`],
-      },
+      result: localizeCareerResult(
+        'rockstarVirtuoso',
+        {
+          title: 'Rockstar / Virtuoz',
+          description: 'Konservatuari dereceyle bitirdin. Albumlerin yok satiyor.',
+          familyReaction: 'Ailen her konserinde en onde.',
+          influences: ['Muzik notun ({grade}) konservatuar yolunu guclendirdi.'],
+        },
+        {
+          emoji: '\u{1F3B8}',
+          type: 'LEGENDARY',
+          params: { grade: musicGrade },
+        }
+      ),
     };
   }
 
   if (grades.math > 80 && grades.science > 80 && stats.discipline > 60 && personality.patience >= 40) {
     return {
       domainFit: average([grades.math, grades.science, stats.discipline, stats.intelligence]),
-      result: {
-        title: 'Tip Fakultesi',
-        description: 'Ulkenin prestijli tip fakultelerinden birini kazandin.',
-        emoji: '\u{1FA7A}',
-        type: 'SUCCESS',
-        familyReaction: 'Ailen herkese doktor olacagini anlatiyor.',
-      },
+      result: localizeCareerResult(
+        'medSchool',
+        {
+          title: 'Tip Fakultesi',
+          description: 'Ulkenin prestijli tip fakultelerinden birini kazandin.',
+          familyReaction: 'Ailen herkese doktor olacagini anlatiyor.',
+        },
+        {
+          emoji: '\u{1FA7A}',
+          type: 'SUCCESS',
+        }
+      ),
     };
   }
 
   if (grades.math > 70 && skills.coding > 70) {
     return {
       domainFit: average([grades.math, skills.coding, stats.intelligence]),
-      result: {
-        title: 'Yazilim Muhendisligi',
-        description: 'Kodlama yetenegin seni teknoloji dunyasina tasidi.',
-        emoji: '\u{1F4BB}',
-        type: 'SUCCESS',
-        familyReaction: 'Ailen bilgisayar basindaki emeginin karsiligini aldigini soyluyor.',
-      },
+      result: localizeCareerResult(
+        'softwareEngineering',
+        {
+          title: 'Yazilim Muhendisligi',
+          description: 'Kodlama yetenegin seni teknoloji dunyasina tasidi.',
+          familyReaction: 'Ailen bilgisayar basindaki emeginin karsiligini aldigini soyluyor.',
+        },
+        {
+          emoji: '\u{1F4BB}',
+          type: 'SUCCESS',
+        }
+      ),
     };
   }
 
   if (grades.language > 80 && stats.intelligence > 70) {
     return {
       domainFit: average([grades.language, stats.intelligence, stats.discipline]),
-      result: {
-        title: 'Hukuk Fakultesi',
-        description: 'Keskin zekan ve hitabetinle hukuk yoluna girdin.',
-        emoji: '\u{2696}\u{FE0F}',
-        type: 'SUCCESS',
-        familyReaction: 'Ailen hukuktaki gelecegine guveniyor.',
-      },
+      result: localizeCareerResult(
+        'lawSchool',
+        {
+          title: 'Hukuk Fakultesi',
+          description: 'Keskin zekan ve hitabetinle hukuk yoluna girdin.',
+          familyReaction: 'Ailen hukuktaki gelecegine guveniyor.',
+        },
+        {
+          emoji: '\u{2696}\u{FE0F}',
+          type: 'SUCCESS',
+        }
+      ),
     };
   }
 
   if (stats.money > 2000) {
     return {
       domainFit: average([normalizeMoney(stats.money), stats.intelligence, stats.discipline]),
-      result: {
-        title: 'Ozel Uni - Isletme',
-        description: 'Notlarin parlak olmasa da finansal gucunle iyi bir baslangic yaptin.',
-        emoji: '\u{1F393}',
-        type: 'NORMAL',
-        familyReaction: 'Ailen: Diploma diplomadir diyor.',
-      },
+      result: localizeCareerResult(
+        'privateUniversityBusiness',
+        {
+          title: 'Ozel Uni - Isletme',
+          description: 'Notlarin parlak olmasa da finansal gucunle iyi bir baslangic yaptin.',
+          familyReaction: 'Ailen: Diploma diplomadir diyor.',
+        },
+        {
+          emoji: '\u{1F393}',
+          type: 'NORMAL',
+        }
+      ),
     };
   }
 
@@ -892,49 +1105,69 @@ const buildCareerByGoal = (
     if (skills.sports > 90) {
       return {
         domainFit: average([skills.sports, stats.health, stats.discipline]),
-        result: {
-          title: 'Milli Sporcu',
-          description: 'Yillar suren antrenmanlarinin karsiligini aldin. Olimpiyatlara hazirlaniyorsun!',
-          emoji: '\u{1F947}',
-          type: 'LEGENDARY',
-          familyReaction: 'Ailen kupalarini gururla sergiliyor.',
-        },
+        result: localizeCareerResult(
+          'nationalAthlete',
+          {
+            title: 'Milli Sporcu',
+            description: 'Yillar suren antrenmanlarinin karsiligini aldin. Olimpiyatlara hazirlaniyorsun!',
+            familyReaction: 'Ailen kupalarini gururla sergiliyor.',
+          },
+          {
+            emoji: '\u{1F947}',
+            type: 'LEGENDARY',
+          }
+        ),
       };
     }
     if (personality.courage >= 75 && traits.includes('BRAVE') && skills.sports > 60) {
       return {
         domainFit: average([skills.sports, stats.health, personality.courage]),
-        result: {
-          title: 'Kurtarma Pilotu',
-          description: 'Cesaretin ve fiziksel gucun seni havacilik yoluna tasidi.',
-          emoji: '\u{2708}\u{FE0F}',
-          type: 'SUCCESS',
-          familyReaction: 'Ailen cesaretinle hep ovundu.',
-        },
+        result: localizeCareerResult(
+          'rescuePilot',
+          {
+            title: 'Kurtarma Pilotu',
+            description: 'Cesaretin ve fiziksel gucun seni havacilik yoluna tasidi.',
+            familyReaction: 'Ailen cesaretinle hep ovundu.',
+          },
+          {
+            emoji: '\u{2708}\u{FE0F}',
+            type: 'SUCCESS',
+          }
+        ),
       };
     }
     if (skills.teamwork > 70 && personality.patience >= 55 && skills.sports > 60) {
       return {
         domainFit: average([skills.teamwork, personality.patience, skills.sports]),
-        result: {
-          title: 'Spor Egitmeni',
-          description: 'Sabrin ve takim ruhu anlayisin seni genc sporculara yol gosteren bir egitmene donusturdu.',
-          emoji: '\u{1F3C5}',
-          type: 'SUCCESS',
-          familyReaction: 'Ailen ogrencilerinin basarisini seninle birlikte kutluyor.',
-        },
+        result: localizeCareerResult(
+          'sportsCoach',
+          {
+            title: 'Spor Egitmeni',
+            description: 'Sabrin ve takim ruhu anlayisin seni genc sporculara yol gosteren bir egitmene donusturdu.',
+            familyReaction: 'Ailen ogrencilerinin basarisini seninle birlikte kutluyor.',
+          },
+          {
+            emoji: '\u{1F3C5}',
+            type: 'SUCCESS',
+          }
+        ),
       };
     }
     if (skills.coding > 60 && skills.sports > 50 && stats.discipline > 70) {
       return {
         domainFit: average([skills.coding, skills.sports, stats.discipline]),
-        result: {
-          title: 'E-Spor Oyuncusu',
-          description: 'Dijital reflekslerin ve disiplinli antrenman rutinin seni profesyonel e-spor sahnesine tasidi.',
-          emoji: '\u{1F3AE}',
-          type: 'SUCCESS',
-          familyReaction: 'Ailen bilgisayar basinda gecirdigin saatlerin sonucunu gormeye basliyor.',
-        },
+        result: localizeCareerResult(
+          'esportsPlayer',
+          {
+            title: 'E-Spor Oyuncusu',
+            description: 'Dijital reflekslerin ve disiplinli antrenman rutinin seni profesyonel e-spor sahnesine tasidi.',
+            familyReaction: 'Ailen bilgisayar basinda gecirdigin saatlerin sonucunu gormeye basliyor.',
+          },
+          {
+            emoji: '\u{1F3AE}',
+            type: 'SUCCESS',
+          }
+        ),
       };
     }
   }
@@ -943,101 +1176,145 @@ const buildCareerByGoal = (
     if (skills.music > 85 && musicGrade >= 70) {
       return {
         domainFit: average([skills.music, musicGrade, stats.charisma]),
-        result: {
-          title: 'Rockstar / Virtuoz',
-          description: 'Konservatuari dereceyle bitirdin. Albumlerin yok satiyor.',
-          emoji: '\u{1F3B8}',
-          type: 'LEGENDARY',
-          familyReaction: 'Ailen her konserinde en onde.',
-          influences: [`Muzik notun (${musicGrade}) konservatuar yolunu guclendirdi.`],
-        },
+        result: localizeCareerResult(
+          'rockstarVirtuoso',
+          {
+            title: 'Rockstar / Virtuoz',
+            description: 'Konservatuari dereceyle bitirdin. Albumlerin yok satiyor.',
+            familyReaction: 'Ailen her konserinde en onde.',
+            influences: ['Muzik notun ({grade}) konservatuar yolunu guclendirdi.'],
+          },
+          {
+            emoji: '\u{1F3B8}',
+            type: 'LEGENDARY',
+            params: { grade: musicGrade },
+          }
+        ),
       };
     }
     if (skills.music > 85) {
       return {
         domainFit: average([skills.music, stats.charisma, stats.discipline]),
-        result: {
-          title: 'Sahne Muzisyeni',
-          description: 'Sahnede parladin; akademik muzik notlarin konservatuar seviyesine cikamadi.',
-          emoji: '\u{1F3A4}',
-          type: 'SUCCESS',
-          familyReaction: 'Ailen sahnede kendini bulmana seviniyor.',
-          influences: [`Muzik notun (${musicGrade}) akademik yolu sinirladi.`],
-        },
+        result: localizeCareerResult(
+          'stageMusician',
+          {
+            title: 'Sahne Muzisyeni',
+            description: 'Sahnede parladin; akademik muzik notlarin konservatuar seviyesine cikamadi.',
+            familyReaction: 'Ailen sahnede kendini bulmana seviniyor.',
+            influences: ['Muzik notun ({grade}) akademik yolu sinirladi.'],
+          },
+          {
+            emoji: '\u{1F3A4}',
+            type: 'SUCCESS',
+            params: { grade: musicGrade },
+          }
+        ),
       };
     }
     if (skills.art > 85 && artGrade >= 70) {
       return {
         domainFit: average([skills.art, artGrade, stats.charisma]),
-        result: {
-          title: 'Sanatci',
-          description: 'Sergilerin kapali gise. Eserlerin koleksiyonerler tarafindan kapisiliyor.',
-          emoji: '\u{1F3A8}',
-          type: 'LEGENDARY',
-          familyReaction: 'Ailen eserlerini duvarlarina asiyor.',
-          influences: [`Gorsel sanatlar notun (${artGrade}) sergi kapilarini acti.`],
-        },
+        result: localizeCareerResult(
+          'artist',
+          {
+            title: 'Sanatci',
+            description: 'Sergilerin kapali gise. Eserlerin koleksiyonerler tarafindan kapisiliyor.',
+            familyReaction: 'Ailen eserlerini duvarlarina asiyor.',
+            influences: ['Gorsel sanatlar notun ({grade}) sergi kapilarini acti.'],
+          },
+          {
+            emoji: '\u{1F3A8}',
+            type: 'LEGENDARY',
+            params: { grade: artGrade },
+          }
+        ),
       };
     }
     if (skills.art > 85) {
       return {
         domainFit: average([skills.art, stats.intelligence, stats.charisma]),
-        result: {
-          title: 'Atolye Sanatcisi',
-          description: 'Uretim disiplininle kendi stilini kurdun; bagimsiz atolyelerde adin duyuluyor.',
-          emoji: '\u{1F3AD}',
-          type: 'SUCCESS',
-          familyReaction: 'Ailen atolyene destek oluyor.',
-          influences: [`Gorsel sanatlar notun (${artGrade}) akademik destegi zayiflatti.`],
-        },
+        result: localizeCareerResult(
+          'atelierArtist',
+          {
+            title: 'Atolye Sanatcisi',
+            description: 'Uretim disiplininle kendi stilini kurdun; bagimsiz atolyelerde adin duyuluyor.',
+            familyReaction: 'Ailen atolyene destek oluyor.',
+            influences: ['Gorsel sanatlar notun ({grade}) akademik destegi zayiflatti.'],
+          },
+          {
+            emoji: '\u{1F3AD}',
+            type: 'SUCCESS',
+            params: { grade: artGrade },
+          }
+        ),
       };
     }
     if (skills.writing > 85) {
       return {
         domainFit: average([skills.writing, stats.intelligence, stats.discipline]),
-        result: {
-          title: 'Unlu Yazar',
-          description: 'Kitaplarin cok satanlar listesinde. Imza gunlerinde uzun kuyruklar var.',
-          emoji: '\u{270D}\u{FE0F}',
-          type: 'LEGENDARY',
-          familyReaction: 'Ailen raflarda adini gormekten gururlu.',
-        },
+        result: localizeCareerResult(
+          'famousWriter',
+          {
+            title: 'Unlu Yazar',
+            description: 'Kitaplarin cok satanlar listesinde. Imza gunlerinde uzun kuyruklar var.',
+            familyReaction: 'Ailen raflarda adini gormekten gururlu.',
+          },
+          {
+            emoji: '\u{270D}\u{FE0F}',
+            type: 'LEGENDARY',
+          }
+        ),
       };
     }
     if (personality.openness >= 60 && traits.includes('CREATIVE') && skills.art > 60) {
       return {
         domainFit: average([personality.openness, skills.art, stats.charisma]),
-        result: {
-          title: 'Dijital Sanatci',
-          description: 'Yaraticiligin dijital dunyada karsilik buldu; projelerinle fark yaratiyorsun.',
-          emoji: '\u{1F3A8}',
-          type: 'SUCCESS',
-          familyReaction: 'Ailen eserlerini sosyal medyada paylasiyor.',
-        },
+        result: localizeCareerResult(
+          'digitalArtist',
+          {
+            title: 'Dijital Sanatci',
+            description: 'Yaraticiligin dijital dunyada karsilik buldu; projelerinle fark yaratiyorsun.',
+            familyReaction: 'Ailen eserlerini sosyal medyada paylasiyor.',
+          },
+          {
+            emoji: '\u{1F3A8}',
+            type: 'SUCCESS',
+          }
+        ),
       };
     }
     if (stats.charisma > 70 && skills.coding > 50 && personality.openness >= 60) {
       return {
         domainFit: average([stats.charisma, skills.coding, personality.openness]),
-        result: {
-          title: 'Icerik Uretici',
-          description: 'Kameranin onunde dogal bir yetenegin var. Dijital platformlarda kendi kitlesini olusturuyorsun.',
-          emoji: '\u{1F4F1}',
-          type: 'SUCCESS',
-          familyReaction: 'Ailen videolarini izleyip gururlaniyor.',
-        },
+        result: localizeCareerResult(
+          'contentCreator',
+          {
+            title: 'Icerik Uretici',
+            description: 'Kameranin onunde dogal bir yetenegin var. Dijital platformlarda kendi kitlesini olusturuyorsun.',
+            familyReaction: 'Ailen videolarini izleyip gururlaniyor.',
+          },
+          {
+            emoji: '\u{1F4F1}',
+            type: 'SUCCESS',
+          }
+        ),
       };
     }
     if (skills.art > 70 && skills.design > 70 && stats.charisma > 55) {
       return {
         domainFit: average([skills.art, skills.design, stats.charisma]),
-        result: {
-          title: 'Moda Tasarimcisi',
-          description: 'Estetik gorusun ve tasarim yetenegin seni moda dunyasina tasidi.',
-          emoji: '\u{1F457}',
-          type: 'SUCCESS',
-          familyReaction: 'Ailen koleksiyonlarini merakla takip ediyor.',
-        },
+        result: localizeCareerResult(
+          'fashionDesigner',
+          {
+            title: 'Moda Tasarimcisi',
+            description: 'Estetik gorusun ve tasarim yetenegin seni moda dunyasina tasidi.',
+            familyReaction: 'Ailen koleksiyonlarini merakla takip ediyor.',
+          },
+          {
+            emoji: '\u{1F457}',
+            type: 'SUCCESS',
+          }
+        ),
       };
     }
   }
@@ -1046,49 +1323,69 @@ const buildCareerByGoal = (
     if (stats.charisma >= 80 || traits.includes('SOCIAL_BUTTERFLY')) {
       return {
         domainFit: average([stats.charisma, stats.familyRelation, gameState.socialReputation ?? 50]),
-        result: {
-          title: 'Medya Ikonu',
-          description: 'Insanlarla kurdugun baglar seni gorunur bir figure donusturdu.',
-          emoji: '\u{1F31F}',
-          type: 'SUCCESS',
-          familyReaction: 'Ailen herkesin seni tanimasindan gurur duyuyor.',
-        },
+        result: localizeCareerResult(
+          'mediaIcon',
+          {
+            title: 'Medya Ikonu',
+            description: 'Insanlarla kurdugun baglar seni gorunur bir figure donusturdu.',
+            familyReaction: 'Ailen herkesin seni tanimasindan gurur duyuyor.',
+          },
+          {
+            emoji: '\u{1F31F}',
+            type: 'SUCCESS',
+          }
+        ),
       };
     }
     if (personality.empathy >= 70 && personality.patience >= 60 && stats.intelligence > 60) {
       return {
         domainFit: average([personality.empathy, personality.patience, stats.intelligence]),
-        result: {
-          title: 'Psikolog',
-          description: 'Insanlari anlama yetenegin seni psikoloji yoluna tasidi.',
-          emoji: '\u{1F9E0}',
-          type: 'SUCCESS',
-          familyReaction: 'Ailen: Her zaman insanlari anlardi diyor.',
-        },
+        result: localizeCareerResult(
+          'psychologist',
+          {
+            title: 'Psikolog',
+            description: 'Insanlari anlama yetenegin seni psikoloji yoluna tasidi.',
+            familyReaction: 'Ailen: Her zaman insanlari anlardi diyor.',
+          },
+          {
+            emoji: '\u{1F9E0}',
+            type: 'SUCCESS',
+          }
+        ),
       };
     }
     if (personality.empathy >= 70 && skills.business > 50 && stats.charisma > 60) {
       return {
         domainFit: average([personality.empathy, skills.business, stats.charisma]),
-        result: {
-          title: 'Sosyal Girisimci',
-          description: 'Toplumsal sorunlara cozum uretme tutkunla kendi sosyal girisimini kurdun.',
-          emoji: '\u{1F91D}',
-          type: 'SUCCESS',
-          familyReaction: 'Ailen hem isine hem ideallerine hayran.',
-        },
+        result: localizeCareerResult(
+          'socialEntrepreneur',
+          {
+            title: 'Sosyal Girisimci',
+            description: 'Toplumsal sorunlara cozum uretme tutkunla kendi sosyal girisimini kurdun.',
+            familyReaction: 'Ailen hem isine hem ideallerine hayran.',
+          },
+          {
+            emoji: '\u{1F91D}',
+            type: 'SUCCESS',
+          }
+        ),
       };
     }
     if (personality.patience >= 70 && personality.conformity >= 60 && grades.language > 70) {
       return {
         domainFit: average([personality.patience, personality.conformity, grades.language]),
-        result: {
-          title: 'Diplomat',
-          description: 'Sabrin, uzlasma yetenegin ve dil becerilerin seni diplomasi yoluna yoneltti.',
-          emoji: '\u{1F3DB}\uFE0F',
-          type: 'SUCCESS',
-          familyReaction: 'Ailen diplomatik yeteneklerinle gurur duyuyor.',
-        },
+        result: localizeCareerResult(
+          'diplomat',
+          {
+            title: 'Diplomat',
+            description: 'Sabrin, uzlasma yetenegin ve dil becerilerin seni diplomasi yoluna yoneltti.',
+            familyReaction: 'Ailen diplomatik yeteneklerinle gurur duyuyor.',
+          },
+          {
+            emoji: '\u{1F3DB}\uFE0F',
+            type: 'SUCCESS',
+          }
+        ),
       };
     }
   }
@@ -1097,49 +1394,69 @@ const buildCareerByGoal = (
     if (skills.business > 75 && stats.money > 1500) {
       return {
         domainFit: average([skills.business, normalizeMoney(stats.money), stats.charisma]),
-        result: {
-          title: 'Girisimci',
-          description: 'Ticari zekanla kendi isini kurdun. Fikirlerin para ediyor.',
-          emoji: '\u{1F4C8}',
-          type: 'SUCCESS',
-          familyReaction: 'Ailen isini merakla takip ediyor.',
-        },
+        result: localizeCareerResult(
+          'entrepreneur',
+          {
+            title: 'Girisimci',
+            description: 'Ticari zekanla kendi isini kurdun. Fikirlerin para ediyor.',
+            familyReaction: 'Ailen isini merakla takip ediyor.',
+          },
+          {
+            emoji: '\u{1F4C8}',
+            type: 'SUCCESS',
+          }
+        ),
       };
     }
     if (grades.math > 70 && stats.discipline > 65 && personality.courage >= 55) {
       return {
         domainFit: average([grades.math, stats.discipline, personality.courage]),
-        result: {
-          title: 'Finans Uzmani',
-          description: 'Sayilarla aran ve sogukkanliligin seni finans sektorune yonlendirdi.',
-          emoji: '\u{1F4B9}',
-          type: 'SUCCESS',
-          familyReaction: 'Ailen piyasa haberlerini seninle konusmayi seviyor.',
-        },
+        result: localizeCareerResult(
+          'financeSpecialist',
+          {
+            title: 'Finans Uzmani',
+            description: 'Sayilarla aran ve sogukkanliligin seni finans sektorune yonlendirdi.',
+            familyReaction: 'Ailen piyasa haberlerini seninle konusmayi seviyor.',
+          },
+          {
+            emoji: '\u{1F4B9}',
+            type: 'SUCCESS',
+          }
+        ),
       };
     }
     if (skills.coding > 70 && skills.business > 60 && personality.courage >= 65) {
       return {
         domainFit: average([skills.coding, skills.business, personality.courage]),
-        result: {
-          title: 'Startup Kurucusu',
-          description: 'Teknik bilgin ve girisimci ruhun seni kendi teknoloji sirketini kurmaya yoneltti.',
-          emoji: '\u{1F680}',
-          type: 'SUCCESS',
-          familyReaction: 'Ailen sirketini heyecanla takip ediyor.',
-        },
+        result: localizeCareerResult(
+          'startupFounder',
+          {
+            title: 'Startup Kurucusu',
+            description: 'Teknik bilgin ve girisimci ruhun seni kendi teknoloji sirketini kurmaya yoneltti.',
+            familyReaction: 'Ailen sirketini heyecanla takip ediyor.',
+          },
+          {
+            emoji: '\u{1F680}',
+            type: 'SUCCESS',
+          }
+        ),
       };
     }
     if (stats.money > 2000) {
       return {
         domainFit: average([normalizeMoney(stats.money), stats.intelligence, stats.discipline]),
-        result: {
-          title: 'Ozel Uni - Isletme',
-          description: 'Notlarin parlak olmasa da finansal gucunle iyi bir baslangic yaptin.',
-          emoji: '\u{1F393}',
-          type: 'NORMAL',
-          familyReaction: 'Ailen: Diploma diplomadir diyor.',
-        },
+        result: localizeCareerResult(
+          'privateUniversityBusiness',
+          {
+            title: 'Ozel Uni - Isletme',
+            description: 'Notlarin parlak olmasa da finansal gucunle iyi bir baslangic yaptin.',
+            familyReaction: 'Ailen: Diploma diplomadir diyor.',
+          },
+          {
+            emoji: '\u{1F393}',
+            type: 'NORMAL',
+          }
+        ),
       };
     }
   }
@@ -1148,73 +1465,103 @@ const buildCareerByGoal = (
     if (grades.math > 80 && grades.science > 80 && stats.discipline > 60 && personality.patience >= 40) {
       return {
         domainFit: average([grades.math, grades.science, stats.discipline, stats.intelligence]),
-        result: {
-          title: 'Tip Fakultesi',
-          description: 'Ulkenin prestijli tip fakultelerinden birini kazandin.',
-          emoji: '\u{1FA7A}',
-          type: 'SUCCESS',
-          familyReaction: 'Ailen herkese doktor olacagini anlatiyor.',
-        },
+        result: localizeCareerResult(
+          'medSchool',
+          {
+            title: 'Tip Fakultesi',
+            description: 'Ulkenin prestijli tip fakultelerinden birini kazandin.',
+            familyReaction: 'Ailen herkese doktor olacagini anlatiyor.',
+          },
+          {
+            emoji: '\u{1FA7A}',
+            type: 'SUCCESS',
+          }
+        ),
       };
     }
     if (grades.language > 80 && stats.intelligence > 70) {
       return {
         domainFit: average([grades.language, stats.intelligence, stats.discipline]),
-        result: {
-          title: 'Hukuk Fakultesi',
-          description: 'Keskin zekan ve hitabetinle hukuk yoluna girdin.',
-          emoji: '\u{2696}\u{FE0F}',
-          type: 'SUCCESS',
-          familyReaction: 'Ailen hukuktaki gelecegine guveniyor.',
-        },
+        result: localizeCareerResult(
+          'lawSchool',
+          {
+            title: 'Hukuk Fakultesi',
+            description: 'Keskin zekan ve hitabetinle hukuk yoluna girdin.',
+            familyReaction: 'Ailen hukuktaki gelecegine guveniyor.',
+          },
+          {
+            emoji: '\u{2696}\u{FE0F}',
+            type: 'SUCCESS',
+          }
+        ),
       };
     }
     if (grades.math > 70 && skills.coding > 70) {
       return {
         domainFit: average([grades.math, skills.coding, stats.intelligence]),
-        result: {
-          title: 'Yazilim Muhendisligi',
-          description: 'Kodlama yetenegin seni teknoloji dunyasina tasidi.',
-          emoji: '\u{1F4BB}',
-          type: 'SUCCESS',
-          familyReaction: 'Ailen bilgisayar basindaki emeginin karsiligini aldigini soyluyor.',
-        },
+        result: localizeCareerResult(
+          'softwareEngineering',
+          {
+            title: 'Yazilim Muhendisligi',
+            description: 'Kodlama yetenegin seni teknoloji dunyasina tasidi.',
+            familyReaction: 'Ailen bilgisayar basindaki emeginin karsiligini aldigini soyluyor.',
+          },
+          {
+            emoji: '\u{1F4BB}',
+            type: 'SUCCESS',
+          }
+        ),
       };
     }
     if (skills.logic > 75 && grades.math > 75) {
       return {
         domainFit: average([skills.logic, grades.math, stats.intelligence]),
-        result: {
-          title: 'Muhendislik',
-          description: 'Analitik dusuncen seni muhendislik yoluna tasidi.',
-          emoji: '\u{1F9E0}',
-          type: 'SUCCESS',
-          familyReaction: 'Ailen sayilarla olan bagini hep konusuyordu.',
-        },
+        result: localizeCareerResult(
+          'engineering',
+          {
+            title: 'Muhendislik',
+            description: 'Analitik dusuncen seni muhendislik yoluna tasidi.',
+            familyReaction: 'Ailen sayilarla olan bagini hep konusuyordu.',
+          },
+          {
+            emoji: '\u{1F9E0}',
+            type: 'SUCCESS',
+          }
+        ),
       };
     }
     if (skills.logic > 80 && skills.reading > 75 && stats.discipline > 65) {
       return {
         domainFit: average([skills.logic, skills.reading, stats.discipline]),
-        result: {
-          title: 'Arastirmaci',
-          description: 'Merakli zihnin ve disiplinli calisma aliskanliklarin seni akademik arastirma yoluna tasidi.',
-          emoji: '\u{1F52C}',
-          type: 'SUCCESS',
-          familyReaction: 'Ailen laboratuvardaki saatlerini saygiyla karsiluyor.',
-        },
+        result: localizeCareerResult(
+          'researcher',
+          {
+            title: 'Arastirmaci',
+            description: 'Merakli zihnin ve disiplinli calisma aliskanliklarin seni akademik arastirma yoluna tasidi.',
+            familyReaction: 'Ailen laboratuvardaki saatlerini saygiyla karsiluyor.',
+          },
+          {
+            emoji: '\u{1F52C}',
+            type: 'SUCCESS',
+          }
+        ),
       };
     }
     if (personality.empathy >= 60 && personality.patience >= 60 && stats.intelligence > 60) {
       return {
         domainFit: average([personality.empathy, personality.patience, stats.intelligence]),
-        result: {
-          title: 'Ogretmen',
-          description: 'Sabrin ve empatin seni genc nesillere bilgi aktaran bir ogretmene donusturdu.',
-          emoji: '\u{1F4D6}',
-          type: 'SUCCESS',
-          familyReaction: 'Ailen ogrencilerinin sevgisini gormeye bayiliyor.',
-        },
+        result: localizeCareerResult(
+          'teacher',
+          {
+            title: 'Ogretmen',
+            description: 'Sabrin ve empatin seni genc nesillere bilgi aktaran bir ogretmene donusturdu.',
+            familyReaction: 'Ailen ogrencilerinin sevgisini gormeye bayiliyor.',
+          },
+          {
+            emoji: '\u{1F4D6}',
+            type: 'SUCCESS',
+          }
+        ),
       };
     }
   }
@@ -1228,25 +1575,35 @@ const buildCareerByGoal = (
     if (skillsAbove60 >= 4) {
       return {
         domainFit: average([stats.intelligence, stats.charisma, stats.discipline, stats.health]),
-        result: {
-          title: 'Cok Yonlu Profesyonel',
-          description: 'Tek bir alana kapanmak yerine bircok beceriyi harmanladin. Farkli sektorlerden teklifler aliyorsun.',
-          emoji: '\u{1F3AF}',
-          type: 'SUCCESS',
-          familyReaction: 'Ailen: Her konuda bi bilgisi var diyor gururla.',
-        },
+        result: localizeCareerResult(
+          'versatileProfessional',
+          {
+            title: 'Cok Yonlu Profesyonel',
+            description: 'Tek bir alana kapanmak yerine bircok beceriyi harmanladin. Farkli sektorlerden teklifler aliyorsun.',
+            familyReaction: 'Ailen: Her konuda bi bilgisi var diyor gururla.',
+          },
+          {
+            emoji: '\u{1F3AF}',
+            type: 'SUCCESS',
+          }
+        ),
       };
     }
     if (personality.empathy >= 65 && skills.teamwork > 60 && stats.charisma > 55) {
       return {
         domainFit: average([personality.empathy, skills.teamwork, stats.charisma]),
-        result: {
-          title: 'Sivil Toplum Lideri',
-          description: 'Insanlari bir araya getirme yeteneginle toplumsal degisime oncuulk ediyorsun.',
-          emoji: '\u{1F30D}',
-          type: 'SUCCESS',
-          familyReaction: 'Ailen topluma katkin icin gururlu.',
-        },
+        result: localizeCareerResult(
+          'civicLeader',
+          {
+            title: 'Sivil Toplum Lideri',
+            description: 'Insanlari bir araya getirme yeteneginle toplumsal degisime oncuulk ediyorsun.',
+            familyReaction: 'Ailen topluma katkin icin gururlu.',
+          },
+          {
+            emoji: '\u{1F30D}',
+            type: 'SUCCESS',
+          }
+        ),
       };
     }
   }
@@ -1254,26 +1611,36 @@ const buildCareerByGoal = (
   if (personality.conformity >= 70 && traits.includes('DISCIPLINED') && stats.discipline > 70) {
     return {
       domainFit: average([personality.conformity, stats.discipline, stats.health]),
-      result: {
-        title: 'Subay',
-        description: 'Disiplinin ve duzene saygin seni askerlik yoluna yoneltti.',
-        emoji: '\u{1F396}\u{FE0F}',
-        type: 'SUCCESS',
-        familyReaction: 'Ailen: Kurallara hep saygiliydi diyor.',
-      },
+      result: localizeCareerResult(
+        'officer',
+        {
+          title: 'Subay',
+          description: 'Disiplinin ve duzene saygin seni askerlik yoluna yoneltti.',
+          familyReaction: 'Ailen: Kurallara hep saygiliydi diyor.',
+        },
+        {
+          emoji: '\u{1F396}\u{FE0F}',
+          type: 'SUCCESS',
+        }
+      ),
     };
   }
 
   if (stats.intelligence > 50 && stats.discipline > 50) {
     return {
       domainFit: average([stats.intelligence, stats.discipline, stats.charisma]),
-      result: {
-        title: 'Iktisat / Kamu Yonetimi',
-        description: 'Dengeli bir profil ile universite yolunu acik tuttun.',
-        emoji: '\u{1F4DA}',
-        type: 'NORMAL',
-        familyReaction: 'Ailen en azindan iyi bir temel kurdugunu dusunuyor.',
-      },
+      result: localizeCareerResult(
+        'economicsPublicAdmin',
+        {
+          title: 'Iktisat / Kamu Yonetimi',
+          description: 'Dengeli bir profil ile universite yolunu acik tuttun.',
+          familyReaction: 'Ailen en azindan iyi bir temel kurdugunu dusunuyor.',
+        },
+        {
+          emoji: '\u{1F4DA}',
+          type: 'NORMAL',
+        }
+      ),
     };
   }
 
@@ -1296,9 +1663,17 @@ const withFlavor = (
   const descriptionParts = [base.description, ...achievementFlavor].filter(Boolean);
   const mergedInfluences = [
     ...(base.influences || []),
-    `Hedef: ${goalLabel}`,
-    `Hedef uyumu: %${Math.round(compatibilityScore)}`,
-    `Hata borcu: ${Math.round(errorDebt.total)}`,
+    tRuntime('endings.influenceGoal', { goal: goalLabel }, `Hedef: ${goalLabel}`),
+    tRuntime(
+      'endings.influenceCompatibility',
+      { score: Math.round(compatibilityScore) },
+      `Hedef uyumu: %${Math.round(compatibilityScore)}`
+    ),
+    tRuntime(
+      'endings.influenceErrorDebt',
+      { debt: Math.round(errorDebt.total) },
+      `Hata borcu: ${Math.round(errorDebt.total)}`
+    ),
     ...scoreNotes,
   ];
   if (mismatchNote) {
@@ -1347,13 +1722,18 @@ const checkSecretEndings = (
   ) {
     return {
       id: 'secret_true_balance',
-      result: {
-        title: 'Gercek Denge Ustasi',
-        description: 'Hayatin her alaninda denge buldun. Bu basari cok az kisiye nasip olur.',
-        emoji: '\u{1F31F}',
-        type: 'LEGENDARY',
-        familyReaction: 'Ailen her alanda dengeli gelisiminden muhtesem gurur duyuyor.',
-      },
+      result: localizeCareerResult(
+        'secretTrueBalance',
+        {
+          title: 'Gercek Denge Ustasi',
+          description: 'Hayatin her alaninda denge buldun. Bu basari cok az kisiye nasip olur.',
+          familyReaction: 'Ailen her alanda dengeli gelisiminden muhtesem gurur duyuyor.',
+        },
+        {
+          emoji: '\u{1F31F}',
+          type: 'LEGENDARY',
+        }
+      ),
     };
   }
 
@@ -1361,13 +1741,18 @@ const checkSecretEndings = (
   if (stats.familyRelation >= 90 && personality.empathy >= 70) {
     return {
       id: 'secret_family_legacy',
-      result: {
-        title: 'Aile Mirasini Geri Kazan',
-        description: 'Ailenle kurdugun derin bag hayatinin en degerli mirasi oldu.',
-        emoji: '\u{1F3DB}\uFE0F',
-        type: 'LEGENDARY',
-        familyReaction: 'Ailen: Sen bizim en buyuk gururumuzsun.',
-      },
+      result: localizeCareerResult(
+        'secretFamilyLegacy',
+        {
+          title: 'Aile Mirasini Geri Kazan',
+          description: 'Ailenle kurdugun derin bag hayatinin en degerli mirasi oldu.',
+          familyReaction: 'Ailen: Sen bizim en buyuk gururumuzsun.',
+        },
+        {
+          emoji: '\u{1F3DB}\uFE0F',
+          type: 'LEGENDARY',
+        }
+      ),
     };
   }
 
@@ -1375,13 +1760,18 @@ const checkSecretEndings = (
   if (fateTokens >= 10) {
     return {
       id: 'secret_fate_breaker',
-      result: {
-        title: 'Kader Kirici',
-        description: 'Kaderin sana bictigini kabul etmedin. Kendi yolunu kendin cizdin.',
-        emoji: '\u2694\uFE0F',
-        type: 'LEGENDARY',
-        familyReaction: 'Ailen: O hep kendi yolunu buldu diyor.',
-      },
+      result: localizeCareerResult(
+        'secretFateBreaker',
+        {
+          title: 'Kader Kirici',
+          description: 'Kaderin sana bictigini kabul etmedin. Kendi yolunu kendin cizdin.',
+          familyReaction: 'Ailen: O hep kendi yolunu buldu diyor.',
+        },
+        {
+          emoji: '\u2694\uFE0F',
+          type: 'LEGENDARY',
+        }
+      ),
     };
   }
 
@@ -1389,13 +1779,18 @@ const checkSecretEndings = (
   if (hasPartner && stats.charisma >= 75 && stats.intelligence >= 70) {
     return {
       id: 'secret_love_and_glory',
-      result: {
-        title: 'Ask ve Zafer',
-        description: 'Hem kalbin hem aklin dolu. Ask ve basariyi ayni anda yakaladin.',
-        emoji: '\u{1F497}',
-        type: 'LEGENDARY',
-        familyReaction: 'Ailen hem iliskinden hem basarindan mutlu.',
-      },
+      result: localizeCareerResult(
+        'secretLoveAndGlory',
+        {
+          title: 'Ask ve Zafer',
+          description: 'Hem kalbin hem aklin dolu. Ask ve basariyi ayni anda yakaladin.',
+          familyReaction: 'Ailen hem iliskinden hem basarindan mutlu.',
+        },
+        {
+          emoji: '\u{1F497}',
+          type: 'LEGENDARY',
+        }
+      ),
     };
   }
 
@@ -1409,13 +1804,18 @@ const checkSecretEndings = (
   ) {
     return {
       id: 'secret_silent_legend',
-      result: {
-        title: 'Sessiz Efsane',
-        description: 'Kimseye ihtiyac duymadan kendi yolunda sessizce efsanelesen biri oldun.',
-        emoji: '\u{1F52E}',
-        type: 'LEGENDARY',
-        familyReaction: 'Ailen: O hep kendi halinde ama cok yetenekli diyor.',
-      },
+      result: localizeCareerResult(
+        'secretSilentLegend',
+        {
+          title: 'Sessiz Efsane',
+          description: 'Kimseye ihtiyac duymadan kendi yolunda sessizce efsanelesen biri oldun.',
+          familyReaction: 'Ailen: O hep kendi halinde ama cok yetenekli diyor.',
+        },
+        {
+          emoji: '\u{1F52E}',
+          type: 'LEGENDARY',
+        }
+      ),
     };
   }
 
@@ -1433,23 +1833,22 @@ export const resolveEnding = ({
   if (secretEnding) {
     const resolvedDebt = calculateEndingErrorDebt(gameState, stats, errorDebt, 'ending');
     const dominant = detectDominantGoal(gameState, stats);
-    const goalProfile = GOAL_PROFILES[dominant.goal];
     return {
       id: secretEnding.id,
       goal: dominant.goal,
-      goalLabel: goalProfile.label,
+      goalLabel: getGoalLabel(dominant.goal),
       selectedGoal: gameState.selectedGoal ?? null,
       selectedGoalLabel: gameState.selectedGoal
-        ? GOAL_PROFILES[LIFE_GOAL_TO_ENDING_GOAL[gameState.selectedGoal]]?.label ?? goalProfile.label
-        : 'Hedef Secilmedi (Otomatik Rota)',
+        ? getGoalLabel(LIFE_GOAL_TO_ENDING_GOAL[gameState.selectedGoal])
+        : tRuntime('endings.noGoalSelected', undefined, 'Hedef Secilmedi (Otomatik Rota)'),
       inferredGoal: dominant.goal,
-      inferredGoalLabel: goalProfile.label,
+      inferredGoalLabel: getGoalLabel(dominant.goal),
       mismatchFailure: false,
       compatibilityScore: round1(dominant.score),
       score: 95,
       tier: 'LEGENDARY',
       errorDebt: resolvedDebt,
-      achievementFlavor: ['Gizli bir sonla tanistin!'],
+      achievementFlavor: [tRuntime('endings.secretDiscovered', undefined, 'Gizli bir sonla tanistin!')],
       result: secretEnding.result,
     };
   }
@@ -1457,11 +1856,9 @@ export const resolveEnding = ({
   const mismatchAnalysis = analyzeGoalMismatch(gameState, stats);
   const selectedOrFallbackGoal = mismatchAnalysis.selectedGoal ?? mismatchAnalysis.dominantGoal;
   const goal = mismatchAnalysis.isMismatch ? mismatchAnalysis.dominantGoal : selectedOrFallbackGoal;
-  const goalProfile = GOAL_PROFILES[goal];
-  const inferredGoalProfile = GOAL_PROFILES[mismatchAnalysis.dominantGoal];
   const selectedGoalLabel = mismatchAnalysis.selectedGoal
-    ? GOAL_PROFILES[mismatchAnalysis.selectedGoal].label
-    : 'Hedef Secilmedi (Otomatik Rota)';
+    ? getGoalLabel(mismatchAnalysis.selectedGoal)
+    : tRuntime('endings.noGoalSelected', undefined, 'Hedef Secilmedi (Otomatik Rota)');
   const selectedGoalScore = mismatchAnalysis.selectedGoal
     ? calculateGoalFitBreakdown(gameState, stats, mismatchAnalysis.selectedGoal).score
     : mismatchAnalysis.dominantScore;
@@ -1505,28 +1902,54 @@ export const resolveEnding = ({
   }
 
   const mismatchNote = mismatchAnalysis.isMismatch
-    ? `Beklenmedik yol: Secilen hedefte uyum %${Math.round(selectedGoalScore)}, gelistirdigin rota ${inferredGoalProfile.label} ile %${Math.round(compatibilityScore)} uyum yakaladi.`
+    ? tRuntime(
+      'endings.mismatchNote',
+      {
+        selectedScore: Math.round(selectedGoalScore),
+        inferred: getGoalLabel(mismatchAnalysis.dominantGoal),
+        compatibilityScore: Math.round(compatibilityScore),
+      },
+      `Beklenmedik yol: Secilen hedefte uyum %${Math.round(selectedGoalScore)}, gelistirdigin rota ${getGoalLabel(mismatchAnalysis.dominantGoal)} ile %${Math.round(compatibilityScore)} uyum yakaladi.`
+    )
     : undefined;
 
   const scoreNotes = [
-    `Zorluk duzeltmesi: ${difficultyModifier >= 0 ? '+' : ''}${difficultyModifier}`,
+    tRuntime(
+      'endings.difficultyAdjustment',
+      { value: `${difficultyModifier >= 0 ? '+' : ''}${difficultyModifier}` },
+      `Zorluk duzeltmesi: ${difficultyModifier >= 0 ? '+' : ''}${difficultyModifier}`
+    ),
   ];
   if (actionVersatility.penalty > 0) {
     scoreNotes.push(
-      `Cesitlilik cezasi: -${actionVersatility.penalty} (entropi ${Math.round(actionVersatility.entropy * 100)}%, baskin kategori ${Math.round(actionVersatility.dominantRatio * 100)}%)`
+      tRuntime(
+        'endings.versatilityPenalty',
+        {
+          penalty: actionVersatility.penalty,
+          entropy: Math.round(actionVersatility.entropy * 100),
+          dominant: Math.round(actionVersatility.dominantRatio * 100),
+        },
+        `Cesitlilik cezasi: -${actionVersatility.penalty} (entropi ${Math.round(actionVersatility.entropy * 100)}%, baskin kategori ${Math.round(actionVersatility.dominantRatio * 100)}%)`
+      )
     );
   }
   if (mismatchPenalty > 0) {
-    scoreNotes.push(`Rota sapmasi cezasi: -${mismatchPenalty}`);
+    scoreNotes.push(
+      tRuntime(
+        'endings.routeDeviationPenalty',
+        { penalty: mismatchPenalty },
+        `Rota sapmasi cezasi: -${mismatchPenalty}`
+      )
+    );
   }
 
   const baseResult = mismatchAnalysis.isMismatch
-    ? buildMismatchFailureResult(selectedGoalLabel, inferredGoalProfile.label, basePick.result)
+    ? buildMismatchFailureResult(selectedGoalLabel, getGoalLabel(mismatchAnalysis.dominantGoal), basePick.result)
     : (tier === 'FAILURE' ? buildFailureResult() : basePick.result);
   const achievementFlavor = flavorByAchievements(baseResult, achievementSet, stats);
   const finalResult = withFlavor(
     baseResult,
-    goalProfile.label,
+    getGoalLabel(goal),
     compatibilityScore,
     resolvedDebt,
     achievementFlavor,
@@ -1540,11 +1963,11 @@ export const resolveEnding = ({
       ? `${selectedOrFallbackGoal.toLowerCase()}_mismatch_failure`
       : `${goal.toLowerCase()}_${tier.toLowerCase()}`,
     goal,
-    goalLabel: goalProfile.label,
+    goalLabel: getGoalLabel(goal),
     selectedGoal: gameState.selectedGoal ?? null,
     selectedGoalLabel,
     inferredGoal: mismatchAnalysis.dominantGoal,
-    inferredGoalLabel: inferredGoalProfile.label,
+    inferredGoalLabel: getGoalLabel(mismatchAnalysis.dominantGoal),
     mismatchFailure: mismatchAnalysis.isMismatch,
     compatibilityScore: round1(compatibilityScore),
     score: round1(finalScore),
@@ -1696,14 +2119,35 @@ export function generateFutureVision(
   ending: EndingResolution,
   playerName: string
 ): { at30: string; at50: string; mood: FutureVisionMood } {
-  const safeName = playerName.trim() || 'Sen';
+  const safeName = playerName.trim() || tRuntime('endings.content.futureVision.defaultName', undefined, 'Sen');
   const variant = getFutureVisionVariantIndex(stats, safeName);
   const goalTemplate = FUTURE_VISION_GOAL_TEMPLATES[ending.goal] ?? FUTURE_VISION_GOAL_TEMPLATES.BALANCED;
   const tierTone = FUTURE_VISION_TIER_TONES[ending.tier] ?? FUTURE_VISION_TIER_TONES.NORMAL;
+  const variantNumber = variant + 1;
+  const goalAt30 = tRuntime(
+    `endings.content.futureVision.goals.${ending.goal}.at30.v${variantNumber}`,
+    undefined,
+    goalTemplate.at30[variant]
+  );
+  const goalAt50 = tRuntime(
+    `endings.content.futureVision.goals.${ending.goal}.at50.v${variantNumber}`,
+    undefined,
+    goalTemplate.at50[variant]
+  );
+  const toneAt30 = tRuntime(
+    `endings.content.futureVision.tiers.${ending.tier}.at30.v${variantNumber}`,
+    undefined,
+    tierTone.at30[variant]
+  );
+  const toneAt50 = tRuntime(
+    `endings.content.futureVision.tiers.${ending.tier}.at50.v${variantNumber}`,
+    undefined,
+    tierTone.at50[variant]
+  );
 
   return {
-    at30: `${injectName(goalTemplate.at30[variant], safeName)} ${tierTone.at30[variant]}`,
-    at50: `${injectName(goalTemplate.at50[variant], safeName)} ${tierTone.at50[variant]}`,
+    at30: `${injectName(goalAt30, safeName)} ${toneAt30}`,
+    at50: `${injectName(goalAt50, safeName)} ${toneAt50}`,
     mood: tierTone.mood,
   };
 }
