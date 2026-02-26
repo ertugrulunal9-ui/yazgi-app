@@ -242,6 +242,7 @@ jest.mock('../../src/commands/ActionCommand', () => ({
 
 jest.mock('../../src/data/actions', () => ({
   getLocalizedActionCategories: jest.fn(() => []),
+  filterActionCategoriesForContext: jest.fn((categories: unknown[]) => categories),
 }));
 
 jest.mock('../../src/components/SaveSlotCard', () => ({

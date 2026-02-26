@@ -10,6 +10,7 @@ import { ECONOMIC_RECOVERY_EVENTS } from './economicRecoveryEvents';
 import { MEMORY_GATED_EVENTS } from './memoryGatedEvents';
 import { AGE_SPECIFIC_EVENTS } from './ageSpecificEvents';
 import { GOAL_CHAIN_EVENTS } from './goalChainEvents';
+import { GOAL_SPECIFIC_EVENTS } from './goalSpecificEvents';
 import { NPC_QUESTLINE_EVENTS } from './npcQuestlineEvents';
 import { NPC_CHECKIN_EVENTS } from './npcCheckInEvents';
 import { CLIFFHANGER_EVENTS } from './cliffhangerEvents';
@@ -42,6 +43,7 @@ const BASE_EVENTS: GameEvent[] = [
   ...MEMORY_GATED_EVENTS,
   ...AGE_SPECIFIC_EVENTS,
   ...GOAL_CHAIN_EVENTS,
+  ...GOAL_SPECIFIC_EVENTS,
   // NPC questline arc eventleri
   ...NPC_QUESTLINE_EVENTS,
   // Cliffhanger / oturum kancasi eventleri

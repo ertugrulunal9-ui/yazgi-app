@@ -1,7 +1,14 @@
-import React, { createContext, useCallback, useEffect, useRef, useState, ReactNode } from 'react';
+﻿import React, { createContext, useCallback, useEffect, useRef, useState, ReactNode } from 'react';
 import { CharacterInfo, GameState, GameStateUpdate, MetaProgression, ScheduledEvent, Stats } from '../types';
 import { createInitialFateState } from '../systems/FateEngine';
-import { getInitialGameState, getInitialStats, initializeSaveSystem, loadGame, setCurrentSlotId } from '../utils/gameUtils';
+import {
+  getInitialGameState,
+  getInitialStats,
+  initializeSaveSystem,
+  loadGame,
+  NewGameBootstrapOptions,
+  setCurrentSlotId,
+} from '../utils/gameUtils';
 import { trackSpecialProgress } from '../utils/achievementChecker';
 import SaveManager from '../save/SaveManager';
 import { SaveSlotData } from '../save/SaveSlot';
@@ -13,6 +20,7 @@ import {
   createInitialMetaProgression,
 } from '../utils/metaProgression';
 import { devLog } from '../utils/devLogger';
+import { isFeatureEnabled } from '../config/featureFlags';
 
 export interface GameContextType {
   gameState: GameState;
@@ -23,7 +31,7 @@ export interface GameContextType {
   isLoading: boolean;
 
   // Game lifecycle
-  startNewGame: (name: string, characterInfo?: CharacterInfo) => void;
+  startNewGame: (name: string, characterInfo?: CharacterInfo, options?: NewGameBootstrapOptions) => void;
   loadSavedGame: (slotId?: string, saveData?: SaveSlotData) => Promise<boolean>;
   resetGame: () => void;
 
@@ -50,7 +58,7 @@ export const GameContext = createContext<GameContextType | undefined>(undefined)
 
 interface GameProviderProps {
   children: ReactNode;
-  /** Called after a saved game is loaded — use to clear transient UI state (e.g. floating texts) */
+  /** Called after a saved game is loaded â€” use to clear transient UI state (e.g. floating texts) */
   onLoadGame?: () => void;
 }
 
@@ -112,7 +120,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, onLoadGame
   const [isLoading, setIsLoading] = useState(true);
   const metaProgression = gameState.metaProgression ?? createInitialMetaProgression();
 
-  // Refs for async callbacks — updated inline each render (safe: only read after event loop tick).
+  // Refs for async callbacks â€” updated inline each render (safe: only read after event loop tick).
   const gameStateRef = useRef(gameState);
   const statsRef = useRef(stats);
   const playerNameRef = useRef(playerName);
@@ -266,17 +274,22 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, onLoadGame
     });
   }, [isLoading]);
 
-  const startNewGame = useCallback((name: string, characterInfo?: CharacterInfo) => {
+  const startNewGame = useCallback((name: string, characterInfo?: CharacterInfo, options?: NewGameBootstrapOptions) => {
     setPlayerName(name);
 
     const currentMeta = gameStateRef.current.metaProgression ?? createInitialMetaProgression();
-    const newStats = applyLegacyBonusesToStats(getInitialStats(), currentMeta);
+    const bootOptions: NewGameBootstrapOptions = {
+      ...options,
+      legacyLevel: currentMeta.legacyLevel ?? 0,
+      legacyPerksEnabled: isFeatureEnabled('LEGACY_PERKS'),
+    };
+
+    const newStats = applyLegacyBonusesToStats(getInitialStats(bootOptions), currentMeta);
     initialStatsRef.current = newStats;
 
-    const newGameState = getInitialGameState();
+    const newGameState = getInitialGameState(bootOptions);
     if (characterInfo) {
       newGameState.characterInfo = characterInfo;
-      // Kader sistemi — burç bilgisiyle başlat
       if (characterInfo.zodiacSign) {
         newGameState.fate = createInitialFateState(characterInfo.zodiacSign);
       }
@@ -459,3 +472,4 @@ export const useGame = (): GameContextType => {
   }
   return context;
 };
+

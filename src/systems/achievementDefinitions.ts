@@ -16,9 +16,9 @@ const hasUnlockedAchievement = (gameState: GameState, achievementId: string): bo
   return (gameState.unlockedAchievements || []).some(entry => entry.achievementId === achievementId);
 };
 
-const ACHIEVEMENT_MONEY_REWARD_SCALE = 0.35;
+const ACHIEVEMENT_MONEY_REWARD_SCALE = 0.4;
 const MIN_ACHIEVEMENT_MONEY_REWARD = 25;
-const MAX_ACHIEVEMENT_MONEY_REWARD = 3500;
+const MAX_ACHIEVEMENT_MONEY_REWARD = 2000;
 
 const scaleAchievementReward = (achievement: Achievement): Achievement => {
   if (!achievement.reward?.money) return achievement;

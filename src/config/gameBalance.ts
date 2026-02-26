@@ -679,6 +679,76 @@ export const REPETITION_PENALTY_CONFIG = {
   maxPenalty: 0.4, // +%40 cap
   windowSize: 5,
 } as const;
+
+// ============================================================================
+// SECTION 27: CONSUMABLE ITEMLAR (Phase 4)
+// ============================================================================
+export const CONSUMABLE_CONFIG = {
+  energyDrink: { base: 80, effect: 15, cooldownTurns: 2, maxPerTurn: 2 },
+  tutorSession: { base: 200, gradeBoost: 5, cooldownTurns: 3, maxPerTurn: 1 },
+  gymPass: { base: 150, healthPerTurn: 3, duration: 3, maxStack: 1 },
+  fashionOutfit: { base: 250, charismaBoost: 5, duration: 5, maxStack: 1 },
+  investment: {
+    base: 500,
+    returnAmount: 650,
+    duration: 10,
+    maxActive: 1,
+    earlyExitRule: 'PARTIAL_REFUND' as const,
+  },
+} as const;
+
+// ============================================================================
+// SECTION 28: BUFF SISTEMI (Phase 4B)
+// ============================================================================
+export const BUFF_RULES = {
+  maxActiveBuffs: 3,
+  sameTypePriority: 'REPLACE' as const, // REPLACE | STACK | REJECT
+  investmentMaxActive: 1,
+} as const;
+// ============================================================================
+// SECTION 29: POWER BUDGET (Cross-Phase)
+// ============================================================================
+export const POWER_BUDGET = {
+  /** Tek bir run boyunca kazanilabilecek toplam net stat artisi */
+  maxNetStatGainPerRun: 420,
+  /** 7 yas sonrasi gunluk (turn basina) max net stat kazanimi */
+  maxDailyNetGainAfterAge7: 12,
+  /** Bu esik sonrasi diminishing returns baslar (stat bazinda) */
+  diminishingStartPerStat: 70,
+  /** Esik sonrasi kazanim carpani (0.50 = yarim etki) */
+  diminishingFactor: 0.50,
+} as const;
+
+// ============================================================================
+// SECTION 30: AD FATIGUE POLICY (Phase 3)
+// ============================================================================
+export const AD_FATIGUE_POLICY = {
+  /** Session basina toplam ad cap */
+  globalDailyCap: 8,
+  /** Placement basina session cap */
+  perPlacementSessionCap: 2,
+  /** Iki ad teklifi arasinda minimum tur */
+  minTurnsBetweenOffers: 2,
+  /** 2 ard arda decline sonrasi snooze suresi (tur) */
+  declineSnoozeTurns: 3,
+  /** Ard arda iki turda ad teklifi verilmez */
+  noOfferOnBackToBackTurns: true,
+} as const;
+
+// ============================================================================
+// SECTION 31: EVENT MIX GUARDRAILS (Phase 5)
+// ============================================================================
+export const EVENT_MIX_GUARDRAILS = {
+  /** Genel eventlerin minimum orani */
+  minGeneralEventShare: 0.40,
+  /** Goal eventlerinin maksimum orani */
+  maxGoalEventShare: 0.45,
+  /** Iliski eventlerinin minimum orani */
+  minRelationshipEventShare: 0.15,
+  /** Ayni eventin tekrar secilmesi icin minimum tur bekleme */
+  duplicateEventCooldownTurns: 6,
+} as const;
+
 // ============================================================================
 // HELPER FUNCTIONS (Formula Generator'lar)
 // ============================================================================
@@ -836,6 +906,11 @@ export const GAME_BALANCE_CONFIG = {
   ENERGY_RECOVERY,
   VARIETY_BONUS_CONFIG,
   REPETITION_PENALTY_CONFIG,
+  CONSUMABLE_CONFIG,
+  BUFF_RULES,
+  POWER_BUDGET,
+  AD_FATIGUE_POLICY,
+  EVENT_MIX_GUARDRAILS,
 } as const;
 
 export default GAME_BALANCE_CONFIG;

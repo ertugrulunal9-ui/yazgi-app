@@ -11,6 +11,7 @@ import {
   zodiacInfo,
 } from '../../src/utils/gameUtils';
 import { BALANCE_CONTRACT, calculateInitialEnergy } from '../../src/config/balanceContract';
+import { TRAIT_DEFINITIONS } from '../../src/data/traits';
 
 describe('gameUtils - Core Functions', () => {
   describe('clamp', () => {
@@ -68,6 +69,33 @@ describe('gameUtils - Core Functions', () => {
       const stats2 = getInitialStats();
       
       expect(stats1).toEqual(stats2);
+    });
+
+    it('supports fast-start baseline when legacy perk is enabled and unlocked', () => {
+      const stats = getInitialStats({
+        fastStart: true,
+        legacyLevel: 1,
+        legacyPerksEnabled: true,
+      });
+
+      expect(stats.health).toBe(20);
+      expect(stats.intelligence).toBe(8);
+      expect(stats.charisma).toBe(8);
+      expect(stats.discipline).toBe(5);
+      expect(stats.energy).toBe(calculateInitialEnergy(20));
+    });
+
+    it('ignores fast-start baseline when legacy perks are disabled', () => {
+      const stats = getInitialStats({
+        fastStart: true,
+        legacyLevel: 10,
+        legacyPerksEnabled: false,
+      });
+
+      expect(stats.health).toBe(BALANCE_CONTRACT.initialStats.health);
+      expect(stats.intelligence).toBe(BALANCE_CONTRACT.initialStats.intelligence);
+      expect(stats.charisma).toBe(BALANCE_CONTRACT.initialStats.charisma);
+      expect(stats.discipline).toBe(BALANCE_CONTRACT.initialStats.discipline);
     });
   });
 
@@ -137,6 +165,40 @@ describe('gameUtils - Core Functions', () => {
       expect(state.currentEvent).toBeNull();
       expect(state.lastResult).toBeNull();
       expect(state.selectedNpcId).toBeNull();
+    });
+
+    it('supports fast-start game bootstrap at age 7 when unlocked', () => {
+      const state = getInitialGameState({
+        fastStart: true,
+        legacyLevel: 1,
+        legacyPerksEnabled: true,
+      });
+
+      expect(state.age).toBe(7);
+      expect(state.phase).toBe('HUB');
+      expect(state.childhood.completed).toBe(true);
+    });
+
+    it('adds bonus starting NPC at legacy level 3+', () => {
+      const state = getInitialGameState({
+        legacyLevel: 3,
+        legacyPerksEnabled: true,
+      });
+
+      expect(state.npcs.length).toBe(2);
+    });
+
+    it('uses selected genetic trait when legacy level 2+ unlocks the perk', () => {
+      const chosenGeneticTrait = TRAIT_DEFINITIONS.find(trait => trait.category === 'GENETIC');
+      expect(chosenGeneticTrait).toBeDefined();
+
+      const state = getInitialGameState({
+        legacyLevel: 2,
+        legacyPerksEnabled: true,
+        selectedGeneticTraitId: chosenGeneticTrait?.id,
+      });
+
+      expect(state.traits).toEqual([chosenGeneticTrait!.id]);
     });
   });
 

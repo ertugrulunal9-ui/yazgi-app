@@ -2,6 +2,7 @@ import { HubActionCommand } from '../../src/commands/ActionCommand';
 import { ExamGameType, SubAction } from '../../src/data/actions';
 import { getInitialGameState, getInitialStats } from '../../src/utils/gameUtils';
 import { GameState, Stats } from '../../src/types';
+import * as featureFlags from '../../src/config/featureFlags';
 
 const createBaseGameState = (): GameState => {
   const state = getInitialGameState();
@@ -64,6 +65,10 @@ const createAction = (overrides: Partial<SubAction> = {}): SubAction => ({
 
 describe('HubActionCommand', () => {
   const command = new HubActionCommand();
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   it('blocks turn-limited actions when already used in the same turn', () => {
     const gameState = createBaseGameState();
@@ -416,5 +421,80 @@ describe('HubActionCommand', () => {
     expect(result.feedbackMessage).toContain('destek kapisi');
 
     randomSpy.mockRestore();
+  });
+
+  it('applies energy drink consumable with cooldown and usage tracking', () => {
+    jest.spyOn(featureFlags, 'isFeatureEnabled').mockImplementation((flag) => (
+      flag === 'CONSUMABLE_ITEMS'
+    ));
+    const gameState = createBaseGameState();
+    gameState.age = 12;
+    const stats = { ...createBaseStats(), money: 500, energy: 20 };
+
+    const result = command.execute({
+      action: createAction({
+        id: 'shopping_energy_drink',
+        text: 'Enerji Icecegi Al',
+        energyCost: 1,
+        purchaseItemId: 'item_energy_drink',
+        effect: { money: -80 },
+      }),
+      currentStats: stats,
+      gameState,
+    });
+
+    expect(result.status).toBe('success');
+    expect(result.newStats.energy).toBeGreaterThan(stats.energy);
+    expect(result.gameStateUpdates.consumableCooldowns?.item_energy_drink).toBe(2);
+    expect(result.gameStateUpdates.consumableUsageThisTurn?.item_energy_drink).toBe(1);
+    expect(result.gameStateUpdates.inventory).toBeUndefined();
+  });
+
+  it('blocks consumable usage while cooldown is active', () => {
+    jest.spyOn(featureFlags, 'isFeatureEnabled').mockImplementation((flag) => (
+      flag === 'CONSUMABLE_ITEMS'
+    ));
+    const gameState = createBaseGameState();
+    gameState.consumableCooldowns = { item_energy_drink: 1 };
+    const stats = { ...createBaseStats(), money: 500 };
+
+    const result = command.execute({
+      action: createAction({
+        id: 'shopping_energy_drink',
+        text: 'Enerji Icecegi Al',
+        energyCost: 1,
+        purchaseItemId: 'item_energy_drink',
+        effect: { money: -80 },
+      }),
+      currentStats: stats,
+      gameState,
+    });
+
+    expect(result.status).toBe('blocked');
+    expect(result.errorType).toBe('CONSUMABLE_COOLDOWN');
+  });
+
+  it('blocks consumable usage when per-turn limit is reached', () => {
+    jest.spyOn(featureFlags, 'isFeatureEnabled').mockImplementation((flag) => (
+      flag === 'CONSUMABLE_ITEMS'
+    ));
+    const gameState = createBaseGameState();
+    gameState.consumableUsageThisTurn = { item_tutor_session: 1 };
+    const stats = { ...createBaseStats(), money: 500 };
+
+    const result = command.execute({
+      action: createAction({
+        id: 'shopping_tutor_session',
+        text: 'Ozel Ders Al',
+        energyCost: 2,
+        purchaseItemId: 'item_tutor_session',
+        effect: { money: -200 },
+      }),
+      currentStats: stats,
+      gameState,
+    });
+
+    expect(result.status).toBe('blocked');
+    expect(result.errorType).toBe('CONSUMABLE_LIMIT_REACHED');
   });
 });

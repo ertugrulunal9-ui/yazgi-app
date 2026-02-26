@@ -1,4 +1,4 @@
-import { logTraitChanges } from '../../src/utils/analyticsEvents';
+import { logGoalActionUsed, logTraitChanges } from '../../src/utils/analyticsEvents';
 import { analyticsService } from '../../src/services/analytics';
 
 describe('analyticsEvents', () => {
@@ -63,5 +63,25 @@ describe('analyticsEvents', () => {
 
     expect(analyticsService.logCustomEvent).not.toHaveBeenCalled();
   });
-});
 
+  it('logs goal_action_used with selected goal metadata', async () => {
+    await logGoalActionUsed({
+      actionId: 'goal_academic_research_project',
+      categoryId: 'goal_academic',
+      selectedGoal: 'ACADEMIC',
+      age: 13,
+      turn: 41,
+    });
+
+    expect(analyticsService.logCustomEvent).toHaveBeenCalledWith(
+      'goal_action_used',
+      expect.objectContaining({
+        action_id: 'goal_academic_research_project',
+        category_id: 'goal_academic',
+        selected_goal: 'ACADEMIC',
+        age: 13,
+        turn: 41,
+      })
+    );
+  });
+});

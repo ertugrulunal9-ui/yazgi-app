@@ -9,6 +9,8 @@ interface ExamPeriodModalProps {
   visible: boolean;
   examsTaken: ExamSubject[];
   onTakeExam: (examType: ExamGameType) => void;
+  reportPreviewEnabled?: boolean;
+  onWatchReportPreviewAd?: () => void;
   onClose: () => void;
 }
 
@@ -33,6 +35,8 @@ export const ExamPeriodModal: React.FC<ExamPeriodModalProps> = ({
   visible,
   examsTaken,
   onTakeExam,
+  reportPreviewEnabled = false,
+  onWatchReportPreviewAd,
   onClose,
 }) => {
   const completedCount = examsTaken.length;
@@ -69,6 +73,12 @@ export const ExamPeriodModal: React.FC<ExamPeriodModalProps> = ({
     'app.examPeriod.completeAllWarning',
     undefined,
     'Karne gormek icin tum sinavlari tamamla'
+  );
+  const previewTitle = tRuntime('app.examPeriod.reportPreviewCta', undefined, 'Not Tahminini Gor');
+  const previewSubtitle = tRuntime(
+    'app.examPeriod.reportPreviewHint',
+    undefined,
+    'Reklam izle ve mini karne tahmini al'
   );
 
   return (
@@ -150,6 +160,16 @@ export const ExamPeriodModal: React.FC<ExamPeriodModalProps> = ({
         </ScrollView>
 
         <View style={styles.footer}>
+          {reportPreviewEnabled && onWatchReportPreviewAd ? (
+            <TouchableOpacity
+              style={styles.previewButton}
+              onPress={onWatchReportPreviewAd}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.previewButtonTitle}>{'\u{1F50D}'} {previewTitle}</Text>
+              <Text style={styles.previewButtonSubtitle}>{previewSubtitle}</Text>
+            </TouchableOpacity>
+          ) : null}
           {allCompleted ? (
             <TouchableOpacity
               style={styles.continueButton}
@@ -319,6 +339,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: 16,
+  },
+  previewButton: {
+    backgroundColor: 'rgba(59, 130, 246, 0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(96, 165, 250, 0.45)',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 10,
+  },
+  previewButtonTitle: {
+    color: '#bfdbfe',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  previewButtonSubtitle: {
+    color: '#93c5fd',
+    fontSize: 12,
+    fontWeight: '500',
   },
   continueButton: {
     backgroundColor: '#10b981',

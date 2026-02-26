@@ -1,5 +1,7 @@
-import { FamilyWealth, PersonalityEffect, PersonalityMomentumSignal, Skills, Stats } from '../types';
+import { FamilyWealth, LifeGoal, PersonalityEffect, PersonalityMomentumSignal, Skills, Stats } from '../types';
 import { tRuntime } from '../i18n/strings';
+import { CONSUMABLE_CONFIG } from '../config/gameBalance';
+import { isFeatureEnabled, type FeatureFlag } from '../config/featureFlags';
 
 export type ExamGameType = 'MATH' | 'TURKISH' | 'HISTORY' | 'SCIENCE' | 'GEOGRAPHY' | 'ENGLISH' | 'ART' | 'MUSIC';
 
@@ -24,6 +26,7 @@ export interface SubAction {
   };
   purchaseItemId?: string;
   priceByWealth?: Partial<Record<FamilyWealth, number>>;
+  requiredFeatureFlag?: FeatureFlag;
   accessibilityHint?: string;
 }
 
@@ -35,6 +38,7 @@ export interface ActionCategory {
   bgColor: string;
   minAge?: number;
   maxAge?: number;
+  requiredGoal?: LifeGoal;
   subActions: SubAction[];
 }
 
@@ -65,6 +69,12 @@ export const resolveActionEffectForFamily = (
 
   return resolvedEffect;
 };
+
+const buildConsumablePrices = (base: number): Partial<Record<FamilyWealth, number>> => ({
+  POOR: Math.round(base * 1.3),
+  MIDDLE: base,
+  RICH: Math.round(base * 0.8),
+});
 
 export const ACTION_CATEGORIES: ActionCategory[] = [
   {
@@ -648,6 +658,211 @@ export const ACTION_CATEGORIES: ActionCategory[] = [
     ],
   },
   {
+    id: 'goal_academic',
+    title: 'Akademik Yol',
+    icon: 'goal_academic',
+    color: '#2563eb',
+    bgColor: 'rgba(37, 99, 235, 0.15)',
+    minAge: 12,
+    requiredGoal: 'ACADEMIC',
+    subActions: [
+      {
+        id: 'goal_academic_research_project',
+        text: 'Arastirma Projesi',
+        icon: 'research',
+        energyCost: 24,
+        minAge: 12,
+        effect: { intelligence: 6, discipline: 3, energy: -24 },
+        feedback: 'Arastirma planini derinlestirdin ve metodunu guclendirdin.',
+        skillUpdates: { logic: 3, reading: 2 },
+      },
+      {
+        id: 'goal_academic_science_competition',
+        text: 'Bilim Yarismasi Hazirligi',
+        icon: 'science_comp',
+        energyCost: 26,
+        minAge: 12,
+        effect: { intelligence: 7, discipline: 2, charisma: 1, energy: -26 },
+        feedback: 'Yarisma icin prototipini gelistirdin.',
+        gradeUpdates: { science: 6, math: 4 },
+      },
+      {
+        id: 'goal_academic_olympiad_drill',
+        text: 'Akademik Olimpiyat Kampi',
+        icon: 'olympiad',
+        energyCost: 30,
+        minAge: 13,
+        effect: { intelligence: 8, discipline: 4, health: -1, energy: -30 },
+        feedback: 'Zor sorularla sinirlarini zorladin.',
+        skillUpdates: { logic: 4, work_ethic: 2 },
+      },
+    ],
+  },
+  {
+    id: 'goal_athletic',
+    title: 'Atletik Yol',
+    icon: 'goal_athletic',
+    color: '#16a34a',
+    bgColor: 'rgba(22, 163, 74, 0.15)',
+    minAge: 12,
+    requiredGoal: 'ATHLETIC',
+    subActions: [
+      {
+        id: 'goal_athletic_training_camp',
+        text: 'Antrenman Kampi',
+        icon: 'camp',
+        energyCost: 27,
+        minAge: 12,
+        effect: { health: 7, discipline: 3, energy: -27 },
+        feedback: 'Kamp temposu kondisyonunu belirgin sekilde yukseltti.',
+        skillUpdates: { athletics: 4, teamwork: 2 },
+      },
+      {
+        id: 'goal_athletic_tournament_round',
+        text: 'Turnuva Elemeleri',
+        icon: 'tournament',
+        energyCost: 29,
+        minAge: 12,
+        effect: { health: 6, charisma: 2, discipline: 2, energy: -29 },
+        feedback: 'Rakiplerine karsi dayanikliligini test ettin.',
+        skillUpdates: { athletics: 5, work_ethic: 1 },
+      },
+      {
+        id: 'goal_athletic_captain_track',
+        text: 'Kaptanlik Hazirligi',
+        icon: 'captain',
+        energyCost: 25,
+        minAge: 13,
+        effect: { charisma: 3, discipline: 3, familyRelation: 1, energy: -25 },
+        feedback: 'Takimi yonetme sorumlulugunu ustlendin.',
+        skillUpdates: { teamwork: 4, athletics: 2 },
+      },
+    ],
+  },
+  {
+    id: 'goal_creative',
+    title: 'Yaratici Yol',
+    icon: 'goal_creative',
+    color: '#db2777',
+    bgColor: 'rgba(219, 39, 119, 0.15)',
+    minAge: 12,
+    requiredGoal: 'CREATIVE',
+    subActions: [
+      {
+        id: 'goal_creative_exhibition_prep',
+        text: 'Sergi Hazirligi',
+        icon: 'exhibition',
+        energyCost: 21,
+        minAge: 12,
+        effect: { charisma: 5, intelligence: 2, energy: -21 },
+        feedback: 'Portfolyonu sergi standardina tasidn.',
+        skillUpdates: { art: 4, design: 2 },
+      },
+      {
+        id: 'goal_creative_band_rehearsal',
+        text: 'Band Provasi',
+        icon: 'band',
+        energyCost: 22,
+        minAge: 12,
+        effect: { charisma: 4, discipline: 2, energy: -22 },
+        feedback: 'Sahne uyumunu ve ritmini gelistirdin.',
+        skillUpdates: { music: 4, teamwork: 2 },
+      },
+      {
+        id: 'goal_creative_portfolio_review',
+        text: 'Portfolyo Revizyonu',
+        icon: 'portfolio',
+        energyCost: 24,
+        minAge: 13,
+        effect: { intelligence: 3, charisma: 4, discipline: 2, energy: -24 },
+        feedback: 'Secili islerini mentor geri bildirimiyle guncelledin.',
+        skillUpdates: { design: 3, writing: 2 },
+      },
+    ],
+  },
+  {
+    id: 'goal_wealth',
+    title: 'Finansal Yol',
+    icon: 'goal_wealth',
+    color: '#d97706',
+    bgColor: 'rgba(217, 119, 6, 0.15)',
+    minAge: 13,
+    requiredGoal: 'WEALTH',
+    subActions: [
+      {
+        id: 'goal_wealth_market_watch',
+        text: 'Pazar Takibi',
+        icon: 'market',
+        energyCost: 18,
+        minAge: 13,
+        effect: { intelligence: 3, discipline: 2, money: 35, energy: -18 },
+        feedback: 'Firsat pencerelerini okuyup dogru alana odaklandin.',
+        skillUpdates: { business: 3, logic: 1 },
+      },
+      {
+        id: 'goal_wealth_business_pitch',
+        text: 'Is Plani Sunumu',
+        icon: 'pitch',
+        energyCost: 23,
+        minAge: 13,
+        effect: { charisma: 3, intelligence: 2, money: 55, energy: -23 },
+        feedback: 'Fikrini netlestirip guven veren bir sunum yaptin.',
+        skillUpdates: { business: 4, work_ethic: 1 },
+      },
+      {
+        id: 'goal_wealth_network_round',
+        text: 'Networking Turu',
+        icon: 'network',
+        energyCost: 20,
+        minAge: 14,
+        effect: { charisma: 4, familyRelation: 1, money: 45, energy: -20 },
+        feedback: 'Yeni baglantilarla gelir kapilarini genislettin.',
+        skillUpdates: { business: 3, teamwork: 2 },
+      },
+    ],
+  },
+  {
+    id: 'goal_social',
+    title: 'Toplumsal Yol',
+    icon: 'goal_social',
+    color: '#0891b2',
+    bgColor: 'rgba(8, 145, 178, 0.15)',
+    minAge: 12,
+    requiredGoal: 'SOCIAL',
+    subActions: [
+      {
+        id: 'goal_social_council_session',
+        text: 'Ogrenci Konseyi',
+        icon: 'council',
+        energyCost: 19,
+        minAge: 12,
+        effect: { charisma: 4, familyRelation: 2, energy: -19 },
+        feedback: 'Grup kararlarini adil sekilde yonettin.',
+        skillUpdates: { teamwork: 3, writing: 1 },
+      },
+      {
+        id: 'goal_social_volunteer_shift',
+        text: 'Gonulluluk Calismasi',
+        icon: 'volunteer',
+        energyCost: 21,
+        minAge: 12,
+        effect: { familyRelation: 4, charisma: 3, discipline: 1, energy: -21 },
+        feedback: 'Topluluk yararina sahada aktif rol aldin.',
+        skillUpdates: { teamwork: 3, work_ethic: 1 },
+      },
+      {
+        id: 'goal_social_peer_mentoring',
+        text: 'Akran Mentorlugu',
+        icon: 'mentor',
+        energyCost: 22,
+        minAge: 13,
+        effect: { charisma: 4, intelligence: 2, familyRelation: 2, energy: -22 },
+        feedback: 'Daha kucuklere rehberlik ederek guven kazandin.',
+        skillUpdates: { reading: 2, teamwork: 2 },
+      },
+    ],
+  },
+  {
     id: 'shopping',
     title: 'Alışveriş',
     icon: '🛒',
@@ -773,6 +988,66 @@ export const ACTION_CATEGORIES: ActionCategory[] = [
         feedback: 'Kısa bir kursa katıldın. Bilgini ve odagını gelistirdin.',
         skillUpdates: { logic: 2, work_ethic: 1 },
       },
+      {
+        id: 'shopping_energy_drink',
+        text: 'Enerji Icecegi Al',
+        icon: 'drink',
+        energyCost: 1,
+        minAge: 10,
+        purchaseItemId: 'item_energy_drink',
+        priceByWealth: buildConsumablePrices(CONSUMABLE_CONFIG.energyDrink.base),
+        effect: { money: -CONSUMABLE_CONFIG.energyDrink.base },
+        feedback: 'Enerji icecegi aldin. Aninda enerji takviyesi hazir.',
+        requiredFeatureFlag: 'CONSUMABLE_ITEMS',
+      },
+      {
+        id: 'shopping_tutor_session',
+        text: 'Ozel Ders Al',
+        icon: 'tutor',
+        energyCost: 2,
+        minAge: 12,
+        purchaseItemId: 'item_tutor_session',
+        priceByWealth: buildConsumablePrices(CONSUMABLE_CONFIG.tutorSession.base),
+        effect: { money: -CONSUMABLE_CONFIG.tutorSession.base },
+        feedback: 'Ozel ders aldin. Rastgele bir derste notun artacak.',
+        requiredFeatureFlag: 'CONSUMABLE_ITEMS',
+      },
+      {
+        id: 'shopping_gym_pass',
+        text: 'Spor Salonu Paketi',
+        icon: 'gym',
+        energyCost: 3,
+        minAge: 12,
+        purchaseItemId: 'item_gym_pass',
+        priceByWealth: buildConsumablePrices(CONSUMABLE_CONFIG.gymPass.base),
+        effect: { money: -CONSUMABLE_CONFIG.gymPass.base },
+        feedback: `${CONSUMABLE_CONFIG.gymPass.duration} tur boyunca saglik buff'i aktif olacak.`,
+        requiredFeatureFlag: 'CONSUMABLE_ITEMS',
+      },
+      {
+        id: 'shopping_fashion_outfit',
+        text: 'Tarz Kombin Al',
+        icon: 'style',
+        energyCost: 3,
+        minAge: 13,
+        purchaseItemId: 'item_fashion_outfit',
+        priceByWealth: buildConsumablePrices(CONSUMABLE_CONFIG.fashionOutfit.base),
+        effect: { money: -CONSUMABLE_CONFIG.fashionOutfit.base },
+        feedback: `${CONSUMABLE_CONFIG.fashionOutfit.duration} tur boyunca karizma buff'i aktif olacak.`,
+        requiredFeatureFlag: 'CONSUMABLE_ITEMS',
+      },
+      {
+        id: 'shopping_investment',
+        text: 'Mini Yatirim Yap',
+        icon: 'invest',
+        energyCost: 4,
+        minAge: 14,
+        purchaseItemId: 'item_investment',
+        priceByWealth: buildConsumablePrices(CONSUMABLE_CONFIG.investment.base),
+        effect: { money: -CONSUMABLE_CONFIG.investment.base },
+        feedback: `${CONSUMABLE_CONFIG.investment.duration} tur sonra getirisi hesabina yatacak.`,
+        requiredFeatureFlag: 'CONSUMABLE_ITEMS',
+      },
     ],
   },
 ];
@@ -798,13 +1073,43 @@ const localizeSubAction = (action: SubAction): SubAction => {
 };
 
 export const localizeActionCategory = (category: ActionCategory): ActionCategory => {
+  const availableSubActions = category.subActions
+    .filter(action => !action.requiredFeatureFlag || isFeatureEnabled(action.requiredFeatureFlag))
+    .map(localizeSubAction);
+
   return {
     ...category,
     title: getActionCategoryTitle(category.id, category.title),
-    subActions: category.subActions.map(localizeSubAction),
+    subActions: availableSubActions,
   };
 };
 
 export const getLocalizedActionCategories = (): ActionCategory[] => {
   return ACTION_CATEGORIES.map(localizeActionCategory);
+};
+
+interface ActionCategoryFilterOptions {
+  careerPathActionsEnabled?: boolean;
+}
+
+export const filterActionCategoriesForContext = (
+  categories: ActionCategory[],
+  age: number,
+  selectedGoal: LifeGoal | null | undefined,
+  options: ActionCategoryFilterOptions = {}
+): ActionCategory[] => {
+  const careerPathActionsEnabled = options.careerPathActionsEnabled ?? false;
+
+  return categories.filter(category => {
+    if (category.minAge && age < category.minAge) return false;
+    if (category.maxAge !== undefined && age > category.maxAge) return false;
+
+    if (category.requiredGoal) {
+      if (!careerPathActionsEnabled) return false;
+      if (!selectedGoal) return false;
+      if (category.requiredGoal !== selectedGoal) return false;
+    }
+
+    return category.subActions.length > 0;
+  });
 };

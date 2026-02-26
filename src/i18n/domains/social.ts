@@ -12,6 +12,20 @@ export const socialStrings: DomainStrings = {
         RIVAL: 'Rakip',
         ENEMY: 'Dusman',
       },
+      epilogue: {
+        title: 'Sosyal Epilog',
+        templates: {
+          PARTNER: '{name} ile {metAge} yasinda tanistin. {yearsKnown} yil boyunca birlikte buyudunuz ve mezuniyette el ele tutuyordunuz.',
+          BEST_FRIEND_MEMORIES: '{name}, {metAge} yasindan beri yaninda. {memCount} ortak aniniz var, o senin kardesin.',
+          BEST_FRIEND: '{name} ile {metAge} yasindan beri birbirinize bagli kaldiniz.',
+          CRUSH: '{name} ile aranizda bir seyler var ama henuz netlesmediniz.',
+          FRIEND_LONG: '{name} ile {yearsKnown} yildir arkadassiniz. Iyi gunleri paylastiniz.',
+          FRIEND_SHORT: '{name} ile ara sira takiliyorsun. Iyi bir arkadas ama derin bir bag kuramadin.',
+          RIVAL: '{name} ile {metAge} yasinda yollariniz ayrildi. Hala birbirinize soguk bakiyorsunuz.',
+          ENEMY: '{name} ile aran hic duzelmedi. {hateScore} puan nefret biriktirdiniz.',
+          DEFAULT: '{name} ile yollariniz kesisti ama derin bir bag kuramadin.',
+        },
+      },
       screen: {
         back: 'Geri',
         backAria: 'Hub ekranina don',
@@ -139,6 +153,20 @@ export const socialStrings: DomainStrings = {
         PARTNER: 'Partner',
         RIVAL: 'Rival',
         ENEMY: 'Enemy',
+      },
+      epilogue: {
+        title: 'Social Epilogue',
+        templates: {
+          PARTNER: 'You met {name} at {metAge}. You grew together for {yearsKnown} years before graduation.',
+          BEST_FRIEND_MEMORIES: '{name} has been with you since {metAge}. You shared {memCount} memories like siblings.',
+          BEST_FRIEND: '{name} has stayed close to you since age {metAge}.',
+          CRUSH: 'There is something between you and {name}, but it never became clear.',
+          FRIEND_LONG: 'You have been friends with {name} for {yearsKnown} years and shared good days.',
+          FRIEND_SHORT: 'You occasionally spent time with {name}, but never built a deep bond.',
+          RIVAL: 'Your paths split from {name} at age {metAge}. The distance never healed.',
+          ENEMY: 'Things never improved with {name}. You accumulated {hateScore} points of resentment.',
+          DEFAULT: 'Your paths crossed with {name}, but no deep bond formed.',
+        },
       },
       screen: {
         back: 'Back',

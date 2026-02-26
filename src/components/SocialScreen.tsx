@@ -25,6 +25,7 @@ interface SocialScreenProps {
     npcId: string,
     actionType: 'CHAT' | 'HANGOUT' | 'GIFT' | 'STUDY' | 'FLIRT' | 'HELP' | 'COMPETE' | 'GOSSIP'
   ) => { success: boolean; message: string; cost?: { energy: number; money: number } };
+  onOfferRelationshipBoostAd?: (npcId: string, npcName: string) => Promise<void> | void;
   onMeetNew: () => { success: boolean; npc?: NPC };
   theme?: ReturnType<typeof getThemeTokens>;
   metrics?: ReturnType<typeof getDensityMetrics>;
@@ -315,6 +316,7 @@ const SocialScreenRoot: React.FC<SocialScreenProps> = ({
   skills,
   onBack,
   onInteract,
+  onOfferRelationshipBoostAd,
   onMeetNew,
   theme: themeOverride,
   metrics: metricsOverride,
@@ -367,11 +369,34 @@ const SocialScreenRoot: React.FC<SocialScreenProps> = ({
     buttonPress();
     const result = onInteract(selectedNPC.id, actionType);
     if (result.success) {
-      Alert.alert(tRuntime('social.screen.successTitle', undefined, 'Basarili'), result.message);
+      if (onOfferRelationshipBoostAd) {
+        Alert.alert(
+          tRuntime('social.screen.successTitle', undefined, 'Basarili'),
+          result.message,
+          [
+            {
+              text: tRuntime('social.screen.successClose', undefined, 'Kapat'),
+              style: 'cancel',
+            },
+            {
+              text: tRuntime(
+                'app.ads.relationshipBoostCta',
+                undefined,
+                'Reklam Izle (+5 iliski)'
+              ),
+              onPress: () => {
+                void onOfferRelationshipBoostAd(selectedNPC.id, selectedNPC.name);
+              },
+            },
+          ]
+        );
+      } else {
+        Alert.alert(tRuntime('social.screen.successTitle', undefined, 'Basarili'), result.message);
+      }
     } else {
       Alert.alert(tRuntime('social.screen.errorTitle', undefined, 'Hata'), result.message);
     }
-  }, [selectedNPC, onInteract]);
+  }, [selectedNPC, onInteract, onOfferRelationshipBoostAd]);
 
   const handleMeetNew = useCallback(() => {
     buttonPress();

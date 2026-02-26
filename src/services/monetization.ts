@@ -12,6 +12,10 @@ export type RewardedPlacement =
   | 'hub'
   | 'exam_prep'
   | 'energy_depleted'
+  | 'relationship_boost'
+  | 'trait_boost'
+  | 'shopping_discount'
+  | 'report_preview'
   | 'crisis_recovery'
   | 'ending_alternative';
 
@@ -269,7 +273,7 @@ class MonetizationService {
   private adsEnabled = true;
   private personalizedAdsEnabled = false;
   private rewardedAdCount = 0;
-  private dailyAdLimit = 5;
+  private dailyAdLimit = 8;
   private interstitialShownThisSession = 0;
   private interstitialSessionLimit = DEFAULT_INTERSTITIAL_SESSION_LIMIT;
   private interstitialCooldownMs = DEFAULT_INTERSTITIAL_COOLDOWN_MS;
@@ -284,7 +288,7 @@ class MonetizationService {
     this.adsEnabled = true;
     this.personalizedAdsEnabled = false;
     this.rewardedAdCount = 0;
-    this.dailyAdLimit = 5;
+    this.dailyAdLimit = 8;
     this.interstitialShownThisSession = 0;
     this.interstitialSessionLimit = DEFAULT_INTERSTITIAL_SESSION_LIMIT;
     this.interstitialCooldownMs = DEFAULT_INTERSTITIAL_COOLDOWN_MS;
@@ -416,6 +420,26 @@ class MonetizationService {
         adDriverRewardType: 'energy',
         rewardType: 'energy',
         amount: 25,
+      },
+      relationship_boost: {
+        adDriverRewardType: 'money',
+        rewardType: 'utility',
+        amount: 5,
+      },
+      trait_boost: {
+        adDriverRewardType: 'intelligence',
+        rewardType: 'utility',
+        amount: 1,
+      },
+      shopping_discount: {
+        adDriverRewardType: 'money',
+        rewardType: 'utility',
+        amount: 20,
+      },
+      report_preview: {
+        adDriverRewardType: 'money',
+        rewardType: 'utility',
+        amount: 0,
       },
       crisis_recovery: {
         adDriverRewardType: 'money',

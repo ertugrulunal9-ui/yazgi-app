@@ -17,8 +17,10 @@ import { useGame } from '../context/GameContext';
 import { useMetaProgression } from '../context/MetaProgressionContext';
 import { useLegacyBonuses } from '../hooks/useGameSelectors';
 import { CharacterInfo, LifeGoal, PlayerGender } from '../types';
-import { getLifeGoalMeta, LIFE_GOAL_ORDER } from '../utils/lifeGoalSystem';
+import { getLifeGoalMeta, LIFE_GOAL_ORDER, LIFE_GOAL_SELECTION_EVENT_ID } from '../utils/lifeGoalSystem';
 import { AppLocale, t as translateStatic } from '../i18n/strings';
+import { isFeatureEnabled } from '../config/featureFlags';
+import { getUnlockedLegacyPerks, hasLegacyPerk } from '../data/legacyPerks';
 import {
   calculateZodiacSign,
   generateRandomCharacter,
@@ -49,6 +51,8 @@ const GOAL_PICKER_ICONS: Record<LifeGoal, string> = {
   WEALTH: '\u{1F4BC}',
   SOCIAL: '\u{1F91D}',
 };
+
+type GoalSelection = LifeGoal | 'BALANCED';
 
 interface DropdownPickerProps {
   value: string;
@@ -151,6 +155,14 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
   const { startNewGame, updateGameState } = useGame();
   const { metaProgression } = useMetaProgression();
   const legacyBonuses = useLegacyBonuses();
+  const legacyLevel = metaProgression?.legacyLevel ?? 0;
+  const legacyPerksEnabled = isFeatureEnabled('LEGACY_PERKS');
+  const unlockedLegacyPerks = useMemo(
+    () => legacyPerksEnabled ? getUnlockedLegacyPerks(legacyLevel) : [],
+    [legacyLevel, legacyPerksEnabled]
+  );
+  const fastStartUnlocked = legacyPerksEnabled && hasLegacyPerk(legacyLevel, 'FAST_START');
+  const balancedGoalUnlocked = legacyPerksEnabled && hasLegacyPerk(legacyLevel, 'UNLOCK_BALANCED_GOAL');
 
   const [activeTab, setActiveTab] = useState<'play' | 'lives'>('play');
   const [firstName, setFirstName] = useState('');
@@ -159,7 +171,8 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
   const [birthMonth, setBirthMonth] = useState(1);
   const [birthDay, setBirthDay] = useState(1);
   const [birthCity, setBirthCity] = useState('');
-  const [selectedGoal, setSelectedGoal] = useState<LifeGoal | null>(null);
+  const [selectedGoal, setSelectedGoal] = useState<GoalSelection | null>(null);
+  const [useFastStart, setUseFastStart] = useState(false);
   const [showGoalVision, setShowGoalVision] = useState(false);
 
   const tStatic = useCallback(
@@ -177,12 +190,23 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
   const zodiacInfo = useMemo(() => getLocalizedZodiacInfo(locale), [locale]);
   const zodiacSign = useMemo(() => calculateZodiacSign(birthMonth, birthDay), [birthMonth, birthDay]);
   const zodiac = zodiacInfo[zodiacSign];
+  const goalOptions = useMemo<GoalSelection[]>(
+    () => (balancedGoalUnlocked ? [...LIFE_GOAL_ORDER, 'BALANCED'] : [...LIFE_GOAL_ORDER]),
+    [balancedGoalUnlocked]
+  );
+  const selectedLifeGoal = selectedGoal && selectedGoal !== 'BALANCED' ? selectedGoal : null;
 
   useEffect(() => {
     if (birthDay > maxDays) {
       setBirthDay(maxDays);
     }
   }, [birthDay, maxDays]);
+
+  useEffect(() => {
+    if (!fastStartUnlocked && useFastStart) {
+      setUseFastStart(false);
+    }
+  }, [fastStartUnlocked, useFastStart]);
 
   const isFormReady = Boolean(firstName.trim() && lastName.trim() && birthCity && selectedGoal);
 
@@ -195,8 +219,8 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
     setBirthMonth(random.birthMonth);
     setBirthDay(random.birthDay);
     setBirthCity(random.birthCity);
-    setSelectedGoal(LIFE_GOAL_ORDER[Math.floor(Math.random() * LIFE_GOAL_ORDER.length)] ?? 'ACADEMIC');
-  }, []);
+    setSelectedGoal(goalOptions[Math.floor(Math.random() * goalOptions.length)] ?? 'ACADEMIC');
+  }, [goalOptions]);
 
   const buildCharacterInfo = useCallback((): CharacterInfo => ({
     firstName: firstName.trim(),
@@ -207,6 +231,28 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
     birthCity,
     zodiacSign,
   }), [birthCity, birthDay, birthMonth, firstName, gender, lastName, zodiacSign]);
+
+  const startGameWithSelectedGoal = useCallback((goal: GoalSelection) => {
+    const characterInfo = buildCharacterInfo();
+    successHaptic();
+    startNewGame(
+      `${characterInfo.firstName} ${characterInfo.lastName}`,
+      characterInfo,
+      { fastStart: useFastStart }
+    );
+
+    if (goal === 'BALANCED') {
+      updateGameState({
+        selectedGoal: null,
+        eventChoiceHistory: [LIFE_GOAL_SELECTION_EVENT_ID],
+      });
+    } else {
+      updateGameState({ selectedGoal: goal });
+    }
+
+    setShowGoalVision(false);
+    onGameStart();
+  }, [buildCharacterInfo, onGameStart, startNewGame, updateGameState, useFastStart]);
 
   const handleStartGame = useCallback(() => {
     if (!isFormReady || !selectedGoal) {
@@ -223,19 +269,17 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
     }
 
     buttonPress();
+    if (selectedGoal === 'BALANCED') {
+      startGameWithSelectedGoal(selectedGoal);
+      return;
+    }
     setShowGoalVision(true);
-  }, [isFormReady, selectedGoal, tStatic]);
+  }, [isFormReady, selectedGoal, startGameWithSelectedGoal, tStatic]);
 
   const handleGoalVisionContinue = useCallback(() => {
-    if (!selectedGoal) return;
-
-    const characterInfo = buildCharacterInfo();
-    successHaptic();
-    startNewGame(`${characterInfo.firstName} ${characterInfo.lastName}`, characterInfo);
-    updateGameState({ selectedGoal });
-    setShowGoalVision(false);
-    onGameStart();
-  }, [buildCharacterInfo, onGameStart, selectedGoal, startNewGame, updateGameState]);
+    if (!selectedLifeGoal) return;
+    startGameWithSelectedGoal(selectedLifeGoal);
+  }, [selectedLifeGoal, startGameWithSelectedGoal]);
 
   const containerStyle = useMemo(() => ({
     flex: 1,
@@ -512,12 +556,19 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
                 {tStatic('app.goalHeader', undefined, 'Bu Hayattaki Hedefin')}
               </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                {LIFE_GOAL_ORDER.map((goal) => {
-                  const goalMeta = getLifeGoalMeta(goal);
+                {goalOptions.map((goal) => {
+                  const goalMeta = goal === 'BALANCED'
+                    ? {
+                      shortLabel: tStatic('app.goalBalanced', undefined, 'Dengeli'),
+                      statHint: tStatic('app.goalBalancedHint', undefined, 'Genel denge, tek bir alana baglanma'),
+                      accentColor: '#64748b',
+                    }
+                    : getLifeGoalMeta(goal);
                   if (!goalMeta) return null;
 
                   const isSelected = selectedGoal === goal;
                   const goalColor = goalMeta.accentColor;
+                  const goalIcon = goal === 'BALANCED' ? '\u2696\uFE0F' : GOAL_PICKER_ICONS[goal];
 
                   return (
                     <TouchableOpacity
@@ -535,7 +586,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
                       }}
                     >
                       <Text style={{ color: isSelected ? goalColor : theme.textPrimary, fontWeight: '800', fontSize: 13 }}>
-                        {GOAL_PICKER_ICONS[goal]} {goalMeta.shortLabel}
+                        {goalIcon} {goalMeta.shortLabel}
                       </Text>
                       <Text style={{ color: theme.textSecondary, fontSize: 11, marginTop: 4 }}>
                         {goalMeta.statHint}
@@ -551,6 +602,63 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
               theme={theme}
               metrics={metrics}
             />
+
+            {fastStartUnlocked && (
+              <View style={sectionStyle}>
+                <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
+                  {tStatic('app.fastStartTitle', undefined, 'Hizli Baslangic')}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setUseFastStart(prev => !prev)}
+                  activeOpacity={0.85}
+                  style={{
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: useFastStart ? theme.accentEvent : theme.border,
+                    backgroundColor: useFastStart ? `${theme.accentEvent}22` : theme.surfaceRaised,
+                    paddingVertical: 10,
+                    paddingHorizontal: 10,
+                  }}
+                >
+                  <Text style={{ color: useFastStart ? theme.accentEvent : theme.textPrimary, fontWeight: '700', fontSize: 13 }}>
+                    {useFastStart
+                      ? tStatic('app.fastStartEnabled', undefined, 'Acik - 7 Yas Baslangici')
+                      : tStatic('app.fastStartDisabled', undefined, 'Kapali - 0 Yas Baslangici')}
+                  </Text>
+                  <Text style={{ color: theme.textSecondary, fontSize: 11, marginTop: 4 }}>
+                    {tStatic('app.fastStartHint', undefined, 'Legacy Seviye 1 ile acilir. Bebeklik fazini atlar.')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {legacyPerksEnabled && unlockedLegacyPerks.length > 0 && (
+              <View style={sectionStyle}>
+                <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
+                  {tStatic('app.legacyPerksTitle', undefined, 'Acilan Legacy Perkler')}
+                </Text>
+                <View style={{ gap: 6 }}>
+                  {unlockedLegacyPerks.map(perk => (
+                    <View
+                      key={perk.id}
+                      style={{
+                        backgroundColor: theme.surfaceOverlay,
+                        borderRadius: 8,
+                        paddingHorizontal: 10,
+                        paddingVertical: 8,
+                      }}
+                    >
+                      <Text style={{ color: theme.textPrimary, fontWeight: '700', fontSize: 12 }}>
+                        {perk.icon} Lv.{perk.levelRequired} - {perk.title}
+                      </Text>
+                      <Text style={{ color: theme.textSecondary, fontSize: 11, marginTop: 2 }}>
+                        {perk.description}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
 
             {legacyBonuses.visible && (
               <View style={sectionStyle}>
@@ -625,17 +733,17 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
       </View>
 
       <Modal
-        visible={showGoalVision && selectedGoal !== null}
+        visible={showGoalVision && selectedLifeGoal !== null}
         animationType="fade"
         presentationStyle="fullScreen"
         onRequestClose={() => setShowGoalVision(false)}
       >
-        {selectedGoal ? (
+        {selectedLifeGoal ? (
           <GoalVisionOnboarding
             theme={theme}
             metrics={metrics}
             locale={locale}
-            selectedGoal={selectedGoal}
+            selectedGoal={selectedLifeGoal}
             onContinue={handleGoalVisionContinue}
             onBack={() => setShowGoalVision(false)}
           />

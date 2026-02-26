@@ -92,8 +92,10 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
     compatibilityScore,
     errorDebt,
     achievementFlavor,
-    tier
+    tier,
+    socialSummary,
   } = endingResolution;
+  const socialEpilogue = socialSummary ?? [];
 
   const runLegacyPoints = useMemo(() => (
     calculateLegacyPointsForRun({
@@ -145,10 +147,8 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
   }, [futureVision.mood]);
 
   const highlightedRelations = useMemo(() => {
-    const partners = npcs.filter(npc => npc.role === 'PARTNER');
-    const bestFriends = npcs.filter(npc => npc.role === 'BEST_FRIEND');
-    const enemies = npcs.filter(npc => npc.role === 'ENEMY');
-    return [...partners, ...bestFriends, ...enemies].slice(0, 4);
+    const rolePriority: NPC['role'][] = ['PARTNER', 'BEST_FRIEND', 'CRUSH', 'FRIEND', 'RIVAL', 'ENEMY'];
+    return rolePriority.flatMap(role => npcs.filter(npc => npc.role === role)).slice(0, 4);
   }, [npcs]);
 
   const shareCardRef = useRef<ViewShot | null>(null);
@@ -467,31 +467,17 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
             </FadeInUpView>
           )}
 
-          {highlightedRelations.length > 0 && (
+          {socialEpilogue.length > 0 && (
             <FadeInUpView delay={440}>
               <View style={{ marginBottom: 16 }}>
                 <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
-                  {t('endings.relationships', undefined, 'Iliskiler')}
+                  {t('social.epilogue.title', undefined, 'Sosyal Epilog')}
                 </Text>
                 <View style={{ borderTopWidth: 1, borderTopColor: theme.border }}>
-                  {highlightedRelations.map((npc) => {
-                    const roleLabel = npc.role === 'PARTNER'
-                      ? t('labels.npcRoles.PARTNER', undefined, 'Sevgili')
-                      : (npc.role === 'BEST_FRIEND'
-                        ? t('labels.npcRoles.BEST_FRIEND', undefined, 'En Iyi Arkadas')
-                        : t('labels.npcRoles.ENEMY', undefined, 'Dusman'));
-                    const roleEmoji = npc.role === 'PARTNER'
-                      ? '\u{1F48D}'
-                      : (npc.role === 'BEST_FRIEND' ? '\u{1F465}' : '\u2694\uFE0F');
-                    const relationLine = npc.role === 'PARTNER'
-                      ? `${npc.metAge}${t('endings.metAtAge', undefined, ' yasinda tanistin')}`
-                      : (npc.role === 'BEST_FRIEND'
-                        ? `${Math.max(1, gameState.age - npc.metAge)}${t('endings.friendshipYears', undefined, ' yillik dostluk')}`
-                        : t('endings.neverMadeUp', undefined, 'hic barismadin'));
-
+                  {socialEpilogue.map((summary) => {
                     return (
                       <View
-                        key={npc.id}
+                        key={`${summary.name}_${summary.role}`}
                         style={{
                           paddingVertical: 8,
                           borderBottomWidth: 1,
@@ -499,10 +485,10 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                         }}
                       >
                         <Text style={{ color: theme.textPrimary, fontWeight: '600' }}>
-                          {roleEmoji} {npc.name} ({roleLabel})
+                          {summary.emoji} {summary.name}
                         </Text>
                         <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>
-                          {relationLine}
+                          {summary.narrativeLine}
                         </Text>
                       </View>
                     );

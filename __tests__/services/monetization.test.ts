@@ -56,8 +56,8 @@ describe('MonetizationService (ad-only)', () => {
       expect(after).toBe(before - 1);
     });
 
-    it('enforces daily 5-ad limit', async () => {
-      for (let i = 0; i < 5; i += 1) {
+    it('enforces daily 8-ad limit', async () => {
+      for (let i = 0; i < 8; i += 1) {
         const result = await monetizationService.showRewardedAd('money');
         expect(result.success).toBe(true);
       }
@@ -71,6 +71,10 @@ describe('MonetizationService (ad-only)', () => {
     it('maps contextual rewarded placements to expected rewards', async () => {
       const examPrep = await monetizationService.showContextualRewardedAd('exam_prep');
       const energyRecovery = await monetizationService.showContextualRewardedAd('energy_depleted');
+      const relationBoost = await monetizationService.showContextualRewardedAd('relationship_boost');
+      const traitBoost = await monetizationService.showContextualRewardedAd('trait_boost');
+      const shoppingDiscount = await monetizationService.showContextualRewardedAd('shopping_discount');
+      const reportPreview = await monetizationService.showContextualRewardedAd('report_preview');
       const crisisRecovery = await monetizationService.showContextualRewardedAd('crisis_recovery');
       const altEnding = await monetizationService.showContextualRewardedAd('ending_alternative');
 
@@ -81,6 +85,22 @@ describe('MonetizationService (ad-only)', () => {
       expect(energyRecovery.success).toBe(true);
       expect(energyRecovery.rewardType).toBe('energy');
       expect(energyRecovery.amount).toBe(25);
+
+      expect(relationBoost.success).toBe(true);
+      expect(relationBoost.rewardType).toBe('utility');
+      expect(relationBoost.amount).toBe(5);
+
+      expect(traitBoost.success).toBe(true);
+      expect(traitBoost.rewardType).toBe('utility');
+      expect(traitBoost.amount).toBe(1);
+
+      expect(shoppingDiscount.success).toBe(true);
+      expect(shoppingDiscount.rewardType).toBe('utility');
+      expect(shoppingDiscount.amount).toBe(20);
+
+      expect(reportPreview.success).toBe(true);
+      expect(reportPreview.rewardType).toBe('utility');
+      expect(reportPreview.amount).toBe(0);
 
       expect(crisisRecovery.success).toBe(true);
       expect(crisisRecovery.rewardType).toBe('utility');

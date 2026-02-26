@@ -191,6 +191,7 @@ export interface GameEvent {
   textKey?: string;
   minAge: number;
   maxAge: number;
+  condition?: (context: EventContext) => boolean;
   continuationEventId?: string;
   milestoneLevel?: 'MINOR' | 'MAJOR';
   isMilestoneEvent?: boolean;

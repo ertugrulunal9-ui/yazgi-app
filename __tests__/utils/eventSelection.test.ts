@@ -105,6 +105,32 @@ describe('eventSelection', () => {
     expect(isEventEligible(event, baseContext, [], ['arc_1', 'bad_ending'])).toBe(false);
   });
 
+  it('respects event-level condition callbacks', () => {
+    const conditionedEvent: GameEvent = {
+      id: 'goal_social_only_event',
+      text: 'Goal-conditioned event',
+      minAge: 10,
+      maxAge: 18,
+      choices: [{ text: 'Continue', effect: {}, feedback: 'ok' }],
+      condition: (ctx) => ctx.gameState?.selectedGoal === 'SOCIAL',
+      rarity: 'UNCOMMON',
+      difficulty: 3,
+      isRepeatable: true,
+    };
+
+    const socialGoalContext: EventContext = {
+      ...baseContext,
+      gameState: { selectedGoal: 'SOCIAL' } as any,
+    };
+    const academicGoalContext: EventContext = {
+      ...baseContext,
+      gameState: { selectedGoal: 'ACADEMIC' } as any,
+    };
+
+    expect(isEventEligible(conditionedEvent, socialGoalContext, [], [])).toBe(true);
+    expect(isEventEligible(conditionedEvent, academicGoalContext, [], [])).toBe(false);
+  });
+
   it('keeps scheduled_only events hidden unless a due scheduled entry exists', () => {
     const scheduledOnlyEvent: GameEvent = {
       id: 'scheduled_only_result',

@@ -9,6 +9,10 @@ import { applyMomentumSignal, resolveMomentumSignal } from '../systems/Personali
 import { StatEngine } from '../systems/StatEngine';
 import { FamilyWealth, GameState, PersonalityShift, SchoolGrades, Skills, Stats, TraitChangeFeedback } from '../types';
 import {
+  applyBuffSlotPolicy,
+  createConsumableBuff,
+  getConsumableConfigByItemId,
+  isConsumableItemId,
   applySkillUpdates,
   applySkillsToHubAction,
   checkTraitFormation,
@@ -18,6 +22,8 @@ import {
 import { calculateEndingErrorDebt } from '../utils/endingResolver';
 import { applyPersonalityEffects, getPersonalityAxisName, updateStress } from '../utils/personalitySystem';
 import { buildTraitChangeFeedback } from '../utils/traitFeedback';
+import { BUFF_RULES, CONSUMABLE_CONFIG } from '../config/gameBalance';
+import { isFeatureEnabled } from '../config/featureFlags';
 
 const TURN_LIMITED_ACTIONS = new Set(['baby_eat', 'baby_sleep', 'ask_allowance']);
 const BASE_MONEY_GAIN_MULTIPLIER_BY_WEALTH: Record<'MIDDLE' | 'RICH', number> = {
@@ -46,7 +52,11 @@ type ActionErrorType =
   | 'NOT_ENOUGH_MONEY'
   | 'MISSING_REQUIRED_ITEM'
   | 'ALREADY_OWNED_ITEM'
-  | 'AGE_LOCKED';
+  | 'AGE_LOCKED'
+  | 'FEATURE_LOCKED'
+  | 'CONSUMABLE_COOLDOWN'
+  | 'CONSUMABLE_LIMIT_REACHED'
+  | 'BUFF_CAP_REACHED';
 
 export interface ActionCommand {
   execute(context: ActionContext): ActionResult;
@@ -111,8 +121,24 @@ export class HubActionCommand implements ActionCommand {
       );
     }
 
-    if (action.purchaseItemId && ownedItems.includes(action.purchaseItemId)) {
-      const itemName = getItem(action.purchaseItemId)?.name || 'Bu esya';
+    const purchasedItem = action.purchaseItemId ? getItem(action.purchaseItemId) : undefined;
+    const isConsumablePurchase = purchasedItem?.type === 'CONSUMABLE';
+    const consumableFeatureEnabled = isFeatureEnabled('CONSUMABLE_ITEMS');
+
+    if (isConsumablePurchase && !consumableFeatureEnabled) {
+      return this.createBlockedResult(
+        currentStats,
+        'Bu ozellik su anda kapali.',
+        'FEATURE_LOCKED'
+      );
+    }
+
+    if (
+      action.purchaseItemId &&
+      purchasedItem?.type !== 'CONSUMABLE' &&
+      ownedItems.includes(action.purchaseItemId)
+    ) {
+      const itemName = purchasedItem?.name || 'Bu esya';
       return this.createBlockedResult(
         currentStats,
         `${itemName} zaten sende var.`,
@@ -132,6 +158,86 @@ export class HubActionCommand implements ActionCommand {
     const adjustedEnergyCost = adjusted.energyCost;
     const adjustedEffect = adjusted.effect;
     const adjustedGrades = adjusted.gradeUpdates;
+
+    const currentActiveBuffs = [...(gameState.activeBuffs || [])];
+    const currentCooldowns = { ...(gameState.consumableCooldowns || {}) };
+    const currentUsage = { ...(gameState.consumableUsageThisTurn || {}) };
+    let nextActiveBuffs = currentActiveBuffs;
+    let nextCooldowns = currentCooldowns;
+    let nextUsage = currentUsage;
+    let consumableFeedback: string | null = null;
+    let tutorBoostedSubject: keyof SchoolGrades | null = null;
+
+    if (isConsumablePurchase && action.purchaseItemId && isConsumableItemId(action.purchaseItemId)) {
+      const consumableConfig = getConsumableConfigByItemId(action.purchaseItemId);
+      const cooldownRemaining = nextCooldowns[action.purchaseItemId] || 0;
+      if (cooldownRemaining > 0) {
+        return this.createBlockedResult(
+          currentStats,
+          `${purchasedItem?.name || 'Bu tuketilebilir'} icin ${cooldownRemaining} tur beklemelisin.`,
+          'CONSUMABLE_COOLDOWN'
+        );
+      }
+
+      if ('maxPerTurn' in consumableConfig) {
+        const usedThisTurn = nextUsage[action.purchaseItemId] || 0;
+        if (usedThisTurn >= consumableConfig.maxPerTurn) {
+          return this.createBlockedResult(
+            currentStats,
+            `${purchasedItem?.name || 'Bu tuketilebilir'} bu tur daha fazla kullanilamaz.`,
+            'CONSUMABLE_LIMIT_REACHED'
+          );
+        }
+      }
+
+      if (action.purchaseItemId === 'item_investment') {
+        const activeInvestmentCount = currentActiveBuffs.filter(buff => buff.itemId === 'item_investment').length;
+        if (activeInvestmentCount >= BUFF_RULES.investmentMaxActive) {
+          return this.createBlockedResult(
+            currentStats,
+            'Ayni anda sadece bir mini yatirim acik olabilir.',
+            'CONSUMABLE_LIMIT_REACHED'
+          );
+        }
+      }
+
+      const candidateBuff = createConsumableBuff(action.purchaseItemId, gameState.turn);
+      if (candidateBuff) {
+        const slotResult = applyBuffSlotPolicy(currentActiveBuffs, candidateBuff);
+        if (!slotResult.accepted) {
+          return this.createBlockedResult(
+            currentStats,
+            `Ayni anda en fazla ${BUFF_RULES.maxActiveBuffs} buff aktif olabilir.`,
+            'BUFF_CAP_REACHED'
+          );
+        }
+        nextActiveBuffs = slotResult.nextActiveBuffs;
+      }
+
+      if ('cooldownTurns' in consumableConfig && consumableConfig.cooldownTurns > 0) {
+        nextCooldowns = {
+          ...nextCooldowns,
+          [action.purchaseItemId]: consumableConfig.cooldownTurns,
+        };
+      }
+
+      nextUsage = {
+        ...nextUsage,
+        [action.purchaseItemId]: (nextUsage[action.purchaseItemId] || 0) + 1,
+      };
+
+      if (action.purchaseItemId === 'item_energy_drink') {
+        consumableFeedback = `Enerji icecegi etkisi: +${CONSUMABLE_CONFIG.energyDrink.effect} enerji.`;
+      } else if (action.purchaseItemId === 'item_tutor_session') {
+        consumableFeedback = `Ozel ders etkisi: rastgele bir not +${CONSUMABLE_CONFIG.tutorSession.gradeBoost}.`;
+      } else if (action.purchaseItemId === 'item_gym_pass') {
+        consumableFeedback = `${CONSUMABLE_CONFIG.gymPass.duration} turluk saglik buff'i aktif edildi.`;
+      } else if (action.purchaseItemId === 'item_fashion_outfit') {
+        consumableFeedback = `${CONSUMABLE_CONFIG.fashionOutfit.duration} turluk karizma buff'i aktif edildi.`;
+      } else if (action.purchaseItemId === 'item_investment') {
+        consumableFeedback = `Yatirim acildi: ${CONSUMABLE_CONFIG.investment.duration} tur sonra ${CONSUMABLE_CONFIG.investment.returnAmount} geri donus bekleniyor.`;
+      }
+    }
 
     if (currentStats.energy < adjustedEnergyCost) {
       return this.createBlockedResult(
@@ -184,6 +290,10 @@ export class HubActionCommand implements ActionCommand {
     }
     if (adjustedEnergyCost > 0 && (effectiveEffect.energy === undefined || effectiveEffect.energy < 0)) {
       effectiveEffect.energy = -adjustedEnergyCost;
+    }
+
+    if (isConsumablePurchase && action.purchaseItemId === 'item_energy_drink') {
+      effectiveEffect.energy = (effectiveEffect.energy || 0) + CONSUMABLE_CONFIG.energyDrink.effect;
     }
 
     const bonusAdjusted = this.applyItemBonuses(
@@ -241,16 +351,24 @@ export class HubActionCommand implements ActionCommand {
       personalityShifts = personalityResult.shifts;
     }
 
-    let nextGrades = gameState.schoolGrades;
+    const newGrades = { ...gameState.schoolGrades };
     if (adjustedGrades) {
-      const newGrades = { ...gameState.schoolGrades };
       Object.entries(adjustedGrades).forEach(([subject, value]) => {
         if (typeof value !== 'number') return;
         const key = subject as keyof SchoolGrades;
         newGrades[key] = Math.min(100, Math.max(0, newGrades[key] + value));
       });
-      nextGrades = newGrades;
     }
+    if (isConsumablePurchase && action.purchaseItemId === 'item_tutor_session') {
+      const subjectPool = Object.keys(newGrades) as Array<keyof SchoolGrades>;
+      const randomSubject = subjectPool[Math.floor(Math.random() * subjectPool.length)];
+      newGrades[randomSubject] = Math.min(
+        100,
+        Math.max(0, newGrades[randomSubject] + CONSUMABLE_CONFIG.tutorSession.gradeBoost)
+      );
+      tutorBoostedSubject = randomSubject;
+    }
+    const nextGrades = newGrades;
 
     const traitResult = checkTraitFormation(
       action.id,
@@ -327,9 +445,15 @@ export class HubActionCommand implements ActionCommand {
       ? `${feedbackBase}\n\n${statChanges.join(' | ')}`
       : feedbackBase;
     const recoverySchedule = this.maybeSchedulePoorRecoveryEvent(action.id, gameState, finalStats.money);
-    const finalFeedbackMessage = recoverySchedule
+    let finalFeedbackMessage = recoverySchedule
       ? `${feedbackMessage}\n\n${recoverySchedule.feedback}`
       : feedbackMessage;
+    if (consumableFeedback) {
+      finalFeedbackMessage = `${finalFeedbackMessage}\n\n${consumableFeedback}`;
+    }
+    if (tutorBoostedSubject) {
+      finalFeedbackMessage = `${finalFeedbackMessage}\nNot artisi: ${String(tutorBoostedSubject)} +${CONSUMABLE_CONFIG.tutorSession.gradeBoost}`;
+    }
 
     const totalSkillGain = effectiveSkillUpdates
       ? Object.values(effectiveSkillUpdates).reduce(
@@ -338,7 +462,10 @@ export class HubActionCommand implements ActionCommand {
       )
       : 0;
 
-    const nextInventory = action.purchaseItemId
+    const shouldAddPurchasedItemToInventory = Boolean(
+      action.purchaseItemId && purchasedItem?.type !== 'CONSUMABLE'
+    );
+    const nextInventory = shouldAddPurchasedItemToInventory && action.purchaseItemId
       ? Array.from(new Set([...(gameState.inventory || []), action.purchaseItemId]))
       : gameState.inventory;
 
@@ -358,7 +485,14 @@ export class HubActionCommand implements ActionCommand {
         personalityHistory: [...gameState.personalityHistory, ...personalityShifts],
         personalityState: momentumResult.nextState,
         dailyDecisionCount: (gameState.dailyDecisionCount ?? 0) + 1,
-        ...(action.purchaseItemId ? { inventory: nextInventory } : {}),
+        ...(shouldAddPurchasedItemToInventory ? { inventory: nextInventory } : {}),
+        ...(isConsumablePurchase
+          ? {
+              activeBuffs: nextActiveBuffs,
+              consumableCooldowns: nextCooldowns,
+              consumableUsageThisTurn: nextUsage,
+            }
+          : {}),
         ...(recoverySchedule ? { scheduledEvents: recoverySchedule.scheduledEvents } : {}),
       },
       feedbackMessage: finalFeedbackMessage,

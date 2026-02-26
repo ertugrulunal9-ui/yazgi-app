@@ -5,6 +5,7 @@ import type {
   RetentionCheckpoint,
 } from '../utils/progressionAnalytics';
 import { devLog } from '../utils/devLogger';
+import { buildExperimentParams } from '../utils/experimentBucketing';
 
 const isDev = __DEV__;
 const isWeb = typeof window !== 'undefined' && typeof navigator !== 'undefined';
@@ -400,7 +401,10 @@ class AnalyticsService {
       return;
     }
 
-    const sanitizedParams = this.sanitizeParams(params);
+    // Enrich with experiment bucketing params (GA4 flat format)
+    const experimentParams = buildExperimentParams();
+    const enrichedParams = { ...experimentParams, ...params };
+    const sanitizedParams = this.sanitizeParams(enrichedParams);
 
     if (isDev) {
       devLog.log(`[ANALYTICS] Event: ${eventName}`, sanitizedParams || {});

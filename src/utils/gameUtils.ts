@@ -1,10 +1,12 @@
-
+﻿
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { devLog } from './devLogger';
 import { Stats, StatKey, Family, GameState, CareerResult, NPC, NPCRole, FamilyWealth, FamilyDynamic, NPCPersonality, NPCTrait, ZodiacSign, PlayerGender, CharacterInfo, Skills, SchoolGrades, EventMemory, Personality, TraitTrigger } from '../types';
 import { TRAIT_DEFINITIONS } from '../data/traits';
 import { BALANCE_CONTRACT, calculateInitialEnergy } from '../config/balanceContract';
 import {
+  BUFF_RULES,
+  CONSUMABLE_CONFIG,
   ENERGY_RECOVERY,
   REPETITION_PENALTY_CONFIG,
   VARIETY_BONUS_CONFIG,
@@ -14,26 +16,26 @@ import { DEFAULT_FAMILY_EVOLUTION_STATE } from './familyNarrative';
 import { getPersonalityArchetype, getArchetypeDescription, PersonalityArchetype } from './personalitySystem';
 import { createInitialPersonalityState } from '../systems/PersonalityMomentumEngine';
 import { resolveEnding } from './endingResolver';
-import { AppLocale, getRuntimeLocale } from '../i18n/strings';
+import { AppLocale, getRuntimeLocale, tRuntime } from '../i18n/strings';
 
 export const clamp = (value: number, min: number, max: number): number => {
   return Math.min(Math.max(value, min), max);
 };
 
-// --- YAŞLANMA ALGORİTMASI (GDD Bölüm 2.2) ---
-// GDD Şartı: 0-7 yaş: Her 2 tur, 7-18 yaş: Her 5 tur
+// --- YAÃ…ÂLANMA ALGORÃ„Â°TMASI (GDD BÃƒÂ¶lÃƒÂ¼m 2.2) ---
+// GDD Ã…ÂartÃ„Â±: 0-7 yaÃ…Å¸: Her 2 tur, 7-18 yaÃ…Å¸: Her 5 tur
 export const shouldAgeUp = (currentAge: number, turnCount: number): boolean => {
   if (currentAge < 7) {
     return turnCount % 2 === 0;
   } else if (currentAge < 18) {
     return turnCount % 5 === 0;
   }
-  return false; // 18 yaşından sonra yaşlanma durur (oyun biter)
+  return false; // 18 yaÃ…Å¸Ã„Â±ndan sonra yaÃ…Å¸lanma durur (oyun biter)
 };
 
-// --- AİLE SİSTEMİ BAŞLATMA (KRİTİK) ---
+// --- AÃ„Â°LE SÃ„Â°STEMÃ„Â° BAÃ…ÂLATMA (KRÃ„Â°TÃ„Â°K) ---
 export const createRandomFamily = (): Family => {
-  // Wealth dağılımı: %30 Poor, %50 Middle, %20 Rich
+  // Wealth daÃ„Å¸Ã„Â±lÃ„Â±mÃ„Â±: %30 Poor, %50 Middle, %20 Rich
   const wealthRoll = Math.random();
   let wealth: FamilyWealth;
   if (wealthRoll < 0.3) {
@@ -44,7 +46,7 @@ export const createRandomFamily = (): Family => {
     wealth = 'RICH';
   }
 
-  // Dynamic dağılımı: %40 Supportive, %35 Strict, %25 Chaotic
+  // Dynamic daÃ„Å¸Ã„Â±lÃ„Â±mÃ„Â±: %40 Supportive, %35 Strict, %25 Chaotic
   const dynamicRoll = Math.random();
   let dynamic: FamilyDynamic;
   if (dynamicRoll < 0.4) {
@@ -55,8 +57,8 @@ export const createRandomFamily = (): Family => {
     dynamic = 'CHAOTIC';
   }
 
-  // Allowance: Wealth'e göre belirlenir
-  // POOR daha zorlayıcı, RICH daha rahat bir ekonomik başlangıç sunar.
+  // Allowance: Wealth'e gÃƒÂ¶re belirlenir
+  // POOR daha zorlayÃ„Â±cÃ„Â±, RICH daha rahat bir ekonomik baÃ…Å¸langÃ„Â±ÃƒÂ§ sunar.
   let allowance = 0;
   switch (wealth) {
     case 'POOR':
@@ -73,13 +75,13 @@ export const createRandomFamily = (): Family => {
   return { wealth, dynamic, allowance };
 };
 
-// --- KALITSAL ÖZELLİKLER (GENETIC TRAITS) ---
-// GDD Şartı: Doğumda rastgele atanır (%5-15 şans)
+// --- KALITSAL Ãƒâ€“ZELLÃ„Â°KLER (GENETIC TRAITS) ---
+// GDD Ã…ÂartÃ„Â±: DoÃ„Å¸umda rastgele atanÃ„Â±r (%5-15 Ã…Å¸ans)
 export const assignGeneticTraits = (): string[] => {
   const geneticTraits = TRAIT_DEFINITIONS.filter(t => t.category === 'GENETIC');
   const assignedTraits: string[] = [];
 
-  // Her genetic trait için %5-15 şans ile atama
+  // Her genetic trait iÃƒÂ§in %5-15 Ã…Å¸ans ile atama
   geneticTraits.forEach(trait => {
     const chance = getRandomInt(5, 15);
     if (Math.random() * 100 < chance) {
@@ -90,13 +92,13 @@ export const assignGeneticTraits = (): string[] => {
   return assignedTraits;
 };
 
-// --- ENERJİ TÜKETİMİ SİSTEMİ ---
-// GDD Şartı: Her aktivite -5 ila -20 enerji
+// --- ENERJÃ„Â° TÃƒÅ“KETÃ„Â°MÃ„Â° SÃ„Â°STEMÃ„Â° ---
+// GDD Ã…ÂartÃ„Â±: Her aktivite -5 ila -20 enerji
 export const calculateEnergyCost = (actionId: string, traitIds: string[]): number => {
-  // Temel enerji maliyeti (aksiyon tipine göre)
+  // Temel enerji maliyeti (aksiyon tipine gÃƒÂ¶re)
   let baseCost = 10;
 
-  // Aksiyon tipine göre maliyet
+  // Aksiyon tipine gÃƒÂ¶re maliyet
   if (actionId.includes('study')) baseCost = 15;
   else if (actionId.includes('sports')) baseCost = 20;
   else if (actionId.includes('work')) baseCost = 18;
@@ -104,14 +106,14 @@ export const calculateEnergyCost = (actionId: string, traitIds: string[]): numbe
   else if (actionId.includes('coding') || actionId.includes('music') || actionId.includes('art')) baseCost = 12;
   else if (actionId.includes('rest') || actionId.includes('sleep')) baseCost = 5;
 
-  // Trait multiplier'ı uygula
+  // Trait multiplier'Ã„Â± uygula
   const multiplier = getEnergyCostMultiplier(traitIds);
 
   return Math.floor(baseCost * multiplier);
 };
 
-// --- OKUL SİSTEMİ (RAPOR KARTI) ---
-// GDD Şartı: Her 5 tur (7-18 yaş) rapor kartı
+// --- OKUL SÃ„Â°STEMÃ„Â° (RAPOR KARTI) ---
+// GDD Ã…ÂartÃ„Â±: Her 5 tur (7-18 yaÃ…Å¸) rapor kartÃ„Â±
 export const shouldGenerateReportCard = (currentAge: number, turnCount: number): boolean => {
   if (currentAge < 7 || currentAge >= 18) return false;
   return turnCount % 5 === 0;
@@ -121,20 +123,52 @@ export const shouldGenerateReportCard = (currentAge: number, turnCount: number):
 // Legacy key kept for backward compatibility
 export const SAVE_KEY = 'lifesim_save_data_v2';
 
-// BAŞLANGIÇ VERİLERİNİ ÜRETEN FONKSİYONLAR
-// Not: 0 yaş için cap'ler düşük olduğundan başlangıç değerleri buna uygun ayarlanmalı
-// age=0 için: health cap=30, intelligence/charisma/discipline cap=30
-export const getInitialStats = (): Stats => {
-  const health = BALANCE_CONTRACT.initialStats.health; // 0 yaş cap'i 30, başlangıç bunun altında olmalı
+export interface NewGameBootstrapOptions {
+  fastStart?: boolean;
+  legacyLevel?: number;
+  legacyPerksEnabled?: boolean;
+  selectedGeneticTraitId?: string;
+  starterItemId?: string;
+}
+
+const FAST_START_BASELINE = {
+  health: 20,
+  intelligence: 8,
+  charisma: 8,
+  discipline: 5,
+} as const;
+
+const canUseFastStart = (options?: NewGameBootstrapOptions): boolean => {
+  const legacyPerksEnabled = options?.legacyPerksEnabled ?? isFeatureEnabled('LEGACY_PERKS');
+  const legacyLevel = options?.legacyLevel ?? 0;
+  return Boolean(options?.fastStart && legacyPerksEnabled && legacyLevel >= 1);
+};
+// BAÃ…ÂLANGIÃƒâ€¡ VERÃ„Â°LERÃ„Â°NÃ„Â° ÃƒÅ“RETEN FONKSÃ„Â°YONLAR
+// Not: 0 yaÃ…Å¸ iÃƒÂ§in cap'ler dÃƒÂ¼Ã…Å¸ÃƒÂ¼k olduÃ„Å¸undan baÃ…Å¸langÃ„Â±ÃƒÂ§ deÃ„Å¸erleri buna uygun ayarlanmalÃ„Â±
+// age=0 iÃƒÂ§in: health cap=30, intelligence/charisma/discipline cap=30
+export const getInitialStats = (options?: NewGameBootstrapOptions): Stats => {
+  const useFastStart = canUseFastStart(options);
+  const health = useFastStart
+    ? FAST_START_BASELINE.health
+    : BALANCE_CONTRACT.initialStats.health; // 0 yas cap'i 30, baslangic bunun altinda olmali
+  const intelligence = useFastStart
+    ? FAST_START_BASELINE.intelligence
+    : BALANCE_CONTRACT.initialStats.intelligence;
+  const charisma = useFastStart
+    ? FAST_START_BASELINE.charisma
+    : BALANCE_CONTRACT.initialStats.charisma;
+  const discipline = useFastStart
+    ? FAST_START_BASELINE.discipline
+    : BALANCE_CONTRACT.initialStats.discipline;
   const energy = calculateInitialEnergy(health);
   return {
     health,
-    intelligence: BALANCE_CONTRACT.initialStats.intelligence,
-    charisma: BALANCE_CONTRACT.initialStats.charisma, // 0 yaş cap'i 30, başlangıç düşük
-    discipline: BALANCE_CONTRACT.initialStats.discipline,
+    intelligence,
+    charisma,
+    discipline,
     money: BALANCE_CONTRACT.initialStats.money,
     energy,
-    familyRelation: BALANCE_CONTRACT.initialStats.familyRelation
+    familyRelation: BALANCE_CONTRACT.initialStats.familyRelation,
   };
 };
 
@@ -201,24 +235,250 @@ export const calculateVarietyBonus = (
     : 0;
 };
 
-export const getInitialGameState = (): GameState => {
-  // Aile sistemi başlatma (KRİTİK)
-  const family = createRandomFamily();
+export type ActiveBuffState = NonNullable<GameState['activeBuffs']>[number];
 
-  // Kalıtsal özellikler (Genetic Traits) atama (YÜKSEK)
-  const geneticTraits = assignGeneticTraits();
+export type ConsumableItemId =
+  | 'item_energy_drink'
+  | 'item_tutor_session'
+  | 'item_gym_pass'
+  | 'item_fashion_outfit'
+  | 'item_investment';
 
-  // Başlangıç NPC'leri (oyuncuyla aynı yaşta başlarlar)
-  const npcs = generateNPCs(0, 1);
-  const maxEnergy = getMaxEnergy(0, family, geneticTraits);
+const INVESTMENT_ITEM_ID: ConsumableItemId = 'item_investment';
+
+const CONSUMABLE_ITEM_CONFIG = {
+  item_energy_drink: CONSUMABLE_CONFIG.energyDrink,
+  item_tutor_session: CONSUMABLE_CONFIG.tutorSession,
+  item_gym_pass: CONSUMABLE_CONFIG.gymPass,
+  item_fashion_outfit: CONSUMABLE_CONFIG.fashionOutfit,
+  item_investment: CONSUMABLE_CONFIG.investment,
+} as const;
+
+const STATS_WITH_SOFT_CAP: Array<keyof Stats> = [
+  'health',
+  'intelligence',
+  'charisma',
+  'discipline',
+  'familyRelation',
+];
+
+export const isConsumableItemId = (itemId: string): itemId is ConsumableItemId => (
+  itemId in CONSUMABLE_ITEM_CONFIG
+);
+
+export const getConsumableConfigByItemId = (
+  itemId: ConsumableItemId
+): typeof CONSUMABLE_ITEM_CONFIG[ConsumableItemId] => CONSUMABLE_ITEM_CONFIG[itemId];
+
+const applyStatsEffect = (stats: Stats, effect: Partial<Stats>): Stats => {
+  const nextStats: Stats = { ...stats };
+
+  (Object.entries(effect) as Array<[keyof Stats, number | undefined]>).forEach(([key, rawValue]) => {
+    if (typeof rawValue !== 'number' || rawValue === 0) return;
+    const currentValue = nextStats[key];
+    const sum = currentValue + rawValue;
+
+    if (key === 'money') {
+      nextStats[key] = Math.max(0, sum);
+      return;
+    }
+    if (key === 'energy') {
+      nextStats[key] = Math.max(0, sum);
+      return;
+    }
+    if (STATS_WITH_SOFT_CAP.includes(key)) {
+      nextStats[key] = clamp(sum, 0, 100);
+      return;
+    }
+
+    nextStats[key] = sum;
+  });
+
+  return nextStats;
+};
+
+export const createConsumableBuff = (
+  itemId: ConsumableItemId,
+  appliedAtTurn: number
+): ActiveBuffState | null => {
+  if (itemId === 'item_gym_pass') {
+    return {
+      itemId,
+      turnsRemaining: CONSUMABLE_CONFIG.gymPass.duration,
+      effect: { health: CONSUMABLE_CONFIG.gymPass.healthPerTurn },
+      appliedAt: appliedAtTurn,
+    };
+  }
+  if (itemId === 'item_fashion_outfit') {
+    return {
+      itemId,
+      turnsRemaining: CONSUMABLE_CONFIG.fashionOutfit.duration,
+      effect: { charisma: CONSUMABLE_CONFIG.fashionOutfit.charismaBoost },
+      appliedAt: appliedAtTurn,
+    };
+  }
+  if (itemId === 'item_investment') {
+    return {
+      itemId,
+      turnsRemaining: CONSUMABLE_CONFIG.investment.duration,
+      effect: {},
+      appliedAt: appliedAtTurn,
+    };
+  }
+  return null;
+};
+
+export const applyTurnBuffEffects = (
+  stats: Stats,
+  activeBuffs: GameState['activeBuffs'],
+): {
+  nextStats: Stats;
+  nextActiveBuffs: ActiveBuffState[];
+  maturedInvestmentCount: number;
+} => {
+  const safeBuffs = (activeBuffs || []).filter(buff => (buff.turnsRemaining ?? 0) > 0);
+  if (safeBuffs.length === 0) {
+    return {
+      nextStats: stats,
+      nextActiveBuffs: [],
+      maturedInvestmentCount: 0,
+    };
+  }
+
+  let nextStats = { ...stats };
+  const nextActiveBuffs: ActiveBuffState[] = [];
+  let maturedInvestmentCount = 0;
+
+  safeBuffs.forEach((buff) => {
+    nextStats = applyStatsEffect(nextStats, buff.effect || {});
+
+    const decremented = Math.max(0, buff.turnsRemaining - 1);
+    if (decremented > 0) {
+      nextActiveBuffs.push({
+        ...buff,
+        turnsRemaining: decremented,
+      });
+      return;
+    }
+
+    if (buff.itemId === INVESTMENT_ITEM_ID) {
+      maturedInvestmentCount += 1;
+    }
+  });
 
   return {
-    age: 0,
+    nextStats,
+    nextActiveBuffs,
+    maturedInvestmentCount,
+  };
+};
+
+export const tickConsumableCooldowns = (
+  cooldowns: GameState['consumableCooldowns']
+): Record<string, number> => {
+  const safeCooldowns = cooldowns || {};
+  const nextCooldowns: Record<string, number> = {};
+
+  Object.entries(safeCooldowns).forEach(([itemId, turns]) => {
+    if (typeof turns !== 'number' || turns <= 0) return;
+    const decremented = turns - 1;
+    if (decremented > 0) {
+      nextCooldowns[itemId] = decremented;
+    }
+  });
+
+  return nextCooldowns;
+};
+
+export const calculateInvestmentEarlyExitPayout = (
+  activeBuffs: GameState['activeBuffs']
+): number => {
+  const safeBuffs = activeBuffs || [];
+  const totalReturnDelta = CONSUMABLE_CONFIG.investment.returnAmount - CONSUMABLE_CONFIG.investment.base;
+  const duration = CONSUMABLE_CONFIG.investment.duration;
+
+  return safeBuffs
+    .filter(buff => buff.itemId === INVESTMENT_ITEM_ID && buff.turnsRemaining > 0)
+    .reduce((sum, buff) => {
+      const elapsedTurns = clamp(duration - buff.turnsRemaining, 0, duration);
+      const maturityRatio = elapsedTurns / duration;
+      const payout = Math.round(CONSUMABLE_CONFIG.investment.base + totalReturnDelta * maturityRatio);
+      return sum + payout;
+    }, 0);
+};
+
+export const applyBuffSlotPolicy = (
+  activeBuffs: GameState['activeBuffs'],
+  incomingBuff: ActiveBuffState
+): { accepted: boolean; nextActiveBuffs: ActiveBuffState[]; reason?: 'MAX_ACTIVE_BUFFS' } => {
+  const safeBuffs = [...(activeBuffs || [])];
+  const sameTypeIndices = safeBuffs
+    .map((buff, index) => ({ buff, index }))
+    .filter(entry => entry.buff.itemId === incomingBuff.itemId)
+    .map(entry => entry.index);
+
+  const hasSameType = sameTypeIndices.length > 0;
+  if (hasSameType && BUFF_RULES.sameTypePriority === 'REPLACE') {
+    const withoutSameType = safeBuffs.filter(buff => buff.itemId !== incomingBuff.itemId);
+    return {
+      accepted: true,
+      nextActiveBuffs: [...withoutSameType, incomingBuff],
+    };
+  }
+
+  if (safeBuffs.length >= BUFF_RULES.maxActiveBuffs) {
+    return {
+      accepted: false,
+      nextActiveBuffs: safeBuffs,
+      reason: 'MAX_ACTIVE_BUFFS',
+    };
+  }
+
+  return {
+    accepted: true,
+    nextActiveBuffs: [...safeBuffs, incomingBuff],
+  };
+};
+
+export const getInitialGameState = (options?: NewGameBootstrapOptions): GameState => {
+  const legacyPerksEnabled = options?.legacyPerksEnabled ?? isFeatureEnabled('LEGACY_PERKS');
+  const legacyLevel = Math.max(0, options?.legacyLevel ?? 0);
+  const fastStart = canUseFastStart(options);
+  const startAge = fastStart ? 7 : 0;
+
+  // Aile sistemi baslatma (KRITIK)
+  const family = createRandomFamily();
+
+  // Kalitsal ozellikler (Genetic Traits) atama
+  const selectedGeneticTraitId = options?.selectedGeneticTraitId;
+  const canSelectGeneticTrait = (
+    legacyPerksEnabled
+    && legacyLevel >= 2
+    && typeof selectedGeneticTraitId === 'string'
+    && TRAIT_DEFINITIONS.some(trait => trait.id === selectedGeneticTraitId && trait.category === 'GENETIC')
+  );
+  const geneticTraits = canSelectGeneticTrait
+    ? [selectedGeneticTraitId]
+    : assignGeneticTraits();
+
+  // Baslangic NPC'leri (oyuncuyla ayni yasta baslar)
+  const npcCount = legacyPerksEnabled && legacyLevel >= 3 ? 2 : 1;
+  const npcs = generateNPCs(startAge, npcCount);
+  const maxEnergy = getMaxEnergy(startAge, family, geneticTraits);
+  const inventory = (
+    legacyPerksEnabled
+    && legacyLevel >= 5
+    && typeof options?.starterItemId === 'string'
+    && options.starterItemId.length > 0
+  ) ? [options.starterItemId] : [];
+
+  return {
+    age: startAge,
     turn: 1,
-    phase: 'SETUP',
+    phase: fastStart ? 'HUB' : 'SETUP',
     currentEvent: null,
     pendingReportCard: false,
-    characterInfo: null, // Karakter oluşturma ekranında set edilecek
+    characterInfo: null,
     lastResult: null,
     historyLog: [],
     family,
@@ -242,7 +502,7 @@ export const getInitialGameState = (): GameState => {
     talent: 'NONE',
     selectedGoal: null,
     streak: { actionId: null, count: 0 },
-    traits: geneticTraits, // Genetic traits başlangıçta atanır
+    traits: geneticTraits,
     traitProgress: {},
     actionCounts: {},
     actionHistory: [],
@@ -251,10 +511,10 @@ export const getInitialGameState = (): GameState => {
     scheduledEvents: [],
     activeArcs: [],
     familyEvolution: { ...DEFAULT_FAMILY_EVOLUTION_STATE },
-    inventory: [],
-    npcs, // Başlangıç NPC'leri
+    inventory,
+    npcs,
     selectedNpcId: null,
-    innerThought: "",
+    innerThought: '',
     innerThoughtType: 'IDLE' as const,
     floatingTexts: [],
     totalTurns: 0,
@@ -273,37 +533,32 @@ export const getInitialGameState = (): GameState => {
     consumableUsageThisTurn: {},
     unlockedAchievements: [],
     achievementProgress: {},
-    // Personality System - all values start at 50 (neutral)
     personality: {
       openness: 50,
       courage: 50,
       empathy: 50,
       patience: 50,
-      conformity: 50
+      conformity: 50,
     },
     personalityState: createInitialPersonalityState(),
     stress: {
       current: 0,
       threshold: 70,
       turnsSinceBreakdown: 0,
-      sources: []
+      sources: [],
     },
     personalityHistory: [],
-    // Sosyal sistem
     socialGroups: [],
     socialReputation: 50,
-    // Childhood prolog
     childhood: {
-      completed: false,
+      completed: fastStart,
       sceneIndex: 0,
       memories: [],
       selectedMemoryId: null,
     },
-    // Sınav sistemi
     examsTakenThisYear: [],
     isExamPeriod: false,
     lastBurdenRisk: 0,
-    // Kader sistemi — karakter oluşturulunca zodiacSign ile initialize edilir
     fate: undefined,
   };
 };
@@ -380,7 +635,7 @@ export const saveGame = async (data: { stats: Stats, gameState: GameState, playe
     );
     return success;
   } catch (error) {
-    devLog.error("Kaydederken hata oluştu:", error);
+    devLog.error("Kaydederken hata oluÃ…Å¸tu:", error);
     return false;
   }
 };
@@ -394,7 +649,7 @@ export const loadGame = async () => {
     const saveData = await SaveManager.loadFromSlot(currentSlotId);
     return saveData;
   } catch (error) {
-    devLog.error("Yüklerken hata oluştu:", error);
+    devLog.error("YÃƒÂ¼klerken hata oluÃ…Å¸tu:", error);
     return null;
   }
 };
@@ -408,7 +663,7 @@ export const resetGameStorage = async () => {
     const success = await SaveManager.deleteSlot(currentSlotId);
     return success;
   } catch (error) {
-    devLog.error("Sıfırlarken hata oluştu:", error);
+    devLog.error("SÃ„Â±fÃ„Â±rlarken hata oluÃ…Å¸tu:", error);
     return false;
   }
 };
@@ -451,12 +706,12 @@ export const getStatCap = (age: number, statKey: StatKey, family?: Family | null
     return 60;
   }
 
-  // Yaşa bağlı soft cap (Sınıf düzeyi mantığı)
-  if (age < 7) baseCap = 30;       // Okul öncesi
-  else if (age < 10) baseCap = 50; // İlkokul
+  // YaÃ…Å¸a baÃ„Å¸lÃ„Â± soft cap (SÃ„Â±nÃ„Â±f dÃƒÂ¼zeyi mantÃ„Â±Ã„Å¸Ã„Â±)
+  if (age < 7) baseCap = 30;       // Okul ÃƒÂ¶ncesi
+  else if (age < 10) baseCap = 50; // Ã„Â°lkokul
   else if (age < 14) baseCap = 70; // Ortaokul
   else if (age < 18) baseCap = 90; // Lise
-  else baseCap = 100;              // Yetişkin
+  else baseCap = 100;              // YetiÃ…Å¸kin
 
   if (family) {
     if (family.wealth === 'RICH') {
@@ -593,19 +848,19 @@ export const getEnergyCostMultiplier = (traitIds: string[]): number => {
   return multiplier;
 };
 
-// GÜNCELLENMİŞ STAT KAZANIM FORMÜLÜ (Azalan Getiri)
+// GÃƒÅ“NCELLENMÃ„Â°Ã…Â STAT KAZANIM FORMÃƒÅ“LÃƒÅ“ (Azalan Getiri)
 export const calculateStatGain = (currentValue: number, baseGain: number, cap: number = 100): number => {
   if (baseGain <= 0) return baseGain;
 
-  // 1. Cap'in %70'inin altındaysa: TAM PUAN (Hızlı Gelişim)
+  // 1. Cap'in %70'inin altÃ„Â±ndaysa: TAM PUAN (HÃ„Â±zlÃ„Â± GeliÃ…Å¸im)
   if (currentValue < cap * 0.7) {
     return baseGain;
   }
-  // 2. Cap'e yaklaştıysa: YARI PUAN (Zorlaşan Dersler)
+  // 2. Cap'e yaklaÃ…Å¸tÃ„Â±ysa: YARI PUAN (ZorlaÃ…Å¸an Dersler)
   else if (currentValue < cap) {
     return Math.ceil(baseGain * 0.5);
   }
-  // 3. Cap'i aştıysa: MİNİMUM PUAN (Sınırı zorlamak çok zor)
+  // 3. Cap'i aÃ…Å¸tÃ„Â±ysa: MÃ„Â°NÃ„Â°MUM PUAN (SÃ„Â±nÃ„Â±rÃ„Â± zorlamak ÃƒÂ§ok zor)
   else {
     return Math.ceil(baseGain * 0.2); // Genelde 1 puan
   }
@@ -627,7 +882,7 @@ export const updateStats = (currentStats: Stats, changes: Partial<Stats>, age: n
       let minLimit = 0;
       if (key === 'money') minLimit = 0;
 
-      newStats[key] = clamp(newValue, minLimit, dynamicCap + 10); // Soft Cap'i biraz aşmaya izin ver
+      newStats[key] = clamp(newValue, minLimit, dynamicCap + 10); // Soft Cap'i biraz aÃ…Å¸maya izin ver
     }
   });
 
@@ -865,7 +1120,7 @@ export const hasItem = (inventory: string[], itemId: string): boolean => {
 };
 
 // =================================================================
-// NPC SİSTEMİ
+// NPC SÃ„Â°STEMÃ„Â°
 // =================================================================
 
 type NPCNameLocale = Extract<AppLocale, 'tr' | 'en'>;
@@ -878,28 +1133,28 @@ export interface NPCGenerationOptions {
 const npcNamePools: Record<NPCNameLocale, Record<'MALE' | 'FEMALE', string[]>> = {
   tr: {
     MALE: [
-      'Ahmet', 'Mehmet', 'Mustafa', 'Ali', 'Hüseyin', 'Hasan', 'İbrahim', 'Osman', 'Yusuf', 'Ömer',
+      'Ahmet', 'Mehmet', 'Mustafa', 'Ali', 'HÃƒÂ¼seyin', 'Hasan', 'Ã„Â°brahim', 'Osman', 'Yusuf', 'Ãƒâ€“mer',
       'Can', 'Burak', 'Emre', 'Kerem', 'Mert', 'Deniz', 'Volkan', 'Cem', 'Arda', 'Efe',
-      'Bora', 'Sinan', 'Kaan', 'Yiğit', 'Berkay', 'Oğuz', 'Tolga', 'Onur', 'Serkan', 'Hakan',
-      'Eren', 'Alp', 'Barış', 'Doruk', 'Emir', 'Furkan', 'Görkem', 'Halil', 'İlker', 'Kağan',
-      'Levent', 'Murat', 'Okan', 'Polat', 'Rüzgar', 'Selim', 'Tarık', 'Umut', 'Zafer', 'Aras',
-      'Batuhan', 'Caner', 'Dağhan', 'Engin', 'Fatih', 'Gökhan', 'Hüsnü', 'İsmail', 'Koray', 'Tuna',
-      'Atlas', 'Poyraz', 'Çınar', 'Demir', 'Eymen', 'Yaman', 'Alperen', 'Utku', 'Atakan', 'Baran',
-      'Kuzey', 'Ege', 'Taner', 'Meriç', 'Atalay', 'Berke', 'Çağrı', 'Doğukan', 'Erdem', 'Ferit',
-      'Göktürk', 'Harun', 'İlhan', 'Kıvanç', 'Kutay', 'Metehan', 'Necip', 'Orhan', 'Özgür', 'Rauf',
-      'Sarp', 'Taylan', 'Uğur', 'Vedat', 'Yalçın', 'Zeki', 'Akın', 'Bilge', 'Cenk', 'Devrim',
+      'Bora', 'Sinan', 'Kaan', 'YiÃ„Å¸it', 'Berkay', 'OÃ„Å¸uz', 'Tolga', 'Onur', 'Serkan', 'Hakan',
+      'Eren', 'Alp', 'BarÃ„Â±Ã…Å¸', 'Doruk', 'Emir', 'Furkan', 'GÃƒÂ¶rkem', 'Halil', 'Ã„Â°lker', 'KaÃ„Å¸an',
+      'Levent', 'Murat', 'Okan', 'Polat', 'RÃƒÂ¼zgar', 'Selim', 'TarÃ„Â±k', 'Umut', 'Zafer', 'Aras',
+      'Batuhan', 'Caner', 'DaÃ„Å¸han', 'Engin', 'Fatih', 'GÃƒÂ¶khan', 'HÃƒÂ¼snÃƒÂ¼', 'Ã„Â°smail', 'Koray', 'Tuna',
+      'Atlas', 'Poyraz', 'Ãƒâ€¡Ã„Â±nar', 'Demir', 'Eymen', 'Yaman', 'Alperen', 'Utku', 'Atakan', 'Baran',
+      'Kuzey', 'Ege', 'Taner', 'MeriÃƒÂ§', 'Atalay', 'Berke', 'Ãƒâ€¡aÃ„Å¸rÃ„Â±', 'DoÃ„Å¸ukan', 'Erdem', 'Ferit',
+      'GÃƒÂ¶ktÃƒÂ¼rk', 'Harun', 'Ã„Â°lhan', 'KÃ„Â±vanÃƒÂ§', 'Kutay', 'Metehan', 'Necip', 'Orhan', 'Ãƒâ€“zgÃƒÂ¼r', 'Rauf',
+      'Sarp', 'Taylan', 'UÃ„Å¸ur', 'Vedat', 'YalÃƒÂ§Ã„Â±n', 'Zeki', 'AkÃ„Â±n', 'Bilge', 'Cenk', 'Devrim',
     ],
     FEMALE: [
-      'Fatma', 'Ayşe', 'Emine', 'Hatice', 'Zeynep', 'Elif', 'Meryem', 'Şerife', 'Sultan', 'Hanife',
-      'Melis', 'Ceren', 'Selin', 'Ece', 'Derya', 'Sena', 'Ezgi', 'Buse', 'Gizem', 'İrem',
-      'Gamze', 'Deniz', 'Aslı', 'Başak', 'Cansu', 'Damla', 'Ebru', 'Fulya', 'Gülşen', 'Hande',
-      'Ilgın', 'Jale', 'Kardelen', 'Lale', 'Meltem', 'Nazlı', 'Özge', 'Pelin', 'Rüya', 'Simge',
-      'Tuğçe', 'Vildan', 'Yağmur', 'Zara', 'Almila', 'Bengisu', 'Cemre', 'Defne', 'Esra', 'Feyza',
-      'Gökçe', 'Hazal', 'İpek', 'Kübra', 'Lara', 'Miray', 'Naz', 'Öykü', 'Pınar', 'Rana',
+      'Fatma', 'AyÃ…Å¸e', 'Emine', 'Hatice', 'Zeynep', 'Elif', 'Meryem', 'Ã…Âerife', 'Sultan', 'Hanife',
+      'Melis', 'Ceren', 'Selin', 'Ece', 'Derya', 'Sena', 'Ezgi', 'Buse', 'Gizem', 'Ã„Â°rem',
+      'Gamze', 'Deniz', 'AslÃ„Â±', 'BaÃ…Å¸ak', 'Cansu', 'Damla', 'Ebru', 'Fulya', 'GÃƒÂ¼lÃ…Å¸en', 'Hande',
+      'IlgÃ„Â±n', 'Jale', 'Kardelen', 'Lale', 'Meltem', 'NazlÃ„Â±', 'Ãƒâ€“zge', 'Pelin', 'RÃƒÂ¼ya', 'Simge',
+      'TuÃ„Å¸ÃƒÂ§e', 'Vildan', 'YaÃ„Å¸mur', 'Zara', 'Almila', 'Bengisu', 'Cemre', 'Defne', 'Esra', 'Feyza',
+      'GÃƒÂ¶kÃƒÂ§e', 'Hazal', 'Ã„Â°pek', 'KÃƒÂ¼bra', 'Lara', 'Miray', 'Naz', 'Ãƒâ€“ykÃƒÂ¼', 'PÃ„Â±nar', 'Rana',
       'Ada', 'Azra', 'Beren', 'Derin', 'Ela', 'Nehir', 'Su', 'Toprak', 'Asya', 'Dila',
-      'Eliz', 'Güneş', 'İdil', 'Kumsal', 'Lina', 'Maya', 'Nil', 'Pera', 'Sude', 'Tuana',
-      'Yaren', 'Zehra', 'Beril', 'Ceyda', 'Dilara', 'Eylül', 'Gülce', 'Hira', 'İlayda', 'Jülide',
-      'Kader', 'Leyla', 'Melisa', 'Nisan', 'Oya', 'Perihan', 'Rabia', 'Sibel', 'Tülin', 'Ülker',
+      'Eliz', 'GÃƒÂ¼neÃ…Å¸', 'Ã„Â°dil', 'Kumsal', 'Lina', 'Maya', 'Nil', 'Pera', 'Sude', 'Tuana',
+      'Yaren', 'Zehra', 'Beril', 'Ceyda', 'Dilara', 'EylÃƒÂ¼l', 'GÃƒÂ¼lce', 'Hira', 'Ã„Â°layda', 'JÃƒÂ¼lide',
+      'Kader', 'Leyla', 'Melisa', 'Nisan', 'Oya', 'Perihan', 'Rabia', 'Sibel', 'TÃƒÂ¼lin', 'ÃƒÅ“lker',
     ],
   },
   en: {
@@ -955,7 +1210,16 @@ const resolveNPCNameLocale = (locale?: NPCNameLocale): NPCNameLocale => {
   return runtimeLocale === 'en' ? 'en' : 'tr';
 };
 
-/** Yaşa uygun rastgele NPC oluşturur */
+const sanitizeNPCName = (rawName: string, fallbackName: string): string => {
+  const cleaned = rawName
+    .normalize('NFKC')
+    .replace(/[^\p{L}\s'-]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return cleaned.length > 0 ? cleaned : fallbackName;
+};
+
+/** YaÃ…Å¸a uygun rastgele NPC oluÃ…Å¸turur */
 export const createRandomNPC = (
   playerAge: number = 0,
   playerTurn: number = 1,
@@ -971,16 +1235,20 @@ export const createRandomNPC = (
 
   const gender = randomSource() > 0.5 ? 'MALE' : 'FEMALE';
   const list = npcNamePools[locale][gender];
-  const name = list[nextInt(0, list.length - 1)];
+  const rawName = list[nextInt(0, list.length - 1)];
+  const fallbackName = locale === 'tr'
+    ? (gender === 'MALE' ? 'Can' : 'Ece')
+    : (gender === 'MALE' ? 'Alex' : 'Emily');
+  const name = sanitizeNPCName(rawName, fallbackName);
   const id = `npc_${Date.now()}_${getRandomInt(0, 999)}`;
 
-  // Yaşa uygun NPC yaşı (±2 yıl)
+  // YaÃ…Å¸a uygun NPC yaÃ…Å¸Ã„Â± (Ã‚Â±2 yÃ„Â±l)
   const npcAge = Math.max(0, playerAge + nextInt(-2, 2));
 
-  // Rastgele kişilik
+  // Rastgele kiÃ…Å¸ilik
   const personality = npcPersonalities[nextInt(0, npcPersonalities.length - 1)];
 
-  // 1-2 rastgele özellik
+  // 1-2 rastgele ÃƒÂ¶zellik
   const traitCount = nextInt(1, 2);
   const selectedTraits: NPCTrait[] = [];
   while (selectedTraits.length < traitCount) {
@@ -1008,7 +1276,7 @@ export const createRandomNPC = (
   };
 };
 
-/** Başlangıç NPC'lerini oluşturur (0 yaş için aile/komşu çocukları) */
+/** BaÃ…Å¸langÃ„Â±ÃƒÂ§ NPC'lerini oluÃ…Å¸turur (0 yaÃ…Å¸ iÃƒÂ§in aile/komÃ…Å¸u ÃƒÂ§ocuklarÃ„Â±) */
 export const generateNPCs = (
   playerAge: number = 0,
   playerTurn: number = 1,
@@ -1031,27 +1299,27 @@ export const getSocialEndResult = (npcs: NPC[]): string => {
   const rivals = npcs.filter(n => n.role === 'RIVAL' || n.role === 'ENEMY');
 
   let result = "";
-  if (partners.length > 0) result += `❤️ ${partners[0].name} ile evlendin ve mutlu bir yuva kurdun. `;
-  else result += "💔 Gerçek aşkı bulamadan yılları devirdin. ";
+  if (partners.length > 0) result += `Ã¢ÂÂ¤Ã¯Â¸Â ${partners[0].name} ile evlendin ve mutlu bir yuva kurdun. `;
+  else result += "ÄŸÅ¸â€™â€ GerÃƒÂ§ek aÃ…Å¸kÃ„Â± bulamadan yÃ„Â±llarÃ„Â± devirdin. ";
 
-  if (bestFriends.length > 0) result += `🤝 ${bestFriends[0].name} ile kardeşten öte oldunuz. `;
-  else if (friends.length > 0) result += `👥 Arkadaş çevren genişti ama kimseyle çok derinleşmedin. `;
+  if (bestFriends.length > 0) result += `ÄŸÅ¸Â¤Â ${bestFriends[0].name} ile kardeÃ…Å¸ten ÃƒÂ¶te oldunuz. `;
+  else if (friends.length > 0) result += `ÄŸÅ¸â€˜Â¥ ArkadaÃ…Å¸ ÃƒÂ§evren geniÃ…Å¸ti ama kimseyle ÃƒÂ§ok derinleÃ…Å¸medin. `;
 
-  if (rivals.length > 0) result += `⚔️ ${rivals[0].name} ile hala kanlı bıçaklısınız. `;
+  if (rivals.length > 0) result += `Ã¢Å¡â€Ã¯Â¸Â ${rivals[0].name} ile hala kanlÃ„Â± bÃ„Â±ÃƒÂ§aklÃ„Â±sÃ„Â±nÃ„Â±z. `;
 
   return result;
 };
 
-// --- SOSYAL ÖZET SİSTEMİ ---
+// --- SOSYAL Ãƒâ€“ZET SÃ„Â°STEMÃ„Â° ---
 
 const ROLE_EMOJI: Record<NPCRole, string> = {
-  PARTNER: '❤️',
-  BEST_FRIEND: '🤝',
-  FRIEND: '👥',
-  CRUSH: '💕',
-  RIVAL: '⚔️',
-  ENEMY: '🔥',
-  ACQUAINTANCE: '👋',
+  PARTNER: 'Ã¢ÂÂ¤Ã¯Â¸Â',
+  BEST_FRIEND: 'ÄŸÅ¸Â¤Â',
+  FRIEND: 'ÄŸÅ¸â€˜Â¥',
+  CRUSH: 'ÄŸÅ¸â€™â€¢',
+  RIVAL: 'Ã¢Å¡â€Ã¯Â¸Â',
+  ENEMY: 'ÄŸÅ¸â€Â¥',
+  ACQUAINTANCE: 'ÄŸÅ¸â€˜â€¹',
 };
 
 const ROLE_ORDER: NPCRole[] = ['PARTNER', 'BEST_FRIEND', 'CRUSH', 'FRIEND', 'RIVAL', 'ENEMY'];
@@ -1072,23 +1340,59 @@ const buildNPCNarrative = (npc: NPC): string => {
 
   switch (npc.role) {
     case 'PARTNER':
-      return `${npc.name} ile ${npc.metAge} yasinda tanistin. ${yearsKnown} yil boyunca birlikte buyudunuz ve mezuniyette el ele tutuyordunuz.`;
+      return tRuntime(
+        'social.epilogue.templates.PARTNER',
+        { name: npc.name, metAge: npc.metAge, yearsKnown },
+        `${npc.name} ile ${npc.metAge} yasinda tanistin. ${yearsKnown} yil boyunca birlikte buyudunuz ve mezuniyette el ele tutuyordunuz.`
+      );
     case 'BEST_FRIEND':
       return memCount > 2
-        ? `${npc.name}, ${npc.metAge} yasindan beri yaninda. ${memCount} ortak aniniz var — o senin kardesin.`
-        : `${npc.name} ile ${npc.metAge} yasindan beri birbirinize bagli kaldiniz.`;
+        ? tRuntime(
+          'social.epilogue.templates.BEST_FRIEND_MEMORIES',
+          { name: npc.name, metAge: npc.metAge, memCount },
+          `${npc.name}, ${npc.metAge} yasindan beri yaninda. ${memCount} ortak aniniz var, o senin kardesin.`
+        )
+        : tRuntime(
+          'social.epilogue.templates.BEST_FRIEND',
+          { name: npc.name, metAge: npc.metAge },
+          `${npc.name} ile ${npc.metAge} yasindan beri birbirinize bagli kaldiniz.`
+        );
     case 'CRUSH':
-      return `${npc.name} ile aranizda bir seyler var ama henuz netlesmediniz.`;
+      return tRuntime(
+        'social.epilogue.templates.CRUSH',
+        { name: npc.name },
+        `${npc.name} ile aranizda bir seyler var ama henuz netlesmediniz.`
+      );
     case 'FRIEND':
       return yearsKnown >= 5
-        ? `${npc.name} ile ${yearsKnown} yildir arkadassiniz. Iyi gunleri paylastiniz.`
-        : `${npc.name} ile ara sira takiliyorsun. Iyi bir arkadas ama derin bir bag kuramadin.`;
+        ? tRuntime(
+          'social.epilogue.templates.FRIEND_LONG',
+          { name: npc.name, yearsKnown },
+          `${npc.name} ile ${yearsKnown} yildir arkadassiniz. Iyi gunleri paylastiniz.`
+        )
+        : tRuntime(
+          'social.epilogue.templates.FRIEND_SHORT',
+          { name: npc.name },
+          `${npc.name} ile ara sira takiliyorsun. Iyi bir arkadas ama derin bir bag kuramadin.`
+        );
     case 'RIVAL':
-      return `${npc.name} ile ${npc.metAge} yasinda yollariniz ayrildi. Hala birbirinize soguk bakiyorsunuz.`;
+      return tRuntime(
+        'social.epilogue.templates.RIVAL',
+        { name: npc.name, metAge: npc.metAge },
+        `${npc.name} ile ${npc.metAge} yasinda yollariniz ayrildi. Hala birbirinize soguk bakiyorsunuz.`
+      );
     case 'ENEMY':
-      return `${npc.name} ile aran hic duzelmedi. ${Math.abs(npc.relationship)} puan nefret biriktirdiniz.`;
+      return tRuntime(
+        'social.epilogue.templates.ENEMY',
+        { name: npc.name, hateScore: Math.abs(npc.relationship) },
+        `${npc.name} ile aran hic duzelmedi. ${Math.abs(npc.relationship)} puan nefret biriktirdiniz.`
+      );
     default:
-      return `${npc.name} ile yollariniz kesisti ama derin bir bag kuramadin.`;
+      return tRuntime(
+        'social.epilogue.templates.DEFAULT',
+        { name: npc.name },
+        `${npc.name} ile yollariniz kesisti ama derin bir bag kuramadin.`
+      );
   }
 };
 
@@ -1106,60 +1410,60 @@ export const buildSocialSummary = (npcs: NPC[]): NPCSummary[] => {
     relationship: npc.relationship,
     metAge: npc.metAge,
     sharedMemoryCount: npc.sharedMemories.length,
-    emoji: ROLE_EMOJI[npc.role] ?? '👋',
+    emoji: ROLE_EMOJI[npc.role] ?? 'ÄŸÅ¸â€˜â€¹',
     narrativeLine: buildNPCNarrative(npc),
   }));
 };
 
-// --- KARİYER SONUÇ SİSTEMİ (Kişilik + Hafıza Zenginleştirilmiş) ---
+// --- KARÃ„Â°YER SONUÃƒâ€¡ SÃ„Â°STEMÃ„Â° (KiÃ…Å¸ilik + HafÃ„Â±za ZenginleÃ…Å¸tirilmiÃ…Å¸) ---
 
 const CAREER_PERSONALITY_NARRATIVES: Record<string, Partial<Record<PersonalityArchetype, string>>> = {
   'Milli Sporcu': {
-    EXTROVERT_BRAVE: 'Cesaretinle sınırlarını zorlayarak zirveye ulaştın.',
-    INTROVERT_BRAVE: 'Sessiz ama kararlı antrenmanlarınla herkesin takdirini kazandın.',
-    CONFORMIST: 'Disiplinin seni diğerlerinden ayırdı. Her gün, her antrenman mükemmeldi.',
-    BALANCED: 'Dengeli yaklaşımın seni uzun vadeli başarıya taşıdı.',
+    EXTROVERT_BRAVE: 'Cesaretinle sÃ„Â±nÃ„Â±rlarÃ„Â±nÃ„Â± zorlayarak zirveye ulaÃ…Å¸tÃ„Â±n.',
+    INTROVERT_BRAVE: 'Sessiz ama kararlÃ„Â± antrenmanlarÃ„Â±nla herkesin takdirini kazandÃ„Â±n.',
+    CONFORMIST: 'Disiplinin seni diÃ„Å¸erlerinden ayÃ„Â±rdÃ„Â±. Her gÃƒÂ¼n, her antrenman mÃƒÂ¼kemmeldi.',
+    BALANCED: 'Dengeli yaklaÃ…Å¸Ã„Â±mÃ„Â±n seni uzun vadeli baÃ…Å¸arÃ„Â±ya taÃ…Å¸Ã„Â±dÃ„Â±.',
   },
-  'Rockstar / Virtüöz': {
-    REBEL: 'Kurallara meydan okuyarak müzikte kendi yolunu çizdin.',
-    EMPATH: 'Müziğinle insanların duygularına dokunuyorsun.',
-    EXTROVERT_BRAVE: 'Sahne senin evin. Binlerce kişiye enerji veriyorsun.',
-    BALANCED: 'Müzik yeteneğin seni konservatuar yoluna taşıdı.',
+  'Rockstar / VirtÃƒÂ¼ÃƒÂ¶z': {
+    REBEL: 'Kurallara meydan okuyarak mÃƒÂ¼zikte kendi yolunu ÃƒÂ§izdin.',
+    EMPATH: 'MÃƒÂ¼ziÃ„Å¸inle insanlarÃ„Â±n duygularÃ„Â±na dokunuyorsun.',
+    EXTROVERT_BRAVE: 'Sahne senin evin. Binlerce kiÃ…Å¸iye enerji veriyorsun.',
+    BALANCED: 'MÃƒÂ¼zik yeteneÃ„Å¸in seni konservatuar yoluna taÃ…Å¸Ã„Â±dÃ„Â±.',
   },
-  'Ünlü Yazar': {
-    INTROVERT_CAUTIOUS: 'İç dünyanın zenginliği sayfalarına yansıdı.',
-    EMPATH: 'İnsanları anlamak, onların hikayelerini yazmana olanak tanıdı.',
-    REBEL: 'Cesur kalemin toplumun gerçeklerini gözler önüne serdi.',
-    BALANCED: 'Yazma yeteneğin seni edebiyat dünyasına taşıdı.',
+  'ÃƒÅ“nlÃƒÂ¼ Yazar': {
+    INTROVERT_CAUTIOUS: 'Ã„Â°ÃƒÂ§ dÃƒÂ¼nyanÃ„Â±n zenginliÃ„Å¸i sayfalarÃ„Â±na yansÃ„Â±dÃ„Â±.',
+    EMPATH: 'Ã„Â°nsanlarÃ„Â± anlamak, onlarÃ„Â±n hikayelerini yazmana olanak tanÃ„Â±dÃ„Â±.',
+    REBEL: 'Cesur kalemin toplumun gerÃƒÂ§eklerini gÃƒÂ¶zler ÃƒÂ¶nÃƒÂ¼ne serdi.',
+    BALANCED: 'Yazma yeteneÃ„Å¸in seni edebiyat dÃƒÂ¼nyasÃ„Â±na taÃ…Å¸Ã„Â±dÃ„Â±.',
   },
-  'Tıp Fakültesi': {
-    EMPATH: 'Empatin hastalarını iyileştirmenin en büyük gücü oldu.',
-    CONFORMIST: 'Disiplinli çalışman tıp eğitiminin zorluklarını aşmanı sağladı.',
-    INTROVERT_CAUTIOUS: 'Dikkatli ve titiz yaklaşımın seni mükemmel bir hekim yapacak.',
-    BALANCED: 'Çalışkanlığın ve zekan seni tıp yoluna taşıdı.',
+  'TÃ„Â±p FakÃƒÂ¼ltesi': {
+    EMPATH: 'Empatin hastalarÃ„Â±nÃ„Â± iyileÃ…Å¸tirmenin en bÃƒÂ¼yÃƒÂ¼k gÃƒÂ¼cÃƒÂ¼ oldu.',
+    CONFORMIST: 'Disiplinli ÃƒÂ§alÃ„Â±Ã…Å¸man tÃ„Â±p eÃ„Å¸itiminin zorluklarÃ„Â±nÃ„Â± aÃ…Å¸manÃ„Â± saÃ„Å¸ladÃ„Â±.',
+    INTROVERT_CAUTIOUS: 'Dikkatli ve titiz yaklaÃ…Å¸Ã„Â±mÃ„Â±n seni mÃƒÂ¼kemmel bir hekim yapacak.',
+    BALANCED: 'Ãƒâ€¡alÃ„Â±Ã…Å¸kanlÃ„Â±Ã„Å¸Ã„Â±n ve zekan seni tÃ„Â±p yoluna taÃ…Å¸Ã„Â±dÃ„Â±.',
   },
-  'Yazılım Mühendisliği': {
-    REBEL: 'Kurallara isyan ederek kendi startup\'ını kurmaya hazırlanıyorsun.',
-    INTROVERT_CAUTIOUS: 'Sessiz oturarak büyük sistemler tasarladın.',
-    CONFORMIST: 'Sistemli çalışmanla büyük şirketlerin en güvenilir mühendisi olacaksın.',
-    EMPATH: 'İnsanlara yardım eden yazılımlar geliştirme hayalin var.',
-    BALANCED: 'Kodlama yeteneğin seni teknoloji dünyasına taşıdı.',
+  'YazÃ„Â±lÃ„Â±m MÃƒÂ¼hendisliÃ„Å¸i': {
+    REBEL: 'Kurallara isyan ederek kendi startup\'Ã„Â±nÃ„Â± kurmaya hazÃ„Â±rlanÃ„Â±yorsun.',
+    INTROVERT_CAUTIOUS: 'Sessiz oturarak bÃƒÂ¼yÃƒÂ¼k sistemler tasarladÃ„Â±n.',
+    CONFORMIST: 'Sistemli ÃƒÂ§alÃ„Â±Ã…Å¸manla bÃƒÂ¼yÃƒÂ¼k Ã…Å¸irketlerin en gÃƒÂ¼venilir mÃƒÂ¼hendisi olacaksÃ„Â±n.',
+    EMPATH: 'Ã„Â°nsanlara yardÃ„Â±m eden yazÃ„Â±lÃ„Â±mlar geliÃ…Å¸tirme hayalin var.',
+    BALANCED: 'Kodlama yeteneÃ„Å¸in seni teknoloji dÃƒÂ¼nyasÃ„Â±na taÃ…Å¸Ã„Â±dÃ„Â±.',
   },
-  'Girişimci': {
-    REBEL: 'Kimsenin cesaret edemediği işlere girişerek fark yarattın.',
-    EXTROVERT_BRAVE: 'Liderliğin ve cesaretinle ekip kurup büyüttün.',
-    BALANCED: 'Ticari zekanla kendi yolunu çizdin.',
+  'GiriÃ…Å¸imci': {
+    REBEL: 'Kimsenin cesaret edemediÃ„Å¸i iÃ…Å¸lere giriÃ…Å¸erek fark yarattÃ„Â±n.',
+    EXTROVERT_BRAVE: 'LiderliÃ„Å¸in ve cesaretinle ekip kurup bÃƒÂ¼yÃƒÂ¼ttÃƒÂ¼n.',
+    BALANCED: 'Ticari zekanla kendi yolunu ÃƒÂ§izdin.',
   },
-  'Hukuk Fakültesi': {
-    REBEL: 'Adaletsizliğe karşı savaşmak için hukuk silahını seçtin.',
+  'Hukuk FakÃƒÂ¼ltesi': {
+    REBEL: 'AdaletsizliÃ„Å¸e karÃ…Å¸Ã„Â± savaÃ…Å¸mak iÃƒÂ§in hukuk silahÃ„Â±nÃ„Â± seÃƒÂ§tin.',
     EMPATH: 'Ezilenlerin sesi olmak istiyorsun.',
-    CONFORMIST: 'Kurallara ve yasalara olan saygın seni hukuk yoluna çekti.',
-    BALANCED: 'Keskin zekan ve hitabetin seni hukuk yoluna taşıdı.',
+    CONFORMIST: 'Kurallara ve yasalara olan saygÃ„Â±n seni hukuk yoluna ÃƒÂ§ekti.',
+    BALANCED: 'Keskin zekan ve hitabetin seni hukuk yoluna taÃ…Å¸Ã„Â±dÃ„Â±.',
   },
-  'Mezuna Kaldın / İşsiz': {
-    REBEL: 'Sistem seni yıktı ama isyan ateşin sönmedi.',
-    INTROVERT_CAUTIOUS: 'Fırsatları kaçırdın. Ama yeni kapılar açılabilir.',
-    BALANCED: 'Hayat her zaman planladığın gibi gitmiyor. Ama hikaye burada bitmez.',
+  'Mezuna KaldÃ„Â±n / Ã„Â°Ã…Å¸siz': {
+    REBEL: 'Sistem seni yÃ„Â±ktÃ„Â± ama isyan ateÃ…Å¸in sÃƒÂ¶nmedi.',
+    INTROVERT_CAUTIOUS: 'FÃ„Â±rsatlarÃ„Â± kaÃƒÂ§Ã„Â±rdÃ„Â±n. Ama yeni kapÃ„Â±lar aÃƒÂ§Ã„Â±labilir.',
+    BALANCED: 'Hayat her zaman planladÃ„Â±Ã„Å¸Ã„Â±n gibi gitmiyor. Ama hikaye burada bitmez.',
   },
 };
 
@@ -1170,12 +1474,12 @@ const getMemoryInfluence = (memories: EventMemory[]): string | undefined => {
   const regretCount = memories.filter(m => m.emotion === 'REGRET').length;
   const guiltCount = memories.filter(m => m.emotion === 'GUILT').length;
 
-  if (prideCount >= 5) return 'Başarılarla dolu bir geçmişin sana güç verdi.';
-  if (regretCount >= 4) return 'Geçmiş pişmanlıkların seni daha dikkatli ve kararlı yaptı.';
-  if (guiltCount >= 3) return 'Vicdanının sesi seni doğru yola yönlendirdi.';
-  if (prideCount >= 3 && regretCount >= 2) return 'Hem zaferler hem yenilgiler seni olgunlaştırdı.';
-  if (prideCount >= 3) return 'Başarılarının verdiği özgüvenle ilerliyorsun.';
-  if (regretCount >= 2) return 'Geçmişten aldığın dersler seni şekillendirdi.';
+  if (prideCount >= 5) return 'BaÃ…Å¸arÃ„Â±larla dolu bir geÃƒÂ§miÃ…Å¸in sana gÃƒÂ¼ÃƒÂ§ verdi.';
+  if (regretCount >= 4) return 'GeÃƒÂ§miÃ…Å¸ piÃ…Å¸manlÃ„Â±klarÃ„Â±n seni daha dikkatli ve kararlÃ„Â± yaptÃ„Â±.';
+  if (guiltCount >= 3) return 'VicdanÃ„Â±nÃ„Â±n sesi seni doÃ„Å¸ru yola yÃƒÂ¶nlendirdi.';
+  if (prideCount >= 3 && regretCount >= 2) return 'Hem zaferler hem yenilgiler seni olgunlaÃ…Å¸tÃ„Â±rdÃ„Â±.';
+  if (prideCount >= 3) return 'BaÃ…Å¸arÃ„Â±larÃ„Â±nÃ„Â±n verdiÃ„Å¸i ÃƒÂ¶zgÃƒÂ¼venle ilerliyorsun.';
+  if (regretCount >= 2) return 'GeÃƒÂ§miÃ…Å¸ten aldÃ„Â±Ã„Å¸Ã„Â±n dersler seni Ã…Å¸ekillendirdi.';
   return undefined;
 };
 
@@ -1478,19 +1782,19 @@ export const checkTraitFormation = (
 };
 
 // =================================================================
-// KİŞİLİK UYUMLULUK SİSTEMİ (NPC SOSYAL)
+// KÃ„Â°Ã…ÂÃ„Â°LÃ„Â°K UYUMLULUK SÃ„Â°STEMÃ„Â° (NPC SOSYAL)
 // =================================================================
 
 /**
- * Oyuncunun kişiliği ile NPC kişiliğinin uyumluluğunu hesaplar
- * @returns -1 (çok uyumsuz) ile +1 (çok uyumlu) arası değer
- * Bu değer ilişki artışını etkiler: actual = base * (1 + compatibility)
+ * Oyuncunun kiÃ…Å¸iliÃ„Å¸i ile NPC kiÃ…Å¸iliÃ„Å¸inin uyumluluÃ„Å¸unu hesaplar
+ * @returns -1 (ÃƒÂ§ok uyumsuz) ile +1 (ÃƒÂ§ok uyumlu) arasÃ„Â± deÃ„Å¸er
+ * Bu deÃ„Å¸er iliÃ…Å¸ki artÃ„Â±Ã…Å¸Ã„Â±nÃ„Â± etkiler: actual = base * (1 + compatibility)
  */
 export const calculatePersonalityCompatibility = (
   playerPersonality: { openness: number; empathy: number; courage: number; conformity: number },
   npcPersonality: NPCPersonality
 ): number => {
-  // Her NPC kişiliği için tercih edilen oyuncu özellikleri
+  // Her NPC kiÃ…Å¸iliÃ„Å¸i iÃƒÂ§in tercih edilen oyuncu ÃƒÂ¶zellikleri
   const compatibilityMatrix: Record<NPCPersonality, { trait: keyof typeof playerPersonality; threshold: number; bonus: number }[]> = {
     FRIENDLY: [
       { trait: 'openness', threshold: 60, bonus: 0.4 },
@@ -1498,12 +1802,12 @@ export const calculatePersonalityCompatibility = (
     ],
     SHY: [
       { trait: 'empathy', threshold: 70, bonus: 0.5 },
-      { trait: 'openness', threshold: 40, bonus: -0.3 }, // Çok açık sözlü olmamak
+      { trait: 'openness', threshold: 40, bonus: -0.3 }, // Ãƒâ€¡ok aÃƒÂ§Ã„Â±k sÃƒÂ¶zlÃƒÂ¼ olmamak
     ],
     AGGRESSIVE: [
       { trait: 'courage', threshold: 70, bonus: 0.4 },
       { trait: 'empathy', threshold: 50, bonus: -0.2 }, // Fazla duygusal olmamak
-      { trait: 'conformity', threshold: 40, bonus: -0.2 }, // Uysallık kötü
+      { trait: 'conformity', threshold: 40, bonus: -0.2 }, // UysallÃ„Â±k kÃƒÂ¶tÃƒÂ¼
     ],
     POPULAR: [
       { trait: 'openness', threshold: 60, bonus: 0.3 },
@@ -1515,11 +1819,11 @@ export const calculatePersonalityCompatibility = (
     ],
     ARTISTIC: [
       { trait: 'openness', threshold: 70, bonus: 0.5 },
-      { trait: 'conformity', threshold: 40, bonus: -0.3 }, // Yaratıcılık için özgürlük
+      { trait: 'conformity', threshold: 40, bonus: -0.3 }, // YaratÃ„Â±cÃ„Â±lÃ„Â±k iÃƒÂ§in ÃƒÂ¶zgÃƒÂ¼rlÃƒÂ¼k
     ],
     ATHLETIC: [
       { trait: 'courage', threshold: 60, bonus: 0.3 },
-      { trait: 'conformity', threshold: 50, bonus: 0.2 }, // Takım ruhu
+      { trait: 'conformity', threshold: 50, bonus: 0.2 }, // TakÃ„Â±m ruhu
     ],
   };
 
@@ -1530,55 +1834,55 @@ export const calculatePersonalityCompatibility = (
     const playerValue = playerPersonality[trait];
 
     if (bonus > 0) {
-      // Pozitif bonus: eşik üzerinde olmak iyi
+      // Pozitif bonus: eÃ…Å¸ik ÃƒÂ¼zerinde olmak iyi
       if (playerValue >= threshold) {
         totalCompatibility += bonus;
       }
     } else {
-      // Negatif bonus: eşik üzerinde olmak kötü
+      // Negatif bonus: eÃ…Å¸ik ÃƒÂ¼zerinde olmak kÃƒÂ¶tÃƒÂ¼
       if (playerValue >= threshold) {
         totalCompatibility += bonus;
       }
     }
   });
 
-  // -1 ile +1 arası normalize et
+  // -1 ile +1 arasÃ„Â± normalize et
   return Math.max(-1, Math.min(1, totalCompatibility));
 };
 
 // =================================================================
-// KARAKTER OLUŞTURMA SİSTEMİ
+// KARAKTER OLUÃ…ÂTURMA SÃ„Â°STEMÃ„Â°
 // =================================================================
 
-// Türkçe soyad havuzu (100+ soyad)
+// TÃƒÂ¼rkÃƒÂ§e soyad havuzu (100+ soyad)
 const turkishLastNames = [
-  // En yaygın soyadlar
-  "Yılmaz", "Kaya", "Demir", "Çelik", "Şahin", "Yıldız", "Yıldırım", "Öztürk", "Aydın", "Özdemir",
-  "Arslan", "Doğan", "Kılıç", "Aslan", "Çetin", "Kara", "Koç", "Kurt", "Özkan", "Şimşek",
-  "Polat", "Korkmaz", "Ünal", "Yavuz", "Akın", "Aksoy", "Aktaş", "Acar", "Güneş", "Tekin",
-  "Erdoğan", "Bozkurt", "Güler", "Karaca", "Turan", "Özer", "Bulut", "Ateş", "Avcı", "Keskin",
-  "Gül", "Erdem", "Kaplan", "Sezer", "Sarı", "Taş", "Toprak", "Duman", "Başaran", "Türk",
+  // En yaygÃ„Â±n soyadlar
+  "YÃ„Â±lmaz", "Kaya", "Demir", "Ãƒâ€¡elik", "Ã…Âahin", "YÃ„Â±ldÃ„Â±z", "YÃ„Â±ldÃ„Â±rÃ„Â±m", "Ãƒâ€“ztÃƒÂ¼rk", "AydÃ„Â±n", "Ãƒâ€“zdemir",
+  "Arslan", "DoÃ„Å¸an", "KÃ„Â±lÃ„Â±ÃƒÂ§", "Aslan", "Ãƒâ€¡etin", "Kara", "KoÃƒÂ§", "Kurt", "Ãƒâ€“zkan", "Ã…ÂimÃ…Å¸ek",
+  "Polat", "Korkmaz", "ÃƒÅ“nal", "Yavuz", "AkÃ„Â±n", "Aksoy", "AktaÃ…Å¸", "Acar", "GÃƒÂ¼neÃ…Å¸", "Tekin",
+  "ErdoÃ„Å¸an", "Bozkurt", "GÃƒÂ¼ler", "Karaca", "Turan", "Ãƒâ€“zer", "Bulut", "AteÃ…Å¸", "AvcÃ„Â±", "Keskin",
+  "GÃƒÂ¼l", "Erdem", "Kaplan", "Sezer", "SarÃ„Â±", "TaÃ…Å¸", "Toprak", "Duman", "BaÃ…Å¸aran", "TÃƒÂ¼rk",
   // Ek soyadlar
-  "Altın", "Ay", "Bayrak", "Cengiz", "Çakır", "Deniz", "Durmaz", "Ekinci", "Eren", "Genç",
-  "Güven", "Han", "Işık", "Kahraman", "Kıran", "Koçak", "Mutlu", "Oğuz", "Orhan", "Öz",
-  "Peker", "Sağlam", "Şen", "Tan", "Türkmen", "Uçar", "Uzun", "Ülker", "Vural", "Yalçın",
-  "Yaman", "Zengin", "Akbulut", "Albayrak", "Balcı", "Bayram", "Bektaş", "Biçer", "Bilgin", "Candan",
-  "Çakmak", "Çalışkan", "Dağ", "Dinç", "Durmuş", "Elmas", "Ercan", "Eroğlu", "Güngör", "Gürkan",
-  "Işıklı", "İnan", "Karagöz", "Kaynak", "Kılınç", "Koşar", "Köse", "Kutlu", "Mert", "Namlı",
-  "Ocak", "Ovalı", "Önal", "Özmen", "Parlak", "Reis", "Savaş", "Sönmez", "Şeker", "Tanrıverdi",
-  "Temel", "Tokgöz", "Tunç", "Türker", "Ulusoy", "Uslu", "Üstün", "Vardar", "Yağcı", "Yılmazer"
+  "AltÃ„Â±n", "Ay", "Bayrak", "Cengiz", "Ãƒâ€¡akÃ„Â±r", "Deniz", "Durmaz", "Ekinci", "Eren", "GenÃƒÂ§",
+  "GÃƒÂ¼ven", "Han", "IÃ…Å¸Ã„Â±k", "Kahraman", "KÃ„Â±ran", "KoÃƒÂ§ak", "Mutlu", "OÃ„Å¸uz", "Orhan", "Ãƒâ€“z",
+  "Peker", "SaÃ„Å¸lam", "Ã…Âen", "Tan", "TÃƒÂ¼rkmen", "UÃƒÂ§ar", "Uzun", "ÃƒÅ“lker", "Vural", "YalÃƒÂ§Ã„Â±n",
+  "Yaman", "Zengin", "Akbulut", "Albayrak", "BalcÃ„Â±", "Bayram", "BektaÃ…Å¸", "BiÃƒÂ§er", "Bilgin", "Candan",
+  "Ãƒâ€¡akmak", "Ãƒâ€¡alÃ„Â±Ã…Å¸kan", "DaÃ„Å¸", "DinÃƒÂ§", "DurmuÃ…Å¸", "Elmas", "Ercan", "EroÃ„Å¸lu", "GÃƒÂ¼ngÃƒÂ¶r", "GÃƒÂ¼rkan",
+  "IÃ…Å¸Ã„Â±klÃ„Â±", "Ã„Â°nan", "KaragÃƒÂ¶z", "Kaynak", "KÃ„Â±lÃ„Â±nÃƒÂ§", "KoÃ…Å¸ar", "KÃƒÂ¶se", "Kutlu", "Mert", "NamlÃ„Â±",
+  "Ocak", "OvalÃ„Â±", "Ãƒâ€“nal", "Ãƒâ€“zmen", "Parlak", "Reis", "SavaÃ…Å¸", "SÃƒÂ¶nmez", "Ã…Âeker", "TanrÃ„Â±verdi",
+  "Temel", "TokgÃƒÂ¶z", "TunÃƒÂ§", "TÃƒÂ¼rker", "Ulusoy", "Uslu", "ÃƒÅ“stÃƒÂ¼n", "Vardar", "YaÃ„Å¸cÃ„Â±", "YÃ„Â±lmazer"
 ];
 
-// Türkiye illeri
+// TÃƒÂ¼rkiye illeri
 export const turkishCities = [
-  "Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Aksaray", "Amasya", "Ankara", "Antalya", "Ardahan", "Artvin",
-  "Aydın", "Balıkesir", "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur",
-  "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli", "Diyarbakır", "Düzce", "Edirne", "Elazığ", "Erzincan",
-  "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane", "Hakkari", "Hatay", "Iğdır", "Isparta", "İstanbul",
-  "İzmir", "Kahramanmaraş", "Karabük", "Karaman", "Kars", "Kastamonu", "Kayseri", "Kırıkkale", "Kırklareli", "Kırşehir",
-  "Kilis", "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Mardin", "Mersin", "Muğla", "Muş",
-  "Nevşehir", "Niğde", "Ordu", "Osmaniye", "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas",
-  "Şanlıurfa", "Şırnak", "Tekirdağ", "Tokat", "Trabzon", "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"
+  "Adana", "AdÃ„Â±yaman", "Afyonkarahisar", "AÃ„Å¸rÃ„Â±", "Aksaray", "Amasya", "Ankara", "Antalya", "Ardahan", "Artvin",
+  "AydÃ„Â±n", "BalÃ„Â±kesir", "BartÃ„Â±n", "Batman", "Bayburt", "Bilecik", "BingÃƒÂ¶l", "Bitlis", "Bolu", "Burdur",
+  "Bursa", "Ãƒâ€¡anakkale", "Ãƒâ€¡ankÃ„Â±rÃ„Â±", "Ãƒâ€¡orum", "Denizli", "DiyarbakÃ„Â±r", "DÃƒÂ¼zce", "Edirne", "ElazÃ„Â±Ã„Å¸", "Erzincan",
+  "Erzurum", "EskiÃ…Å¸ehir", "Gaziantep", "Giresun", "GÃƒÂ¼mÃƒÂ¼Ã…Å¸hane", "Hakkari", "Hatay", "IÃ„Å¸dÃ„Â±r", "Isparta", "Ã„Â°stanbul",
+  "Ã„Â°zmir", "KahramanmaraÃ…Å¸", "KarabÃƒÂ¼k", "Karaman", "Kars", "Kastamonu", "Kayseri", "KÃ„Â±rÃ„Â±kkale", "KÃ„Â±rklareli", "KÃ„Â±rÃ…Å¸ehir",
+  "Kilis", "Kocaeli", "Konya", "KÃƒÂ¼tahya", "Malatya", "Manisa", "Mardin", "Mersin", "MuÃ„Å¸la", "MuÃ…Å¸",
+  "NevÃ…Å¸ehir", "NiÃ„Å¸de", "Ordu", "Osmaniye", "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas",
+  "Ã…ÂanlÃ„Â±urfa", "Ã…ÂÃ„Â±rnak", "TekirdaÃ„Å¸", "Tokat", "Trabzon", "Tunceli", "UÃ…Å¸ak", "Van", "Yalova", "Yozgat", "Zonguldak"
 ];
 
 export const turkishMonths = [
@@ -1591,7 +1895,7 @@ export const englishMonths = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-// Burç bilgileri
+// BurÃƒÂ§ bilgileri
 export const zodiacInfo: Record<ZodiacSign, {
   name: string;
   emoji: string;
@@ -1602,7 +1906,7 @@ export const zodiacInfo: Record<ZodiacSign, {
 }> = {
   KOC: {
     name: "Koc",
-    emoji: "♈",
+    emoji: "Ã¢â„¢Ë†",
     dateRange: "21 Mart - 19 Nisan",
     personality: "Riskte atak, buyumede hizli ama catismada cabuk alevlenen bir ruh.",
     strength: "Cesaret ve hizli karar",
@@ -1610,7 +1914,7 @@ export const zodiacInfo: Record<ZodiacSign, {
   },
   BOGA: {
     name: "Boga",
-    emoji: "♉",
+    emoji: "Ã¢â„¢â€°",
     dateRange: "20 Nisan - 20 Mayis",
     personality: "Degerlerine sadik, adim adim ilerleyen ve riskte frene basan bir karakter.",
     strength: "Guven ve istikrar",
@@ -1618,7 +1922,7 @@ export const zodiacInfo: Record<ZodiacSign, {
   },
   IKIZLER: {
     name: "Ikizler",
-    emoji: "♊",
+    emoji: "Ã¢â„¢Å ",
     dateRange: "21 Mayis - 20 Haziran",
     personality: "Sosyallikte parlayan, firsati hizla yakalayan ama ilkesel dengede zorlanan bir zihin.",
     strength: "Iletisim ve ceviklik",
@@ -1626,7 +1930,7 @@ export const zodiacInfo: Record<ZodiacSign, {
   },
   YENGEC: {
     name: "Yengec",
-    emoji: "♋",
+    emoji: "Ã¢â„¢â€¹",
     dateRange: "21 Haziran - 22 Temmuz",
     personality: "Vicdani guclu, insanlarla sicak bag kuran ama gerilimde geri cekilen bir kalp.",
     strength: "Sefkat ve bag kurma",
@@ -1634,7 +1938,7 @@ export const zodiacInfo: Record<ZodiacSign, {
   },
   ASLAN: {
     name: "Aslan",
-    emoji: "♌",
+    emoji: "Ã¢â„¢Å’",
     dateRange: "23 Temmuz - 22 Agustos",
     personality: "Sahnede guclu, catismada cesur ama vicdani dengede zorlanabilen bir liderlik enerjisi.",
     strength: "Liderlik ve etki",
@@ -1642,7 +1946,7 @@ export const zodiacInfo: Record<ZodiacSign, {
   },
   BASAK: {
     name: "Basak",
-    emoji: "♍",
+    emoji: "Ã¢â„¢Â",
     dateRange: "23 Agustos - 22 Eylul",
     personality: "Gelisimi sabirla isleyen, etik durusu koruyan ve riskte kontrollu kalan bir ruh.",
     strength: "Disiplinli gelisim",
@@ -1650,7 +1954,7 @@ export const zodiacInfo: Record<ZodiacSign, {
   },
   TERAZI: {
     name: "Terazi",
-    emoji: "♎",
+    emoji: "Ã¢â„¢Â",
     dateRange: "23 Eylul - 22 Ekim",
     personality: "Sosyal dengeyi kuran, adalet duygusu yuksek ama sert gerilimde zorlanan bir karakter.",
     strength: "Uzlasi ve adalet",
@@ -1658,7 +1962,7 @@ export const zodiacInfo: Record<ZodiacSign, {
   },
   AKREP: {
     name: "Akrep",
-    emoji: "♏",
+    emoji: "Ã¢â„¢Â",
     dateRange: "23 Ekim - 21 Kasim",
     personality: "Catismada guclu, riskte cesur ama sosyal iliskilerde zorlanan bir ruh.",
     strength: "Cesaret ve kararlilik",
@@ -1666,7 +1970,7 @@ export const zodiacInfo: Record<ZodiacSign, {
   },
   YAY: {
     name: "Yay",
-    emoji: "♐",
+    emoji: "Ã¢â„¢Â",
     dateRange: "22 Kasim - 21 Aralik",
     personality: "Kesfe acik, riskte istekli ve buyumeye odakli; deger dengesini korumakta zorlanan bir yolcu.",
     strength: "Kesif cesareti",
@@ -1674,7 +1978,7 @@ export const zodiacInfo: Record<ZodiacSign, {
   },
   OGLAK: {
     name: "Oglak",
-    emoji: "♑",
+    emoji: "Ã¢â„¢â€˜",
     dateRange: "22 Aralik - 19 Ocak",
     personality: "Uzun vadede sabirli, etik cizgisi guclu ve riskte temkinli bir stratejist.",
     strength: "Sabir ve strateji",
@@ -1682,7 +1986,7 @@ export const zodiacInfo: Record<ZodiacSign, {
   },
   KOVA: {
     name: "Kova",
-    emoji: "♒",
+    emoji: "Ã¢â„¢â€™",
     dateRange: "20 Ocak - 18 Subat",
     personality: "Toplulukta yenilikci, riskte atik ama gerilimde mesafelenen bir vizyon.",
     strength: "Yenilik ve sosyal vizyon",
@@ -1690,7 +1994,7 @@ export const zodiacInfo: Record<ZodiacSign, {
   },
   BALIK: {
     name: "Balik",
-    emoji: "♓",
+    emoji: "Ã¢â„¢â€œ",
     dateRange: "19 Subat - 20 Mart",
     personality: "Vicdani ve sosyal bagi guclu, catismada sinir cizmekte zorlanan duygusal bir ruh.",
     strength: "Empati ve sezgi",
@@ -1822,7 +2126,7 @@ export const getLocalizedZodiacInfo = (
   locale === 'en' ? zodiacInfoEn : zodiacInfo
 );
 
-/** Ay ve güne göre burç hesaplar */
+/** Ay ve gÃƒÂ¼ne gÃƒÂ¶re burÃƒÂ§ hesaplar */
 export const calculateZodiacSign = (month: number, day: number): ZodiacSign => {
   if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) return 'KOC';
   if ((month === 4 && day >= 20) || (month === 5 && day <= 20)) return 'BOGA';
@@ -1835,10 +2139,10 @@ export const calculateZodiacSign = (month: number, day: number): ZodiacSign => {
   if ((month === 11 && day >= 22) || (month === 12 && day <= 21)) return 'YAY';
   if ((month === 12 && day >= 22) || (month === 1 && day <= 19)) return 'OGLAK';
   if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) return 'KOVA';
-  return 'BALIK'; // 19 Şubat - 20 Mart
+  return 'BALIK'; // 19 Ã…Âubat - 20 Mart
 };
 
-/** Locale'e göre rastgele isim döndürür */
+/** Locale'e gÃƒÂ¶re rastgele isim dÃƒÂ¶ndÃƒÂ¼rÃƒÂ¼r */
 export const getRandomFirstName = (
   gender: PlayerGender,
   locale: NPCNameLocale = resolveNPCNameLocale()
@@ -1847,17 +2151,17 @@ export const getRandomFirstName = (
   return list[getRandomInt(0, list.length - 1)];
 };
 
-/** Rastgele Türkçe soyad döndürür */
+/** Rastgele TÃƒÂ¼rkÃƒÂ§e soyad dÃƒÂ¶ndÃƒÂ¼rÃƒÂ¼r */
 export const getRandomLastName = (): string => {
   return turkishLastNames[getRandomInt(0, turkishLastNames.length - 1)];
 };
 
-/** Rastgele şehir döndürür */
+/** Rastgele Ã…Å¸ehir dÃƒÂ¶ndÃƒÂ¼rÃƒÂ¼r */
 export const getRandomCity = (): string => {
   return turkishCities[getRandomInt(0, turkishCities.length - 1)];
 };
 
-/** Rastgele doğum tarihi oluşturur */
+/** Rastgele doÃ„Å¸um tarihi oluÃ…Å¸turur */
 export const getRandomBirthDate = (): { month: number; day: number } => {
   const month = getRandomInt(1, 12);
   const maxDays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
@@ -1865,7 +2169,7 @@ export const getRandomBirthDate = (): { month: number; day: number } => {
   return { month, day };
 };
 
-/** Tamamen rastgele karakter bilgisi oluşturur */
+/** Tamamen rastgele karakter bilgisi oluÃ…Å¸turur */
 export const generateRandomCharacter = (
   locale: NPCNameLocale = resolveNPCNameLocale()
 ): CharacterInfo => {
@@ -1887,11 +2191,14 @@ export const generateRandomCharacter = (
   };
 };
 
-/** Ayın maksimum gün sayısını döndürür */
+/** AyÃ„Â±n maksimum gÃƒÂ¼n sayÃ„Â±sÃ„Â±nÃ„Â± dÃƒÂ¶ndÃƒÂ¼rÃƒÂ¼r */
 export const getMaxDaysInMonth = (month: number): number => {
   const maxDays = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
   return maxDays[month - 1] || 31;
 };
+
+
+
 
 
 

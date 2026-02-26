@@ -197,6 +197,13 @@ const isEventEligibleWithSets = (
   allSeenSet: Set<string>
 ): boolean => {
   if (event.minAge > context.age || event.maxAge < context.age) return false;
+  if (event.condition) {
+    try {
+      if (!event.condition(context)) return false;
+    } catch {
+      return false;
+    }
+  }
   if (event.reqStats) {
     for (const [key, value] of Object.entries(event.reqStats)) {
       if (context.stats[key as keyof Stats] < value) return false;

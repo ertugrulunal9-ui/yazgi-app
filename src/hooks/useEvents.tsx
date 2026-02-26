@@ -6,12 +6,16 @@ import { ageTransitionHaptic } from '../animations/HapticFeedback';
 import { EVENTS, FALLBACK_EVENT } from '../data/events';
 import { selectCrisisEvent } from '../data/crisisEvents';
 import {
+  applyTurnBuffEffects,
+  calculateInvestmentEarlyExitPayout,
   calculateVarietyBonus,
   shouldAgeUp,
   shouldGenerateReportCard,
   getMaxEnergy,
-  getRestedEnergy
+  getRestedEnergy,
+  tickConsumableCooldowns,
 } from '../utils/gameUtils';
+import { CONSUMABLE_CONFIG } from '../config/gameBalance';
 import { analyzeGoalMismatch, calculateEndingErrorDebt, resolveEnding } from '../utils/endingResolver';
 import { calculateSchoolReport } from '../utils/schoolLogic';
 import { TurnMediator, TurnResult } from '../systems/TurnMediator';
@@ -586,10 +590,21 @@ export const useEvents = () => {
       newAge = gameState.age + 1;
       ageTransitionHaptic();
     }
-    const moneyAfterAllowance = stats.money;
+    const buffTick = applyTurnBuffEffects(stats, gameState.activeBuffs);
+    const maturityPayout = buffTick.maturedInvestmentCount * CONSUMABLE_CONFIG.investment.returnAmount;
+    const statsAfterBuffTick: Stats = maturityPayout > 0
+      ? {
+        ...buffTick.nextStats,
+        money: buffTick.nextStats.money + maturityPayout,
+      }
+      : buffTick.nextStats;
+    let moneyAfterAllowance = statsAfterBuffTick.money;
+    const nextActiveBuffs = buffTick.nextActiveBuffs;
+    const nextConsumableCooldowns = tickConsumableCooldowns(gameState.consumableCooldowns);
+    const nextConsumableUsageThisTurn: Record<string, number> = {};
     const stressAfterRecovery = naturalStressRecovery(gameState.stress, gameState.personality);
     const currentActiveArcs = gameState.activeArcs || [];
-    const burdenRisk = getBurdenRisk();
+    const burdenRisk = getBurdenRisk(gameState, statsAfterBuffTick);
     const previousBurdenRisk = gameState.lastBurdenRisk ?? 0;
     const criticalBurdenCrossed = hasCriticalBurdenCrossed(burdenRisk, previousBurdenRisk);
 
@@ -620,7 +635,7 @@ export const useEvents = () => {
       const evolutionUpdate = updateFamilyEvolutionOnAgeUp({
         previousState: nextFamilyEvolution,
         family: gameState.family,
-        familyRelation: stats.familyRelation,
+        familyRelation: statsAfterBuffTick.familyRelation,
         age: newAge,
       });
       nextFamilyEvolution = evolutionUpdate.nextState;
@@ -648,7 +663,7 @@ export const useEvents = () => {
 
         if (allExamsTaken) {
           // T\u00FCm s\u0131navlar tamam, karne g\u00F6ster
-          newGrades = calculateSchoolReport(stats, gameState);
+          newGrades = calculateSchoolReport(statsAfterBuffTick, gameState);
           pendingReportCard = true;
           isExamPeriod = false;
           shouldResetExamsAfterReportCard = true; // Karne sonras\u0131 s\u0131f\u0131rla
@@ -659,7 +674,7 @@ export const useEvents = () => {
         }
       } else {
         // Okul \u00E7a\u011F\u0131nda de\u011Filse direkt karne
-        newGrades = calculateSchoolReport(stats, gameState);
+        newGrades = calculateSchoolReport(statsAfterBuffTick, gameState);
         pendingReportCard = true;
       }
     }
@@ -671,7 +686,7 @@ export const useEvents = () => {
 
     const familyThought = getFamilyThought({
       family: gameState.family,
-      familyRelation: stats.familyRelation,
+      familyRelation: statsAfterBuffTick.familyRelation,
       age: newAge,
       turn: newTurn,
       evolution: nextFamilyEvolution,
@@ -680,7 +695,7 @@ export const useEvents = () => {
       burdenRisk,
       age: newAge,
       selectedGoal: gameState.selectedGoal ?? null,
-      goalMismatch: analyzeGoalMismatch(gameState, stats),
+      goalMismatch: analyzeGoalMismatch(gameState, statsAfterBuffTick),
       traitProgress: gameState.traitProgress,
       personalityState: gameState.personalityState,
       turn: newTurn,
@@ -690,17 +705,17 @@ export const useEvents = () => {
     const nextInnerThought = composed.text;
     const nextInnerThoughtType = composed.type;
     const newMaxEnergy = getMaxEnergy(newAge, gameState.family, gameState.traits);
-    const newEnergy = getRestedEnergy(newMaxEnergy, stats.energy, newAge);
+    const newEnergy = getRestedEnergy(newMaxEnergy, statsAfterBuffTick.energy, newAge);
     const varietyBonus = calculateVarietyBonus(gameState.actionHistory || []);
     const statsAfterVarietyBonus: Stats = varietyBonus > 0
       ? {
-        ...stats,
-        health: stats.health + varietyBonus,
-        intelligence: stats.intelligence + varietyBonus,
-        charisma: stats.charisma + varietyBonus,
-        discipline: stats.discipline + varietyBonus,
+        ...statsAfterBuffTick,
+        health: statsAfterBuffTick.health + varietyBonus,
+        intelligence: statsAfterBuffTick.intelligence + varietyBonus,
+        charisma: statsAfterBuffTick.charisma + varietyBonus,
+        discipline: statsAfterBuffTick.discipline + varietyBonus,
       }
-      : stats;
+      : statsAfterBuffTick;
     const turnProgressStats = {
       health: statsAfterVarietyBonus.health,
       intelligence: statsAfterVarietyBonus.intelligence,
@@ -709,24 +724,23 @@ export const useEvents = () => {
       money: moneyAfterAllowance,
       energy: newEnergy,
     };
+    const shouldSyncMoney = didAgeUp || moneyAfterAllowance !== stats.money;
     const turnAdvanceStats: Partial<Stats> = {
+      health: statsAfterVarietyBonus.health,
+      intelligence: statsAfterVarietyBonus.intelligence,
+      charisma: statsAfterVarietyBonus.charisma,
+      discipline: statsAfterVarietyBonus.discipline,
+      familyRelation: statsAfterVarietyBonus.familyRelation,
       energy: newEnergy,
-      ...(didAgeUp ? { money: moneyAfterAllowance } : {}),
-      ...(varietyBonus > 0 ? {
-        health: statsAfterVarietyBonus.health,
-        intelligence: statsAfterVarietyBonus.intelligence,
-        charisma: statsAfterVarietyBonus.charisma,
-        discipline: statsAfterVarietyBonus.discipline,
-      } : {}),
+      ...(shouldSyncMoney ? { money: moneyAfterAllowance } : {}),
     };
     const gameOverStats: Partial<Stats> = {
-      ...(didAgeUp ? { money: moneyAfterAllowance } : {}),
-      ...(varietyBonus > 0 ? {
-        health: statsAfterVarietyBonus.health,
-        intelligence: statsAfterVarietyBonus.intelligence,
-        charisma: statsAfterVarietyBonus.charisma,
-        discipline: statsAfterVarietyBonus.discipline,
-      } : {}),
+      health: statsAfterVarietyBonus.health,
+      intelligence: statsAfterVarietyBonus.intelligence,
+      charisma: statsAfterVarietyBonus.charisma,
+      discipline: statsAfterVarietyBonus.discipline,
+      familyRelation: statsAfterVarietyBonus.familyRelation,
+      ...(shouldSyncMoney ? { money: moneyAfterAllowance } : {}),
     };
     const buildRemainingScheduledEvents = (selectedEventId?: string) => [
       ...pendingScheduledEvents,
@@ -736,27 +750,36 @@ export const useEvents = () => {
     ];
 
     if (newAge >= 18) {
+      const investmentEarlyExitPayout = calculateInvestmentEarlyExitPayout(nextActiveBuffs);
+      const endingMoney = moneyAfterAllowance + investmentEarlyExitPayout;
+      const endingStats = {
+        ...statsAfterVarietyBonus,
+        money: endingMoney,
+      };
       const endingResolution = resolveEnding({
         gameState,
-        stats: statsAfterVarietyBonus,
+        stats: endingStats,
         achievements: gameState.unlockedAchievements,
       });
       const careerResult = endingResolution.result;
       void logGameEnding({
         age: newAge,
         stats: {
-          health: statsAfterVarietyBonus.health,
-          intelligence: statsAfterVarietyBonus.intelligence,
-          charisma: statsAfterVarietyBonus.charisma,
-          discipline: statsAfterVarietyBonus.discipline,
-          money: moneyAfterAllowance,
+          health: endingStats.health,
+          intelligence: endingStats.intelligence,
+          charisma: endingStats.charisma,
+          discipline: endingStats.discipline,
+          money: endingMoney,
           energy: newEnergy,
         },
         playtimeMinutes: Math.max(0, Math.round(newTotalTurns * 5)),
         endingType: endingResolution.id,
       });
       advanceTurnInContext({
-        newStats: gameOverStats,
+        newStats: {
+          ...gameOverStats,
+          money: endingMoney,
+        },
         newGameState: {
           phase: 'GAME_OVER',
           age: newAge,
@@ -775,6 +798,9 @@ export const useEvents = () => {
           fate: updatedFate,
           lastBurdenRisk: burdenRisk,
           dailyDecisionCount: 0,
+          activeBuffs: [],
+          consumableCooldowns: {},
+          consumableUsageThisTurn: {},
           lastResult: {
             feedback: `${careerResult.title}: ${careerResult.description}`,
             changes: {},
@@ -848,6 +874,9 @@ export const useEvents = () => {
               fate: updatedFate,
               lastBurdenRisk: burdenRisk,
               dailyDecisionCount: 0,
+          activeBuffs: nextActiveBuffs,
+          consumableCooldowns: nextConsumableCooldowns,
+          consumableUsageThisTurn: nextConsumableUsageThisTurn,
             }
           });
           return;
@@ -923,6 +952,9 @@ export const useEvents = () => {
           fate: updatedFate,
           lastBurdenRisk: burdenRisk,
           dailyDecisionCount: 0,
+          activeBuffs: nextActiveBuffs,
+          consumableCooldowns: nextConsumableCooldowns,
+          consumableUsageThisTurn: nextConsumableUsageThisTurn,
         }
       });
       return;
@@ -988,6 +1020,9 @@ export const useEvents = () => {
           fate: updatedFate,
           lastBurdenRisk: burdenRisk,
           dailyDecisionCount: 0,
+          activeBuffs: nextActiveBuffs,
+          consumableCooldowns: nextConsumableCooldowns,
+          consumableUsageThisTurn: nextConsumableUsageThisTurn,
         }
       });
       return;
@@ -1026,6 +1061,9 @@ export const useEvents = () => {
           fate: updatedFate,
           lastBurdenRisk: burdenRisk,
           dailyDecisionCount: 0,
+          activeBuffs: nextActiveBuffs,
+          consumableCooldowns: nextConsumableCooldowns,
+          consumableUsageThisTurn: nextConsumableUsageThisTurn,
         }
       });
       return;
@@ -1087,6 +1125,9 @@ export const useEvents = () => {
           fate: updatedFate,
           lastBurdenRisk: burdenRisk,
           dailyDecisionCount: 0,
+          activeBuffs: nextActiveBuffs,
+          consumableCooldowns: nextConsumableCooldowns,
+          consumableUsageThisTurn: nextConsumableUsageThisTurn,
         }
       });
       return;
@@ -1158,6 +1199,9 @@ export const useEvents = () => {
           fate: updatedFate,
           lastBurdenRisk: burdenRisk,
           dailyDecisionCount: 0,
+          activeBuffs: nextActiveBuffs,
+          consumableCooldowns: nextConsumableCooldowns,
+          consumableUsageThisTurn: nextConsumableUsageThisTurn,
         }
       });
       return;
@@ -1225,6 +1269,9 @@ export const useEvents = () => {
         fate: updatedFate,
         lastBurdenRisk: burdenRisk,
         dailyDecisionCount: 0,
+          activeBuffs: nextActiveBuffs,
+          consumableCooldowns: nextConsumableCooldowns,
+          consumableUsageThisTurn: nextConsumableUsageThisTurn,
       }
     });
   }, [advanceTurnInContext, buildEventContext, gameState, getBurdenRisk, getCachedEligibleEvents, logSelectedEventAnalytics, stats]);

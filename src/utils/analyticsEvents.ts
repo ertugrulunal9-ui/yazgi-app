@@ -340,6 +340,10 @@ export type MonetizationPlacement =
   | 'game_over_restart'
   | 'exam_prep'
   | 'energy_depleted'
+  | 'relationship_boost'
+  | 'trait_boost'
+  | 'shopping_discount'
+  | 'report_preview'
   | 'crisis_recovery'
   | 'ending_alternative'
   | 'day_summary'
@@ -543,6 +547,24 @@ export const logGoalAlignmentScore = async (meta: GoalAlignmentMeta) => {
     event_id: meta.eventId,
     selected_goal: meta.selectedGoal ?? 'NONE',
     alignment_score: meta.alignmentScore,
+    age: meta.age,
+    turn: meta.turn,
+  });
+};
+
+interface GoalActionUsedMeta {
+  actionId: string;
+  categoryId: string;
+  selectedGoal?: string | null;
+  age: number;
+  turn: number;
+}
+
+export const logGoalActionUsed = async (meta: GoalActionUsedMeta) => {
+  await logCustomEvent('goal_action_used', {
+    action_id: meta.actionId,
+    category_id: meta.categoryId,
+    selected_goal: meta.selectedGoal ?? 'NONE',
     age: meta.age,
     turn: meta.turn,
   });

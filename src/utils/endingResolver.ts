@@ -9,6 +9,8 @@ import {
 } from '../types';
 import { BURDEN_CONSTANTS } from '../constants/gameConstants';
 import { tRuntime } from '../i18n/strings';
+import { buildSocialSummary } from './gameUtils';
+import type { NPCSummary } from './gameUtils';
 
 export type EndingGoal = 'ACADEMIC' | 'CREATIVE' | 'ATHLETIC' | 'SOCIAL' | 'ENTERPRISE' | 'BALANCED';
 
@@ -236,6 +238,7 @@ export interface EndingResolution {
   errorDebt: EndingErrorDebt;
   achievementFlavor: string[];
   result: CareerResult;
+  socialSummary?: NPCSummary[];
 }
 
 export interface GoalMismatchAnalysis {
@@ -1606,6 +1609,7 @@ export const resolveEnding = ({
       errorDebt: resolvedDebt,
       achievementFlavor: [tRuntime('endings.secretDiscovered')],
       result: secretEnding.result,
+      socialSummary: buildSocialSummary(gameState.npcs),
     };
   }
 
@@ -1727,6 +1731,7 @@ export const resolveEnding = ({
     errorDebt: resolvedDebt,
     achievementFlavor,
     result: finalResult,
+    socialSummary: buildSocialSummary(gameState.npcs),
   };
 };
 

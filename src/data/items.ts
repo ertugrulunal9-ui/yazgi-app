@@ -1,5 +1,6 @@
 import { FamilyWealth, Item } from '../types';
 import { tRuntime } from '../i18n/strings';
+import { CONSUMABLE_CONFIG } from '../config/gameBalance';
 
 export const ITEMS: Item[] = [
   {
@@ -57,6 +58,44 @@ export const ITEMS: Item[] = [
     description: 'Tum spor aksiyonlarina bonus saglar.',
     type: 'PERMANENT',
     requiredForAction: 'sports_run',
+  },
+  {
+    id: 'item_energy_drink',
+    name: 'Enerji Icecegi',
+    price: CONSUMABLE_CONFIG.energyDrink.base,
+    description: 'Aninda enerji verir ama sureli kullanim siniri vardir.',
+    type: 'CONSUMABLE',
+    effect: { energy: CONSUMABLE_CONFIG.energyDrink.effect },
+  },
+  {
+    id: 'item_tutor_session',
+    name: 'Ozel Ders',
+    price: CONSUMABLE_CONFIG.tutorSession.base,
+    description: 'Rastgele bir derste hizli not takviyesi saglar.',
+    type: 'CONSUMABLE',
+  },
+  {
+    id: 'item_gym_pass',
+    name: 'Spor Salonu Paketi',
+    price: CONSUMABLE_CONFIG.gymPass.base,
+    description: `${CONSUMABLE_CONFIG.gymPass.duration} tur boyunca saglik kazanimi saglar.`,
+    type: 'CONSUMABLE',
+    effect: { health: CONSUMABLE_CONFIG.gymPass.healthPerTurn },
+  },
+  {
+    id: 'item_fashion_outfit',
+    name: 'Tarz Kombin',
+    price: CONSUMABLE_CONFIG.fashionOutfit.base,
+    description: `${CONSUMABLE_CONFIG.fashionOutfit.duration} tur boyunca karizma etkisi verir.`,
+    type: 'CONSUMABLE',
+    effect: { charisma: CONSUMABLE_CONFIG.fashionOutfit.charismaBoost },
+  },
+  {
+    id: 'item_investment',
+    name: 'Mini Yatirim',
+    price: CONSUMABLE_CONFIG.investment.base,
+    description: `${CONSUMABLE_CONFIG.investment.duration} tur sonra geri donus saglar.`,
+    type: 'CONSUMABLE',
   },
 ];
 

@@ -30,7 +30,13 @@ import { StatusHeader } from '../components/StatusHeader';
 import { ActionGrid } from '../components/ActionGrid';
 import { ActionBottomSheet } from '../components/ActionBottomSheet';
 import { TabBar } from '../components/TabBar';
-import { getLocalizedActionCategories, ActionCategory, SubAction, ExamGameType } from '../data/actions';
+import {
+  getLocalizedActionCategories,
+  filterActionCategoriesForContext,
+  ActionCategory,
+  SubAction,
+  ExamGameType,
+} from '../data/actions';
 import { FloatingText } from '../components/FloatingText';
 import { SkillTree } from '../components/SkillTree';
 import { SocialScreen } from '../components/SocialScreen';
@@ -44,6 +50,7 @@ import { createTraitShareText, createAchievementShareText, formatShareMessage } 
 import { useAchievements } from '../hooks/useAchievements';
 import {
   logAchievementUnlocked,
+  logGoalActionUsed,
   logHubAction,
   logInterstitialOpportunity,
   logInterstitialResult,
@@ -82,6 +89,7 @@ import {
 import ReportCard from '../components/ReportCard';
 import { ExamPeriodModal } from '../components/ExamPeriodModal';
 import { DaySummaryModal } from '../components/DaySummaryModal';
+import { isFeatureEnabled } from '../config/featureFlags';
 
 interface GameScreenProps {
   onPhaseChange: (tab: AppTab) => void;
@@ -96,7 +104,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
   const { floatingTexts, removeFloatingText } = useFloatingTexts();
   const { stats } = useStats();
   const { advanceTurn, markExamTaken, completeExamPeriod, selectNewEvent } = useEvents();
-  const { interactWithNPC, meetNewNPC } = useNPCs();
+  const { interactWithNPC, meetNewNPC, updateRelationship } = useNPCs();
   const previousAgeRef = useRef(gameState.age);
   const previousReportCardRef = useRef(gameState.pendingReportCard);
   const previousHealthCriticalRef = useRef(stats.health <= 20);
@@ -147,6 +155,8 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
   // shopOpen state removed — IAP disabled
   const [daySummaryVisible, setDaySummaryVisible] = useState(false);
   const [examPrepBoostApplied, setExamPrepBoostApplied] = useState(0);
+  const lastTraitBoostPromptKeyRef = useRef<number>(0);
+  const [shoppingDiscountPending, setShoppingDiscountPending] = useState(false);
   const unlockedAchievementIds = useMemo(
     () => unlockedAchievements.map(a => a.achievementId),
     [unlockedAchievements]
@@ -295,6 +305,264 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     return appliedBoost;
   }, [enqueueToast, stats.intelligence, t, updateStats]);
 
+  const claimTraitBoostAd = useCallback(async () => {
+    const remainingBefore = getRemainingRewardedAds();
+    void logRewardedAdRequested({
+      placement: 'trait_boost',
+      rewardType: 'utility',
+      remainingBefore,
+    });
+
+    const adResult = await showContextualRewardedAd('trait_boost');
+    const remainingAfter = getRemainingRewardedAds();
+
+    if (!adResult.success) {
+      enqueueToast(adResult.error || t('messages.adNotShown', undefined, 'Reklam gosterilemedi'), 'error');
+      void logRewardedAdResult({
+        placement: 'trait_boost',
+        rewardType: 'utility',
+        success: false,
+        remainingAfter,
+        errorMessage: adResult.error,
+      });
+      return;
+    }
+
+    const traitProgress = gameState.traitProgress || {};
+    const entries = Object.entries(traitProgress);
+    if (entries.length === 0) {
+      enqueueToast(
+        t('app.ads.traitBoostNoTarget', undefined, 'Su an desteklenecek bir trait ilerlemesi yok'),
+        'info'
+      );
+      void logRewardedAdResult({
+        placement: 'trait_boost',
+        rewardType: 'utility',
+        success: true,
+        amount: 0,
+        remainingAfter,
+      });
+      return;
+    }
+
+    const unlockedEntries = entries.filter(([, progress]) => !progress.isLocked);
+    const candidatePool = unlockedEntries.length > 0 ? unlockedEntries : entries;
+    const sorted = [...candidatePool].sort((a, b) => {
+      const ratioA = a[1].required > 0 ? a[1].points / a[1].required : 0;
+      const ratioB = b[1].required > 0 ? b[1].points / b[1].required : 0;
+      if (ratioA !== ratioB) return ratioB - ratioA;
+      return b[1].points - a[1].points;
+    });
+
+    const [traitId, current] = sorted[0];
+    const rawBoost = Math.max(1, adResult.amount || 1);
+    const nextPoints = Math.min(current.required, current.points + rawBoost);
+    const appliedBoost = Math.max(0, nextPoints - current.points);
+    const nextTraitProgress = {
+      ...traitProgress,
+      [traitId]: {
+        ...current,
+        points: nextPoints,
+        lastProgressTurn: gameState.turn,
+      },
+    };
+
+    updateGameState({ traitProgress: nextTraitProgress });
+
+    enqueueToast(
+      t(
+        'app.ads.traitBoostApplied',
+        { trait: getTraitName(traitId), amount: appliedBoost },
+        `{trait} ilerlemesi +{amount}`
+      ),
+      appliedBoost > 0 ? 'success' : 'info'
+    );
+
+    void logRewardedAdResult({
+      placement: 'trait_boost',
+      rewardType: 'utility',
+      success: true,
+      amount: appliedBoost,
+      remainingAfter,
+    });
+  }, [enqueueToast, gameState.traitProgress, gameState.turn, t, updateGameState]);
+
+  const offerRelationshipBoostAd = useCallback(async (npcId: string, npcName: string) => {
+    const remainingBefore = getRemainingRewardedAds();
+    void logRewardedAdRequested({
+      placement: 'relationship_boost',
+      rewardType: 'utility',
+      remainingBefore,
+    });
+
+    const adResult = await showContextualRewardedAd('relationship_boost');
+    const remainingAfter = getRemainingRewardedAds();
+
+    if (!adResult.success) {
+      enqueueToast(adResult.error || t('messages.adNotShown', undefined, 'Reklam gosterilemedi'), 'error');
+      void logRewardedAdResult({
+        placement: 'relationship_boost',
+        rewardType: 'utility',
+        success: false,
+        remainingAfter,
+        errorMessage: adResult.error,
+      });
+      return;
+    }
+
+    const relationDelta = Math.max(1, adResult.amount || 5);
+    updateRelationship(npcId, relationDelta);
+    enqueueToast(
+      t(
+        'app.ads.relationshipBoostApplied',
+        { npcName, amount: relationDelta },
+        `{npcName} ile iliski +{amount}`
+      ),
+      'success'
+    );
+
+    void logRewardedAdResult({
+      placement: 'relationship_boost',
+      rewardType: 'utility',
+      success: true,
+      amount: relationDelta,
+      remainingAfter,
+    });
+  }, [enqueueToast, t, updateRelationship]);
+
+  const buildDiscountedShoppingAction = useCallback((action: SubAction): SubAction => {
+    const discountMultiplier = 0.8;
+    const toDiscountedCost = (value: number): number =>
+      Math.max(0, Math.round(value * discountMultiplier));
+
+    const discountedPriceByWealth = action.priceByWealth
+      ? {
+          POOR: typeof action.priceByWealth.POOR === 'number'
+            ? toDiscountedCost(action.priceByWealth.POOR)
+            : action.priceByWealth.POOR,
+          MIDDLE: typeof action.priceByWealth.MIDDLE === 'number'
+            ? toDiscountedCost(action.priceByWealth.MIDDLE)
+            : action.priceByWealth.MIDDLE,
+          RICH: typeof action.priceByWealth.RICH === 'number'
+            ? toDiscountedCost(action.priceByWealth.RICH)
+            : action.priceByWealth.RICH,
+        }
+      : undefined;
+
+    const discountedEffect = action.effect
+      ? {
+          ...action.effect,
+          ...(typeof action.effect.money === 'number' && action.effect.money < 0
+            ? { money: -toDiscountedCost(Math.abs(action.effect.money)) }
+            : {}),
+        }
+      : undefined;
+
+    return {
+      ...action,
+      ...(discountedPriceByWealth ? { priceByWealth: discountedPriceByWealth } : {}),
+      ...(discountedEffect ? { effect: discountedEffect } : {}),
+    };
+  }, []);
+
+  const claimReportPreviewAd = useCallback(async () => {
+    const remainingBefore = getRemainingRewardedAds();
+    void logRewardedAdRequested({
+      placement: 'report_preview',
+      rewardType: 'utility',
+      remainingBefore,
+    });
+
+    const adResult = await showContextualRewardedAd('report_preview');
+    const remainingAfter = getRemainingRewardedAds();
+
+    if (!adResult.success) {
+      enqueueToast(adResult.error || t('messages.adNotShown', undefined, 'Reklam gosterilemedi'), 'error');
+      void logRewardedAdResult({
+        placement: 'report_preview',
+        rewardType: 'utility',
+        success: false,
+        remainingAfter,
+        errorMessage: adResult.error,
+      });
+      return;
+    }
+
+    const gradeEntries = Object.entries(gameState.schoolGrades).filter(
+      ([, value]) => typeof value === 'number'
+    ) as Array<[string, number]>;
+
+    if (gradeEntries.length === 0) {
+      enqueueToast(t('app.ads.reportPreviewUnavailable', undefined, 'Tahmin icin yeterli veri yok'), 'info');
+      void logRewardedAdResult({
+        placement: 'report_preview',
+        rewardType: 'utility',
+        success: true,
+        amount: 0,
+        remainingAfter,
+      });
+      return;
+    }
+
+    const predictedGrades = gradeEntries.map(([subject, currentGrade]) => {
+      const projected = Math.max(
+        0,
+        Math.min(
+          100,
+          Math.round(currentGrade * 0.65 + stats.intelligence * 0.22 + stats.discipline * 0.13)
+        )
+      );
+      return { subject, projected };
+    });
+
+    const avg =
+      predictedGrades.reduce((sum, item) => sum + item.projected, 0) / predictedGrades.length;
+    const sortedByScore = [...predictedGrades].sort((a, b) => b.projected - a.projected);
+    const best = sortedByScore[0];
+    const weakest = sortedByScore[sortedByScore.length - 1];
+    const bestLabel = t(`labels.grades.${best.subject}`, undefined, best.subject);
+    const weakestLabel = t(`labels.grades.${weakest.subject}`, undefined, weakest.subject);
+
+    Alert.alert(
+      t('app.ads.reportPreviewTitle', undefined, 'Not Tahmini'),
+      t(
+        'app.ads.reportPreviewBody',
+        {
+          average: Math.round(avg),
+          bestSubject: bestLabel,
+          bestScore: best.projected,
+          weakestSubject: weakestLabel,
+          weakestScore: weakest.projected,
+        },
+        `Tahmini ortalama: {average}\nEn guclu ders: {bestSubject} ({bestScore})\nEn riskli ders: {weakestSubject} ({weakestScore})`
+      )
+    );
+
+    void logRewardedAdResult({
+      placement: 'report_preview',
+      rewardType: 'utility',
+      success: true,
+      amount: Math.round(avg),
+      remainingAfter,
+    });
+  }, [enqueueToast, gameState.schoolGrades, stats.discipline, stats.intelligence, t]);
+
+  useEffect(() => {
+    if (!traitChipVisible || traitChipTraits.length === 0) return;
+    if (!isFeatureEnabled('AD_TRAIT_BOOST')) return;
+    if (lastTraitBoostPromptKeyRef.current === traitChipKey) return;
+    lastTraitBoostPromptKeyRef.current = traitChipKey;
+
+    Alert.alert(
+      t('app.ads.traitBoostTitle', undefined, 'Trait Takviyesi'),
+      t('app.ads.traitBoostDescription', undefined, 'Reklam izleyip +1 trait ilerlemesi almak ister misin?'),
+      [
+        { text: t('buttons.decline', undefined, 'Vazgec'), style: 'cancel' },
+        { text: t('buttons.watchAd', undefined, 'Reklam Izle'), onPress: () => void claimTraitBoostAd() },
+      ]
+    );
+  }, [claimTraitBoostAd, t, traitChipKey, traitChipTraits.length, traitChipVisible]);
+
   useEffect(() => {
     if (achievementsLoading) return;
     void checkAchievements();
@@ -439,15 +707,18 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
   );
   const riskPercent = riskData.total;
   const riskReasons = riskData.reasons;
+  const careerPathActionsEnabled = isFeatureEnabled('CAREER_PATH_ACTIONS');
 
   // Calculate available categories based on age
   const availableCategories = useMemo(() => {
-    return getLocalizedActionCategories().filter(category => {
-      if (category.minAge && gameState.age < category.minAge) return false;
-      if (category.maxAge !== undefined && gameState.age > category.maxAge) return false;
-      return true;
-    });
-  }, [gameState.age, t]);
+    const localizedCategories = getLocalizedActionCategories();
+    return filterActionCategoriesForContext(
+      localizedCategories,
+      gameState.age,
+      gameState.selectedGoal ?? null,
+      { careerPathActionsEnabled }
+    );
+  }, [careerPathActionsEnabled, gameState.age, gameState.selectedGoal, t]);
   const daySummaryVarietyBonus = useMemo(
     () => calculateVarietyBonus(gameState.actionHistory || []),
     [gameState.actionHistory]
@@ -492,10 +763,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     );
   }, [claimExamPrepBoostAd, clearExamPrepBoost, openExamGame, t]);
 
-  const handleActionSelect = useCallback((action: SubAction) => {
-    buttonPress();
-    selectionHaptic();
-
+  const executeHubAction = useCallback((action: SubAction) => {
     const result = hubActionCommandRef.current.execute({
       action,
       currentStats: stats,
@@ -558,6 +826,19 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
       currentEnergy: stats.energy,
       maxEnergy: gameState.maxEnergy,
     });
+    if (
+      careerPathActionsEnabled
+      && selectedCategory?.requiredGoal
+      && selectedCategory.requiredGoal === gameState.selectedGoal
+    ) {
+      void logGoalActionUsed({
+        actionId: action.id,
+        categoryId: selectedCategory.id,
+        selectedGoal: gameState.selectedGoal,
+        age: gameState.age,
+        turn: gameState.turn,
+      });
+    }
     if (result.newTraits.length > 0) {
       result.newTraits.forEach(traitId => {
         void logTraitFormed(traitId, gameState.age);
@@ -594,7 +875,104 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     }
 
     handleCloseBottomSheet();
-  }, [gameState, stats, updateGameState, handleCloseBottomSheet, meetNewNPC, promptExamPrepAndStartExam, setStats, enqueueToast, buildTraitToastMessage, claimEnergyRecoveryAd, t]);
+  }, [
+    buildTraitToastMessage,
+    careerPathActionsEnabled,
+    claimEnergyRecoveryAd,
+    enqueueToast,
+    gameState,
+    handleCloseBottomSheet,
+    selectedCategory,
+    meetNewNPC,
+    logGoalActionUsed,
+    promptExamPrepAndStartExam,
+    setStats,
+    stats,
+    t,
+    updateGameState,
+  ]);
+
+  const handleActionSelect = useCallback((action: SubAction) => {
+    buttonPress();
+    selectionHaptic();
+
+    const isShoppingAction = action.id.startsWith('shopping_');
+    const shoppingDiscountEnabled = isFeatureEnabled('AD_SHOPPING_DISCOUNT');
+
+    if (!isShoppingAction || !shoppingDiscountEnabled) {
+      executeHubAction(action);
+      return;
+    }
+
+    if (shoppingDiscountPending) {
+      return;
+    }
+
+    Alert.alert(
+      t('app.ads.shoppingDiscountTitle', undefined, 'Alisveris Indirimi'),
+      t('app.ads.shoppingDiscountDescription', undefined, 'Reklam izleyip bu alisveriste %20 indirim almak ister misin?'),
+      [
+        {
+          text: t('buttons.startDirect', undefined, 'Direkt Devam Et'),
+          onPress: () => executeHubAction(action),
+        },
+        {
+          text: t('buttons.watchAd', undefined, 'Reklam Izle'),
+          onPress: () => {
+            void (async () => {
+              setShoppingDiscountPending(true);
+              const remainingBefore = getRemainingRewardedAds();
+              void logRewardedAdRequested({
+                placement: 'shopping_discount',
+                rewardType: 'utility',
+                remainingBefore,
+              });
+
+              const adResult = await showContextualRewardedAd('shopping_discount');
+              const remainingAfter = getRemainingRewardedAds();
+
+              if (!adResult.success) {
+                enqueueToast(
+                  adResult.error || t('messages.adNotShown', undefined, 'Reklam gosterilemedi'),
+                  'error'
+                );
+                void logRewardedAdResult({
+                  placement: 'shopping_discount',
+                  rewardType: 'utility',
+                  success: false,
+                  remainingAfter,
+                  errorMessage: adResult.error,
+                });
+                setShoppingDiscountPending(false);
+                return;
+              }
+
+              const discountedAction = buildDiscountedShoppingAction(action);
+              void logRewardedAdResult({
+                placement: 'shopping_discount',
+                rewardType: 'utility',
+                success: true,
+                amount: adResult.amount || 20,
+                remainingAfter,
+              });
+              enqueueToast(
+                t('app.ads.shoppingDiscountApplied', undefined, '%20 indirim uygulandi'),
+                'success'
+              );
+              setShoppingDiscountPending(false);
+              executeHubAction(discountedAction);
+            })();
+          },
+        },
+      ]
+    );
+  }, [
+    buildDiscountedShoppingAction,
+    enqueueToast,
+    executeHubAction,
+    shoppingDiscountPending,
+    t,
+  ]);
 
   // Handle report card close
   const handleReportCardClose = useCallback(() => {
@@ -725,6 +1103,8 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
   }, [advanceTurn, t]);
 
   const activeContentTab = currentTab === 'settings' ? 'hub' : currentTab;
+  const relationshipBoostEnabled = isFeatureEnabled('AD_RELATIONSHIP_BOOST');
+  const reportPreviewEnabled = isFeatureEnabled('AD_REPORT_PREVIEW');
 
   return (
     <View style={{ flex: 1 }}>
@@ -906,6 +1286,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
                     }
                     return result;
                   }}
+                  onOfferRelationshipBoostAd={relationshipBoostEnabled ? offerRelationshipBoostAd : undefined}
                   onMeetNew={() => {
                     const meetEnergyCost = 12;
                     if (stats.energy < meetEnergyCost) {
@@ -1074,6 +1455,8 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
         visible={(gameState.isExamPeriod || false) && !examGameVisible}
         examsTaken={gameState.examsTakenThisYear || []}
         onTakeExam={handleExamPeriodExam}
+        reportPreviewEnabled={reportPreviewEnabled}
+        onWatchReportPreviewAd={reportPreviewEnabled ? () => void claimReportPreviewAd() : undefined}
         onClose={handleExamPeriodClose}
       />
 
