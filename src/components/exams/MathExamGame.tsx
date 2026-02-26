@@ -11,6 +11,7 @@ import Animated, {
     cancelAnimation,
 } from 'react-native-reanimated';
 import { Haptics } from '../../utils/haptics';
+import { tRuntime } from '../../i18n/strings';
 import { Difficulty, GameState } from './MiniGameContainer';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -182,7 +183,7 @@ const MathExamGame: React.FC<MathExamGameProps> = ({
     if (!gameState || !setGameState) {
         return (
             <View style={styles.loadingContainer}>
-                <Text style={styles.loadingText}>Yükleniyor...</Text>
+                <Text style={styles.loadingText}>{tRuntime('exams.math.loading')}</Text>
             </View>
         );
     }
@@ -334,7 +335,7 @@ const MathExamGame: React.FC<MathExamGameProps> = ({
     if (!currentQuestion) {
         return (
             <View style={styles.loadingContainer}>
-                <Text style={styles.loadingText}>Soru hazırlanıyor...</Text>
+                <Text style={styles.loadingText}>{tRuntime('exams.math.preparing')}</Text>
             </View>
         );
     }
@@ -371,7 +372,7 @@ const MathExamGame: React.FC<MathExamGameProps> = ({
                     value={userAnswer}
                     onChangeText={setUserAnswer}
                     keyboardType="number-pad"
-                    placeholder="Cevabını yaz..."
+                    placeholder={tRuntime('exams.math.placeholder')}
                     placeholderTextColor="#64748b"
                     onSubmitEditing={handleSubmit}
                     editable={feedback === null}
@@ -391,7 +392,7 @@ const MathExamGame: React.FC<MathExamGameProps> = ({
             {feedback === 'wrong' && (
                 <View style={styles.wrongAnswerContainer}>
                     <Text style={styles.wrongAnswerText}>
-                        Doğru cevap: {currentQuestion.answer}
+                        {tRuntime('exams.math.correctAnswer', { answer: currentQuestion.answer })}
                     </Text>
                 </View>
             )}

@@ -478,6 +478,43 @@ class SaveManager {
     return `${INTEGRITY_SIGNATURE_PREFIX}${encodedSlotId}.v${INTEGRITY_SCHEME_VERSION}`;
   }
 
+  private getSupportedSaveVersions(): number[] {
+    const versions: number[] = [];
+    for (let version = SAVE_VERSION; version >= 1; version--) {
+      versions.push(version);
+    }
+    return versions;
+  }
+
+  private async readSlotDataWithFallback(slotId: string): Promise<{ rawData: string | null; keyVersion: number }> {
+    for (const version of this.getSupportedSaveVersions()) {
+      const rawData = await this.readProtectedStorageItem(getSlotKey(slotId, version));
+      if (rawData) {
+        return { rawData, keyVersion: version };
+      }
+    }
+
+    return { rawData: null, keyVersion: SAVE_VERSION };
+  }
+
+  private async readMetadataWithFallback(slotId: string): Promise<{ rawMeta: string | null; keyVersion: number }> {
+    for (const version of this.getSupportedSaveVersions()) {
+      const rawMeta = await this.readProtectedStorageItem(getMetadataKey(slotId, version));
+      if (rawMeta) {
+        return { rawMeta, keyVersion: version };
+      }
+    }
+
+    return { rawMeta: null, keyVersion: SAVE_VERSION };
+  }
+
+  private async removeVersionedSlotKeys(slotId: string): Promise<void> {
+    for (const version of this.getSupportedSaveVersions()) {
+      await this.storage.removeItem(getSlotKey(slotId, version));
+      await this.storage.removeItem(getMetadataKey(slotId, version));
+    }
+  }
+
   private getCryptoCandidate(): CryptoLike | undefined {
     return (globalThis as { crypto?: CryptoLike }).crypto;
   }
@@ -1154,7 +1191,7 @@ class SaveManager {
 
   async loadFromSlot(slotId: string): Promise<SaveSlotData | null> {
     try {
-      const rawData = await this.readProtectedStorageItem(getSlotKey(slotId));
+      const { rawData, keyVersion } = await this.readSlotDataWithFallback(slotId);
       if (!rawData) return null;
 
       const compressed = JSON.parse(rawData) as CompressedSaveData;
@@ -1215,6 +1252,10 @@ class SaveManager {
         await createMigrationBackup(this.storage, slotId, validatedData as SaveSlotData);
         const migrated = migrateToVersion(validatedData as SaveSlotData, SAVE_VERSION);
         await this.saveToSlot(slotId, migrated.playerName, migrated.stats, migrated.gameState);
+        if (keyVersion < SAVE_VERSION) {
+          await this.storage.removeItem(getSlotKey(slotId, keyVersion));
+          await this.storage.removeItem(getMetadataKey(slotId, keyVersion));
+        }
         return migrated;
       }
 
@@ -1285,8 +1326,7 @@ class SaveManager {
         throw new Error('Cannot delete auto-save slot');
       }
 
-      await this.storage.removeItem(getSlotKey(slotId));
-      await this.storage.removeItem(getMetadataKey(slotId));
+      await this.removeVersionedSlotKeys(slotId);
       await this.deleteSlotSignature(slotId);
       await this.storage.removeItem(this.getBackupHistoryKey(slotId));
       await this.storage.removeItem(getBackupKey(slotId));
@@ -1305,8 +1345,7 @@ class SaveManager {
 
   async clearSlot(slotId: string): Promise<boolean> {
     try {
-      await this.storage.removeItem(getSlotKey(slotId));
-      await this.storage.removeItem(getMetadataKey(slotId));
+      await this.removeVersionedSlotKeys(slotId);
       await this.storage.removeItem(getBackupKey(slotId));
       await this.storage.removeItem(this.getBackupHistoryKey(slotId));
       await this.deleteSlotSignature(slotId);
@@ -1575,13 +1614,13 @@ class SaveManager {
 
       for (let i = 1; i <= maxSlots; i++) {
         const slotId = i.toString();
-        const rawMeta = await this.readProtectedStorageItem(getMetadataKey(slotId));
+        const { rawMeta } = await this.readMetadataWithFallback(slotId);
         if (rawMeta) {
           this.state.metadata[slotId] = JSON.parse(rawMeta);
         }
       }
 
-      const autoSaveMeta = await this.readProtectedStorageItem(getMetadataKey(AUTO_SAVE_SLOT_ID));
+      const { rawMeta: autoSaveMeta } = await this.readMetadataWithFallback(AUTO_SAVE_SLOT_ID);
       if (autoSaveMeta) {
         this.state.metadata[AUTO_SAVE_SLOT_ID] = JSON.parse(autoSaveMeta);
       }

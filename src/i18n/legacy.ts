@@ -59,7 +59,7 @@ export const strings: Record<AppLocale, NestedRecord> = {
       },
       languageOptions: {
         tr: 'Turkce',
-        en: 'English',
+        en: 'Ingilizce',
       },
     },
     event: {
@@ -316,7 +316,7 @@ export const strings: Record<AppLocale, NestedRecord> = {
       metAtAge: ' yasinda tanistin',
       friendshipYears: ' yillik dostluk',
       neverMadeUp: 'hic barismadin',
-      legacy: 'Legacy',
+      legacy: 'Miras',
       runLegacyPoints: 'Bu kosu: +{points} legacy puani',
       totalRunsLevel: 'Toplam kosu: {runs} | Seviye: {level}',
       totalLegacyPoints: 'Toplam legacy puani: ',
@@ -367,7 +367,7 @@ export const strings: Record<AppLocale, NestedRecord> = {
       tiers: {
         LEGENDARY: 'Efsanevi',
         SUCCESS: 'Basarili',
-        NORMAL: 'Normal',
+        NORMAL: 'Dengeli',
         FAILURE: 'Basarisiz',
         UNEXPECTED_PATH: 'Beklenmedik Yol',
       },
@@ -1076,7 +1076,7 @@ export const strings: Record<AppLocale, NestedRecord> = {
         UNEXPECTED_PATH: 'Unexpected Path',
       },
       catalog: {
-        titleTemplate: '{goal} - {tier}',
+        titleTemplate: '{goal}: {tier}',
         mismatchTitle: '{goal} - Unexpected Path',
         goals: {
           ACADEMIC: 'Academic Path',
@@ -1222,7 +1222,7 @@ export const strings: Record<AppLocale, NestedRecord> = {
             familyReaction: 'Your family admires both your work and your ideals.',
           },
           diplomat: {
-            title: 'Diplomat',
+            title: 'Diplomatic Envoy',
             description: 'Your patience, negotiation skills, and language ability guided you toward diplomacy.',
             familyReaction: 'Your family is proud of your diplomatic talent.',
           },

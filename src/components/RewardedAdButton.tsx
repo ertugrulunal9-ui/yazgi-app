@@ -7,6 +7,7 @@ import {
   logRewardedAdResult,
 } from '../utils/analyticsEvents';
 import type { MonetizationPlacement } from '../utils/analyticsEvents';
+import { tRuntime } from '../i18n/strings';
 
 interface RewardedAdButtonProps {
   onRewardClaimed: (reward: { type: 'energy' | 'intelligence' | 'money'; amount: number }) => void;
@@ -73,7 +74,7 @@ export const RewardedAdButton: React.FC<RewardedAdButtonProps> = ({
         });
       } else {
         const errorMessage = result.error || 'Rewarded ad failed';
-        setError(result.error || 'Reklam gosterilemedi');
+        setError(result.error || tRuntime('ads.adFailed'));
         void logRewardedAdResult({
           placement,
           rewardType,
@@ -85,7 +86,7 @@ export const RewardedAdButton: React.FC<RewardedAdButtonProps> = ({
       }
     } catch (err: any) {
       const errorMessage = err?.message || 'Rewarded ad exception';
-      setError(err.message || 'Bir hata olustu');
+      setError(err.message || tRuntime('ads.adError'));
       void logRewardedAdResult({
         placement,
         rewardType,
@@ -111,12 +112,12 @@ export const RewardedAdButton: React.FC<RewardedAdButtonProps> = ({
           styles.mainButton,
           (disabled || loading || remainingAds === 0) && styles.mainButtonDisabled,
         ]}
-        accessibilityLabel="Reklam izle"
+        accessibilityLabel={tRuntime('ads.watchAdAria')}
         accessibilityRole="button"
-        accessibilityHint="Ödül seçeneklerini görmek için dokun"
+        accessibilityHint={tRuntime('ads.watchAdHint')}
       >
         <Feather name="video" size={20} color="#fff" />
-        <Text style={styles.mainButtonText}>Reklam İzle</Text>
+        <Text style={styles.mainButtonText}>{tRuntime('ads.watchAd')}</Text>
         {remainingAds > 0 && (
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{remainingAds}</Text>
@@ -135,8 +136,8 @@ export const RewardedAdButton: React.FC<RewardedAdButtonProps> = ({
       {showOptions && remainingAds > 0 && (
         <View style={[styles.dropdown, { backgroundColor: theme.surfaceBase, borderColor: theme.border }]}>
           <View style={styles.dropdownHeader}>
-            <Text style={styles.dropdownTitle}>Reklam izleyerek ödül kazan!</Text>
-            <Text style={styles.dropdownSubtitle}>Kalan: {remainingAds}/5</Text>
+            <Text style={styles.dropdownTitle}>{tRuntime('ads.dropdownTitle')}</Text>
+            <Text style={styles.dropdownSubtitle}>{tRuntime('ads.remaining', { remaining: remainingAds })}</Text>
           </View>
 
           <View style={styles.optionsList}>
@@ -149,19 +150,19 @@ export const RewardedAdButton: React.FC<RewardedAdButtonProps> = ({
                 { backgroundColor: theme.surfaceRaised },
                 isEnergyLow && styles.optionButtonHighlighted,
               ]}
-              accessibilityLabel="+20 Enerji ödülü al"
+              accessibilityLabel={tRuntime('ads.energyAria')}
               accessibilityRole="button"
             >
               <View style={[styles.optionIcon, { backgroundColor: REWARD_COLORS.energy }]}>
                 <Feather name={REWARD_ICONS.energy} size={20} color="#fff" />
               </View>
               <View style={styles.optionInfo}>
-                <Text style={[styles.optionTitle, { color: theme.textPrimary }]}>+20 Enerji</Text>
-                <Text style={[styles.optionDescription, { color: theme.textSecondary }]}>Enerjini doldur</Text>
+                <Text style={[styles.optionTitle, { color: theme.textPrimary }]}>{tRuntime('ads.energyTitle')}</Text>
+                <Text style={[styles.optionDescription, { color: theme.textSecondary }]}>{tRuntime('ads.energyDesc')}</Text>
               </View>
               {isEnergyLow && (
                 <View style={styles.recommendedBadge}>
-                  <Text style={styles.recommendedText}>Önerilen</Text>
+                  <Text style={styles.recommendedText}>{tRuntime('ads.recommended')}</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -171,15 +172,15 @@ export const RewardedAdButton: React.FC<RewardedAdButtonProps> = ({
               onPress={() => handleWatchAd('intelligence')}
               disabled={loading}
               style={[styles.optionButton, { backgroundColor: theme.surfaceRaised }]}
-              accessibilityLabel="+10 Zeka ödülü al"
+              accessibilityLabel={tRuntime('ads.intelligenceAria')}
               accessibilityRole="button"
             >
               <View style={[styles.optionIcon, { backgroundColor: REWARD_COLORS.intelligence }]}>
                 <Feather name={REWARD_ICONS.intelligence} size={20} color="#fff" />
               </View>
               <View style={styles.optionInfo}>
-                <Text style={[styles.optionTitle, { color: theme.textPrimary }]}>+10 Zeka</Text>
-                <Text style={[styles.optionDescription, { color: theme.textSecondary }]}>Zekanı artır</Text>
+                <Text style={[styles.optionTitle, { color: theme.textPrimary }]}>{tRuntime('ads.intelligenceTitle')}</Text>
+                <Text style={[styles.optionDescription, { color: theme.textSecondary }]}>{tRuntime('ads.intelligenceDesc')}</Text>
               </View>
             </TouchableOpacity>
 
@@ -188,15 +189,15 @@ export const RewardedAdButton: React.FC<RewardedAdButtonProps> = ({
               onPress={() => handleWatchAd('money')}
               disabled={loading}
               style={[styles.optionButton, { backgroundColor: theme.surfaceRaised }]}
-              accessibilityLabel="+100 TL ödülü al"
+              accessibilityLabel={tRuntime('ads.moneyAria')}
               accessibilityRole="button"
             >
               <View style={[styles.optionIcon, { backgroundColor: REWARD_COLORS.money }]}>
                 <Feather name={REWARD_ICONS.money} size={20} color="#fff" />
               </View>
               <View style={styles.optionInfo}>
-                <Text style={[styles.optionTitle, { color: theme.textPrimary }]}>+100 TL</Text>
-                <Text style={[styles.optionDescription, { color: theme.textSecondary }]}>Para kazan</Text>
+                <Text style={[styles.optionTitle, { color: theme.textPrimary }]}>{tRuntime('ads.moneyTitle')}</Text>
+                <Text style={[styles.optionDescription, { color: theme.textSecondary }]}>{tRuntime('ads.moneyDesc')}</Text>
               </View>
             </TouchableOpacity>
           </View>
@@ -205,10 +206,10 @@ export const RewardedAdButton: React.FC<RewardedAdButtonProps> = ({
             <TouchableOpacity
               onPress={() => setShowOptions(false)}
               style={styles.cancelButton}
-              accessibilityLabel="İptal"
+              accessibilityLabel={tRuntime('ads.cancelAria')}
               accessibilityRole="button"
             >
-              <Text style={[styles.cancelText, { color: theme.textSecondary }]}>İptal</Text>
+              <Text style={[styles.cancelText, { color: theme.textSecondary }]}>{tRuntime('ads.cancel')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -218,8 +219,8 @@ export const RewardedAdButton: React.FC<RewardedAdButtonProps> = ({
       {showOptions && remainingAds === 0 && (
         <View style={[styles.dropdown, styles.noAdsDropdown, { backgroundColor: theme.surfaceBase, borderColor: theme.border }]}>
           <Text style={styles.noAdsEmoji}>🎬</Text>
-          <Text style={[styles.noAdsTitle, { color: theme.textPrimary }]}>Günlük limit doldu</Text>
-          <Text style={[styles.noAdsSubtitle, { color: theme.textSecondary }]}>Yarın tekrar reklam izleyebilirsin!</Text>
+          <Text style={[styles.noAdsTitle, { color: theme.textPrimary }]}>{tRuntime('ads.noAdsTitle')}</Text>
+          <Text style={[styles.noAdsSubtitle, { color: theme.textSecondary }]}>{tRuntime('ads.noAdsSubtitle')}</Text>
         </View>
       )}
     </View>

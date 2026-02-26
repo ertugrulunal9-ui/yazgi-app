@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SaveManager from '../../src/save/SaveManager';
-import { getSlotKey, getMetadataKey } from '../../src/save/SaveSlot';
+import { SAVE_VERSION, getSlotKey, getMetadataKey } from '../../src/save/SaveSlot';
 
 const baseStats = {
   health: 60,
@@ -48,7 +48,7 @@ describe('SaveManager export/import compatibility', () => {
 
     const exported = JSON.parse(rawExport!);
     expect(exported.exportVersion).toBe(2);
-    expect(exported.version).toBe(1);
+    expect(exported.version).toBe(SAVE_VERSION);
     expect(Array.isArray(exported.saves)).toBe(true);
     expect(exported.saves[0].playerName).toBe('Alice');
     expect(Array.isArray(exported.backups)).toBe(true);

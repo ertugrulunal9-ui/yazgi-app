@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { FeatureFlag, FeatureFlagState } from '../config/featureFlags';
 import { DENSITY_OPTION_COLORS, DANGER_COLOR, MOTION_OPTION_COLOR, THEME_OPTION_COLORS } from '../constants/themeColors';
 import { Z_INDEX } from '../constants/zIndex';
 import { useUI } from '../context/UIContext';
@@ -32,7 +33,16 @@ interface SettingsPanelProps {
   onSoundMuteChange: (muted: boolean) => void;
   onOpenSavePicker: () => void;
   onResetGame: () => void;
+  devFeatureFlags?: FeatureFlagState;
+  onDevFeatureFlagToggle?: (flag: FeatureFlag, enabled: boolean) => void;
 }
+
+const formatFlagLabel = (flag: FeatureFlag): string =>
+  flag
+    .toLowerCase()
+    .split('_')
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   open,
@@ -48,6 +58,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   onSoundMuteChange,
   onOpenSavePicker,
   onResetGame,
+  devFeatureFlags,
+  onDevFeatureFlagToggle,
 }) => {
   const { t, locale, setLocale } = useUI();
   const settingsTranslateX = useSharedValue(400);
@@ -460,6 +472,45 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 })}
               </View>
             </View>
+
+            {__DEV__ && devFeatureFlags && onDevFeatureFlagToggle && (
+              <View style={{ marginBottom: 28 }}>
+                <Text style={styles.sectionTitle}>Feature Flags (Dev)</Text>
+                {(Object.entries(devFeatureFlags) as Array<[FeatureFlag, boolean]>).map(([flag, enabled]) => (
+                  <View
+                    key={flag}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      paddingVertical: 12,
+                      paddingHorizontal: 14,
+                      borderRadius: 12,
+                      backgroundColor: theme.surfaceBase,
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      marginBottom: 10,
+                    }}
+                  >
+                    <View style={{ flex: 1, paddingRight: 12 }}>
+                      <Text style={{ color: theme.textPrimary, fontSize: 13, fontWeight: '700' }}>
+                        {formatFlagLabel(flag)}
+                      </Text>
+                      <Text style={{ color: theme.textSecondary, fontSize: 11, marginTop: 2 }}>
+                        {flag}
+                      </Text>
+                    </View>
+                    <Switch
+                      value={enabled}
+                      onValueChange={(nextValue) => onDevFeatureFlagToggle(flag, nextValue)}
+                      trackColor={{ false: theme.surfaceOverlay, true: theme.accentEvent }}
+                      thumbColor={theme.surfaceRaised}
+                      accessibilityLabel={`${flag} flag`}
+                    />
+                  </View>
+                ))}
+              </View>
+            )}
 
             <View style={{ marginBottom: 28 }}>
               <Text style={styles.sectionTitle}>{t('settings.saves', undefined, 'Kayitlar')}</Text>

@@ -1,4 +1,5 @@
 import { FamilyWealth, PersonalityEffect, PersonalityMomentumSignal, Skills, Stats } from '../types';
+import { tRuntime } from '../i18n/strings';
 
 export type ExamGameType = 'MATH' | 'TURKISH' | 'HISTORY' | 'SCIENCE' | 'GEOGRAPHY' | 'ENGLISH' | 'ART' | 'MUSIC';
 
@@ -775,3 +776,35 @@ export const ACTION_CATEGORIES: ActionCategory[] = [
     ],
   },
 ];
+
+export const getActionCategoryTitle = (categoryId: string, fallback?: string): string => {
+  return tRuntime(`actions.categories.${categoryId}`, undefined, fallback ?? categoryId);
+};
+
+export const getSubActionText = (actionId: string, fallback?: string): string => {
+  return tRuntime(`actions.${actionId}.text`, undefined, fallback ?? actionId);
+};
+
+export const getSubActionFeedback = (actionId: string, fallback?: string): string => {
+  return tRuntime(`actions.${actionId}.feedback`, undefined, fallback ?? '');
+};
+
+const localizeSubAction = (action: SubAction): SubAction => {
+  return {
+    ...action,
+    text: getSubActionText(action.id, action.text),
+    feedback: getSubActionFeedback(action.id, action.feedback),
+  };
+};
+
+export const localizeActionCategory = (category: ActionCategory): ActionCategory => {
+  return {
+    ...category,
+    title: getActionCategoryTitle(category.id, category.title),
+    subActions: category.subActions.map(localizeSubAction),
+  };
+};
+
+export const getLocalizedActionCategories = (): ActionCategory[] => {
+  return ACTION_CATEGORIES.map(localizeActionCategory);
+};

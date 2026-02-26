@@ -5,12 +5,12 @@ import { detectLegacySave, migrateLegacySave, migrateToVersion } from '../../src
 import { selectEventWithAdaptivePacing } from '../../src/utils/eventSelection';
 import { TurnMediator } from '../../src/systems/TurnMediator';
 import { getInitialGameState, getInitialStats } from '../../src/utils/gameUtils';
+import type { SaveSlotData } from '../../src/save/SaveSlot';
 import type {
   Choice,
   EventContext,
   GameEvent,
   GameState,
-  SaveSlotData,
   Stats,
 } from '../../src/types';
 

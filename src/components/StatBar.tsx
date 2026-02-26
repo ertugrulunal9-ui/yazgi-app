@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { StatKey } from '../types';
+import { tRuntime } from '../i18n/strings';
+import { useRuntimeLocale } from '../i18n/useRuntimeLocale';
 
 interface StatBarProps {
   label: string;
@@ -11,6 +13,8 @@ interface StatBarProps {
 }
 
 const StatBar = React.memo<StatBarProps>(({ label, value, statKey, cap = 100, theme }) => {
+  useRuntimeLocale();
+
   const isMoney = statKey === 'money';
   const isCapped = !isMoney && value >= cap;
 
@@ -108,7 +112,7 @@ const StatBar = React.memo<StatBarProps>(({ label, value, statKey, cap = 100, th
       </View>
       {isCapped && !isMoney && (
         <Text style={styles.cappedText}>
-          * Sınıf düzeyinin üzerindesin! Gelişim yavaşladı.
+          {tRuntime('statBar.cappedHint')}
         </Text>
       )}
     </View>

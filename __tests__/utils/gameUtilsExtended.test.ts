@@ -17,6 +17,7 @@ import {
   getRandomInt,
   buildSocialSummary,
 } from '../../src/utils/gameUtils';
+import { setRuntimeLocale } from '../../src/i18n/strings';
 import { Stats, Family, GameState, NPC } from '../../src/types';
 
 describe('gameUtils - Extended Coverage', () => {
@@ -852,12 +853,34 @@ describe('gameUtils - Extended Coverage', () => {
       });
 
       it('should use Turkish names', () => {
-        const npc = createRandomNPC();
+        setRuntimeLocale('tr');
+        const npc = createRandomNPC(8, 2, { deterministicSeed: 11 });
         // Just verify it's a valid non-empty string (name lists are extensive)
         expect(typeof npc.name).toBe('string');
         expect(npc.name.length).toBeGreaterThan(0);
         // Verify it's a Turkish-style name (contains only letters, possibly with Turkish chars)
         expect(npc.name).toMatch(/^[\p{L}\s]+$/u);
+      });
+
+      it('should use English names when runtime locale is en', () => {
+        setRuntimeLocale('en');
+        const npc = createRandomNPC(8, 2, { deterministicSeed: 11 });
+        expect(typeof npc.name).toBe('string');
+        expect(npc.name.length).toBeGreaterThan(0);
+        expect(npc.name).toMatch(/^[A-Za-z]+$/);
+        setRuntimeLocale('tr');
+      });
+
+      it('should generate deterministic non-id fields when seed is provided', () => {
+        const npcA = createRandomNPC(12, 5, { locale: 'en', deterministicSeed: 42 });
+        const npcB = createRandomNPC(12, 5, { locale: 'en', deterministicSeed: 42 });
+
+        expect(npcA.name).toBe(npcB.name);
+        expect(npcA.gender).toBe(npcB.gender);
+        expect(npcA.age).toBe(npcB.age);
+        expect(npcA.relationship).toBe(npcB.relationship);
+        expect(npcA.personality).toBe(npcB.personality);
+        expect(npcA.traits).toEqual(npcB.traits);
       });
     });
 

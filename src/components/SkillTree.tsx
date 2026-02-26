@@ -12,6 +12,7 @@ import { getThemeTokens, getDensityMetrics } from '../utils/themeUtils';
 import { MilestoneDetailModal } from './MilestoneDetailModal';
 import { selectionHaptic, milestoneHaptic } from '../animations/HapticFeedback';
 import { tRuntime } from '../i18n/strings';
+import { useRuntimeLocale } from '../i18n/useRuntimeLocale';
 
 interface SkillTreeProps {
   skills: Skills;
@@ -241,6 +242,8 @@ export const SkillTree = React.memo<SkillTreeProps>(({
   theme: themeOverride,
   metrics: metricsOverride,
 }) => {
+  useRuntimeLocale();
+
   const theme = themeOverride || getThemeTokens('dark');
   const metrics = metricsOverride || getDensityMetrics('standard');
 

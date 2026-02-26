@@ -1,6 +1,8 @@
 import React, { useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, ListRenderItemInfo } from 'react-native';
 import { LogEntry } from '../types';
+import { tRuntime } from '../i18n/strings';
+import { useRuntimeLocale } from '../i18n/useRuntimeLocale';
 
 interface EventLogProps {
   logs: LogEntry[];
@@ -41,6 +43,8 @@ const logItemStyles = StyleSheet.create({
 });
 
 export const EventLog = React.memo<EventLogProps>(({ logs, theme }) => {
+  useRuntimeLocale();
+
   const getLogColor = useCallback((type: string): string => {
     switch (type) {
       case 'positive': return theme.accentGrade;
@@ -102,14 +106,14 @@ export const EventLog = React.memo<EventLogProps>(({ logs, theme }) => {
       <View style={styles.header}>
         <Text style={styles.headerIcon}>📜</Text>
         <Text style={styles.headerTitle}>
-          Hayat Günlüğü
+          {tRuntime('eventLog.title')}
         </Text>
       </View>
 
       {(!logs || logs.length === 0) ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
-            ... Yeni hayat bekleniyor ...
+            {tRuntime('eventLog.empty')}
           </Text>
         </View>
       ) : (

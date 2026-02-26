@@ -193,14 +193,45 @@ class AnalyticsService {
       return undefined;
     }
     const sanitized: Record<string, unknown> = {};
+    const MAX_STRING_LENGTH = 100;
+
     for (const key in params) {
       if (Object.prototype.hasOwnProperty.call(params, key)) {
         const value = params[key];
-        // Truncate long strings to avoid oversized payloads
-        if (typeof value === 'string' && value.length > 100) {
-          sanitized[key] = `${value.substring(0, 97)}...`;
-        } else if (value !== undefined && value !== null) {
-          sanitized[key] = value;
+        if (value === undefined || value === null) {
+          continue;
+        }
+
+        if (typeof value === 'boolean') {
+          // GA4 boolean params should be represented as numeric values.
+          sanitized[key] = value ? 1 : 0;
+          continue;
+        }
+
+        if (typeof value === 'number') {
+          if (Number.isFinite(value)) {
+            sanitized[key] = value;
+          }
+          continue;
+        }
+
+        if (typeof value === 'string') {
+          sanitized[key] = value.length > MAX_STRING_LENGTH
+            ? `${value.substring(0, MAX_STRING_LENGTH - 3)}...`
+            : value;
+          continue;
+        }
+
+        if (Array.isArray(value)) {
+          const serialized = value
+            .map((item) => (typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean' ? String(item) : ''))
+            .filter(Boolean)
+            .join(',');
+
+          if (!serialized) continue;
+          sanitized[key] = serialized.length > MAX_STRING_LENGTH
+            ? `${serialized.substring(0, MAX_STRING_LENGTH - 3)}...`
+            : serialized;
         }
       }
     }

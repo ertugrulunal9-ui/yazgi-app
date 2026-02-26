@@ -197,10 +197,7 @@ describe('TurnMediator', () => {
   });
 
   it('shows momentum flavor feedback when streak reaches 10+', () => {
-    let gameState = {
-      ...createBaseGameState(),
-      fate: undefined,
-    };
+    let gameState: GameState = createBaseGameState();
     let stats = createBaseStats();
     const choice: Choice = {
       id: 'ch_helpful_chain',

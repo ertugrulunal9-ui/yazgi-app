@@ -20,7 +20,7 @@ import {
   resolveActionEffectForFamily,
 } from '../data/actions';
 import { getEffectiveOwnedItems, getItem } from '../data/items';
-import { FamilyWealth, Skills } from '../types';
+import { ActionHistoryItem, FamilyWealth, Skills } from '../types';
 import { applySkillsToHubAction } from '../utils/gameUtils';
 
 interface ActionBottomSheetProps {
@@ -33,6 +33,7 @@ interface ActionBottomSheetProps {
   currentEnergy: number;
   currentMoney: number;
   skills: Skills;
+  actionHistory: ActionHistoryItem[];
   inventory: string[];
   familyWealth?: FamilyWealth | null;
 }
@@ -84,6 +85,7 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
   currentEnergy,
   currentMoney,
   skills,
+  actionHistory,
   inventory,
   familyWealth,
 }) => {
@@ -102,7 +104,8 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
       baseEffect || {},
       action.energyCost,
       action.gradeUpdates as any,
-      skills
+      skills,
+      actionHistory
     );
     const effectiveEnergyCost = adjusted.energyCost;
     const effectiveMinAge = getActionEffectiveMinAge(action, ownedItems);
@@ -136,7 +139,7 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
       effectiveEnergyCost,
       effectiveMinAge,
     };
-  }, [currentAge, currentEnergy, currentMoney, familyWealth, inventory, skills]);
+  }, [actionHistory, currentAge, currentEnergy, currentMoney, familyWealth, inventory, skills]);
 
   const getActionAccessibilityHint = useCallback((
     action: SubAction,

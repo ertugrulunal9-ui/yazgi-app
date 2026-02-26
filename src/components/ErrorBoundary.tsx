@@ -2,6 +2,7 @@ import React, { ReactNode, Component, ErrorInfo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { crashReportingService } from '../services/crashReporting';
 import { devLog } from '../utils/devLogger';
+import { tRuntime } from '../i18n/strings';
 
 interface Props {
   children: ReactNode;
@@ -138,9 +139,9 @@ export class ErrorBoundary extends Component<Props, State> {
         <View style={styles.container}>
           <ScrollView>
             <View style={styles.errorContainer}>
-              <Text style={styles.title}>🔴 Bir şeyler yanlış gitti</Text>
+              <Text style={styles.title}>{tRuntime('errorBoundary.title')}</Text>
               <Text style={styles.subtitle}>
-                Uygulamada beklenmedik bir hata meydana geldi. Lütfen uygulamayı yeniden başlatın.
+                {tRuntime('errorBoundary.subtitle')}
               </Text>
 
               {this.state.error && (
@@ -161,7 +162,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 <View style={styles.devInfo}>
                   <Text style={styles.devLabel}>👨‍💻 DEV MODE</Text>
                   <Text style={styles.devText}>
-                    Hata: {this.state.error.message}
+                    {tRuntime('errorBoundary.errorLabel', { message: this.state.error.message })}
                   </Text>
                   {this.state.error.stack && (
                     <Text style={[styles.devText, { marginTop: 8 }]}>
@@ -178,7 +179,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 onPress={this.handleRestart}
               >
                 <Text style={styles.restartButtonText}>
-                  🔄 Yeniden Başlat
+                  {tRuntime('errorBoundary.restart')}
                 </Text>
               </TouchableOpacity>
 
@@ -187,7 +188,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   style={styles.copyButton}
                   onPress={this.handleCopyError}
                 >
-                  <Text style={styles.copyButtonText}>📋 Kopyala</Text>
+                  <Text style={styles.copyButtonText}>{tRuntime('errorBoundary.copy')}</Text>
                 </TouchableOpacity>
               )}
             </View>

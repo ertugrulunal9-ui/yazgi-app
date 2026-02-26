@@ -1,6 +1,7 @@
 import { EventContext, GameEvent, PersonalityState, PersonalityTendency } from '../types';
 import { HIGH_MOMENTUM_THRESHOLD, normalizePersonalityState } from '../systems/PersonalityMomentumEngine';
 import { isEventEligible } from '../utils/eventSelection';
+import { withEventLocalizationKeysForAll } from '../i18n/events/keyMapper';
 
 export const PERSONALITY_GATE_THRESHOLD = HIGH_MOMENTUM_THRESHOLD;
 
@@ -155,6 +156,12 @@ const MOMENTUM_EVENTS: Record<PersonalityTendency, GameEvent[]> = {
   ],
 };
 
+const LOCALIZED_MOMENTUM_EVENTS: Record<PersonalityTendency, GameEvent[]> = {
+  HELPFUL: withEventLocalizationKeysForAll(MOMENTUM_EVENTS.HELPFUL),
+  PRAGMATIC: withEventLocalizationKeysForAll(MOMENTUM_EVENTS.PRAGMATIC),
+  AGGRESSIVE: withEventLocalizationKeysForAll(MOMENTUM_EVENTS.AGGRESSIVE),
+};
+
 interface PersonalityGateInput {
   personalityState: Partial<PersonalityState> | undefined;
   context: EventContext;
@@ -217,7 +224,7 @@ export const selectMomentumGateEvent = ({
     const entry = normalized[tendency];
     const tendencyWeight = Math.max(1, Math.round((entry.multiplier - 1) * 100) + entry.streak);
 
-    MOMENTUM_EVENTS[tendency].forEach(event => {
+    LOCALIZED_MOMENTUM_EVENTS[tendency].forEach(event => {
       if (!isEventEligible(event, context, recentEventIds, allSeenEvents)) return;
       candidates.push({
         event,
@@ -229,4 +236,4 @@ export const selectMomentumGateEvent = ({
   return pickWeightedEvent(candidates, randomFn);
 };
 
-export const MOMENTUM_EVENT_POOL = MOMENTUM_EVENTS;
+export const MOMENTUM_EVENT_POOL = LOCALIZED_MOMENTUM_EVENTS;

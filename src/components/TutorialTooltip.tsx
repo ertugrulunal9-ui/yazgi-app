@@ -8,6 +8,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { tRuntime } from '../i18n/strings';
 
 interface TutorialTooltipProps {
   visible: boolean;
@@ -149,17 +150,17 @@ export const TutorialTooltip: React.FC<TutorialTooltipProps> = ({
         <View style={styles.footer}>
           {onSkip ? (
             <TouchableOpacity onPress={onSkip} style={styles.skipButton}>
-              <Text style={styles.skipButtonText}>Tamamını Atla</Text>
+              <Text style={styles.skipButtonText}>{tRuntime('tutorial.skipAll')}</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity onPress={onDismiss} style={styles.skipButton}>
-              <Text style={styles.skipButtonText}>Kapat</Text>
+              <Text style={styles.skipButtonText}>{tRuntime('tutorial.close')}</Text>
             </TouchableOpacity>
           )}
 
           {onNext && (
             <TouchableOpacity onPress={onNext} style={styles.nextButton}>
-              <Text style={styles.nextButtonText}>Anladım</Text>
+              <Text style={styles.nextButtonText}>{tRuntime('tutorial.gotIt')}</Text>
               <Feather name="chevron-right" size={14} color="#0b1220" />
             </TouchableOpacity>
           )}

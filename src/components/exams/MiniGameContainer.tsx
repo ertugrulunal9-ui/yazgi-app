@@ -11,6 +11,7 @@ import Animated, {
 
 
 import { Haptics } from '../../utils/haptics';
+import { tRuntime } from '../../i18n/strings';
 
 
 // Types
@@ -182,17 +183,7 @@ const MiniGameContainer: React.FC<MiniGameContainerProps> = ({
     }));
 
     const getExamTitle = () => {
-        switch (type) {
-            case 'MATH': return '🔢 Matematik Sınavı';
-            case 'TURKISH': return '📝 Türkçe Sınavı';
-            case 'HISTORY': return '📜 Tarih Sınavı';
-            case 'SCIENCE': return '🔬 Fen Bilgisi Sınavı';
-            case 'GEOGRAPHY': return '🗺️ Coğrafya Sınavı';
-            case 'ENGLISH': return '🌍 Yabancı Dil Sınavı';
-            case 'ART': return '🎨 Görsel Sanatlar Sınavı';
-            case 'MUSIC': return '🎵 Müzik Sınavı';
-            default: return '📚 Sınav';
-        }
+        return tRuntime(`exams.types.${type}`, undefined, tRuntime('exams.types.DEFAULT'));
     };
 
     const statusBarHeight = Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0;
@@ -205,17 +196,17 @@ const MiniGameContainer: React.FC<MiniGameContainerProps> = ({
                     <Text style={styles.title}>{getExamTitle()}</Text>
                     <View style={styles.statsRow}>
                         <View style={styles.statItem}>
-                            <Text style={styles.statLabel}>Süre</Text>
+                            <Text style={styles.statLabel}>{tRuntime('exams.header.time')}</Text>
                             <Text style={[styles.statValue, gameState.timeRemaining <= 10 && styles.urgentTime]}>
                                 {gameState.timeRemaining}s
                             </Text>
                         </View>
                         <View style={styles.statItem}>
-                            <Text style={styles.statLabel}>Skor</Text>
+                            <Text style={styles.statLabel}>{tRuntime('exams.header.score')}</Text>
                             <Text style={styles.statValue}>{gameState.score}</Text>
                         </View>
                         <View style={styles.statItem}>
-                            <Text style={styles.statLabel}>Doğru</Text>
+                            <Text style={styles.statLabel}>{tRuntime('exams.header.correct')}</Text>
                             <Text style={styles.statValue}>{gameState.correctAnswers}/{gameState.totalQuestions}</Text>
                         </View>
                     </View>
@@ -225,20 +216,20 @@ const MiniGameContainer: React.FC<MiniGameContainerProps> = ({
                 {gameState.phase === 'INTRO' && (
                     <View style={styles.introContainer}>
                         <Text style={styles.introEmoji}>📚</Text>
-                        <Text style={styles.introTitle}>Sınava Hazır mısın?</Text>
+                        <Text style={styles.introTitle}>{tRuntime('exams.intro.title')}</Text>
                         <Text style={styles.introDesc}>
-                            {gameState.totalQuestions} soru • {gameState.timeRemaining} saniye
+                            {tRuntime('exams.intro.desc', { count: gameState.totalQuestions, seconds: gameState.timeRemaining })}
                         </Text>
                         <Text style={styles.difficultyBadge}>
-                            {difficulty === 'EASY' ? '⭐ Kolay' : difficulty === 'MEDIUM' ? '⭐⭐ Orta' : '⭐⭐⭐ Zor'}
+                            {difficulty === 'EASY' ? tRuntime('exams.intro.difficultyEasy') : difficulty === 'MEDIUM' ? tRuntime('exams.intro.difficultyMedium') : tRuntime('exams.intro.difficultyHard')}
                         </Text>
 
                         <TouchableOpacity style={styles.startButton} onPress={handleStart}>
-                            <Text style={styles.startButtonText}>Başla! 🚀</Text>
+                            <Text style={styles.startButtonText}>{tRuntime('exams.intro.startBtn')}</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
-                            <Text style={styles.cancelButtonText}>Vazgeç</Text>
+                            <Text style={styles.cancelButtonText}>{tRuntime('exams.intro.cancelBtn')}</Text>
                         </TouchableOpacity>
                     </View>
                 )}
@@ -271,32 +262,32 @@ const MiniGameContainer: React.FC<MiniGameContainerProps> = ({
                              examResult.correctAnswers >= examResult.totalQuestions * 0.4 ? '😊' : '😔'}
                         </Text>
                         <Text style={styles.finishedTitle}>
-                            {examResult.correctAnswers >= examResult.totalQuestions * 0.8 ? 'Harika!' :
-                             examResult.correctAnswers >= examResult.totalQuestions * 0.6 ? 'İyi İş!' :
-                             examResult.correctAnswers >= examResult.totalQuestions * 0.4 ? 'Fena Değil' : 'Daha Çok Çalış'}
+                            {examResult.correctAnswers >= examResult.totalQuestions * 0.8 ? tRuntime('exams.results.excellent') :
+                             examResult.correctAnswers >= examResult.totalQuestions * 0.6 ? tRuntime('exams.results.good') :
+                             examResult.correctAnswers >= examResult.totalQuestions * 0.4 ? tRuntime('exams.results.okay') : tRuntime('exams.results.poor')}
                         </Text>
 
                         <View style={styles.resultStats}>
                             <View style={styles.resultRow}>
-                                <Text style={styles.resultLabel}>Doğru</Text>
+                                <Text style={styles.resultLabel}>{tRuntime('exams.results.correctLabel')}</Text>
                                 <Text style={[styles.resultValue, { color: '#10b981' }]}>
                                     {examResult.correctAnswers}
                                 </Text>
                             </View>
                             <View style={styles.resultRow}>
-                                <Text style={styles.resultLabel}>Yanlış</Text>
+                                <Text style={styles.resultLabel}>{tRuntime('exams.results.wrongLabel')}</Text>
                                 <Text style={[styles.resultValue, { color: '#ef4444' }]}>
                                     {examResult.wrongAnswers}
                                 </Text>
                             </View>
                             <View style={styles.resultRow}>
-                                <Text style={styles.resultLabel}>Başarı</Text>
+                                <Text style={styles.resultLabel}>{tRuntime('exams.results.accuracyLabel')}</Text>
                                 <Text style={styles.resultValue}>
                                     %{Math.round((examResult.correctAnswers / examResult.totalQuestions) * 100)}
                                 </Text>
                             </View>
                             <View style={styles.resultRow}>
-                                <Text style={styles.resultLabel}>Not Bonusu</Text>
+                                <Text style={styles.resultLabel}>{tRuntime('exams.results.gradeBonusLabel')}</Text>
                                 <Text style={[styles.resultValue, { color: '#3b82f6' }]}>
                                     +{examResult.gradeBonus}
                                 </Text>
@@ -304,7 +295,7 @@ const MiniGameContainer: React.FC<MiniGameContainerProps> = ({
                         </View>
 
                         <TouchableOpacity style={styles.finishButton} onPress={handleFinish}>
-                            <Text style={styles.finishButtonText}>Devam Et ✨</Text>
+                            <Text style={styles.finishButtonText}>{tRuntime('exams.results.continueBtn')}</Text>
                         </TouchableOpacity>
                     </View>
                 )}
@@ -312,7 +303,7 @@ const MiniGameContainer: React.FC<MiniGameContainerProps> = ({
                 {/* Streak indicator */}
                 {gameState.streak >= 3 && gameState.phase === 'PLAYING' && (
                     <View style={styles.streakBadge}>
-                        <Text style={styles.streakText}>🔥 {gameState.streak} Seri!</Text>
+                        <Text style={styles.streakText}>{tRuntime('exams.streak', { count: gameState.streak })}</Text>
                     </View>
                 )}
             </Animated.View>

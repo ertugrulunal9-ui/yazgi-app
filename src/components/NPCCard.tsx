@@ -1,6 +1,8 @@
 import React, { useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { NPC } from '../types';
+import { tRuntime } from '../i18n/strings';
+import { useRuntimeLocale } from '../i18n/useRuntimeLocale';
 
 // =================================================================
 // NPC KART BİLEŞENİ (OPTIMIZED)
@@ -45,16 +47,9 @@ const ROLE_COLOR: Record<string, string> = {
     ENEMY: '#dc2626',
 };
 
-// Rol Türkçe isimleri
-const ROLE_NAME: Record<string, string> = {
-    ACQUAINTANCE: 'Tanıdık',
-    FRIEND: 'Arkadaş',
-    BEST_FRIEND: 'En İyi Arkadaş',
-    CRUSH: 'Hoşlandığın',
-    PARTNER: 'Sevgili',
-    RIVAL: 'Rakip',
-    ENEMY: 'Düşman',
-};
+// Rol isimleri - i18n
+const getRoleName = (role: string): string =>
+    tRuntime(`social.roles.${role}`, undefined, role);
 
 // Kişilik emojileri
 const PERSONALITY_EMOJI: Record<string, string> = {
@@ -77,9 +72,11 @@ const getRelationshipColor = (value: number): string => {
 };
 
 const NPCCardComponent: React.FC<NPCCardProps> = ({ npc, onPress, compact = false, theme }) => {
+    useRuntimeLocale();
+
     const roleEmoji = ROLE_EMOJI[npc.role] || '👤';
     const roleColor = ROLE_COLOR[npc.role] || '#9ca3af';
-    const roleName = ROLE_NAME[npc.role] || 'Tanıdık';
+    const roleName = getRoleName(npc.role);
     const personalityEmoji = PERSONALITY_EMOJI[npc.personality] || '😊';
 
     // Stable callback - her render'da yeni fonksiyon oluşturmasın
@@ -123,7 +120,7 @@ const NPCCardComponent: React.FC<NPCCardProps> = ({ npc, onPress, compact = fals
             {/* İlişki Barı */}
             <View style={styles.relationContainer}>
                 <View style={styles.relationHeader}>
-                    <Text style={[styles.relationLabel, { color: theme.textSecondary }]}>İlişki</Text>
+                    <Text style={[styles.relationLabel, { color: theme.textSecondary }]}>{tRuntime('social.npcCard.relationship')}</Text>
                     <Text style={[styles.relationValue, { color: getRelationshipColor(npc.relationship) }]}>
                         {npc.relationship > 0 ? '+' : ''}{npc.relationship}
                     </Text>
@@ -145,7 +142,7 @@ const NPCCardComponent: React.FC<NPCCardProps> = ({ npc, onPress, compact = fals
             {/* Romantik İlişki (varsa) */}
             {npc.romance > 0 && (
                 <View style={styles.romanceContainer}>
-                    <Text style={[styles.romanceLabel, { color: theme.textSecondary }]}>💕 Romantik</Text>
+                    <Text style={[styles.romanceLabel, { color: theme.textSecondary }]}>{tRuntime('social.npcCard.romantic')}</Text>
                     <View style={[styles.romanceBarBg, { backgroundColor: theme.border }]}>
                         <View
                             style={[
@@ -160,7 +157,7 @@ const NPCCardComponent: React.FC<NPCCardProps> = ({ npc, onPress, compact = fals
             {/* Alt Bilgiler */}
             <View style={styles.footer}>
                 <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-                    {npc.gender === 'MALE' ? '👦' : '👧'} {npc.age} yaş
+                    {npc.gender === 'MALE' ? '👦' : '👧'} {tRuntime('social.npcCard.ageLabel', { age: npc.age })}
                 </Text>
                 {npc.traits && npc.traits.length > 0 && (
                     <Text style={[styles.footerText, { color: theme.textSecondary }]}>

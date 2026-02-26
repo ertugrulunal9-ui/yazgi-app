@@ -1,7 +1,8 @@
 import { Achievement, UnlockedAchievement, Stats, GameState, Skills, SchoolGrades, AchievementProgress } from '../types';
-import { ACHIEVEMENTS } from './achievementDefinitions';
+import { ACHIEVEMENTS, getAchievementName } from './achievementDefinitions';
 import { analyticsService } from '../services/analytics';
 import { devLog } from '../utils/devLogger';
+import { getRuntimeLocale, tRuntime } from '../i18n/strings';
 
 const STORAGE_KEY = '@yazgi/achievements/v1';
 const hasAsyncStorage = typeof localStorage === 'undefined';
@@ -84,22 +85,23 @@ export const unlockAchievement = async (
 
   const newAchievements = [...unlockedAchievements, unlocked];
   await saveAchievements(newAchievements);
+  const localizedAchievementName = getAchievementName(achievement.id, achievement.name);
 
   // Analytics
   analyticsService.logCustomEvent('achievement_unlocked', {
     achievement_id: achievement.id,
-    achievement_name: achievement.name,
+    achievement_name: localizedAchievementName,
     rarity: achievement.rarity,
     category: achievement.category,
     age: gameState.age,
   });
 
-  devLog.log(`🏆 Achievement Unlocked: ${achievement.name}`);
+  devLog.log(`🏆 Achievement Unlocked: ${localizedAchievementName}`);
 
   // Floating Text Feedback
   if (showFloatingText) {
     showFloatingText(
-      `🏆 ${achievement.name}`,
+      `🏆 ${localizedAchievementName}`,
       100 + Math.random() * 100, // Center-ish
       100, // Top area
       '#fbbf24', // Gold
@@ -240,8 +242,22 @@ export const getAchievementStats = (unlockedAchievements: UnlockedAchievement[])
 
 // Share achievement (social media)
 export const shareAchievement = (achievement: Achievement): string => {
-  const text = `🏆 Yazgı'da "${achievement.name}" başarısını açtım! ${achievement.icon}`;
-  const hashtags = ['Yazgı', 'Achievement', 'LifeSimulator'];
+  const localizedAchievementName = getAchievementName(achievement.id, achievement.name);
+  const locale = getRuntimeLocale();
+  const text = locale === 'en'
+    ? tRuntime(
+      'social.share.achievementUnlocked',
+      { name: localizedAchievementName, icon: achievement.icon },
+      `🏆 I unlocked "${localizedAchievementName}" in Yazgi! ${achievement.icon}`
+    )
+    : tRuntime(
+      'social.share.achievementUnlocked',
+      { name: localizedAchievementName, icon: achievement.icon },
+      `🏆 Yazgi'da "${localizedAchievementName}" basarisini actim! ${achievement.icon}`
+    );
+  const hashtags = locale === 'en'
+    ? ['Yazgi', 'Achievement', 'LifeSimulator']
+    : ['Yazgi', 'Basari', 'HayatSimulatoru'];
 
   // Twitter share URL
   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&hashtags=${hashtags.join(',')}`;

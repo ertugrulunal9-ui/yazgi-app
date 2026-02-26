@@ -1,6 +1,6 @@
 import { GameState, Stats } from '../types';
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 export const SAVE_SCHEMA_VERSION = 2;
 export const SAVE_EXPORT_VERSION = 2;
 export const MAX_TOTAL_SLOTS = 6;
@@ -104,8 +104,8 @@ export const createEmptySlot = (slotId: string, isPremium: boolean = false): Sav
   isPremium,
 });
 
-export const getSlotKey = (slotId: string): string => `@yazgi_save/slot_${slotId}/v${SAVE_VERSION}`;
-export const getMetadataKey = (slotId: string): string => `@yazgi_save/meta_${slotId}/v${SAVE_VERSION}`;
+export const getSlotKey = (slotId: string, version: number = SAVE_VERSION): string => `@yazgi_save/slot_${slotId}/v${version}`;
+export const getMetadataKey = (slotId: string, version: number = SAVE_VERSION): string => `@yazgi_save/meta_${slotId}/v${version}`;
 export const getBackupKey = (slotId: string): string => `@yazgi_save/backup_${slotId}`;
 export const getManagerStateKey = (): string => `@yazgi_save/manager_state`;
 export const getLegacySaveKey = (): string => 'game_save';

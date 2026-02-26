@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { getTraitName } from '../data/traits';
 import { traitGainHaptic } from '../animations/HapticFeedback';
+import { tRuntime } from '../i18n/strings';
 
 interface ThemeTokens {
   textPrimary: string;
@@ -48,7 +49,7 @@ export const TraitProgressChip: React.FC<TraitProgressChipProps> = ({ traits, th
     >
       <Text style={[styles.icon, { color: theme.accentEvent }]}>✨</Text>
       <Text style={[styles.text, { color: theme.textPrimary }]}>
-        Özellik ilerledi: {label}
+        {tRuntime('traits.progressChip', { label })}
       </Text>
     </View>
   );

@@ -5,12 +5,13 @@ import { uiStrings } from './domains/ui';
 import { endingsStrings } from './domains/endings';
 import { onboardingDomainStrings } from './domains/onboarding';
 import { actionsStrings } from './domains/actions';
+import { achievementDataStrings } from './domains/achievementData';
 import { eventsDomainStrings } from './domains/events';
 import { traitsStrings } from './domains/traits';
 import { examsStrings } from './domains/exams';
 import { socialStrings } from './domains/social';
 import { characterStrings } from './domains/character';
-import type { DomainStrings, NestedRecord, Primitive } from './domains/types';
+import type { DomainStrings, NestedRecord, Primitive, PrimitiveArray } from './domains/types';
 
 export type { AppLocale };
 
@@ -20,6 +21,7 @@ const DOMAIN_BUNDLES: DomainStrings[] = [
   endingsStrings,
   onboardingDomainStrings,
   actionsStrings,
+  achievementDataStrings,
   eventsDomainStrings,
   traitsStrings,
   examsStrings,
@@ -84,12 +86,12 @@ export const DEFAULT_LOCALE: AppLocale = LEGACY_DEFAULT_LOCALE;
 
 export const strings: Record<AppLocale, NestedRecord> = composeStrings();
 
-const getByPath = (record: NestedRecord, path: string): Primitive | NestedRecord | undefined => {
+const getByPath = (record: NestedRecord, path: string): Primitive | PrimitiveArray | NestedRecord | undefined => {
   const parts = path.split('.');
-  let current: Primitive | NestedRecord | undefined = record;
+  let current: Primitive | PrimitiveArray | NestedRecord | undefined = record;
 
   for (const part of parts) {
-    if (!current || typeof current !== 'object' || !(part in current)) {
+    if (!current || typeof current !== 'object' || Array.isArray(current) || !(part in current)) {
       return undefined;
     }
     current = (current as NestedRecord)[part];
@@ -151,9 +153,32 @@ export const t = (
 
 let runtimeLocale: AppLocale = DEFAULT_LOCALE;
 
-export const setRuntimeLocale = (locale: AppLocale): void => {
-  runtimeLocale = locale;
+const runtimeLocaleListeners = new Set<() => void>();
+
+const notifyRuntimeLocaleListeners = (): void => {
+  runtimeLocaleListeners.forEach(listener => {
+    try {
+      listener();
+    } catch (error) {
+      console.error('[i18n] runtime locale listener failed:', error);
+    }
+  });
 };
+
+export const subscribeRuntimeLocale = (listener: () => void): (() => void) => {
+  runtimeLocaleListeners.add(listener);
+  return () => {
+    runtimeLocaleListeners.delete(listener);
+  };
+};
+
+export const setRuntimeLocale = (locale: AppLocale): void => {
+  if (runtimeLocale === locale) return;
+  runtimeLocale = locale;
+  notifyRuntimeLocaleListeners();
+};
+
+export const getRuntimeLocale = (): AppLocale => runtimeLocale;
 
 export const tRuntime = (
   key: string,

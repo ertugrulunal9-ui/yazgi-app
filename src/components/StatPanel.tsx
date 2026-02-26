@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { Stats, StatKey } from '../types';
 import { getThemeTokens, getDensityMetrics } from '../utils/themeUtils';
+import { tRuntime } from '../i18n/strings';
 
 interface StatPanelProps {
   stats: Stats;
@@ -24,7 +25,7 @@ export const StatPanel: React.FC<StatPanelProps> = ({ stats, theme, metrics, sta
 
   return (
     <View style={cardStyle}>
-      <Text style={{ color: theme.textPrimary, fontWeight: '700', marginBottom: 12 }}>İstatistikler</Text>
+      <Text style={{ color: theme.textPrimary, fontWeight: '700', marginBottom: 12 }}>{tRuntime('statPanel.title')}</Text>
       {statKeys.map(key => {
         const label = statLabels[key];
         const value = stats[key];

@@ -2,9 +2,10 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, StyleSheet, Platform, StatusBar } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ACHIEVEMENTS } from '../systems/achievementDefinitions';
+import { ACHIEVEMENTS, getAchievementDescription, getAchievementName } from '../systems/achievementDefinitions';
 import { AchievementCard } from './AchievementCard';
 import { AchievementRarity, AchievementCategory } from '../types';
+import { tRuntime } from '../i18n/strings';
 
 interface AchievementListProps {
   visible?: boolean;
@@ -24,14 +25,14 @@ interface AchievementListProps {
 
 type FilterType = 'ALL' | 'UNLOCKED' | 'LOCKED' | AchievementRarity | AchievementCategory;
 
-const FILTER_BUTTONS: { label: string; value: FilterType }[] = [
-  { label: 'Hepsi', value: 'ALL' },
-  { label: 'Açıldı', value: 'UNLOCKED' },
-  { label: 'Kilitli', value: 'LOCKED' },
-  { label: 'Yaygın', value: 'COMMON' },
-  { label: 'Nadir', value: 'RARE' },
-  { label: 'Epik', value: 'EPIC' },
-  { label: 'Efsane', value: 'LEGENDARY' },
+const FILTER_KEYS: { key: string; value: FilterType }[] = [
+  { key: 'achievements.filterAll', value: 'ALL' },
+  { key: 'achievements.filterUnlocked', value: 'UNLOCKED' },
+  { key: 'achievements.filterLocked', value: 'LOCKED' },
+  { key: 'achievements.rarityCommon', value: 'COMMON' },
+  { key: 'achievements.rarityRare', value: 'RARE' },
+  { key: 'achievements.rarityEpic', value: 'EPIC' },
+  { key: 'achievements.rarityLegendary', value: 'LEGENDARY' },
 ];
 
 const RARITY_COUNTS = {
@@ -74,12 +75,14 @@ export const AchievementList: React.FC<AchievementListProps> = ({
   const filteredAchievements = useMemo(() => {
     return ACHIEVEMENTS.filter(achievement => {
       const isUnlocked = unlockedAchievementIds.includes(achievement.id);
+      const localizedName = getAchievementName(achievement.id, achievement.name);
+      const localizedDescription = getAchievementDescription(achievement.id, achievement.description);
 
       // Search query
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
-        const matchName = achievement.name.toLowerCase().includes(query);
-        const matchDesc = achievement.description.toLowerCase().includes(query);
+        const matchName = localizedName.toLowerCase().includes(query);
+        const matchDesc = localizedDescription.toLowerCase().includes(query);
         if (!matchName && !matchDesc) return false;
       }
 
@@ -120,16 +123,16 @@ export const AchievementList: React.FC<AchievementListProps> = ({
               <View style={styles.headerLeft}>
                 <Text style={styles.trophyIcon}>🏆</Text>
                 <View>
-                  <Text style={[styles.title, { color: theme.textPrimary }]}>Başarılar</Text>
+                  <Text style={[styles.title, { color: theme.textPrimary }]}>{tRuntime('achievements.title')}</Text>
                   <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-                    {stats.unlocked} / {stats.total} Açıldı ({stats.percentage}%)
+                    {tRuntime('achievements.subtitle', { unlocked: stats.unlocked, total: stats.total, percentage: stats.percentage })}
                   </Text>
                 </View>
               </View>
               <TouchableOpacity
                 onPress={onClose}
                 style={[styles.closeButton, { backgroundColor: theme.surfaceRaised }]}
-                accessibilityLabel="Başarıları kapat"
+                accessibilityLabel={tRuntime('achievements.closeAria')}
                 accessibilityRole="button"
               >
                 <Feather name="x" size={24} color={theme.textSecondary} />
@@ -151,38 +154,41 @@ export const AchievementList: React.FC<AchievementListProps> = ({
                 color: theme.textPrimary,
                 borderColor: theme.border
               }]}
-              placeholder="Başarı ara..."
+              placeholder={tRuntime('achievements.searchPlaceholder')}
               placeholderTextColor={theme.textSecondary}
               value={searchQuery}
               onChangeText={setSearchQuery}
-              accessibilityLabel="Başarı ara"
+              accessibilityLabel={tRuntime('achievements.searchAria')}
             />
 
             {/* Filter Buttons */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
               <View style={styles.filterButtons}>
-                {FILTER_BUTTONS.map(({ label, value }) => (
-                  <TouchableOpacity
-                    key={value}
-                    onPress={() => setFilter(value)}
-                    style={[
-                      styles.filterButton,
-                      filter === value
-                        ? styles.filterButtonActive
-                        : { backgroundColor: theme.surfaceRaised }
-                    ]}
-                    accessibilityLabel={`${label} filtresi`}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: filter === value }}
-                  >
-                    <Text style={[
-                      styles.filterButtonText,
-                      { color: filter === value ? '#fff' : theme.textSecondary }
-                    ]}>
-                      {label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                {FILTER_KEYS.map(({ key, value }) => {
+                  const label = tRuntime(key);
+                  return (
+                    <TouchableOpacity
+                      key={value}
+                      onPress={() => setFilter(value)}
+                      style={[
+                        styles.filterButton,
+                        filter === value
+                          ? styles.filterButtonActive
+                          : { backgroundColor: theme.surfaceRaised }
+                      ]}
+                      accessibilityLabel={tRuntime('achievements.filterAria', { label })}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: filter === value }}
+                    >
+                      <Text style={[
+                        styles.filterButtonText,
+                        { color: filter === value ? '#fff' : theme.textSecondary }
+                      ]}>
+                        {label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </ScrollView>
           </View>
@@ -193,7 +199,7 @@ export const AchievementList: React.FC<AchievementListProps> = ({
               <View style={styles.emptyState}>
                 <Feather name="lock" size={48} color={theme.textSecondary} style={{ opacity: 0.5 }} />
                 <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-                  Başarı bulunamadı
+                  {tRuntime('achievements.emptyState')}
                 </Text>
               </View>
             ) : (
@@ -215,19 +221,19 @@ export const AchievementList: React.FC<AchievementListProps> = ({
             <View style={styles.footerStats}>
               <View style={styles.footerStat}>
                 <Text style={[styles.footerStatNumber, { color: '#9ca3af' }]}>{RARITY_COUNTS.COMMON}</Text>
-                <Text style={[styles.footerStatLabel, { color: theme.textSecondary }]}>Yaygın</Text>
+                <Text style={[styles.footerStatLabel, { color: theme.textSecondary }]}>{tRuntime('achievements.rarityCommon')}</Text>
               </View>
               <View style={styles.footerStat}>
                 <Text style={[styles.footerStatNumber, { color: '#60a5fa' }]}>{RARITY_COUNTS.RARE}</Text>
-                <Text style={[styles.footerStatLabel, { color: theme.textSecondary }]}>Nadir</Text>
+                <Text style={[styles.footerStatLabel, { color: theme.textSecondary }]}>{tRuntime('achievements.rarityRare')}</Text>
               </View>
               <View style={styles.footerStat}>
                 <Text style={[styles.footerStatNumber, { color: '#c084fc' }]}>{RARITY_COUNTS.EPIC}</Text>
-                <Text style={[styles.footerStatLabel, { color: theme.textSecondary }]}>Epik</Text>
+                <Text style={[styles.footerStatLabel, { color: theme.textSecondary }]}>{tRuntime('achievements.rarityEpic')}</Text>
               </View>
               <View style={styles.footerStat}>
                 <Text style={[styles.footerStatNumber, { color: '#facc15' }]}>{RARITY_COUNTS.LEGENDARY}</Text>
-                <Text style={[styles.footerStatLabel, { color: theme.textSecondary }]}>Efsane</Text>
+                <Text style={[styles.footerStatLabel, { color: theme.textSecondary }]}>{tRuntime('achievements.rarityLegendary')}</Text>
               </View>
             </View>
           </View>

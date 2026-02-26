@@ -7,6 +7,7 @@ import { SaveSlotCard } from './SaveSlotCard';
 import SaveExportModal from './SaveExportModal';
 import SaveManager from '../save/SaveManager';
 import { GameState, Stats } from '../types';
+import { tRuntime } from '../i18n/strings';
 
 interface SaveSlotPickerProps {
   isOpen: boolean;
@@ -107,12 +108,12 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
 
   const handleDelete = async (slotId: string) => {
     Alert.alert(
-      'Kaydı Sil',
-      'Bu kayıt silinecek. Emin misin?',
+      tRuntime('save.deleteTitle'),
+      tRuntime('save.deleteConfirm'),
       [
-        { text: 'İptal', style: 'cancel' },
+        { text: tRuntime('save.cancelBtn'), style: 'cancel' },
         {
-          text: 'Sil',
+          text: tRuntime('save.deleteBtn'),
           style: 'destructive',
           onPress: async () => {
             setIsLoading(true);
@@ -152,15 +153,15 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Kayıt Slotları</Text>
+            <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>{tRuntime('save.slotsTitle')}</Text>
             <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
-              {SaveManager.getAvailableSlots()} slot kullanılabilir
+              {tRuntime('save.slotsAvailable', { count: SaveManager.getAvailableSlots() })}
             </Text>
           </View>
           <TouchableOpacity
             onPress={onClose}
             style={[styles.closeButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}
-            accessibilityLabel="Kapat"
+            accessibilityLabel={tRuntime('save.close')}
             accessibilityRole="button"
           >
             <Feather name="x" size={24} color={theme.textSecondary} />
@@ -177,11 +178,11 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
               { backgroundColor: theme.surfaceRaised, borderColor: theme.border },
               isLoading && styles.buttonDisabled,
             ]}
-            accessibilityLabel="Yenile"
+            accessibilityLabel={tRuntime('save.refresh')}
             accessibilityRole="button"
           >
             <Feather name="refresh-cw" size={16} color={theme.textPrimary} />
-            <Text style={[styles.refreshButtonText, { color: theme.textPrimary }]}>Yenile</Text>
+            <Text style={[styles.refreshButtonText, { color: theme.textPrimary }]}>{tRuntime('save.refresh')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -190,7 +191,7 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
           {isLoading && slots.length === 0 ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={theme.accentEvent} />
-              <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Yükleniyor...</Text>
+              <Text style={[styles.loadingText, { color: theme.textSecondary }]}>{tRuntime('save.loading')}</Text>
             </View>
           ) : (
             slots.map((metadata) => (
@@ -219,11 +220,11 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
               setShowExportModal(true);
             }}
             style={[styles.importButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}
-            accessibilityLabel="İçe aktar"
+            accessibilityLabel={tRuntime('save.importBtn')}
             accessibilityRole="button"
           >
             <Feather name="download" size={16} color={theme.textPrimary} />
-            <Text style={[styles.importButtonText, { color: theme.textPrimary }]}>İçe Aktar</Text>
+            <Text style={[styles.importButtonText, { color: theme.textPrimary }]}>{tRuntime('save.importBtn')}</Text>
           </TouchableOpacity>
         </View>
       </View>

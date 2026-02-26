@@ -10,6 +10,7 @@ import { AnimatedButton } from '../animations/ButtonAnimations';
 import { fateTokenHaptic } from '../animations/HapticFeedback';
 import { FateRollResult, FateOutcome, FateState, Stats } from '../types';
 import { previewFateOdds } from '../systems/FateEngine';
+import { tRuntime } from '../i18n/strings';
 
 interface FateTokenDisplayProps {
   tokens: number;
@@ -28,13 +29,18 @@ interface FateTokenDisplayProps {
   metrics: { pad: number; font: number };
 }
 
-const FATE_LABELS: Record<FateOutcome, { text: string; color: string; icon: string }> = {
-  BLESSED:   { text: 'Kutsanmis',  color: '#eab308', icon: 'sun' },
-  FORTUNATE: { text: 'Sansli',     color: '#22c55e', icon: 'trending-up' },
-  NEUTRAL:   { text: 'Notr',       color: '#94a3b8', icon: 'minus' },
-  UNLUCKY:   { text: 'Sanssiz',    color: '#f97316', icon: 'trending-down' },
-  CURSED:    { text: 'Lanetli',    color: '#ef4444', icon: 'cloud-lightning' },
+const FATE_META: Record<FateOutcome, { color: string; icon: string }> = {
+  BLESSED:   { color: '#eab308', icon: 'sun' },
+  FORTUNATE: { color: '#22c55e', icon: 'trending-up' },
+  NEUTRAL:   { color: '#94a3b8', icon: 'minus' },
+  UNLUCKY:   { color: '#f97316', icon: 'trending-down' },
+  CURSED:    { color: '#ef4444', icon: 'cloud-lightning' },
 };
+
+const getFateLabel = (outcome: FateOutcome) => ({
+  ...FATE_META[outcome],
+  text: tRuntime(`fate.label.${outcome}`, undefined, outcome),
+});
 
 export const hasNegativeOutcome = (changes: Partial<Stats> | undefined): boolean => {
   if (!changes) return false;
@@ -51,7 +57,7 @@ export const FateTokenDisplay: React.FC<FateTokenDisplayProps> = React.memo(({
   metrics,
 }) => {
   const [previewVisible, setPreviewVisible] = useState(false);
-  const fateLabel = fateRoll ? FATE_LABELS[fateRoll.outcome] : null;
+  const fateLabel = fateRoll ? getFateLabel(fateRoll.outcome) : null;
   const oddsPreview = useMemo(() => (
     previewFateOdds(fateState, { zodiacModifier: fateRoll?.zodiacModifier ?? 0 })
   ), [fateRoll?.zodiacModifier, fateState]);
@@ -74,7 +80,7 @@ export const FateTokenDisplay: React.FC<FateTokenDisplayProps> = React.memo(({
           <View style={styles.fateRow}>
             <Feather name={fateLabel.icon as any} size={14} color={fateLabel.color} />
             <Text style={[styles.fateText, { color: fateLabel.color }]}>
-              Kader: {fateLabel.text}
+              {tRuntime('fate.fatePrefix')} {fateLabel.text}
             </Text>
           </View>
         )}
@@ -94,12 +100,12 @@ export const FateTokenDisplay: React.FC<FateTokenDisplayProps> = React.memo(({
               animationType="pressScale"
               style={{ ...styles.rerollButton, borderColor: '#eab308' }}
               accessibilityRole="button"
-              accessibilityLabel="Kaderi yeniden dene"
-              accessibilityHint="1 kader jetonu harcamadan once olasilik onizlemesini acar"
+              accessibilityLabel={tRuntime('fate.rerollAria')}
+              accessibilityHint={tRuntime('fate.rerollHint')}
             >
               <Feather name="refresh-cw" size={14} color="#eab308" />
               <Text style={styles.rerollText}>
-                Kaderi Dene
+                {tRuntime('fate.rerollButton')}
               </Text>
             </AnimatedButton>
           )}
@@ -115,14 +121,14 @@ export const FateTokenDisplay: React.FC<FateTokenDisplayProps> = React.memo(({
         <View style={styles.modalRoot}>
           <Pressable style={styles.modalBackdrop} onPress={() => setPreviewVisible(false)} />
           <View style={[styles.modalCard, { backgroundColor: theme.surfaceBase, borderColor: theme.border }]}>
-            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Kader Onizlemesi</Text>
+            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>{tRuntime('fate.previewTitle')}</Text>
             <Text style={[styles.modalHint, { color: theme.textSecondary }]}>
-              Mevcut pity ve burc etkisine gore tahmini olasiliklar:
+              {tRuntime('fate.previewHint')}
             </Text>
 
             <View style={styles.oddsColumns}>
               <View style={styles.oddsColumn}>
-                <Text style={[styles.oddsTitle, { color: theme.textPrimary }]}>Token Yok</Text>
+                <Text style={[styles.oddsTitle, { color: theme.textPrimary }]}>{tRuntime('fate.oddsWithoutToken')}</Text>
                 {oddsPreview.withoutToken.map((entry) => (
                   <View key={`without_${entry.label}`} style={styles.oddsRow}>
                     <Text style={[styles.oddsLabel, { color: theme.textSecondary }]}>{entry.label}</Text>
@@ -134,7 +140,7 @@ export const FateTokenDisplay: React.FC<FateTokenDisplayProps> = React.memo(({
               <View style={styles.oddsDivider} />
 
               <View style={styles.oddsColumn}>
-                <Text style={[styles.oddsTitle, { color: theme.textPrimary }]}>Token Ile</Text>
+                <Text style={[styles.oddsTitle, { color: theme.textPrimary }]}>{tRuntime('fate.oddsWithToken')}</Text>
                 {oddsPreview.withToken.map((entry) => (
                   <View key={`with_${entry.label}`} style={styles.oddsRow}>
                     <Text style={[styles.oddsLabel, { color: theme.textSecondary }]}>{entry.label}</Text>
@@ -149,14 +155,14 @@ export const FateTokenDisplay: React.FC<FateTokenDisplayProps> = React.memo(({
                 onPress={() => setPreviewVisible(false)}
                 style={[styles.modalButton, { borderColor: theme.border, backgroundColor: theme.surfaceRaised }]}
               >
-                <Text style={[styles.modalButtonText, { color: theme.textPrimary }]}>Vazgec</Text>
+                <Text style={[styles.modalButtonText, { color: theme.textPrimary }]}>{tRuntime('fate.cancel')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={handleConfirmReroll}
                 style={[styles.modalButton, styles.modalConfirmButton]}
               >
-                <Text style={styles.modalConfirmButtonText}>1 Token Harca</Text>
+                <Text style={styles.modalConfirmButtonText}>{tRuntime('fate.spendToken')}</Text>
               </TouchableOpacity>
             </View>
           </View>

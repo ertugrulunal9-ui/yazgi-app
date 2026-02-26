@@ -6,6 +6,7 @@ import { ageTransitionHaptic } from '../animations/HapticFeedback';
 import { EVENTS, FALLBACK_EVENT } from '../data/events';
 import { selectCrisisEvent } from '../data/crisisEvents';
 import {
+  calculateVarietyBonus,
   shouldAgeUp,
   shouldGenerateReportCard,
   getMaxEnergy,
@@ -47,6 +48,7 @@ import {
 } from '../utils/lifeGoalSystem';
 import { getGoalChainStage } from '../data/goalChainEvents';
 import { tRuntime } from '../i18n/strings';
+import { buildChoiceFeedbackKey, buildChoiceTextKey, buildEventTextKey } from '../i18n/events/keyUtils';
 
 const getEventById = (eventId: string): GameEvent | undefined =>
   EVENTS.find(evt => evt.id === eventId);
@@ -99,6 +101,7 @@ const RECOVERABLE_STAT_KEYS: Array<keyof Stats> = [
 const buildForcedRecoveryEvent = (): GameEvent => ({
   id: FORCED_RECOVERY_EVENT_ID,
   text: 'Nefesin daraldi. Kisa bir mola ile toparlanabilirsin.',
+  textKey: buildEventTextKey(FORCED_RECOVERY_EVENT_ID),
   minAge: 0,
   maxAge: 99,
   rarity: 'COMMON',
@@ -110,8 +113,10 @@ const buildForcedRecoveryEvent = (): GameEvent => ({
     {
       id: 'forced_recovery_breath',
       text: 'Kisa bir mola ver',
+      textKey: buildChoiceTextKey(FORCED_RECOVERY_EVENT_ID, 'forced_recovery_breath'),
       effect: { energy: FORCED_RECOVERY_ENERGY_GAIN, health: 2 },
       feedback: 'Biraz dinlendin. Nefesin ve enerjin toparlaniyor.',
+      feedbackKey: buildChoiceFeedbackKey(FORCED_RECOVERY_EVENT_ID, 'forced_recovery_breath'),
       choiceType: 'PASSIVE',
     },
   ],
@@ -472,8 +477,8 @@ export const useEvents = () => {
     updateGameState(nextGameStateUpdates);
 
     if (turnResult.eventId) {
-      const eventName = typeof gameState.currentEvent?.text === 'string'
-        ? gameState.currentEvent.text
+      const eventName = gameState.currentEvent
+        ? resolveEventText(gameState.currentEvent)
         : turnResult.eventId;
       const eventType = gameState.currentEvent?.personalityCategory ?? 'event';
       const eventEnergyCost = Math.max(0, -(resolved.effect?.energy ?? 0));
@@ -505,7 +510,7 @@ export const useEvents = () => {
       });
     }
     return turnResult;
-  }, [gameState, stats, updateGameState, resolveChoice, setStats]);
+  }, [gameState, stats, updateGameState, resolveChoice, resolveEventText, setStats]);
 
   const continueAfterResult = useCallback(() => {
     const shouldInjectRecoveryEvent = gameState.lastResult?.shouldForceRecovery === true;
@@ -685,7 +690,44 @@ export const useEvents = () => {
     const nextInnerThought = composed.text;
     const nextInnerThoughtType = composed.type;
     const newMaxEnergy = getMaxEnergy(newAge, gameState.family, gameState.traits);
-    const newEnergy = getRestedEnergy(newMaxEnergy);
+    const newEnergy = getRestedEnergy(newMaxEnergy, stats.energy, newAge);
+    const varietyBonus = calculateVarietyBonus(gameState.actionHistory || []);
+    const statsAfterVarietyBonus: Stats = varietyBonus > 0
+      ? {
+        ...stats,
+        health: stats.health + varietyBonus,
+        intelligence: stats.intelligence + varietyBonus,
+        charisma: stats.charisma + varietyBonus,
+        discipline: stats.discipline + varietyBonus,
+      }
+      : stats;
+    const turnProgressStats = {
+      health: statsAfterVarietyBonus.health,
+      intelligence: statsAfterVarietyBonus.intelligence,
+      charisma: statsAfterVarietyBonus.charisma,
+      discipline: statsAfterVarietyBonus.discipline,
+      money: moneyAfterAllowance,
+      energy: newEnergy,
+    };
+    const turnAdvanceStats: Partial<Stats> = {
+      energy: newEnergy,
+      ...(didAgeUp ? { money: moneyAfterAllowance } : {}),
+      ...(varietyBonus > 0 ? {
+        health: statsAfterVarietyBonus.health,
+        intelligence: statsAfterVarietyBonus.intelligence,
+        charisma: statsAfterVarietyBonus.charisma,
+        discipline: statsAfterVarietyBonus.discipline,
+      } : {}),
+    };
+    const gameOverStats: Partial<Stats> = {
+      ...(didAgeUp ? { money: moneyAfterAllowance } : {}),
+      ...(varietyBonus > 0 ? {
+        health: statsAfterVarietyBonus.health,
+        intelligence: statsAfterVarietyBonus.intelligence,
+        charisma: statsAfterVarietyBonus.charisma,
+        discipline: statsAfterVarietyBonus.discipline,
+      } : {}),
+    };
     const buildRemainingScheduledEvents = (selectedEventId?: string) => [
       ...pendingScheduledEvents,
       ...dueScheduledEvents
@@ -696,25 +738,25 @@ export const useEvents = () => {
     if (newAge >= 18) {
       const endingResolution = resolveEnding({
         gameState,
-        stats,
+        stats: statsAfterVarietyBonus,
         achievements: gameState.unlockedAchievements,
       });
       const careerResult = endingResolution.result;
       void logGameEnding({
         age: newAge,
         stats: {
-          health: stats.health,
-          intelligence: stats.intelligence,
-          charisma: stats.charisma,
-          discipline: stats.discipline,
-          money: stats.money,
-          energy: stats.energy,
+          health: statsAfterVarietyBonus.health,
+          intelligence: statsAfterVarietyBonus.intelligence,
+          charisma: statsAfterVarietyBonus.charisma,
+          discipline: statsAfterVarietyBonus.discipline,
+          money: moneyAfterAllowance,
+          energy: newEnergy,
         },
         playtimeMinutes: Math.max(0, Math.round(newTotalTurns * 5)),
         endingType: endingResolution.id,
       });
       advanceTurnInContext({
-        newStats: didAgeUp ? { money: moneyAfterAllowance } : {},
+        newStats: gameOverStats,
         newGameState: {
           phase: 'GAME_OVER',
           age: newAge,
@@ -754,7 +796,7 @@ export const useEvents = () => {
             stress: stressAfterRecovery,
             npcs: updatedNPCs,
             stats: {
-              ...stats,
+              ...statsAfterVarietyBonus,
               energy: newEnergy,
               money: moneyAfterAllowance,
             },
@@ -773,14 +815,7 @@ export const useEvents = () => {
               lastSeenTurn: newTurn,
             },
           };
-          void logTurnProgress(newAge, {
-            health: stats.health,
-            intelligence: stats.intelligence,
-            charisma: stats.charisma,
-            discipline: stats.discipline,
-            money: moneyAfterAllowance,
-            energy: newEnergy,
-          }, {
+          void logTurnProgress(newAge, turnProgressStats, {
             turn: newTurn,
             totalTurns: newTotalTurns,
             maxEnergy: newMaxEnergy,
@@ -788,7 +823,7 @@ export const useEvents = () => {
           });
           logSelectedEventAnalytics(forcedEvent, newAge, newTurn);
           advanceTurnInContext({
-            newStats: didAgeUp ? { energy: newEnergy, money: moneyAfterAllowance } : { energy: newEnergy },
+            newStats: turnAdvanceStats,
             newGameState: {
               age: newAge,
               turn: newTurn,
@@ -830,7 +865,7 @@ export const useEvents = () => {
         stress: stressAfterRecovery,
         npcs: updatedNPCs,
         stats: {
-          ...stats,
+          ...statsAfterVarietyBonus,
           energy: newEnergy,
           money: moneyAfterAllowance,
         },
@@ -849,14 +884,7 @@ export const useEvents = () => {
           lastSeenTurn: newTurn,
         },
       };
-      void logTurnProgress(newAge, {
-        health: stats.health,
-        intelligence: stats.intelligence,
-        charisma: stats.charisma,
-        discipline: stats.discipline,
-        money: moneyAfterAllowance,
-        energy: newEnergy,
-      }, {
+      void logTurnProgress(newAge, turnProgressStats, {
         turn: newTurn,
         totalTurns: newTotalTurns,
         maxEnergy: newMaxEnergy,
@@ -870,7 +898,7 @@ export const useEvents = () => {
       });
       logSelectedEventAnalytics(turnCrisisEvent, newAge, newTurn);
       advanceTurnInContext({
-        newStats: didAgeUp ? { energy: newEnergy, money: moneyAfterAllowance } : { energy: newEnergy },
+        newStats: turnAdvanceStats,
         newGameState: {
           age: newAge,
           turn: newTurn,
@@ -900,7 +928,7 @@ export const useEvents = () => {
       return;
     }
 
-    const forcedGoalEvent = pickGoalMilestoneEvent(gameState, stats, newAge);
+    const forcedGoalEvent = pickGoalMilestoneEvent(gameState, statsAfterVarietyBonus, newAge);
     if (forcedGoalEvent) {
       const goalEventContext: EventContext = {
         ...buildEventContext(),
@@ -908,7 +936,7 @@ export const useEvents = () => {
         stress: stressAfterRecovery,
         npcs: updatedNPCs,
         stats: {
-          ...stats,
+          ...statsAfterVarietyBonus,
           energy: newEnergy,
           money: moneyAfterAllowance,
         },
@@ -927,14 +955,7 @@ export const useEvents = () => {
           lastSeenTurn: newTurn,
         },
       };
-      void logTurnProgress(newAge, {
-        health: stats.health,
-        intelligence: stats.intelligence,
-        charisma: stats.charisma,
-        discipline: stats.discipline,
-        money: moneyAfterAllowance,
-        energy: newEnergy,
-      }, {
+      void logTurnProgress(newAge, turnProgressStats, {
         turn: newTurn,
         totalTurns: newTotalTurns,
         maxEnergy: newMaxEnergy,
@@ -942,7 +963,7 @@ export const useEvents = () => {
       });
       logSelectedEventAnalytics(forcedGoalEvent, newAge, newTurn);
       advanceTurnInContext({
-        newStats: didAgeUp ? { energy: newEnergy, money: moneyAfterAllowance } : { energy: newEnergy },
+        newStats: turnAdvanceStats,
         newGameState: {
           age: newAge,
           turn: newTurn,
@@ -972,14 +993,7 @@ export const useEvents = () => {
       return;
     }
 
-    void logTurnProgress(newAge, {
-      health: stats.health,
-      intelligence: stats.intelligence,
-      charisma: stats.charisma,
-      discipline: stats.discipline,
-      money: moneyAfterAllowance,
-      energy: newEnergy,
-    }, {
+    void logTurnProgress(newAge, turnProgressStats, {
       turn: newTurn,
       totalTurns: newTotalTurns,
       maxEnergy: newMaxEnergy,
@@ -989,7 +1003,7 @@ export const useEvents = () => {
     // S\u0131nav d\u00F6nemindeyse event y\u00FCkleme - s\u0131nav ekran\u0131 g\u00F6sterilecek
     if (isExamPeriod) {
       advanceTurnInContext({
-        newStats: didAgeUp ? { energy: newEnergy, money: moneyAfterAllowance } : { energy: newEnergy },
+        newStats: turnAdvanceStats,
         newGameState: {
           age: newAge,
           turn: newTurn,
@@ -1032,7 +1046,7 @@ export const useEvents = () => {
           stress: stressAfterRecovery,
           npcs: updatedNPCs,
           stats: {
-            ...stats,
+            ...statsAfterVarietyBonus,
             energy: newEnergy,
             money: moneyAfterAllowance,
           },
@@ -1048,7 +1062,7 @@ export const useEvents = () => {
       };
       logSelectedEventAnalytics(scheduledEvent, newAge, newTurn);
       advanceTurnInContext({
-        newStats: didAgeUp ? { energy: newEnergy, money: moneyAfterAllowance } : { energy: newEnergy },
+        newStats: turnAdvanceStats,
         newGameState: {
           age: newAge,
           turn: newTurn,
@@ -1089,7 +1103,7 @@ export const useEvents = () => {
       stress: stressAfterRecovery,
       npcs: updatedNPCs,
       stats: {
-        ...stats,
+        ...statsAfterVarietyBonus,
         energy: newEnergy,
         money: moneyAfterAllowance,
       },
@@ -1119,7 +1133,7 @@ export const useEvents = () => {
       };
       logSelectedEventAnalytics(personalityGateEvent, newAge, newTurn);
       advanceTurnInContext({
-        newStats: didAgeUp ? { energy: newEnergy, money: moneyAfterAllowance } : { energy: newEnergy },
+        newStats: turnAdvanceStats,
         newGameState: {
           age: newAge,
           turn: newTurn,
@@ -1186,7 +1200,7 @@ export const useEvents = () => {
     };
     logSelectedEventAnalytics(evt, newAge, newTurn);
     advanceTurnInContext({
-      newStats: didAgeUp ? { energy: newEnergy, money: moneyAfterAllowance } : { energy: newEnergy },
+      newStats: turnAdvanceStats,
       newGameState: {
         age: newAge,
         turn: newTurn,

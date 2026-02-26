@@ -68,6 +68,10 @@ export const migrateToVersion = (saveData: SaveSlotData, targetVersion: number):
   if (currentVersion < 1 && targetVersion >= 1) {
     migrated = migrateV0ToV1(migrated);
   }
+
+  if (currentVersion < 2 && targetVersion >= 2) {
+    migrated = migrateV1ToV2(migrated);
+  }
   
   migrated.metadata.version = targetVersion;
   migrated.metadata.checksum = generateChecksum({
@@ -87,6 +91,26 @@ const migrateV0ToV1 = (saveData: SaveSlotData): SaveSlotData => {
       unlockedAchievements: saveData.gameState.unlockedAchievements || [],
       achievementProgress: saveData.gameState.achievementProgress || {},
       eventFrequency: saveData.gameState.eventFrequency || {},
+    },
+  };
+};
+
+const migrateV1ToV2 = (saveData: SaveSlotData): SaveSlotData => {
+  const gameState = saveData.gameState;
+
+  return {
+    ...saveData,
+    gameState: {
+      ...gameState,
+      activeBuffs: Array.isArray(gameState.activeBuffs) ? gameState.activeBuffs : [],
+      consumableCooldowns:
+        gameState.consumableCooldowns && typeof gameState.consumableCooldowns === 'object'
+          ? gameState.consumableCooldowns
+          : {},
+      consumableUsageThisTurn:
+        gameState.consumableUsageThisTurn && typeof gameState.consumableUsageThisTurn === 'object'
+          ? gameState.consumableUsageThisTurn
+          : {},
     },
   };
 };

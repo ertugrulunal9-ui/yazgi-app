@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SaveSlotMetadata } from '../save/SaveSlot';
 import { formatPlaytime, formatLastPlayed } from '../utils/saveUtils';
+import { tRuntime } from '../i18n/strings';
 
 interface SaveSlotCardProps {
   metadata: SaveSlotMetadata;
@@ -71,15 +72,15 @@ export const SaveSlotCard: React.FC<SaveSlotCardProps> = ({
       <TouchableOpacity
         onPress={handleSave}
         style={[styles.card, styles.emptyCard, { borderColor: statusStyle.borderColor, backgroundColor: statusStyle.backgroundColor }]}
-        accessibilityLabel={`Boş slot ${metadata.slotId}, kaydetmek için dokun`}
+        accessibilityLabel={tRuntime('save.emptySlotAria', { slotId: metadata.slotId })}
         accessibilityRole="button"
       >
         <View style={styles.emptyContent}>
           <View style={styles.emptyIconContainer}>
             <Text style={styles.emptyIcon}>➕</Text>
           </View>
-          <Text style={styles.emptyTitle}>Boş Slot</Text>
-          <Text style={styles.emptySubtitle}>Kaydetmek için dokun</Text>
+          <Text style={styles.emptyTitle}>{tRuntime('save.emptySlot')}</Text>
+          <Text style={styles.emptySubtitle}>{tRuntime('save.tapToSave')}</Text>
         </View>
       </TouchableOpacity>
     );
@@ -91,19 +92,19 @@ export const SaveSlotCard: React.FC<SaveSlotCardProps> = ({
       <View style={styles.headerRow}>
         <View style={styles.headerLeft}>
           {isAutoSave ? (
-            <Text style={styles.autoSaveLabel}>⏱️ Otomatik</Text>
+            <Text style={styles.autoSaveLabel}>{tRuntime('save.autoSave')}</Text>
           ) : (
-            <Text style={[styles.slotLabel, { color: theme.textPrimary }]}>Slot {metadata.slotId}</Text>
+            <Text style={[styles.slotLabel, { color: theme.textPrimary }]}>{tRuntime('save.slotLabel', { slotId: metadata.slotId })}</Text>
           )}
           {isCorrupted && (
             <View style={styles.corruptedBadge}>
               <Feather name="alert-triangle" size={12} color="#ef4444" />
-              <Text style={styles.corruptedText}>Bozuk</Text>
+              <Text style={styles.corruptedText}>{tRuntime('save.corrupted')}</Text>
             </View>
           )}
           {isCurrentSlot && !isAutoSave && (
             <View style={styles.activeBadge}>
-              <Text style={styles.activeBadgeText}>Aktif</Text>
+              <Text style={styles.activeBadgeText}>{tRuntime('save.active')}</Text>
             </View>
           )}
         </View>
@@ -111,10 +112,10 @@ export const SaveSlotCard: React.FC<SaveSlotCardProps> = ({
           <TouchableOpacity
             onPress={handleDelete}
             style={styles.deleteButton}
-            accessibilityLabel="Kaydı sil"
+            accessibilityLabel={tRuntime('save.deleteSave')}
             accessibilityRole="button"
           >
-            <Text style={styles.deleteButtonText}>Sil</Text>
+            <Text style={styles.deleteButtonText}>{tRuntime('save.deleteBtn')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -126,7 +127,7 @@ export const SaveSlotCard: React.FC<SaveSlotCardProps> = ({
           <Text style={[styles.characterName, { color: theme.textPrimary }]}>{metadata.characterName}</Text>
         </View>
         <View style={styles.statsRow}>
-          <Text style={[styles.statText, { color: theme.textSecondary }]}>Yaş: {metadata.age}</Text>
+          <Text style={[styles.statText, { color: theme.textSecondary }]}>{tRuntime('save.ageLabel', { age: metadata.age })}</Text>
           <Text style={[styles.statDivider, { color: theme.textSecondary }]}>•</Text>
           <View style={styles.playtimeRow}>
             <Feather name="clock" size={12} color={theme.textSecondary} />
@@ -145,24 +146,24 @@ export const SaveSlotCard: React.FC<SaveSlotCardProps> = ({
           onPress={handleLoad}
           disabled={isCorrupted}
           style={[styles.loadButton, { backgroundColor: theme.accentEvent }, isCorrupted && styles.buttonDisabled]}
-          accessibilityLabel="Kaydı yükle"
+          accessibilityLabel={tRuntime('save.loadSave')}
           accessibilityRole="button"
         >
-          <Text style={styles.loadButtonText}>Yükle</Text>
+          <Text style={styles.loadButtonText}>{tRuntime('save.loadBtn')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={handleSave}
           style={[styles.saveButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}
-          accessibilityLabel="Kaydet"
+          accessibilityLabel={tRuntime('save.saveBtn')}
           accessibilityRole="button"
         >
-          <Text style={[styles.saveButtonText, { color: theme.textPrimary }]}>Kaydet</Text>
+          <Text style={[styles.saveButtonText, { color: theme.textPrimary }]}>{tRuntime('save.saveBtn')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={handleExport}
           disabled={isCorrupted}
           style={[styles.exportButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }, isCorrupted && styles.buttonDisabled]}
-          accessibilityLabel="Kaydı dışa aktar"
+          accessibilityLabel={tRuntime('save.exportSave')}
           accessibilityRole="button"
         >
           <Text style={styles.exportIcon}>📤</Text>

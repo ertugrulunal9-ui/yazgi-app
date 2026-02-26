@@ -30,7 +30,7 @@ import { StatusHeader } from '../components/StatusHeader';
 import { ActionGrid } from '../components/ActionGrid';
 import { ActionBottomSheet } from '../components/ActionBottomSheet';
 import { TabBar } from '../components/TabBar';
-import { ACTION_CATEGORIES, ActionCategory, SubAction, ExamGameType } from '../data/actions';
+import { getLocalizedActionCategories, ActionCategory, SubAction, ExamGameType } from '../data/actions';
 import { FloatingText } from '../components/FloatingText';
 import { SkillTree } from '../components/SkillTree';
 import { SocialScreen } from '../components/SocialScreen';
@@ -55,7 +55,12 @@ import {
 import { HubActionCommand } from '../commands/ActionCommand';
 import { TabContent } from '../components/ui';
 import { calculateEndingErrorDebt, calculateSelectedGoalStatProgress } from '../utils/endingResolver';
-import { checkTraitFormation, getMaxEnergy, resolveTraitChanges } from '../utils/gameUtils';
+import {
+  calculateVarietyBonus,
+  checkTraitFormation,
+  getMaxEnergy,
+  resolveTraitChanges,
+} from '../utils/gameUtils';
 import { buildTraitChangeFeedback } from '../utils/traitFeedback';
 import { getTraitName } from '../data/traits';
 import {
@@ -437,12 +442,16 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
 
   // Calculate available categories based on age
   const availableCategories = useMemo(() => {
-    return ACTION_CATEGORIES.filter(category => {
+    return getLocalizedActionCategories().filter(category => {
       if (category.minAge && gameState.age < category.minAge) return false;
       if (category.maxAge !== undefined && gameState.age > category.maxAge) return false;
       return true;
     });
-  }, [gameState.age]);
+  }, [gameState.age, t]);
+  const daySummaryVarietyBonus = useMemo(
+    () => calculateVarietyBonus(gameState.actionHistory || []),
+    [gameState.actionHistory]
+  );
 
   const handleCategoryPress = useCallback((category: ActionCategory) => {
     selectionHaptic();
@@ -766,6 +775,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
                 <CharacterScreen
                   stats={stats}
                   traits={gameState.traits}
+                  traitProgress={gameState.traitProgress || {}}
                   skills={gameState.skills}
                   schoolGrades={gameState.schoolGrades}
                   personalityState={gameState.personalityState}
@@ -961,6 +971,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
         currentEnergy={stats.energy}
         currentMoney={stats.money}
         skills={gameState.skills}
+        actionHistory={gameState.actionHistory || []}
         inventory={gameState.inventory || []}
         familyWealth={gameState.family?.wealth}
       />
@@ -1072,6 +1083,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
         age={gameState.age}
         turn={gameState.turn}
         dailyDecisionCount={gameState.dailyDecisionCount ?? 0}
+        varietyBonus={daySummaryVarietyBonus}
         energy={stats.energy}
         maxEnergy={gameState.maxEnergy}
         stats={stats}

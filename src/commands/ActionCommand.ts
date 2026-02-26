@@ -126,7 +126,8 @@ export class HubActionCommand implements ActionCommand {
       baseEffect,
       action.energyCost,
       action.gradeUpdates as Partial<SchoolGrades> | undefined,
-      gameState.skills
+      gameState.skills,
+      gameState.actionHistory || []
     );
     const adjustedEnergyCost = adjusted.energyCost;
     const adjustedEffect = adjusted.effect;

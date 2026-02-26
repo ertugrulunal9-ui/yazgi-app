@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts } from 'expo-font';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Appearance } from 'react-native';
+import { initializeFeatureFlags } from '../config/featureFlags';
 import { getLoadingQuoteByAge } from '../data/loadingQuotes';
 import { AppLocale, DEFAULT_LOCALE } from '../i18n/strings';
 import { analyticsService } from '../services/analytics';
@@ -97,6 +98,12 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
   useEffect(() => {
     initMonetization().catch((error) => {
       console.warn('Monetization init failed:', error);
+    });
+  }, []);
+
+  useEffect(() => {
+    initializeFeatureFlags().catch((error) => {
+      console.warn('Feature flag init failed:', error);
     });
   }, []);
 

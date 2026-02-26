@@ -2,6 +2,8 @@ import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, StatusBar, ScrollView } from 'react-native';
 import { SchoolGrades, Family } from '../types';
 import { getLetterGrade, calculateGradeAverage } from '../utils/schoolLogic';
+import { tRuntime } from '../i18n/strings';
+import { useRuntimeLocale } from '../i18n/useRuntimeLocale';
 
 interface ReportCardProps {
   grades: SchoolGrades;
@@ -12,6 +14,8 @@ interface ReportCardProps {
 }
 
 const ReportCard = React.memo<ReportCardProps>(({ grades, family, onClose, age, visible }) => {
+  useRuntimeLocale();
+
   // Modal yerine absolute positioning kullan (Android uyumluluğu için)
   if (!visible) return null;
 
@@ -29,41 +33,40 @@ const ReportCard = React.memo<ReportCardProps>(({ grades, family, onClose, age, 
   };
 
   const getStatusMessage = (avg: number) => {
-    if (avg >= 85) return { text: "ONUR BELGESİ", emoji: "🏆" };
-    if (avg >= 70) return { text: "TEŞEKKÜR", emoji: "🎉" };
-    if (avg >= 50) return { text: "SINIFI GEÇTİ", emoji: "✅" };
-    return { text: "SINIF TEKRARI", emoji: "😰" };
+    if (avg >= 85) return { text: tRuntime('exams.reportCard.status.honor'), emoji: "🏆" };
+    if (avg >= 70) return { text: tRuntime('exams.reportCard.status.appreciation'), emoji: "🎉" };
+    if (avg >= 50) return { text: tRuntime('exams.reportCard.status.passed'), emoji: "✅" };
+    return { text: tRuntime('exams.reportCard.status.failed'), emoji: "😰" };
   };
 
-  // Aile dinamiğine göre veli tepkisi
   const getParentReaction = () => {
     if (average >= 85) {
-      return family.dynamic === 'SUPPORTIVE' ? '🎉 "Seninle gurur duyuyoruz!"' :
-             family.dynamic === 'STRICT' ? '📚 "İyi ama daha da iyisini bekleriz."' :
-             '🎊 "Harika! Gel sarılalım!"';
+      return family.dynamic === 'SUPPORTIVE' ? tRuntime('exams.reportCard.parentReaction.highSupportive') :
+             family.dynamic === 'STRICT' ? tRuntime('exams.reportCard.parentReaction.highStrict') :
+             tRuntime('exams.reportCard.parentReaction.highChaotic');
     }
     if (average >= 50) {
-      return family.dynamic === 'SUPPORTIVE' ? '👍 "Fena değil, devam et."' :
-             family.dynamic === 'STRICT' ? '😤 "Bu notlar kabul edilemez!"' :
-             '🤷 "Ehh, olsun..."';
+      return family.dynamic === 'SUPPORTIVE' ? tRuntime('exams.reportCard.parentReaction.midSupportive') :
+             family.dynamic === 'STRICT' ? tRuntime('exams.reportCard.parentReaction.midStrict') :
+             tRuntime('exams.reportCard.parentReaction.midChaotic');
     }
-    return family.dynamic === 'SUPPORTIVE' ? '😟 "Seneye telafi ederiz."' :
-           family.dynamic === 'STRICT' ? '😡 "Cep telefonu yasak!"' :
-           '🙄 "Bize mi çektin acaba..."';
+    return family.dynamic === 'SUPPORTIVE' ? tRuntime('exams.reportCard.parentReaction.lowSupportive') :
+           family.dynamic === 'STRICT' ? tRuntime('exams.reportCard.parentReaction.lowStrict') :
+           tRuntime('exams.reportCard.parentReaction.lowChaotic');
   };
 
   const status = getStatusMessage(average);
   const averageColor = getGradeColor(average);
 
   const subjects = [
-    { key: 'math', label: 'Matematik', emoji: '🔢' },
-    { key: 'turkish', label: 'Türkçe', emoji: '📝' },
-    { key: 'science', label: 'Fen Bilgisi', emoji: '🔬' },
-    { key: 'language', label: 'Yabancı Dil', emoji: '🌍' },
-    { key: 'history', label: 'Tarih', emoji: '📜' },
-    { key: 'geography', label: 'Coğrafya', emoji: '🗺️' },
-    { key: 'art', label: 'Görsel Sanatlar', emoji: '🎨' },
-    { key: 'music', label: 'Müzik', emoji: '🎵' },
+    { key: 'math', label: tRuntime('exams.reportCard.subjects.math'), emoji: '🔢' },
+    { key: 'turkish', label: tRuntime('exams.reportCard.subjects.turkish'), emoji: '📝' },
+    { key: 'science', label: tRuntime('exams.reportCard.subjects.science'), emoji: '🔬' },
+    { key: 'language', label: tRuntime('exams.reportCard.subjects.language'), emoji: '🌍' },
+    { key: 'history', label: tRuntime('exams.reportCard.subjects.history'), emoji: '📜' },
+    { key: 'geography', label: tRuntime('exams.reportCard.subjects.geography'), emoji: '🗺️' },
+    { key: 'art', label: tRuntime('exams.reportCard.subjects.art'), emoji: '🎨' },
+    { key: 'music', label: tRuntime('exams.reportCard.subjects.music'), emoji: '🎵' },
   ];
 
   return (
@@ -75,8 +78,8 @@ const ReportCard = React.memo<ReportCardProps>(({ grades, family, onClose, age, 
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>📋 Yıl Sonu Karnesi</Text>
-            <Text style={styles.headerSubtitle}>Öğrenci Yaşı: {age}</Text>
+            <Text style={styles.headerTitle}>{tRuntime('exams.reportCard.title')}</Text>
+            <Text style={styles.headerSubtitle}>{tRuntime('exams.reportCard.studentAge', { age })}</Text>
 
             {/* Ortalama Badge */}
             <View style={[styles.averageBadge, { borderColor: averageColor }]}>
@@ -132,12 +135,12 @@ const ReportCard = React.memo<ReportCardProps>(({ grades, family, onClose, age, 
 
           {/* Alt Bilgi */}
           <Text style={styles.footerNote}>
-            *Notlar zeka, stres seviyesi ve şans faktörüne göre hesaplanmıştır.
+            {tRuntime('exams.reportCard.footnote')}
           </Text>
 
           {/* Tamam Butonu */}
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeButtonText}>Tamam</Text>
+            <Text style={styles.closeButtonText}>{tRuntime('exams.reportCard.okBtn')}</Text>
             <Text style={styles.closeButtonArrow}>→</Text>
           </TouchableOpacity>
         </View>

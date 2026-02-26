@@ -286,6 +286,13 @@ export const TraitProgressSchema = z.object({
   lastProgressTurn: z.number().optional(),
 });
 
+export const ActiveBuffSchema = z.object({
+  itemId: z.string(),
+  turnsRemaining: z.number().min(0),
+  effect: z.record(z.string(), z.number()),
+  appliedAt: z.number().min(0).optional(),
+});
+
 // Game Phase
 export const GamePhaseSchema = z.enum([
   'SETUP',
@@ -407,6 +414,9 @@ export const GameStateSchema = z.object({
   scheduledEvents: z.array(ScheduledEventSchema),
   activeArcs: z.array(ActiveStoryArcSchema),
   familyEvolution: FamilyEvolutionSchema.optional(),
+  activeBuffs: z.array(ActiveBuffSchema).optional().default([]),
+  consumableCooldowns: z.record(z.string(), z.number().min(0)).optional().default({}),
+  consumableUsageThisTurn: z.record(z.string(), z.number().min(0)).optional().default({}),
 
   // Achievement System
   unlockedAchievements: z.array(UnlockedAchievementSchema),
@@ -614,6 +624,21 @@ function attemptAutoRepair(
       if (field === 'familyEvolution') {
         gs.familyEvolution = DEFAULT_FAMILY_EVOLUTION;
         repairLog.push(`Repaired ${path}: set to default family evolution state`);
+      }
+
+      if (field === 'activeBuffs') {
+        gs.activeBuffs = [];
+        repairLog.push(`Repaired ${path}: set to empty array`);
+      }
+
+      if (field === 'consumableCooldowns') {
+        gs.consumableCooldowns = {};
+        repairLog.push(`Repaired ${path}: set to empty object`);
+      }
+
+      if (field === 'consumableUsageThisTurn') {
+        gs.consumableUsageThisTurn = {};
+        repairLog.push(`Repaired ${path}: set to empty object`);
       }
 
       // Invalid personalityHistory entries - clear the array

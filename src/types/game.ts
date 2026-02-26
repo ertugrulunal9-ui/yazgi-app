@@ -235,6 +235,14 @@ export interface GameState {
   fate?: FateState;
 
   dailyDecisionCount?: number;
+  activeBuffs?: Array<{
+    itemId: string;
+    turnsRemaining: number;
+    effect: Partial<Stats>;
+    appliedAt: number;
+  }>;
+  consumableCooldowns?: Record<string, number>;
+  consumableUsageThisTurn?: Record<string, number>;
 
   lastSessionTimestamp?: number;
   pendingCliffhanger?: {

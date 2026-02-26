@@ -1,4 +1,5 @@
 import { GameEvent } from '../types';
+import { withEventLocalizationKeysForAll } from '../i18n/events/keyMapper';
 
 // ─────────────────────────────────────────────────────────────
 // KRİZ EVENTLERİ
@@ -327,7 +328,7 @@ const CRISIS_CHILDHOOD_OVERWHELM: GameEvent = {
 
 // ─── TÜM KRİZ EVENTLERİ ────────────────────────────────────
 
-export const ALL_CRISIS_EVENTS: GameEvent[] = [
+const CRISIS_EVENTS_BASE: GameEvent[] = [
   BURDEN_BREAKDOWN_EVENT,
   CRISIS_EXAM_PANIC,
   CRISIS_FAMILY_PRESSURE,
@@ -339,6 +340,16 @@ export const ALL_CRISIS_EVENTS: GameEvent[] = [
   CRISIS_PHYSICAL_COLLAPSE,
   CRISIS_CHILDHOOD_OVERWHELM,
 ];
+
+export const ALL_CRISIS_EVENTS: GameEvent[] = withEventLocalizationKeysForAll(CRISIS_EVENTS_BASE);
+
+const FALLBACK_CRISIS_EVENT_ID = BURDEN_BREAKDOWN_EVENT.id;
+
+const getFallbackCrisisEvent = (): GameEvent => (
+  ALL_CRISIS_EVENTS.find(event => event.id === FALLBACK_CRISIS_EVENT_ID)
+  || ALL_CRISIS_EVENTS[0]
+  || BURDEN_BREAKDOWN_EVENT
+);
 
 /**
  * Oyuncunun yaşına ve son gördüğü eventlere göre uygun bir kriz eventi seçer.
@@ -357,12 +368,13 @@ export const selectCrisisEvent = (
     return true;
   });
 
-  if (eligible.length === 0) return BURDEN_BREAKDOWN_EVENT;
+  const fallbackEvent = getFallbackCrisisEvent();
+  if (eligible.length === 0) return fallbackEvent;
 
   // Basit rastgele seçim — orijinal breakdown'a daha düşük ağırlık ver
   const weighted = eligible.flatMap(e =>
-    e.id === BURDEN_BREAKDOWN_EVENT.id ? [e] : [e, e]
+    e.id === fallbackEvent.id ? [e] : [e, e]
   );
 
-  return weighted[Math.floor(Math.random() * weighted.length)];
+  return weighted[Math.floor(Math.random() * weighted.length)] || fallbackEvent;
 };

@@ -6,6 +6,7 @@ import QRCode from 'react-native-qrcode-svg';
 import SaveManager from '../save/SaveManager';
 import { copyToClipboard, readFromClipboard, downloadFile, readFile } from '../utils/saveUtils';
 import { getCurrentSlotId } from '../utils/gameUtils';
+import { tRuntime } from '../i18n/strings';
 
 interface SaveExportModalProps {
   isOpen: boolean;
@@ -131,11 +132,11 @@ export const SaveExportModal: React.FC<SaveExportModalProps> = ({
         <View style={[styles.container, { backgroundColor: theme.surfaceBase, borderColor: theme.border }]}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Kayıt İçe/Dışa Aktar</Text>
+            <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>{tRuntime('save.exportImportTitle')}</Text>
             <TouchableOpacity
               onPress={onClose}
               style={[styles.closeButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}
-              accessibilityLabel="Kapat"
+              accessibilityLabel={tRuntime('save.close')}
               accessibilityRole="button"
             >
               <Feather name="x" size={24} color={theme.textSecondary} />
@@ -152,13 +153,13 @@ export const SaveExportModal: React.FC<SaveExportModalProps> = ({
                   ? { backgroundColor: theme.accentEvent }
                   : { backgroundColor: theme.surfaceRaised, borderColor: theme.border, borderWidth: 1 },
               ]}
-              accessibilityLabel="Dışa aktar sekmesi"
+              accessibilityLabel={tRuntime('save.exportTabAria')}
               accessibilityRole="tab"
               accessibilityState={{ selected: activeTab === 'export' }}
             >
               <Feather name="download" size={16} color={activeTab === 'export' ? '#fff' : theme.textSecondary} />
               <Text style={[styles.tabText, { color: activeTab === 'export' ? '#fff' : theme.textPrimary }]}>
-                Dışa Aktar
+                {tRuntime('save.exportTab')}
               </Text>
             </TouchableOpacity>
 
@@ -170,13 +171,13 @@ export const SaveExportModal: React.FC<SaveExportModalProps> = ({
                   ? { backgroundColor: theme.accentEvent }
                   : { backgroundColor: theme.surfaceRaised, borderColor: theme.border, borderWidth: 1 },
               ]}
-              accessibilityLabel="İçe aktar sekmesi"
+              accessibilityLabel={tRuntime('save.importTabAria')}
               accessibilityRole="tab"
               accessibilityState={{ selected: activeTab === 'import' }}
             >
               <Feather name="upload" size={16} color={activeTab === 'import' ? '#fff' : theme.textSecondary} />
               <Text style={[styles.tabText, { color: activeTab === 'import' ? '#fff' : theme.textPrimary }]}>
-                İçe Aktar
+                {tRuntime('save.importTab')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -186,7 +187,7 @@ export const SaveExportModal: React.FC<SaveExportModalProps> = ({
             {activeTab === 'export' && (
               <View style={styles.tabContent}>
                 <Text style={[styles.description, { color: theme.textSecondary }]}>
-                  Kayıt dosyanı JSON formatında dışa aktar, panoya kopyala veya QR kod ile paylaş.
+                  {tRuntime('save.exportDescription')}
                 </Text>
 
                 {/* Export Actions */}
@@ -199,18 +200,18 @@ export const SaveExportModal: React.FC<SaveExportModalProps> = ({
                       { backgroundColor: theme.surfaceRaised, borderColor: theme.border },
                       !exportData && styles.actionButtonDisabled,
                     ]}
-                    accessibilityLabel="Panoya kopyala"
+                    accessibilityLabel={tRuntime('save.copyToClipboard')}
                     accessibilityRole="button"
                   >
                     {copiedToClipboard ? (
                       <>
                         <Feather name="check" size={24} color="#22c55e" />
-                        <Text style={[styles.actionButtonText, { color: '#22c55e' }]}>Kopyalandı!</Text>
+                        <Text style={[styles.actionButtonText, { color: '#22c55e' }]}>{tRuntime('save.copied')}</Text>
                       </>
                     ) : (
                       <>
                         <Feather name="copy" size={24} color={theme.textPrimary} />
-                        <Text style={[styles.actionButtonText, { color: theme.textPrimary }]}>Panoya Kopyala</Text>
+                        <Text style={[styles.actionButtonText, { color: theme.textPrimary }]}>{tRuntime('save.copyToClipboard')}</Text>
                       </>
                     )}
                   </TouchableOpacity>
@@ -223,11 +224,11 @@ export const SaveExportModal: React.FC<SaveExportModalProps> = ({
                       { backgroundColor: theme.surfaceRaised, borderColor: theme.border },
                       !exportData && styles.actionButtonDisabled,
                     ]}
-                    accessibilityLabel="JSON dosyası indir"
+                    accessibilityLabel={tRuntime('save.downloadJSON')}
                     accessibilityRole="button"
                   >
                     <Feather name="file-text" size={24} color={theme.textPrimary} />
-                    <Text style={[styles.actionButtonText, { color: theme.textPrimary }]}>JSON İndir</Text>
+                    <Text style={[styles.actionButtonText, { color: theme.textPrimary }]}>{tRuntime('save.downloadJSON')}</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -236,23 +237,23 @@ export const SaveExportModal: React.FC<SaveExportModalProps> = ({
                       styles.actionButton,
                       { backgroundColor: theme.surfaceRaised, borderColor: theme.border },
                     ]}
-                    accessibilityLabel="QR kod oluştur"
+                    accessibilityLabel={tRuntime('save.qrCode')}
                     accessibilityRole="button"
                   >
                     <Feather name="grid" size={24} color={theme.textPrimary} />
-                    <Text style={[styles.actionButtonText, { color: theme.textPrimary }]}>QR Kod</Text>
+                    <Text style={[styles.actionButtonText, { color: theme.textPrimary }]}>{tRuntime('save.qrCode')}</Text>
                   </TouchableOpacity>
                 </View>
 
                 {/* QR Code Display */}
                 {showQRCode && exportData && (
                   <View style={[styles.qrContainer, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}>
-                    <Text style={[styles.qrLabel, { color: theme.textSecondary }]}>QR Kodu Tara:</Text>
+                    <Text style={[styles.qrLabel, { color: theme.textSecondary }]}>{tRuntime('save.qrScanLabel')}</Text>
                     <View style={styles.qrCodeFrame}>
                       <QRCode value={exportData} size={192} quietZone={8} />
                     </View>
                     <Text style={[styles.qrHint, { color: theme.textSecondary }]}>
-                      Bu QR kodu tarayarak kayıt dosyasını başka cihaza aktarabilirsin
+                      {tRuntime('save.qrHint')}
                     </Text>
                   </View>
                 )}
@@ -260,7 +261,7 @@ export const SaveExportModal: React.FC<SaveExportModalProps> = ({
                 {/* Export Data Preview */}
                 {exportData && (
                   <View style={[styles.previewContainer, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}>
-                    <Text style={[styles.previewLabel, { color: theme.textSecondary }]}>JSON Önizleme:</Text>
+                    <Text style={[styles.previewLabel, { color: theme.textSecondary }]}>{tRuntime('save.jsonPreview')}</Text>
                     <ScrollView horizontal style={styles.previewScroll}>
                       <Text style={[styles.previewText, { color: theme.textSecondary }]}>
                         {exportData.substring(0, 500)}...
@@ -275,7 +276,7 @@ export const SaveExportModal: React.FC<SaveExportModalProps> = ({
             {activeTab === 'import' && (
               <View style={styles.tabContent}>
                 <Text style={[styles.description, { color: theme.textSecondary }]}>
-                  Dışa aktarılan kayıt dosyasını JSON veya panodan içe aktar.
+                  {tRuntime('save.importDescription')}
                 </Text>
 
                 {/* Import Actions */}
@@ -283,21 +284,21 @@ export const SaveExportModal: React.FC<SaveExportModalProps> = ({
                   <TouchableOpacity
                     onPress={handlePasteFromClipboard}
                     style={[styles.actionButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}
-                    accessibilityLabel="Panodan yapıştır"
+                    accessibilityLabel={tRuntime('save.pasteFromClipboard')}
                     accessibilityRole="button"
                   >
                     <Feather name="clipboard" size={24} color={theme.textPrimary} />
-                    <Text style={[styles.actionButtonText, { color: theme.textPrimary }]}>Panodan Yapıştır</Text>
+                    <Text style={[styles.actionButtonText, { color: theme.textPrimary }]}>{tRuntime('save.pasteFromClipboard')}</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
                     onPress={handleImportFromFile}
                     style={[styles.actionButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}
-                    accessibilityLabel="Dosyadan yükle"
+                    accessibilityLabel={tRuntime('save.loadFromFile')}
                     accessibilityRole="button"
                   >
                     <Feather name="file-text" size={24} color={theme.textPrimary} />
-                    <Text style={[styles.actionButtonText, { color: theme.textPrimary }]}>Dosyadan Yükle</Text>
+                    <Text style={[styles.actionButtonText, { color: theme.textPrimary }]}>{tRuntime('save.loadFromFile')}</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -305,7 +306,7 @@ export const SaveExportModal: React.FC<SaveExportModalProps> = ({
                 <TextInput
                   value={importData}
                   onChangeText={setImportData}
-                  placeholder="Kayıt verisini buraya yapıştır veya yukarıdaki butonları kullan..."
+                  placeholder={tRuntime('save.importPlaceholder')}
                   placeholderTextColor={theme.textSecondary}
                   multiline
                   style={[
@@ -316,7 +317,7 @@ export const SaveExportModal: React.FC<SaveExportModalProps> = ({
                       color: theme.textPrimary,
                     },
                   ]}
-                  accessibilityLabel="Kayıt verisi girişi"
+                  accessibilityLabel={tRuntime('save.importInputAria')}
                 />
 
                 {/* Import Status */}
@@ -324,8 +325,8 @@ export const SaveExportModal: React.FC<SaveExportModalProps> = ({
                   <View style={styles.successBanner}>
                     <Feather name="check-circle" size={24} color="#22c55e" />
                     <View>
-                      <Text style={styles.successTitle}>İçe Aktarma Başarılı!</Text>
-                      <Text style={styles.successSubtitle}>Kayıt yüklendi.</Text>
+                      <Text style={styles.successTitle}>{tRuntime('save.importSuccess')}</Text>
+                      <Text style={styles.successSubtitle}>{tRuntime('save.importSuccessMsg')}</Text>
                     </View>
                   </View>
                 )}
@@ -334,8 +335,8 @@ export const SaveExportModal: React.FC<SaveExportModalProps> = ({
                   <View style={styles.errorBanner}>
                     <Feather name="x-circle" size={24} color="#ef4444" />
                     <View>
-                      <Text style={styles.errorTitle}>İçe Aktarma Başarısız</Text>
-                      <Text style={styles.errorSubtitle}>Geçersiz kayıt formatı.</Text>
+                      <Text style={styles.errorTitle}>{tRuntime('save.importError')}</Text>
+                      <Text style={styles.errorSubtitle}>{tRuntime('save.importErrorMsg')}</Text>
                     </View>
                   </View>
                 )}
@@ -349,10 +350,10 @@ export const SaveExportModal: React.FC<SaveExportModalProps> = ({
                     { backgroundColor: theme.accentEvent },
                     (!importData.trim() || importStatus === 'success') && styles.importButtonDisabled,
                   ]}
-                  accessibilityLabel="İçe aktar"
+                  accessibilityLabel={tRuntime('save.importBtn')}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.importButtonText}>İçe Aktar</Text>
+                  <Text style={styles.importButtonText}>{tRuntime('save.importBtn')}</Text>
                 </TouchableOpacity>
               </View>
             )}

@@ -24,6 +24,13 @@ import { AppNavigator } from './AppNavigator';
 import { SettingsPanel } from './SettingsPanel';
 import { useAppBootstrap } from './useAppBootstrap';
 import { t as translateStatic } from '../i18n/strings';
+import {
+  FeatureFlag,
+  getFeatureFlagsSnapshot,
+  refreshFeatureFlags,
+  setDevFeatureFlagOverride,
+  subscribeFeatureFlags,
+} from '../config/featureFlags';
 
 const AUDIO_SETTINGS_KEY = '@yazgi/audio_settings/v1';
 const ONBOARDING_KEY = '@yazgi/onboarding_completed';
@@ -65,6 +72,7 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
   });
   const [savePickerOpen, setSavePickerOpen] = useState(false);
   const [soundMuted, setSoundMuted] = useState(false);
+  const [devFeatureFlags, setDevFeatureFlags] = useState(() => getFeatureFlagsSnapshot());
   const [showSessionEndTeaser, setShowSessionEndTeaser] = useState(false);
   const [showSessionStartRecap, setShowSessionStartRecap] = useState(false);
   const [showOnboardingFlow, setShowOnboardingFlow] = useState(false);
@@ -93,6 +101,28 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
       translateStatic(locale, key, params, fallback),
     [locale]
   );
+
+  useEffect(() => {
+    const unsubscribe = subscribeFeatureFlags((nextFlags) => {
+      setDevFeatureFlags((prevFlags) => {
+        const hasDiff = (Object.keys(prevFlags) as FeatureFlag[])
+          .some((key) => prevFlags[key] !== nextFlags[key]);
+
+        return hasDiff ? nextFlags : prevFlags;
+      });
+    });
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        void refreshFeatureFlags();
+      }
+    });
+
+    return () => sub.remove();
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -351,6 +381,10 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
     })();
   }, []);
 
+  const handleDevFeatureFlagToggle = useCallback((flag: FeatureFlag, enabled: boolean) => {
+    void setDevFeatureFlagOverride(flag, enabled);
+  }, []);
+
   const handleOnboardingComplete = useCallback(() => {
     setHasCompletedOnboarding(true);
     void logTutorialCompleted();
@@ -580,6 +614,8 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
         onAnalyticsEnabledChange={setAnalyticsEnabled}
         onPersonalizedAdsEnabledChange={setPersonalizedAdsEnabled}
         onSoundMuteChange={handleSoundMuteChange}
+        devFeatureFlags={devFeatureFlags}
+        onDevFeatureFlagToggle={handleDevFeatureFlagToggle}
         onOpenSavePicker={() => {
           setSavePickerOpen(true);
           setAppState(prev => ({ ...prev, settingsOpen: false }));

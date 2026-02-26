@@ -1,4 +1,5 @@
 import { TraitDefinition } from '../types';
+import { tRuntime } from '../i18n/strings';
 
 export const TRAIT_DEFINITIONS: TraitDefinition[] = [
   // ===== GENETIC TRAITS =====
@@ -409,7 +410,11 @@ export const getTrait = (traitId: string): TraitDefinition | undefined => {
 };
 
 export const getTraitName = (traitId: string): string => {
-  return getTrait(traitId)?.name ?? traitId;
+  return tRuntime(`traits.${traitId}.name`, undefined, getTrait(traitId)?.name ?? traitId);
+};
+
+export const getTraitDescription = (traitId: string): string => {
+  return tRuntime(`traits.${traitId}.description`, undefined, getTrait(traitId)?.description ?? '');
 };
 
 export const getRandomGeneticTraits = (count: number = 1): string[] => {

@@ -12,6 +12,7 @@ import {
   unlockAchievement,
 } from '../../src/systems/achievementSystem';
 import { ACHIEVEMENTS, getAchievement } from '../../src/systems/achievementDefinitions';
+import { setRuntimeLocale } from '../../src/i18n/strings';
 import { analyticsService } from '../../src/services/analytics';
 import { getInitialGameState, getInitialStats } from '../../src/utils/gameUtils';
 import type {
@@ -307,11 +308,19 @@ describe('achievementSystem', () => {
     expect(stats.byRarity.RARE).toBe(0);
     expect(stats.byRarity.EPIC).toBe(0);
 
-    const shareUrl = shareAchievement(firstIncome);
-    expect(shareUrl).toContain('https://twitter.com/intent/tweet?text=');
-    expect(shareUrl).toContain('&hashtags=');
-    expect(shareUrl).toContain('Achievement,LifeSimulator');
-    expect(decodeURIComponent(shareUrl)).toContain(firstIncome.name);
+    // TR locale (default)
+    const shareUrlTr = shareAchievement(firstIncome);
+    expect(shareUrlTr).toContain('https://twitter.com/intent/tweet?text=');
+    expect(shareUrlTr).toContain('&hashtags=');
+    expect(shareUrlTr).toContain('Yazgi,Basari,HayatSimulatoru');
+
+    // EN locale
+    setRuntimeLocale('en');
+    const shareUrlEn = shareAchievement(firstIncome);
+    expect(shareUrlEn).toContain('Yazgi,Achievement,LifeSimulator');
+    setRuntimeLocale('tr');
+
+    expect(decodeURIComponent(shareUrlTr)).toContain(firstIncome.name);
   });
 
   it('resets achievements and handles reset failures', async () => {
@@ -331,12 +340,12 @@ describe('achievementSystem', () => {
   });
 
   it('uses AsyncStorage path when localStorage is unavailable', async () => {
-    const globalWithLocalStorage = global as typeof globalThis & { localStorage?: Storage };
+    const globalWithLocalStorage = global as typeof globalThis & { localStorage: Storage };
     const originalLocalStorage = globalWithLocalStorage.localStorage;
     const asyncStorageMock = {
-      getItem: jest.fn(async () => null),
-      setItem: jest.fn(async () => Promise.resolve()),
-      removeItem: jest.fn(async () => Promise.resolve()),
+      getItem: jest.fn<Promise<string | null>, [string]>(async () => null),
+      setItem: jest.fn<Promise<void>, [string, string]>(async () => {}),
+      removeItem: jest.fn<Promise<void>, [string]>(async () => {}),
     };
 
     try {
@@ -345,7 +354,11 @@ describe('achievementSystem', () => {
         __esModule: true,
         default: asyncStorageMock,
       }));
-      globalWithLocalStorage.localStorage = undefined;
+      Object.defineProperty(globalWithLocalStorage, 'localStorage', {
+        configurable: true,
+        writable: true,
+        value: undefined,
+      });
 
       const isolatedModule = await import('../../src/systems/achievementSystem');
       const payload = [makeUnlocked('first_income')];
@@ -360,7 +373,11 @@ describe('achievementSystem', () => {
       expect(asyncStorageMock.removeItem).toHaveBeenCalledWith(STORAGE_KEY);
     } finally {
       jest.dontMock('@react-native-async-storage/async-storage');
-      globalWithLocalStorage.localStorage = originalLocalStorage;
+      Object.defineProperty(globalWithLocalStorage, 'localStorage', {
+        configurable: true,
+        writable: true,
+        value: originalLocalStorage,
+      });
       jest.resetModules();
     }
   });

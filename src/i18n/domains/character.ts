@@ -45,7 +45,7 @@ export const characterStrings: DomainStrings = {
       },
     },
     zodiac: {
-      fallbackRangeSeparator: ' - ',
+      fallbackRangeSeparator: ' to ',
     },
     character: {
       screen: {

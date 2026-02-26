@@ -651,6 +651,34 @@ export const TURN_MECHANICS = {
   turnName: "Tur",
 } as const;
 
+
+// ============================================================================
+// SECTION 24: ENERJI RECOVERY (Phase 2A)
+// ============================================================================
+export const ENERGY_RECOVERY = {
+  babyPhaseFullRecovery: true,
+  youngRecoveryRate: 0.8, // 7-11 yas
+  teenRecoveryRate: 0.65, // 12-17 yas
+  youngAgeThreshold: 12,
+} as const;
+
+// ============================================================================
+// SECTION 25: CESITLILIK BONUSU (Phase 2B)
+// ============================================================================
+export const VARIETY_BONUS_CONFIG = {
+  windowSize: 5,
+  minCategories: 3,
+  statBonus: 3,
+} as const;
+
+// ============================================================================
+// SECTION 26: TEKRAR CEZASI (Phase 2C)
+// ============================================================================
+export const REPETITION_PENALTY_CONFIG = {
+  penaltyPerRepeat: 0.1, // +%10
+  maxPenalty: 0.4, // +%40 cap
+  windowSize: 5,
+} as const;
 // ============================================================================
 // HELPER FUNCTIONS (Formula Generator'lar)
 // ============================================================================
@@ -805,6 +833,9 @@ export const GAME_BALANCE_CONFIG = {
   GRADE_THRESHOLDS,
   FAMILY_REACTION_EFFECTS,
   TURN_MECHANICS,
+  ENERGY_RECOVERY,
+  VARIETY_BONUS_CONFIG,
+  REPETITION_PENALTY_CONFIG,
 } as const;
 
 export default GAME_BALANCE_CONFIG;

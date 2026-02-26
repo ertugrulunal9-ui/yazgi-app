@@ -14,6 +14,7 @@ import { AnimatedButton } from '../animations/ButtonAnimations';
 import { StaggeredFadeIn, buttonPress, importantDecision } from '../animations';
 import { getMomentumDialogueTag } from '../utils/momentumDialogue';
 import { tRuntime } from '../i18n/strings';
+import { useRuntimeLocale } from '../i18n/useRuntimeLocale';
 
 /** Minimum read time by rarity (ms). Swipe stays locked until this elapses. */
 const MIN_READ_TIME_MS: Record<EventRarity | 'BREAKDOWN', number> = {
@@ -49,6 +50,8 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
   eventRarity,
   eventId,
 }) => {
+  useRuntimeLocale();
+
   const { theme, metrics } = useUI();
   const [activeIndex, setActiveIndex] = useState(0);
 

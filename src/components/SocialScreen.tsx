@@ -11,6 +11,7 @@ import {
 } from '../constants/interactionRestrictions';
 import { ensureTextContrast } from '../utils/colorContrast';
 import { tRuntime } from '../i18n/strings';
+import { useRuntimeLocale } from '../i18n/useRuntimeLocale';
 
 interface SocialScreenProps {
   npcs: NPC[];
@@ -160,6 +161,8 @@ const SocialNPCCard: React.FC<SocialNPCCardProps> = React.memo(({
   skills,
   onInteract,
 }) => {
+  useRuntimeLocale();
+
   const roleColor = ensureTextContrast(roleConfig.color, theme.surfaceBase, 4.5);
   const relationColor = ensureTextContrast(getRelationshipColor(npc.relationship), theme.surfaceBase, 4.5);
 
@@ -316,6 +319,8 @@ const SocialScreenRoot: React.FC<SocialScreenProps> = ({
   theme: themeOverride,
   metrics: metricsOverride,
 }) => {
+  useRuntimeLocale();
+
   const theme = themeOverride || getThemeTokens('dark');
   const metrics = metricsOverride || getDensityMetrics('standard');
   const [selectedNPC, setSelectedNPC] = useState<NPC | null>(null);

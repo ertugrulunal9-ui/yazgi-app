@@ -20,6 +20,7 @@ import { Choice, PersonalityState, Stats } from '../types';
 import { selectionHaptic, importantDecision } from '../animations';
 import { getMomentumDialogueTag } from '../utils/momentumDialogue';
 import { tRuntime } from '../i18n/strings';
+import { useRuntimeLocale } from '../i18n/useRuntimeLocale';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SWIPE_THRESHOLD = 120;
@@ -72,6 +73,8 @@ export const SwipeChoiceCard: React.FC<SwipeChoiceCardProps> = React.memo(({
   metrics,
   personalityState,
 }) => {
+  useRuntimeLocale();
+
   const translateX = useSharedValue(0);
   const isGestureActive = useSharedValue(false);
 

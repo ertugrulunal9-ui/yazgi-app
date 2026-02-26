@@ -1,4 +1,8 @@
 import { DomainStrings } from './types';
+import { getEventContentStrings } from '../events';
+
+const trEventContent = getEventContentStrings('tr');
+const enEventContent = getEventContentStrings('en');
 
 export const eventsDomainStrings: DomainStrings = {
   tr: {
@@ -15,6 +19,7 @@ export const eventsDomainStrings: DomainStrings = {
         selectAria: 'Sec: {text}',
         swipeHint: 'kaydir',
       },
+      content: trEventContent,
     },
   },
   en: {
@@ -31,6 +36,7 @@ export const eventsDomainStrings: DomainStrings = {
         selectAria: 'Select: {text}',
         swipeHint: 'swipe',
       },
+      content: enEventContent,
     },
   },
 };

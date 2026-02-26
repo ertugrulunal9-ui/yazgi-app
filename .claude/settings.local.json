@@ -28,7 +28,8 @@
       "Bash(npm run simulate:game:*)",
       "Bash(npm run typecheck:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(find:*)"
     ]
   }
 }

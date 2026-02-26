@@ -4,10 +4,17 @@ import { devLog } from './devLogger';
 import { Stats, StatKey, Family, GameState, CareerResult, NPC, NPCRole, FamilyWealth, FamilyDynamic, NPCPersonality, NPCTrait, ZodiacSign, PlayerGender, CharacterInfo, Skills, SchoolGrades, EventMemory, Personality, TraitTrigger } from '../types';
 import { TRAIT_DEFINITIONS } from '../data/traits';
 import { BALANCE_CONTRACT, calculateInitialEnergy } from '../config/balanceContract';
+import {
+  ENERGY_RECOVERY,
+  REPETITION_PENALTY_CONFIG,
+  VARIETY_BONUS_CONFIG,
+} from '../config/gameBalance';
+import { isFeatureEnabled } from '../config/featureFlags';
 import { DEFAULT_FAMILY_EVOLUTION_STATE } from './familyNarrative';
 import { getPersonalityArchetype, getArchetypeDescription, PersonalityArchetype } from './personalitySystem';
 import { createInitialPersonalityState } from '../systems/PersonalityMomentumEngine';
 import { resolveEnding } from './endingResolver';
+import { AppLocale, getRuntimeLocale } from '../i18n/strings';
 
 export const clamp = (value: number, min: number, max: number): number => {
   return Math.min(Math.max(value, min), max);
@@ -135,8 +142,63 @@ export const getMaxEnergy = (age: number, family: Family | null = null, traitIds
   return getStatCap(age, 'energy', family, traitIds);
 };
 
-export const getRestedEnergy = (maxEnergy: number): number => {
-  return Math.max(0, Math.round(maxEnergy));
+const ACTION_CATEGORY_PREFIXES: Array<{ id: string; prefixes: string[] }> = [
+  { id: 'study', prefixes: ['study_'] },
+  { id: 'sports', prefixes: ['sports_'] },
+  { id: 'arts', prefixes: ['arts_'] },
+  { id: 'work', prefixes: ['work_'] },
+  { id: 'social', prefixes: ['social_', 'family_'] },
+  { id: 'computer', prefixes: ['computer_'] },
+  { id: 'explore', prefixes: ['explore_'] },
+];
+
+export const getActionCategoryFromId = (actionId: string): string => {
+  const bucket = ACTION_CATEGORY_PREFIXES.find(({ prefixes }) => (
+    prefixes.some(prefix => actionId.startsWith(prefix))
+  ));
+  return bucket?.id ?? 'other';
+};
+
+export const getRestedEnergy = (
+  maxEnergy: number,
+  currentEnergy: number = maxEnergy,
+  age: number = 0,
+  partialRecoveryEnabled: boolean = isFeatureEnabled('PARTIAL_ENERGY_RECOVERY')
+): number => {
+  const safeMaxEnergy = Math.max(0, Math.round(maxEnergy));
+  if (!partialRecoveryEnabled) {
+    return safeMaxEnergy;
+  }
+
+  if (age <= 6 && ENERGY_RECOVERY.babyPhaseFullRecovery) {
+    return safeMaxEnergy;
+  }
+
+  const boundedCurrentEnergy = clamp(Math.round(currentEnergy), 0, safeMaxEnergy);
+  const deficit = Math.max(0, safeMaxEnergy - boundedCurrentEnergy);
+  const recoveryRate = age < ENERGY_RECOVERY.youngAgeThreshold
+    ? ENERGY_RECOVERY.youngRecoveryRate
+    : ENERGY_RECOVERY.teenRecoveryRate;
+  const recoveredEnergy = boundedCurrentEnergy + Math.round(deficit * recoveryRate);
+  return clamp(recoveredEnergy, 0, safeMaxEnergy);
+};
+
+export const calculateVarietyBonus = (
+  actionHistory: Array<{ actionId: string }>,
+  windowSize: number = VARIETY_BONUS_CONFIG.windowSize,
+  varietyBonusEnabled: boolean = isFeatureEnabled('VARIETY_BONUS')
+): number => {
+  if (!varietyBonusEnabled) return 0;
+  const effectiveWindow = Math.max(1, windowSize);
+  const recentActions = actionHistory.slice(-effectiveWindow);
+  if (recentActions.length < effectiveWindow) return 0;
+
+  const uniqueCategories = new Set(
+    recentActions.map(({ actionId }) => getActionCategoryFromId(actionId))
+  );
+  return uniqueCategories.size >= VARIETY_BONUS_CONFIG.minCategories
+    ? VARIETY_BONUS_CONFIG.statBonus
+    : 0;
 };
 
 export const getInitialGameState = (): GameState => {
@@ -206,6 +268,9 @@ export const getInitialGameState = (): GameState => {
     },
     recentEvents: [],
     eventFrequency: {},
+    activeBuffs: [],
+    consumableCooldowns: {},
+    consumableUsageThisTurn: {},
     unlockedAchievements: [],
     achievementProgress: {},
     // Personality System - all values start at 50 (neutral)
@@ -618,12 +683,37 @@ export const getTeamworkRelationMultiplier = (skills?: Skills): number => {
   return 1 + (teamworkRatio * 0.2);
 };
 
+const calculateRepetitionPenaltyMultiplier = (
+  actionId: string,
+  actionHistory: Array<{ actionId: string }>,
+  repetitionPenaltyEnabled: boolean = isFeatureEnabled('REPETITION_PENALTY')
+): number => {
+  if (!repetitionPenaltyEnabled) return 1;
+
+  const windowSize = Math.max(1, REPETITION_PENALTY_CONFIG.windowSize);
+  const recentActions = actionHistory.slice(-windowSize);
+  if (recentActions.length === 0) return 1;
+
+  const actionCategory = getActionCategoryFromId(actionId);
+  const repetitionCount = recentActions.filter(({ actionId: previousActionId }) => (
+    getActionCategoryFromId(previousActionId) === actionCategory
+  )).length;
+
+  if (repetitionCount <= 0) return 1;
+  const penaltyRatio = Math.min(
+    REPETITION_PENALTY_CONFIG.maxPenalty,
+    repetitionCount * REPETITION_PENALTY_CONFIG.penaltyPerRepeat
+  );
+  return 1 + penaltyRatio;
+};
+
 export const applySkillsToHubAction = (
   actionId: string,
   baseEffect: Partial<Stats>,
   baseEnergyCost: number,
   baseGradeUpdates: Partial<SchoolGrades> | undefined,
-  skills: Skills
+  skills: Skills,
+  actionHistory: Array<{ actionId: string }> = []
 ): HubActionSkillAdjustment => {
   const nextEffect: Partial<Stats> = { ...baseEffect };
   let energyCost = baseEnergyCost;
@@ -723,6 +813,9 @@ export const applySkillsToHubAction = (
     }
   }
 
+  const repetitionPenaltyMultiplier = calculateRepetitionPenaltyMultiplier(actionId, actionHistory);
+  energyCost = Math.max(1, Math.ceil(energyCost * repetitionPenaltyMultiplier));
+
   return {
     energyCost,
     effect: nextEffect,
@@ -775,60 +868,123 @@ export const hasItem = (inventory: string[], itemId: string): boolean => {
 // NPC SİSTEMİ
 // =================================================================
 
-// Genişletilmiş Türk isim havuzları (100+ isim)
-const maleNames = [
-  // Klasik isimler
-  "Ahmet", "Mehmet", "Mustafa", "Ali", "Hüseyin", "Hasan", "İbrahim", "Osman", "Yusuf", "Ömer",
-  // Modern isimler
-  "Can", "Burak", "Emre", "Kerem", "Mert", "Deniz", "Volkan", "Cem", "Arda", "Efe",
-  "Bora", "Sinan", "Kaan", "Yiğit", "Berkay", "Oğuz", "Tolga", "Onur", "Serkan", "Hakan",
-  "Eren", "Alp", "Barış", "Doruk", "Emir", "Furkan", "Görkem", "Halil", "İlker", "Kağan",
-  "Levent", "Murat", "Okan", "Polat", "Rüzgar", "Selim", "Tarık", "Umut", "Zafer", "Aras",
-  "Batuhan", "Caner", "Dağhan", "Engin", "Fatih", "Gökhan", "Hüsnü", "İsmail", "Koray", "Tuna",
-  // Yeni nesil isimler
-  "Atlas", "Poyraz", "Çınar", "Demir", "Eymen", "Yaman", "Alperen", "Utku", "Atakan", "Baran",
-  "Kuzey", "Ege", "Taner", "Meriç", "Atalay", "Berke", "Çağrı", "Doğukan", "Erdem", "Ferit",
-  "Göktürk", "Harun", "İlhan", "Kıvanç", "Kutay", "Metehan", "Necip", "Orhan", "Özgür", "Rauf",
-  "Sarp", "Taylan", "Uğur", "Vedat", "Yalçın", "Zeki", "Akın", "Bilge", "Cenk", "Devrim"
-];
+type NPCNameLocale = Extract<AppLocale, 'tr' | 'en'>;
 
-const femaleNames = [
-  // Klasik isimler
-  "Fatma", "Ayşe", "Emine", "Hatice", "Zeynep", "Elif", "Meryem", "Şerife", "Sultan", "Hanife",
-  // Modern isimler
-  "Melis", "Ceren", "Selin", "Ece", "Derya", "Sena", "Ezgi", "Buse", "Gizem", "İrem",
-  "Gamze", "Deniz", "Aslı", "Başak", "Cansu", "Damla", "Ebru", "Fulya", "Gülşen", "Hande",
-  "Ilgın", "Jale", "Kardelen", "Lale", "Meltem", "Nazlı", "Özge", "Pelin", "Rüya", "Simge",
-  "Tuğçe", "Vildan", "Yağmur", "Zara", "Almila", "Bengisu", "Cemre", "Defne", "Esra", "Feyza",
-  "Gökçe", "Hazal", "İpek", "Kübra", "Lara", "Miray", "Naz", "Öykü", "Pınar", "Rana",
-  // Yeni nesil isimler
-  "Ada", "Azra", "Beren", "Derin", "Ela", "Nehir", "Su", "Toprak", "Asya", "Dila",
-  "Eliz", "Güneş", "İdil", "Kumsal", "Lina", "Maya", "Nil", "Pera", "Sude", "Tuana",
-  "Yaren", "Zehra", "Beril", "Ceyda", "Dilara", "Eylül", "Gülce", "Hira", "İlayda", "Jülide",
-  "Kader", "Leyla", "Melisa", "Nisan", "Oya", "Perihan", "Rabia", "Sibel", "Tülin", "Ülker"
-];
+export interface NPCGenerationOptions {
+  locale?: NPCNameLocale;
+  deterministicSeed?: number;
+}
+
+const npcNamePools: Record<NPCNameLocale, Record<'MALE' | 'FEMALE', string[]>> = {
+  tr: {
+    MALE: [
+      'Ahmet', 'Mehmet', 'Mustafa', 'Ali', 'Hüseyin', 'Hasan', 'İbrahim', 'Osman', 'Yusuf', 'Ömer',
+      'Can', 'Burak', 'Emre', 'Kerem', 'Mert', 'Deniz', 'Volkan', 'Cem', 'Arda', 'Efe',
+      'Bora', 'Sinan', 'Kaan', 'Yiğit', 'Berkay', 'Oğuz', 'Tolga', 'Onur', 'Serkan', 'Hakan',
+      'Eren', 'Alp', 'Barış', 'Doruk', 'Emir', 'Furkan', 'Görkem', 'Halil', 'İlker', 'Kağan',
+      'Levent', 'Murat', 'Okan', 'Polat', 'Rüzgar', 'Selim', 'Tarık', 'Umut', 'Zafer', 'Aras',
+      'Batuhan', 'Caner', 'Dağhan', 'Engin', 'Fatih', 'Gökhan', 'Hüsnü', 'İsmail', 'Koray', 'Tuna',
+      'Atlas', 'Poyraz', 'Çınar', 'Demir', 'Eymen', 'Yaman', 'Alperen', 'Utku', 'Atakan', 'Baran',
+      'Kuzey', 'Ege', 'Taner', 'Meriç', 'Atalay', 'Berke', 'Çağrı', 'Doğukan', 'Erdem', 'Ferit',
+      'Göktürk', 'Harun', 'İlhan', 'Kıvanç', 'Kutay', 'Metehan', 'Necip', 'Orhan', 'Özgür', 'Rauf',
+      'Sarp', 'Taylan', 'Uğur', 'Vedat', 'Yalçın', 'Zeki', 'Akın', 'Bilge', 'Cenk', 'Devrim',
+    ],
+    FEMALE: [
+      'Fatma', 'Ayşe', 'Emine', 'Hatice', 'Zeynep', 'Elif', 'Meryem', 'Şerife', 'Sultan', 'Hanife',
+      'Melis', 'Ceren', 'Selin', 'Ece', 'Derya', 'Sena', 'Ezgi', 'Buse', 'Gizem', 'İrem',
+      'Gamze', 'Deniz', 'Aslı', 'Başak', 'Cansu', 'Damla', 'Ebru', 'Fulya', 'Gülşen', 'Hande',
+      'Ilgın', 'Jale', 'Kardelen', 'Lale', 'Meltem', 'Nazlı', 'Özge', 'Pelin', 'Rüya', 'Simge',
+      'Tuğçe', 'Vildan', 'Yağmur', 'Zara', 'Almila', 'Bengisu', 'Cemre', 'Defne', 'Esra', 'Feyza',
+      'Gökçe', 'Hazal', 'İpek', 'Kübra', 'Lara', 'Miray', 'Naz', 'Öykü', 'Pınar', 'Rana',
+      'Ada', 'Azra', 'Beren', 'Derin', 'Ela', 'Nehir', 'Su', 'Toprak', 'Asya', 'Dila',
+      'Eliz', 'Güneş', 'İdil', 'Kumsal', 'Lina', 'Maya', 'Nil', 'Pera', 'Sude', 'Tuana',
+      'Yaren', 'Zehra', 'Beril', 'Ceyda', 'Dilara', 'Eylül', 'Gülce', 'Hira', 'İlayda', 'Jülide',
+      'Kader', 'Leyla', 'Melisa', 'Nisan', 'Oya', 'Perihan', 'Rabia', 'Sibel', 'Tülin', 'Ülker',
+    ],
+  },
+  en: {
+    MALE: [
+      'James', 'Michael', 'William', 'David', 'Joseph', 'Daniel', 'Matthew', 'Andrew', 'Joshua', 'Ryan',
+      'Nathan', 'Ethan', 'Noah', 'Liam', 'Mason', 'Logan', 'Lucas', 'Aiden', 'Jackson', 'Levi',
+      'Benjamin', 'Samuel', 'Henry', 'Jack', 'Caleb', 'Connor', 'Owen', 'Wyatt', 'Isaac', 'Julian',
+      'Theodore', 'Thomas', 'Charles', 'Leo', 'Adrian', 'Grayson', 'Asher', 'Hudson', 'Miles', 'Eli',
+      'Everett', 'Colin', 'Dominic', 'Rowan', 'Silas', 'Parker', 'Brooks', 'Nolan', 'Gavin', 'Jasper',
+      'Brandon', 'Dylan', 'Aaron', 'Ian', 'Evan', 'Alex', 'Christian', 'Jonathan', 'Kevin', 'Jason',
+      'Adam', 'Brian', 'Sean', 'Scott', 'Kyle', 'Eric', 'Patrick', 'Tyler', 'Zachary', 'Cole',
+      'Reid', 'Blake', 'Chase', 'Grant', 'Riley', 'Shane', 'Spencer', 'Toby', 'Vincent', 'Wesley',
+      'Xavier', 'Felix', 'Oliver', 'George', 'Robert', 'Edward', 'Arthur', 'Harvey', 'Louis', 'Oscar',
+      'Frank', 'Freddie', 'Harry', 'Finley', 'Callum', 'Alfie', 'Rhys', 'Kieran', 'Elliot', 'Marcus',
+    ],
+    FEMALE: [
+      'Emma', 'Olivia', 'Sophia', 'Ava', 'Isabella', 'Mia', 'Amelia', 'Harper', 'Evelyn', 'Abigail',
+      'Ella', 'Scarlett', 'Grace', 'Chloe', 'Lily', 'Hannah', 'Sofia', 'Aria', 'Zoe', 'Layla',
+      'Nora', 'Luna', 'Aurora', 'Ellie', 'Stella', 'Lucy', 'Claire', 'Audrey', 'Violet', 'Hazel',
+      'Alice', 'Sadie', 'Madeline', 'Brooklyn', 'Naomi', 'Eva', 'Ruby', 'Ivy', 'Elena', 'Leah',
+      'Sarah', 'Anna', 'Julia', 'Maya', 'Eliza', 'Ariana', 'Quinn', 'Rose', 'Jasmine', 'Sydney',
+      'Ashley', 'Brianna', 'Caroline', 'Danielle', 'Erin', 'Faith', 'Gabrielle', 'Hailey', 'Jenna', 'Kaitlyn',
+      'Lauren', 'Megan', 'Nicole', 'Paige', 'Rachel', 'Samantha', 'Taylor', 'Vanessa', 'Whitney', 'Yasmin',
+      'Alyssa', 'Bethany', 'Caitlin', 'Delilah', 'Elise', 'Fiona', 'Gemma', 'Heather', 'Imogen', 'Joanna',
+      'Kelsey', 'Lydia', 'Molly', 'Natalie', 'Phoebe', 'Rosalie', 'Savannah', 'Tessa', 'Veronica', 'Willow',
+      'Alexis', 'Bianca', 'Celeste', 'Daphne', 'Ember', 'Frances', 'Genevieve', 'Hallie', 'Isla', 'Juliette',
+    ],
+  },
+};
 
 const npcPersonalities: NPCPersonality[] = ['FRIENDLY', 'SHY', 'AGGRESSIVE', 'POPULAR', 'NERDY', 'ARTISTIC', 'ATHLETIC'];
 const npcTraits: NPCTrait[] = ['LOYAL', 'JEALOUS', 'GOSSIPER', 'SUPPORTIVE', 'COMPETITIVE', 'ROMANTIC', 'MANIPULATIVE'];
 
+const createSeededRandom = (seed: number): (() => number) => {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let mixed = Math.imul(state ^ (state >>> 15), 1 | state);
+    mixed ^= mixed + Math.imul(mixed ^ (mixed >>> 7), 61 | mixed);
+    return ((mixed ^ (mixed >>> 14)) >>> 0) / 4294967296;
+  };
+};
+
+const getRandomIntWithGenerator = (
+  min: number,
+  max: number,
+  generator: () => number
+): number => Math.floor(generator() * (max - min + 1)) + min;
+
+const resolveNPCNameLocale = (locale?: NPCNameLocale): NPCNameLocale => {
+  if (locale) return locale;
+  const runtimeLocale = getRuntimeLocale();
+  return runtimeLocale === 'en' ? 'en' : 'tr';
+};
+
 /** Yaşa uygun rastgele NPC oluşturur */
-export const createRandomNPC = (playerAge: number = 0, playerTurn: number = 1): NPC => {
-  const gender = Math.random() > 0.5 ? 'MALE' : 'FEMALE';
-  const list = gender === 'MALE' ? maleNames : femaleNames;
-  const name = list[getRandomInt(0, list.length - 1)];
+export const createRandomNPC = (
+  playerAge: number = 0,
+  playerTurn: number = 1,
+  options: NPCGenerationOptions = {}
+): NPC => {
+  const locale = resolveNPCNameLocale(options.locale);
+  const randomSource = options.deterministicSeed === undefined
+    ? Math.random
+    : createSeededRandom(options.deterministicSeed);
+  const nextInt = (min: number, max: number): number => (
+    getRandomIntWithGenerator(min, max, randomSource)
+  );
+
+  const gender = randomSource() > 0.5 ? 'MALE' : 'FEMALE';
+  const list = npcNamePools[locale][gender];
+  const name = list[nextInt(0, list.length - 1)];
   const id = `npc_${Date.now()}_${getRandomInt(0, 999)}`;
 
   // Yaşa uygun NPC yaşı (±2 yıl)
-  const npcAge = Math.max(0, playerAge + getRandomInt(-2, 2));
+  const npcAge = Math.max(0, playerAge + nextInt(-2, 2));
 
   // Rastgele kişilik
-  const personality = npcPersonalities[getRandomInt(0, npcPersonalities.length - 1)];
+  const personality = npcPersonalities[nextInt(0, npcPersonalities.length - 1)];
 
   // 1-2 rastgele özellik
-  const traitCount = getRandomInt(1, 2);
+  const traitCount = nextInt(1, 2);
   const selectedTraits: NPCTrait[] = [];
   while (selectedTraits.length < traitCount) {
-    const trait = npcTraits[getRandomInt(0, npcTraits.length - 1)];
+    const trait = npcTraits[nextInt(0, npcTraits.length - 1)];
     if (!selectedTraits.includes(trait)) {
       selectedTraits.push(trait);
     }
@@ -838,7 +994,7 @@ export const createRandomNPC = (playerAge: number = 0, playerTurn: number = 1): 
     id,
     name,
     role: 'ACQUAINTANCE',
-    relationship: getRandomInt(10, 40),
+    relationship: nextInt(10, 40),
     romance: 0,
     gender,
     age: npcAge,
@@ -853,10 +1009,18 @@ export const createRandomNPC = (playerAge: number = 0, playerTurn: number = 1): 
 };
 
 /** Başlangıç NPC'lerini oluşturur (0 yaş için aile/komşu çocukları) */
-export const generateNPCs = (playerAge: number = 0, playerTurn: number = 1): NPC[] => {
+export const generateNPCs = (
+  playerAge: number = 0,
+  playerTurn: number = 1,
+  options: NPCGenerationOptions = {}
+): NPC[] => {
+  const secondSeed = options.deterministicSeed === undefined
+    ? undefined
+    : options.deterministicSeed + 1;
+
   return [
-    createRandomNPC(playerAge, playerTurn),
-    createRandomNPC(playerAge, playerTurn)
+    createRandomNPC(playerAge, playerTurn, options),
+    createRandomNPC(playerAge, playerTurn, { ...options, deterministicSeed: secondSeed }),
   ];
 };
 
@@ -1674,9 +1838,12 @@ export const calculateZodiacSign = (month: number, day: number): ZodiacSign => {
   return 'BALIK'; // 19 Şubat - 20 Mart
 };
 
-/** Rastgele Türkçe isim döndürür */
-export const getRandomFirstName = (gender: PlayerGender): string => {
-  const list = gender === 'MALE' ? maleNames : femaleNames;
+/** Locale'e göre rastgele isim döndürür */
+export const getRandomFirstName = (
+  gender: PlayerGender,
+  locale: NPCNameLocale = resolveNPCNameLocale()
+): string => {
+  const list = npcNamePools[locale][gender];
   return list[getRandomInt(0, list.length - 1)];
 };
 
@@ -1699,9 +1866,11 @@ export const getRandomBirthDate = (): { month: number; day: number } => {
 };
 
 /** Tamamen rastgele karakter bilgisi oluşturur */
-export const generateRandomCharacter = (): CharacterInfo => {
+export const generateRandomCharacter = (
+  locale: NPCNameLocale = resolveNPCNameLocale()
+): CharacterInfo => {
   const gender: PlayerGender = Math.random() > 0.5 ? 'MALE' : 'FEMALE';
-  const firstName = getRandomFirstName(gender);
+  const firstName = getRandomFirstName(gender, locale);
   const lastName = getRandomLastName();
   const birthCity = getRandomCity();
   const { month, day } = getRandomBirthDate();

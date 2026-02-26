@@ -3,6 +3,7 @@ import { View, Text, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGame } from '../context/GameContext';
 import { getThemeTokens, getDensityMetrics } from '../utils/themeUtils';
+import { tRuntime } from '../i18n/strings';
 import {
   FadeInDownView,
   FadeInUpView,
@@ -35,14 +36,14 @@ export const ReportCardScreen: React.FC<ReportCardScreenProps> = ({ theme, metri
   };
 
   const subjects = [
-    { key: 'math', label: 'Matematik' },
-    { key: 'science', label: 'Fen' },
-    { key: 'language', label: 'Dil' },
-    { key: 'turkish', label: 'Türkçe' },
-    { key: 'history', label: 'Tarih' },
-    { key: 'geography', label: 'Coğrafya' },
-    { key: 'art', label: 'Görsel Sanatlar' },
-    { key: 'music', label: 'Müzik' },
+    { key: 'math', label: tRuntime('exams.reportCard.subjects.math') },
+    { key: 'science', label: tRuntime('exams.reportCard.subjects.science') },
+    { key: 'language', label: tRuntime('exams.reportCard.subjects.language') },
+    { key: 'turkish', label: tRuntime('exams.reportCard.subjects.turkish') },
+    { key: 'history', label: tRuntime('exams.reportCard.subjects.history') },
+    { key: 'geography', label: tRuntime('exams.reportCard.subjects.geography') },
+    { key: 'art', label: tRuntime('exams.reportCard.subjects.art') },
+    { key: 'music', label: tRuntime('exams.reportCard.subjects.music') },
   ] as const;
 
   return (
@@ -50,7 +51,7 @@ export const ReportCardScreen: React.FC<ReportCardScreenProps> = ({ theme, metri
       <ScrollView style={{ flex: 1, padding: metrics.pad }}>
         <View style={cardStyle}>
           <FadeInDownView delay={0}>
-            <Text style={{ color: theme.textPrimary, fontSize: 18, fontWeight: '700', marginBottom: 12 }}>📄 Karne</Text>
+            <Text style={{ color: theme.textPrimary, fontSize: 18, fontWeight: '700', marginBottom: 12 }}>{tRuntime('exams.reportCard.title')}</Text>
           </FadeInDownView>
 
           <View style={{ gap: 8, marginBottom: 16 }}>
@@ -77,7 +78,7 @@ export const ReportCardScreen: React.FC<ReportCardScreenProps> = ({ theme, metri
                 alignItems: 'center',
               }}
             >
-              <Text style={{ color: '#ffffff', fontWeight: '700' }}>Kapat</Text>
+              <Text style={{ color: '#ffffff', fontWeight: '700' }}>{tRuntime('save.close')}</Text>
             </ShimmerButton>
           </FadeInUpView>
         </View>

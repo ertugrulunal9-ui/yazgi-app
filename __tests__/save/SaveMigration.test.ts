@@ -122,4 +122,85 @@ describe('Save Migration', () => {
     expect(migrated.gameState.unlockedAchievements).toBeDefined();
     expect(migrated.gameState.achievementProgress).toBeDefined();
   });
+
+  it('should migrate v1 to v2 consumable and buff state fields', () => {
+    const saveData: SaveSlotData = {
+      metadata: {
+        slotId: '1',
+        characterName: 'Test',
+        age: 10,
+        playtime: 120,
+        lastPlayed: Date.now(),
+        version: 1,
+        checksum: 'old',
+        status: 'active',
+        isPremium: false,
+      },
+      playerName: 'Test',
+      stats: { health: 50, intelligence: 50, charisma: 50, discipline: 50, money: 0, energy: 50, familyRelation: 50 },
+      gameState: {
+        age: 10,
+        turn: 12,
+        phase: 'HUB',
+        currentEvent: null,
+        pendingReportCard: false,
+        characterInfo: null,
+        lastResult: null,
+        historyLog: [],
+        family: null,
+        maxEnergy: 100,
+        schoolGrades: { math: 50, science: 50, language: 50, turkish: 50, history: 50, geography: 50, art: 50, music: 50 },
+        skills: {
+          coding: 0, music: 0, sports: 0, design: 0, athletics: 0, logic: 0, reading: 0,
+          teamwork: 0, art: 0, writing: 0, work_ethic: 0, business: 0
+        },
+        talent: 'NONE',
+        streak: { actionId: null, count: 0 },
+        traits: [],
+        traitProgress: {},
+        actionCounts: {},
+        actionHistory: [],
+        eventChoiceHistory: [],
+        inventory: [],
+        npcs: [],
+        selectedNpcId: null,
+        innerThought: '',
+        innerThoughtType: 'IDLE',
+        floatingTexts: [],
+        totalTurns: 0,
+        sessionCount: 1,
+        adaptivePacingStreak: 0,
+        lastInteracted: {},
+        recentEvents: [],
+        memories: [],
+        scheduledEvents: [],
+        unlockedAchievements: [],
+        achievementProgress: {},
+        personality: { openness: 50, courage: 50, empathy: 50, patience: 50, conformity: 50 },
+        stress: { current: 0, threshold: 70, turnsSinceBreakdown: 0, sources: [] },
+        personalityHistory: [],
+        personalityState: {
+          HELPFUL: { count: 0, streak: 0, multiplier: 1 },
+          PRAGMATIC: { count: 0, streak: 0, multiplier: 1 },
+          AGGRESSIVE: { count: 0, streak: 0, multiplier: 1 },
+        },
+        socialGroups: [],
+        socialReputation: 50,
+        examsTakenThisYear: [],
+        isExamPeriod: false,
+        childhood: {
+          completed: false,
+          sceneIndex: 0,
+          memories: [],
+          selectedMemoryId: null,
+        },
+      } as GameState,
+    };
+
+    const migrated = migrateToVersion(saveData, SAVE_VERSION);
+    expect(migrated.metadata.version).toBe(SAVE_VERSION);
+    expect(migrated.gameState.activeBuffs).toEqual([]);
+    expect(migrated.gameState.consumableCooldowns).toEqual({});
+    expect(migrated.gameState.consumableUsageThisTurn).toEqual({});
+  });
 });

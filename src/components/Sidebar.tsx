@@ -4,6 +4,8 @@ import { Stats, StatKey, Family, GameState, Talent } from '../types';
 import StatBar from './StatBar';
 import { getStatCap } from '../utils/gameUtils';
 import { getTrait } from '../data/traits';
+import { tRuntime } from '../i18n/strings';
+import { useRuntimeLocale } from '../i18n/useRuntimeLocale';
 
 interface SidebarProps {
   age: number;
@@ -17,46 +19,32 @@ interface SidebarProps {
 }
 
 const Sidebar = React.memo<SidebarProps>(({ age, stats, playerName, family, gameState, onAdvanceTurn, onOpenSettings, theme }) => {
+  useRuntimeLocale();
+
   const isBaby = age < 7;
 
   const getStatLabel = (key: StatKey): string => {
     switch (key) {
-      case 'intelligence': return isBaby ? 'Motor Becerileri' : 'Zeka';
-      case 'charisma': return isBaby ? 'Tatlılık' : 'Karizma';
-      case 'discipline': return isBaby ? 'Uslu Durma' : 'Disiplin';
-      case 'health': return 'Sağlık';
-      case 'energy': return 'Günlük Enerji';
-      case 'money': return 'Para';
-      case 'familyRelation': return 'Aile İlişkisi';
+      case 'intelligence': return tRuntime(isBaby ? 'sidebar.stats.intelligenceBaby' : 'sidebar.stats.intelligence');
+      case 'charisma': return tRuntime(isBaby ? 'sidebar.stats.charismaBaby' : 'sidebar.stats.charisma');
+      case 'discipline': return tRuntime(isBaby ? 'sidebar.stats.disciplineBaby' : 'sidebar.stats.discipline');
+      case 'health': return tRuntime('sidebar.stats.health');
+      case 'energy': return tRuntime('sidebar.stats.energy');
+      case 'money': return tRuntime('sidebar.stats.money');
+      case 'familyRelation': return tRuntime('sidebar.stats.familyRelation');
       default: return key;
     }
   };
 
-  const getWealthLabel = (w: string) => {
-    switch(w) {
-      case 'POOR': return 'Dar Gelirli';
-      case 'MIDDLE': return 'Orta Halli';
-      case 'RICH': return 'Varlıklı';
-      default: return w;
-    }
-  };
+  const getWealthLabel = (w: string) =>
+    tRuntime(`character.screen.family.wealth.${w}`, undefined, w);
 
-  const getDynamicLabel = (d: string) => {
-    switch(d) {
-      case 'SUPPORTIVE': return 'Destekleyici';
-      case 'STRICT': return 'Otoriter';
-      case 'CHAOTIC': return 'Kaotik';
-      default: return d;
-    }
-  };
+  const getDynamicLabel = (d: string) =>
+    tRuntime(`character.screen.family.dynamic.${d}`, undefined, d);
 
-  const getTalentLabel = (t: Talent) => {
-    switch(t) {
-      case 'CODING': return '💻 Teknoloji Dehası';
-      case 'MUSIC': return '🎵 Müzik Kulağı';
-      case 'SPORTS': return '⚡ Atletik Vücut';
-      default: return null;
-    }
+  const getTalentLabel = (talent: Talent) => {
+    if (talent === 'NONE') return null;
+    return tRuntime(`sidebar.talents.${talent}`, undefined, talent);
   };
 
   const getGradeColor = (grade: number) => {
@@ -276,12 +264,12 @@ const Sidebar = React.memo<SidebarProps>(({ age, stats, playerName, family, game
               </Text>
             </View>
             <View style={styles.ageBadge}>
-              <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: 'bold' }}>{age} Yaş</Text>
+              <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: 'bold' }}>{tRuntime('sidebar.ageLabel', { age })}</Text>
             </View>
           </View>
 
           <Text style={styles.playerName}>{playerName}</Text>
-          {isBaby && <Text style={styles.babyLabel}>Bebeklik Çağı</Text>}
+          {isBaby && <Text style={styles.babyLabel}>{tRuntime('sidebar.babyLabel')}</Text>}
 
           {gameState?.talent && gameState.talent !== 'NONE' && (
             <View style={styles.talentBadge}>
@@ -293,7 +281,7 @@ const Sidebar = React.memo<SidebarProps>(({ age, stats, playerName, family, game
         <View style={styles.content}>
           {gameState?.traits && gameState.traits.length > 0 && (
             <View>
-              <Text style={styles.sectionTitle}>Karakter Özellikleri</Text>
+              <Text style={styles.sectionTitle}>{tRuntime('sidebar.sections.traits')}</Text>
               <View style={styles.traitContainer}>
                 {gameState.traits.map(traitId => {
                   const trait = getTrait(traitId);
@@ -313,16 +301,16 @@ const Sidebar = React.memo<SidebarProps>(({ age, stats, playerName, family, game
 
           {family && (
             <View>
-              <Text style={styles.sectionTitle}>Aile Durumu</Text>
+              <Text style={styles.sectionTitle}>{tRuntime('sidebar.sections.family')}</Text>
               <View style={styles.familyCard}>
                 <View style={styles.familyRow}>
-                  <Text style={styles.familyLabel}>Ekonomik:</Text>
+                  <Text style={styles.familyLabel}>{tRuntime('sidebar.familyLabels.economic')}</Text>
                   <Text style={[styles.familyValue, { color: family.wealth === 'RICH' ? '#34d399' : family.wealth === 'POOR' ? '#f87171' : '#93c5fd' }]}>
                     {getWealthLabel(family.wealth)}
                   </Text>
                 </View>
                 <View style={styles.familyRow}>
-                  <Text style={styles.familyLabel}>Dinamik:</Text>
+                  <Text style={styles.familyLabel}>{tRuntime('sidebar.familyLabels.dynamic')}</Text>
                   <Text style={[styles.familyValue, { color: '#fcd34d' }]}>
                     {getDynamicLabel(family.dynamic)}
                   </Text>
@@ -351,22 +339,22 @@ const Sidebar = React.memo<SidebarProps>(({ age, stats, playerName, family, game
             <>
               <View style={styles.separator} />
               <View style={styles.schoolCard}>
-                <Text style={styles.sectionTitle}>🏫 Okul Notları</Text>
+                <Text style={styles.sectionTitle}>{tRuntime('sidebar.sections.schoolGrades')}</Text>
                 <View style={{ gap: 8 }}>
                   <View style={[styles.familyRow, { borderBottomWidth: 1, borderBottomColor: theme.border, paddingBottom: 8 }]}>
-                    <Text style={styles.familyLabel}>Matematik:</Text>
+                    <Text style={styles.familyLabel}>{tRuntime('sidebar.grades.math')}</Text>
                     <Text style={[styles.familyValue, { fontFamily: 'monospace', fontWeight: 'bold', color: getGradeColor(gameState.schoolGrades.math) }]}>
                       {gameState.schoolGrades.math}
                     </Text>
                   </View>
                   <View style={[styles.familyRow, { borderBottomWidth: 1, borderBottomColor: theme.border, paddingBottom: 8 }]}>
-                    <Text style={styles.familyLabel}>Fen Bilgisi:</Text>
+                    <Text style={styles.familyLabel}>{tRuntime('sidebar.grades.science')}</Text>
                     <Text style={[styles.familyValue, { fontFamily: 'monospace', fontWeight: 'bold', color: getGradeColor(gameState.schoolGrades.science) }]}>
                       {gameState.schoolGrades.science}
                     </Text>
                   </View>
                   <View style={styles.familyRow}>
-                    <Text style={styles.familyLabel}>Dil:</Text>
+                    <Text style={styles.familyLabel}>{tRuntime('sidebar.grades.language')}</Text>
                     <Text style={[styles.familyValue, { fontFamily: 'monospace', fontWeight: 'bold', color: getGradeColor(gameState.schoolGrades.language) }]}>
                       {gameState.schoolGrades.language}
                     </Text>
@@ -375,22 +363,22 @@ const Sidebar = React.memo<SidebarProps>(({ age, stats, playerName, family, game
               </View>
 
               <View style={styles.skillCard}>
-                <Text style={styles.sectionTitle}>🎯 Beceriler</Text>
+                <Text style={styles.sectionTitle}>{tRuntime('sidebar.sections.skills')}</Text>
                 <View style={{ gap: 8 }}>
                   <View style={styles.skillRow}>
-                    <Text style={styles.skillLabel}>Yazılım:</Text>
+                    <Text style={styles.skillLabel}>{tRuntime('sidebar.skills.coding')}</Text>
                     <Text style={styles.skillValue}>{gameState.skills.coding}</Text>
                   </View>
                   <View style={styles.skillRow}>
-                    <Text style={styles.skillLabel}>Müzik:</Text>
+                    <Text style={styles.skillLabel}>{tRuntime('sidebar.skills.music')}</Text>
                     <Text style={styles.skillValue}>{gameState.skills.music}</Text>
                   </View>
                   <View style={styles.skillRow}>
-                    <Text style={styles.skillLabel}>Spor:</Text>
+                    <Text style={styles.skillLabel}>{tRuntime('sidebar.skills.sports')}</Text>
                     <Text style={styles.skillValue}>{gameState.skills.sports}</Text>
                   </View>
                   <View style={styles.skillRow}>
-                    <Text style={styles.skillLabel}>Tasarım:</Text>
+                    <Text style={styles.skillLabel}>{tRuntime('sidebar.skills.design')}</Text>
                     <Text style={styles.skillValue}>{gameState.skills.design}</Text>
                   </View>
                 </View>
@@ -410,7 +398,7 @@ const Sidebar = React.memo<SidebarProps>(({ age, stats, playerName, family, game
           ]}
         >
           <Text style={[styles.advanceButtonText, isEventActive && styles.advanceButtonTextDisabled]}>
-            Sonraki Tur
+            {tRuntime('sidebar.nextTurn')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity

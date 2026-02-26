@@ -8,19 +8,15 @@ import Animated, {
     withTiming,
 } from 'react-native-reanimated';
 import { Haptics } from '../../utils/haptics';
+import { AppLocale, getRuntimeLocale, tRuntime } from '../../i18n/strings';
 import { Difficulty, GameState } from './MiniGameContainer';
 import seenQuestionsTracker from '../../utils/seenQuestionsTracker';
 import { balanceCorrectAnswerDistribution } from './questionOptionBalancer';
-
-type QuestionType = 'VOCABULARY' | 'TRANSLATION' | 'GRAMMAR' | 'FILL_BLANK';
-
-interface EnglishQuestion {
-    id: string;
-    type: QuestionType;
-    question: string;
-    options: string[];
-    correctIndex: number;
-}
+import {
+    EnglishQuestion,
+    EnglishQuestionType,
+    getEnglishQuestionPool,
+} from './englishExamContent';
 
 interface EnglishExamGameProps {
     gameState?: GameState;
@@ -30,7 +26,7 @@ interface EnglishExamGameProps {
 }
 
 // Yaş ve Zorluk bazlı soru havuzları - Benzersiz ID'ler ile
-const QUESTIONS: Record<string, Record<string, EnglishQuestion[]>> = {
+const TURKISH_QUESTIONS: Record<string, Record<string, EnglishQuestion[]>> = {
     // 6-8 yaş
     YOUNG: {
         EASY: [
@@ -196,32 +192,87 @@ const QUESTIONS: Record<string, Record<string, EnglishQuestion[]>> = {
 };
 
 // Yaş ve zorluğa göre soru havuzu seç
-const getQuestionPool = (age: number, difficulty: Difficulty): EnglishQuestion[] => {
+const getTurkishQuestionPool = (age: number, difficulty: Difficulty): EnglishQuestion[] => {
     let ageGroup: string;
     if (age <= 8) ageGroup = 'YOUNG';
     else if (age <= 11) ageGroup = 'MIDDLE';
     else ageGroup = 'ADVANCED';
 
-    return QUESTIONS[ageGroup][difficulty] || QUESTIONS[ageGroup]['MEDIUM'];
+    return TURKISH_QUESTIONS[ageGroup][difficulty] || TURKISH_QUESTIONS[ageGroup]['MEDIUM'];
 };
 
-const getQuestionTypeEmoji = (type: QuestionType): string => {
-    switch (type) {
-        case 'VOCABULARY': return '📚';
-        case 'TRANSLATION': return '🔄';
-        case 'GRAMMAR': return '📝';
-        case 'FILL_BLANK': return '✏️';
-    }
+const getLocalizedQuestionPool = (
+    age: number,
+    difficulty: Difficulty,
+    locale: AppLocale
+): EnglishQuestion[] => (
+    locale === 'en'
+        ? getEnglishQuestionPool(age, difficulty)
+        : getTurkishQuestionPool(age, difficulty)
+);
+
+const QUESTION_TYPE_EMOJIS: Record<EnglishQuestionType, string> = {
+    VOCABULARY: '📚',
+    TRANSLATION: '🔄',
+    GRAMMAR: '📝',
+    FILL_BLANK: '✏️',
 };
 
-const getQuestionTypeTitle = (type: QuestionType): string => {
-    switch (type) {
-        case 'VOCABULARY': return 'Kelime';
-        case 'TRANSLATION': return 'Çeviri';
-        case 'GRAMMAR': return 'Gramer';
-        case 'FILL_BLANK': return 'Boşluk Doldur';
-    }
+const QUESTION_TYPE_FALLBACKS: Record<AppLocale, Record<EnglishQuestionType, string>> = {
+    tr: {
+        VOCABULARY: 'Kelime',
+        TRANSLATION: 'Ceviri',
+        GRAMMAR: 'Gramer',
+        FILL_BLANK: 'Bosluk Doldur',
+    },
+    en: {
+        VOCABULARY: 'Vocabulary',
+        TRANSLATION: 'Usage',
+        GRAMMAR: 'Grammar',
+        FILL_BLANK: 'Fill in the Blank',
+    },
 };
+
+const QUESTION_TYPE_KEY_MAP: Record<EnglishQuestionType, string> = {
+    VOCABULARY: 'vocabulary',
+    TRANSLATION: 'translation',
+    GRAMMAR: 'grammar',
+    FILL_BLANK: 'fillBlank',
+};
+
+const getQuestionTypeEmoji = (type: EnglishQuestionType): string => QUESTION_TYPE_EMOJIS[type];
+
+const getQuestionTypeTitle = (type: EnglishQuestionType, locale: AppLocale): string => (
+    tRuntime(
+        `exams.english.questionTypes.${QUESTION_TYPE_KEY_MAP[type]}`,
+        undefined,
+        QUESTION_TYPE_FALLBACKS[locale][type]
+    )
+);
+
+const getLoadingFallback = (locale: AppLocale): string => (
+    locale === 'en' ? 'Loading...' : 'Yukleniyor...'
+);
+
+const getPreparingFallback = (locale: AppLocale): string => (
+    locale === 'en' ? 'Preparing questions...' : 'Sorular hazirlaniyor...'
+);
+
+const getCorrectAnswerFallback = (locale: AppLocale): string => (
+    locale === 'en' ? 'Correct answer: {answer}' : 'Dogru cevap: {answer}'
+);
+
+const getLoadingText = (locale: AppLocale): string => (
+    tRuntime('exams.english.loading', undefined, getLoadingFallback(locale))
+);
+
+const getPreparingText = (locale: AppLocale): string => (
+    tRuntime('exams.english.preparing', undefined, getPreparingFallback(locale))
+);
+
+const getCorrectAnswerText = (locale: AppLocale, answer: string): string => (
+    tRuntime('exams.english.correctAnswer', { answer }, getCorrectAnswerFallback(locale))
+);
 
 const EnglishExamGame: React.FC<EnglishExamGameProps> = ({
     gameState,
@@ -229,10 +280,12 @@ const EnglishExamGame: React.FC<EnglishExamGameProps> = ({
     difficulty = 'MEDIUM',
     age = 10,
 }) => {
+    const runtimeLocale = getRuntimeLocale();
+
     if (!gameState || !setGameState) {
         return (
             <View style={styles.loadingContainer}>
-                <Text style={styles.loadingText}>Yükleniyor...</Text>
+                <Text style={styles.loadingText}>{getLoadingText(runtimeLocale)}</Text>
             </View>
         );
     }
@@ -248,7 +301,7 @@ const EnglishExamGame: React.FC<EnglishExamGameProps> = ({
 
     useEffect(() => {
         const loadQuestions = async () => {
-            const pool = getQuestionPool(age, difficulty);
+            const pool = getLocalizedQuestionPool(age, difficulty, runtimeLocale);
             const selected = await seenQuestionsTracker.selectQuestionsForExam(
                 'english',
                 pool,
@@ -265,7 +318,7 @@ const EnglishExamGame: React.FC<EnglishExamGameProps> = ({
             }
         };
         loadQuestions();
-    }, [age, difficulty, gameState.totalQuestions]);
+    }, [age, difficulty, gameState.totalQuestions, runtimeLocale]);
 
     const confirmAnswer = useCallback((optionIndex: number) => {
         if (!currentQuestion) return;
@@ -343,7 +396,7 @@ const EnglishExamGame: React.FC<EnglishExamGameProps> = ({
     if (!currentQuestion) {
         return (
             <View style={styles.loadingContainer}>
-                <Text style={styles.loadingText}>Sorular hazırlanıyor...</Text>
+                <Text style={styles.loadingText}>{getPreparingText(runtimeLocale)}</Text>
             </View>
         );
     }
@@ -360,7 +413,7 @@ const EnglishExamGame: React.FC<EnglishExamGameProps> = ({
 
             <View style={styles.typeBadge}>
                 <Text style={styles.typeEmoji}>{getQuestionTypeEmoji(currentQuestion.type)}</Text>
-                <Text style={styles.typeText}>{getQuestionTypeTitle(currentQuestion.type)}</Text>
+                <Text style={styles.typeText}>{getQuestionTypeTitle(currentQuestion.type, runtimeLocale)}</Text>
             </View>
 
             <Animated.View style={[styles.questionContainer, shakeAnimatedStyle]}>
@@ -414,7 +467,7 @@ const EnglishExamGame: React.FC<EnglishExamGameProps> = ({
             {feedback === 'wrong' && (
                 <View style={styles.explanationContainer}>
                     <Text style={styles.explanationText}>
-                        Doğru cevap: {currentQuestion.options[currentQuestion.correctIndex]}
+                        {getCorrectAnswerText(runtimeLocale, currentQuestion.options[currentQuestion.correctIndex])}
                     </Text>
                 </View>
             )}

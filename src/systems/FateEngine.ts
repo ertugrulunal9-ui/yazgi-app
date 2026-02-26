@@ -5,6 +5,7 @@
  */
 
 import { FateOutcome, FateRollResult, FateState, GameState, Stats, ZodiacSign } from '../types';
+import { tRuntime } from '../i18n/strings';
 
 // ===== MULBERRY32 SEEDED PRNG =====
 
@@ -86,15 +87,10 @@ const PITY_PER_BAD = 0.05;
 const MAX_PITY = 0.25;
 const FATE_ODDS_SAMPLE_SIZE = 20000;
 
-type OddsPreviewEntry = { label: string; pct: number };
+export type OddsPreviewEntry = { outcome: FateOutcome; label: string; pct: number };
 
-const FATE_ODDS_LABELS: Record<FateOutcome, string> = {
-  BLESSED: 'Kutsanmis',
-  FORTUNATE: 'Sansli',
-  NEUTRAL: 'Notr',
-  UNLUCKY: 'Sanssiz',
-  CURSED: 'Lanetli',
-};
+const getFateOddsLabel = (outcome: FateOutcome): string =>
+  tRuntime(`fate.label.${outcome}`, undefined, outcome);
 
 // ===== BURÇ MODİFİKATÖRLERİ =====
 // personalityCategory → şans modifikasyonu (pozitif = şanslı, negatif = şanssız)
@@ -160,7 +156,8 @@ const estimateOutcomeDistribution = (
 const toPreviewEntries = (distribution: Record<FateOutcome, number>): OddsPreviewEntry[] => {
   const order: FateOutcome[] = ['BLESSED', 'FORTUNATE', 'NEUTRAL', 'UNLUCKY', 'CURSED'];
   return order.map((outcome) => ({
-    label: FATE_ODDS_LABELS[outcome],
+    outcome,
+    label: getFateOddsLabel(outcome),
     pct: Math.round((distribution[outcome] / FATE_ODDS_SAMPLE_SIZE) * 1000) / 10,
   }));
 };

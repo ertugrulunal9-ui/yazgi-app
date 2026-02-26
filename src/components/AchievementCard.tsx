@@ -2,6 +2,8 @@ import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Achievement } from '../types';
+import { tRuntime } from '../i18n/strings';
+import { getAchievementDescription, getAchievementName } from '../systems/achievementDefinitions';
 
 interface AchievementCardProps {
   achievement: Achievement;
@@ -24,11 +26,9 @@ const RARITY_COLORS = {
   LEGENDARY: { border: 'rgba(234, 179, 8, 0.3)', bg: 'rgba(113, 63, 18, 0.2)', text: '#facc15' },
 };
 
-const RARITY_LABELS = {
-  COMMON: 'Yaygın',
-  RARE: 'Nadir',
-  EPIC: 'Epik',
-  LEGENDARY: 'Efsane',
+const getRarityLabel = (rarity: string) => {
+  const key = `achievements.rarity${rarity.charAt(0) + rarity.slice(1).toLowerCase()}`;
+  return tRuntime(key);
 };
 
 export const AchievementCard: React.FC<AchievementCardProps> = ({
@@ -39,6 +39,12 @@ export const AchievementCard: React.FC<AchievementCardProps> = ({
   theme,
 }) => {
   const rarityStyle = RARITY_COLORS[achievement.rarity];
+  const displayName = achievement.isSecret && !isUnlocked
+    ? '???'
+    : getAchievementName(achievement.id, achievement.name);
+  const displayDescription = achievement.isSecret && !isUnlocked
+    ? '???'
+    : getAchievementDescription(achievement.id, achievement.description);
 
   const cardStyle = useMemo(() => ({
     backgroundColor: rarityStyle.bg,
@@ -56,7 +62,7 @@ export const AchievementCard: React.FC<AchievementCardProps> = ({
       onPress={onPress}
       style={cardStyle}
       activeOpacity={0.8}
-      accessibilityLabel={`${achievement.name} başarısı${isUnlocked ? ', açıldı' : ', kilitli'}`}
+      accessibilityLabel={tRuntime('achievements.achievementAria', { name: displayName, status: isUnlocked ? tRuntime('achievements.ariaUnlocked') : tRuntime('achievements.ariaLocked') })}
       accessibilityRole="button"
     >
       <View style={styles.row}>
@@ -71,22 +77,22 @@ export const AchievementCard: React.FC<AchievementCardProps> = ({
         <View style={styles.content}>
           <View style={styles.header}>
             <Text style={[styles.title, { color: isUnlocked ? theme.textPrimary : theme.textSecondary }]}>
-              {achievement.isSecret && !isUnlocked ? '???' : achievement.name}
+              {displayName}
             </Text>
             <Text style={[styles.rarity, { color: rarityStyle.text }]}>
-              {RARITY_LABELS[achievement.rarity]}
+              {getRarityLabel(achievement.rarity)}
             </Text>
           </View>
 
           <Text style={[styles.description, { color: isUnlocked ? theme.textSecondary : '#6b7280' }]}>
-            {achievement.isSecret && !isUnlocked ? '???' : achievement.description}
+            {displayDescription}
           </Text>
 
           {/* Progress Bar */}
           {showProgress && (
             <View style={styles.progressContainer}>
               <View style={styles.progressHeader}>
-                <Text style={styles.progressLabel}>İlerleme</Text>
+                <Text style={styles.progressLabel}>{tRuntime('achievements.progress')}</Text>
                 <Text style={styles.progressLabel}>{Math.round(progress)}%</Text>
               </View>
               <View style={styles.progressTrack}>
@@ -108,14 +114,14 @@ export const AchievementCard: React.FC<AchievementCardProps> = ({
               {achievement.reward.stats && (
                 <View style={[styles.rewardBadge, { backgroundColor: 'rgba(30, 58, 138, 0.3)' }]}>
                   <Text style={[styles.rewardText, { color: '#60a5fa' }]}>
-                    📈 Stat Boost
+                    {tRuntime('achievements.statBoost')}
                   </Text>
                 </View>
               )}
               {achievement.reward.item && (
                 <View style={[styles.rewardBadge, { backgroundColor: 'rgba(88, 28, 135, 0.3)' }]}>
                   <Text style={[styles.rewardText, { color: '#c084fc' }]}>
-                    🎁 Item
+                    {tRuntime('achievements.item')}
                   </Text>
                 </View>
               )}
@@ -126,7 +132,7 @@ export const AchievementCard: React.FC<AchievementCardProps> = ({
           {!isUnlocked && progress === 0 && (
             <View style={styles.statusRow}>
               <Feather name="lock" size={12} color="#6b7280" />
-              <Text style={styles.statusLocked}>Kilitli</Text>
+              <Text style={styles.statusLocked}>{tRuntime('achievements.locked')}</Text>
             </View>
           )}
 
@@ -134,7 +140,7 @@ export const AchievementCard: React.FC<AchievementCardProps> = ({
           {isUnlocked && (
             <View style={styles.statusRow}>
               <Feather name="trending-up" size={12} color="#4ade80" />
-              <Text style={styles.statusUnlocked}>Açıldı</Text>
+              <Text style={styles.statusUnlocked}>{tRuntime('achievements.unlocked')}</Text>
             </View>
           )}
         </View>

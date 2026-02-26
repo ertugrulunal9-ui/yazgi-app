@@ -3,6 +3,8 @@ import { View, Text, StyleSheet } from 'react-native';
 import { FlashList, ListRenderItem } from '@shopify/flash-list';
 import { NPC } from '../types';
 import { NPCCard } from './NPCCard';
+import { tRuntime } from '../i18n/strings';
+import { useRuntimeLocale } from '../i18n/useRuntimeLocale';
 
 // =================================================================
 // NPC LİSTESİ BİLEŞENİ (OPTIMIZED)
@@ -24,15 +26,18 @@ interface NPCListProps {
     theme: NPCListTheme;
 }
 
-// Grup başlıkları - modül seviyesinde tanımla (her render'da yeniden oluşturulmasın)
-const GROUP_TITLES: Record<string, { title: string; emoji: string; color: string }> = {
-    partners: { title: 'Sevgili', emoji: '❤️', color: '#ef4444' },
-    bestFriends: { title: 'En İyi Arkadaşlar', emoji: '💎', color: '#3b82f6' },
-    crushes: { title: 'İlgi Duyduğun', emoji: '💕', color: '#f472b6' },
-    friends: { title: 'Arkadaşlar', emoji: '🤝', color: '#10b981' },
-    acquaintances: { title: 'Tanıdıklar', emoji: '👤', color: '#9ca3af' },
-    rivals: { title: 'Rakipler & Düşmanlar', emoji: '⚔️', color: '#f59e0b' },
+// Grup meta verileri (emoji + renk sabit, title i18n'den gelir)
+const GROUP_META: Record<string, { emoji: string; color: string }> = {
+    partners: { emoji: '❤️', color: '#ef4444' },
+    bestFriends: { emoji: '💎', color: '#3b82f6' },
+    crushes: { emoji: '💕', color: '#f472b6' },
+    friends: { emoji: '🤝', color: '#10b981' },
+    acquaintances: { emoji: '👤', color: '#9ca3af' },
+    rivals: { emoji: '⚔️', color: '#f59e0b' },
 };
+
+const getGroupTitle = (key: string): string =>
+    tRuntime(`social.npcList.groups.${key}`, undefined, key);
 
 // FlashList için item tipleri
 type ListItem =
@@ -44,6 +49,8 @@ type ListItem =
 const GROUP_ORDER = ['partners', 'bestFriends', 'crushes', 'friends', 'acquaintances', 'rivals'] as const;
 
 const NPCListComponent: React.FC<NPCListProps> = ({ npcs, onNPCPress, theme }) => {
+    useRuntimeLocale();
+
     // NPC'leri grupla ve FlashList için düz listeye çevir
     const listData = useMemo<ListItem[]>(() => {
         if (npcs.length === 0) return [];
@@ -83,13 +90,13 @@ const NPCListComponent: React.FC<NPCListProps> = ({ npcs, onNPCPress, theme }) =
         GROUP_ORDER.forEach(groupKey => {
             const groupNpcs = groups[groupKey];
             if (groupNpcs.length > 0) {
-                const info = GROUP_TITLES[groupKey];
+                const meta = GROUP_META[groupKey];
                 data.push({
                     type: 'header',
                     key: groupKey,
-                    title: info.title,
-                    emoji: info.emoji,
-                    color: info.color,
+                    title: getGroupTitle(groupKey),
+                    emoji: meta.emoji,
+                    color: meta.color,
                     count: groupNpcs.length,
                 });
                 groupNpcs.forEach(npc => data.push({ type: 'npc', npc }));
@@ -105,24 +112,24 @@ const NPCListComponent: React.FC<NPCListProps> = ({ npcs, onNPCPress, theme }) =
             return (
                 <View style={[styles.summaryCard, { backgroundColor: theme.surface }]}>
                     <Text style={[styles.summaryTitle, { color: theme.textPrimary }]}>
-                        👥 Sosyal Çevren
+                        {tRuntime('social.npcList.socialCircle')}
                     </Text>
                     <View style={styles.summaryStats}>
                         <View style={styles.summaryStat}>
                             <Text style={styles.summaryNumber}>{item.totalCount}</Text>
-                            <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Toplam</Text>
+                            <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>{tRuntime('social.npcList.total')}</Text>
                         </View>
                         <View style={styles.summaryStat}>
                             <Text style={[styles.summaryNumber, { color: '#10b981' }]}>{item.friendCount}</Text>
-                            <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Arkadaş</Text>
+                            <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>{tRuntime('social.npcList.friends')}</Text>
                         </View>
                         <View style={styles.summaryStat}>
                             <Text style={[styles.summaryNumber, { color: '#f472b6' }]}>{item.loveCount}</Text>
-                            <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Aşk</Text>
+                            <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>{tRuntime('social.npcList.love')}</Text>
                         </View>
                         <View style={styles.summaryStat}>
                             <Text style={[styles.summaryNumber, { color: '#f59e0b' }]}>{item.rivalCount}</Text>
-                            <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Rakip</Text>
+                            <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>{tRuntime('social.npcList.rival')}</Text>
                         </View>
                     </View>
                 </View>
@@ -159,10 +166,10 @@ const NPCListComponent: React.FC<NPCListProps> = ({ npcs, onNPCPress, theme }) =
             <View style={[styles.emptyContainer, { backgroundColor: theme.surface }]}>
                 <Text style={styles.emptyEmoji}>👥</Text>
                 <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>
-                    Henüz kimseyi tanımadın
+                    {tRuntime('social.npcList.emptyTitle')}
                 </Text>
                 <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
-                    Büyüdükçe arkadaşlar edineceksin!
+                    {tRuntime('social.npcList.emptySubtitle')}
                 </Text>
             </View>
         );

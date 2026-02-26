@@ -1,4 +1,5 @@
 import { FamilyWealth, Item } from '../types';
+import { tRuntime } from '../i18n/strings';
 
 export const ITEMS: Item[] = [
   {
@@ -80,4 +81,12 @@ export const getEffectiveOwnedItems = (
 
 export const getItem = (itemId: string): Item | undefined => {
   return ITEMS.find(item => item.id === itemId);
+};
+
+export const getItemName = (itemId: string): string => {
+  return tRuntime(`items.${itemId}.name`, undefined, getItem(itemId)?.name ?? itemId);
+};
+
+export const getItemDescription = (itemId: string): string => {
+  return tRuntime(`items.${itemId}.description`, undefined, getItem(itemId)?.description ?? '');
 };

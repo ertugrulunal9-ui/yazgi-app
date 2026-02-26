@@ -1,5 +1,6 @@
 
 import { GameState, Stats } from '../types';
+import { tRuntime } from '../i18n/strings';
 
 export interface EndingDefinition {
   id: string;
@@ -46,3 +47,13 @@ export const ENDINGS: EndingDefinition[] = [
     condition: () => true // Her zaman true
   }
 ];
+
+export const getEndingTitle = (endingId: string): string => {
+  const ending = ENDINGS.find(e => e.id === endingId);
+  return tRuntime(`endings.${endingId}.title`, undefined, ending?.title ?? endingId);
+};
+
+export const getEndingDescription = (endingId: string): string => {
+  const ending = ENDINGS.find(e => e.id === endingId);
+  return tRuntime(`endings.${endingId}.description`, undefined, ending?.description ?? '');
+};

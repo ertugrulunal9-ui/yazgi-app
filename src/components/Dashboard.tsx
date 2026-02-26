@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { Stats, GameState } from '../types';
 import { calculateGradeAverage } from '../utils/schoolLogic';
+import { tRuntime } from '../i18n/strings';
+import { useRuntimeLocale } from '../i18n/useRuntimeLocale';
 
 interface DashboardProps {
   stats: Stats;
@@ -11,6 +13,8 @@ interface DashboardProps {
 }
 
 export const Dashboard = React.memo<DashboardProps>(({ stats, gameState, playerName, theme }) => {
+  useRuntimeLocale();
+
   const { age, schoolGrades, innerThought } = gameState;
   const isBaby = age < 7;
 
@@ -25,55 +29,55 @@ export const Dashboard = React.memo<DashboardProps>(({ stats, gameState, playerN
   const mood = getMoodIcon();
 
   const getInnerVoice = () => {
-    if (stats.energy < 10) return "Gözlerim kapanıyor... Ayakta duracak halim yok.";
-    if (stats.health < 20) return "Kendimi berbat hissediyorum, doktora mı gitsek?";
-    
+    if (stats.energy < 10) return tRuntime('dashboard.innerVoice.energyLow');
+    if (stats.health < 20) return tRuntime('dashboard.innerVoice.healthLow');
+
     if (innerThought) return innerThought;
 
     if (isBaby) {
-        if (stats.familyRelation < 50) return "İlgi istiyorum...";
-        return "Agu bugu...";
+        if (stats.familyRelation < 50) return tRuntime('dashboard.innerVoice.babyNeedy');
+        return tRuntime('dashboard.innerVoice.babyCute');
     }
 
-    if (stats.money < 50 && age >= 10) return "Cebimde metelik kalmadı, bir şeyler yapmalıyım.";
-    if (stats.intelligence > 80 && stats.energy > 50) return "Zihnim çok açık, bugün dünyayı fethedebilirim!";
-    
+    if (stats.money < 50 && age >= 10) return tRuntime('dashboard.innerVoice.moneyLow');
+    if (stats.intelligence > 80 && stats.energy > 50) return tRuntime('dashboard.innerVoice.smartEnergetic');
+
     const defaults = [
-        "Acaba bugün ne yapsak?",
-        "Geleceğimi düşünüyorum...",
-        "Hava ne kadar da güzel.",
-        "Biraz değişiklik iyi gelebilir."
+        tRuntime('dashboard.innerVoice.default1'),
+        tRuntime('dashboard.innerVoice.default2'),
+        tRuntime('dashboard.innerVoice.default3'),
+        tRuntime('dashboard.innerVoice.default4'),
     ];
     return defaults[gameState.turn % defaults.length];
   };
 
   const getAdvice = () => {
       if (stats.energy < 20) {
-          return { text: "Enerjin tükendi! Günü bitirip dinlenmelisin.", type: 'critical' };
+          return { text: tRuntime('dashboard.adviceTexts.energyDepleted'), type: 'critical' };
       }
-      
+
       if (!isBaby) {
           const avgGrade = calculateGradeAverage(schoolGrades);
           if (avgGrade < 45) {
-              return { text: "Okul notların tehlikeli seviyede! Ders çalışsan iyi olur.", type: 'warning' };
+              return { text: tRuntime('dashboard.adviceTexts.gradesLow'), type: 'warning' };
           }
           if (schoolGrades.math < 40) {
-              return { text: "Matematik notun çok düşük. Sayısal çalışmalısın.", type: 'warning' };
+              return { text: tRuntime('dashboard.adviceTexts.mathLow'), type: 'warning' };
           }
           if (gameState.skills.coding > 20 && gameState.skills.coding < 40) {
-              return { text: "Yazılımda ilerliyorsun. Biraz daha pratikle freelance işler alabilirsin.", type: 'info' };
+              return { text: tRuntime('dashboard.adviceTexts.codingProgress'), type: 'info' };
           }
           if (gameState.skills.music > 20 && gameState.skills.music < 40) {
-              return { text: "Müzik kulağın gelişiyor. Enstrümanına odaklan.", type: 'info' };
+              return { text: tRuntime('dashboard.adviceTexts.musicProgress'), type: 'info' };
           }
       }
 
       if (stats.familyRelation < 30) {
-          return { text: "Ailenle aran açıldı. Onlarla vakit geçirip gönüllerini al.", type: 'warning' };
+          return { text: tRuntime('dashboard.adviceTexts.familyLow'), type: 'warning' };
       }
-      
+
       if (stats.energy > 80) {
-          return { text: "Enerjin yerinde! Zorlu bir aktiviteye (Spor/Ders) girişebilirsin.", type: 'success' };
+          return { text: tRuntime('dashboard.adviceTexts.energyHigh'), type: 'success' };
       }
 
       return null;
@@ -289,7 +293,7 @@ export const Dashboard = React.memo<DashboardProps>(({ stats, gameState, playerN
       <View style={styles.speechBubbleContainer}>
         <View style={styles.speechBubbleArrow} />
         <View style={styles.speechBubble}>
-          <Text style={styles.speechBubbleTitle}>{playerName}'in İç Sesi</Text>
+          <Text style={styles.speechBubbleTitle}>{tRuntime('dashboard.innerVoiceTitle', { playerName })}</Text>
           <Text style={styles.speechBubbleText}>
             "{getInnerVoice()}"
           </Text>
@@ -303,7 +307,7 @@ export const Dashboard = React.memo<DashboardProps>(({ stats, gameState, playerN
           </Text>
           <View>
             <Text style={[styles.adviceTitle, { color: adviceStyle.textColor }]}>
-              {advice.type === 'critical' ? 'Kritik Uyarı' : 'Tavsiye'}
+              {advice.type === 'critical' ? tRuntime('dashboard.criticalWarning') : tRuntime('dashboard.advice')}
             </Text>
             <Text style={[styles.adviceText, { color: adviceStyle.textColor }]}>
               {advice.text}

@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { ThemeTokens } from '../utils/themeUtils';
+import { tRuntime } from '../i18n/strings';
+import { useRuntimeLocale } from '../i18n/useRuntimeLocale';
 
 interface HeaderProps {
   playerName: string;
@@ -19,6 +21,8 @@ interface HeaderProps {
  * Expo SDK 52 & React 18 New Architecture uyumlu
  */
 export const Header: React.FC<HeaderProps> = React.memo(({ playerName, age, turn, avatarEmoji, theme }) => {
+  useRuntimeLocale();
+
   const headerStyle = useMemo(() => ({
     ...styles.header,
     backgroundColor: theme.surfaceRaised,
@@ -64,7 +68,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({ playerName, age, turn
       {/* Sol taraf - Oyuncu bilgileri */}
       <View style={styles.headerLeft}>
         <Text style={playerNameStyle}>{playerName}</Text>
-        <Text style={ageStyle}>{age} Yaş • {turn}/4. Dönem</Text>
+        <Text style={ageStyle}>{tRuntime('header.ageInfo', { age, turn })}</Text>
       </View>
 
       {/* Sağ taraf - Avatar */}

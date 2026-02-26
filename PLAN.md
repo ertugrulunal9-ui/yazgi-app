@@ -1,217 +1,167 @@
-# Yazgı — İngilizce Lokalizasyon Implementation Planı
+# Yazgi - Kalan Lokalizasyon Fazlari Implementasyon Plani
 
-## Mevcut Durum
+Tarih: 26 Subat 2026  
+Kapsam: Yalnizca kalan fazlar (Phase 4, 5, 6, 7)
 
-- **i18n altyapısı var:** `src/i18n/strings.ts` — custom `t()` fonksiyonu, dot-notation, interpolation, fallback desteği
-- **Kapsam:** Sadece ~90 string lokalize (UI ayarları, tab isimleri, onboarding)
-- **Lokalize edilmemiş:** ~5000+ string — event text/choice/feedback, system labels, ending narratives, achievement descriptions, NPC isimleri
-- **Event text tipi:** `string | ((context: EventContext) => string)` — hem statik hem dinamik
-- **Choice/feedback:** Sadece `string` — her zaman statik
+## Durum Ozeti
 
-## Mimari Karar: Event İçeriği İçin Strateji
+- [x] Phase 1.1 - High-traffic component migration
+- [x] Phase 1.2 - NPC & Social components
+- [x] Phase 1.3 - Save/Load system components
+- [x] Phase 1.4 - Exam system components
+- [x] Phase 1.5 - Misc components
+- [x] Phase 2 - Data file localization
+- [x] Phase 3 - Event localization infrastructure
+- [x] Phase 4 - Event translation / dogal dil polish
+- [x] Phase 5 - NPC names locale-aware
+- [x] Phase 6 - Exam content adaptation
+- [x] Phase 7 - Validation & testing
 
-Event'ler **key-based çeviri yerine dosya bazlı ayrım** ile lokalize edilecek.
+## Kalan Is Yuku (Net)
 
-**Neden key-based değil:**
-- 1.187 event × (1 text + ort. 2.5 choice + 2.5 feedback) = ~6.000+ key. Tek bir JSON'da yönetilemez.
-- Dinamik text callback'leri (`(ctx) => string`) key-based sisteme sığmaz — context-dependent string üretimi var.
-- Event dosyaları zaten tematik ayrılmış (turkishEvents, moralDilemmaEvents, vb.)
+### Phase 4
 
-**Yaklaşım: Locale-aware event registry**
-- Her event dosyasının İngilizce karşılığı oluşturulacak
-- Runtime'da aktif locale'e göre doğru event havuzu yüklenecek
+- Mevcut: `400/400` event manuel polish tamam
+- Kalan: `0` event
+- Kalan prefix gruplari:
 
-## İki Katmanlı Lokalizasyon
+| Prefix | Kalan |
+|---|---:|
+| `tr_*` | 0 |
+| `npc_*` | 0 |
+| `pers_*` | 0 |
+| `npcq_*` | 0 |
+| `mem_*` | 0 |
+| `econ_*` | 0 |
+| `goal_*` | 0 |
 
-### Katman 1 — Evrensel Event'ler (~%60-70, direkt çeviri)
-Kültürden bağımsız, olduğu gibi çevrilebilir:
-- `moralDilemmaEvents.ts` — ahlaki ikilemler evrensel
-- `personalityEvents.ts` — kişilik event'leri evrensel
-- `npcEvents.ts` — NPC ilişkileri evrensel
-- `npcCheckInEvents.ts` — NPC check-in evrensel
-- `relationshipMilestoneEvents.ts` — ilişki milestone'ları evrensel
-- `lateTeenEvents.ts` — ergen event'leri büyük ölçüde evrensel
-- `memoryGatedEvents.ts` — hafıza event'leri evrensel
-- `goalChainEvents.ts` — hedef zincirleri evrensel
-- `cliffhangerEvents.ts` — cliffhanger'lar evrensel
-- `economicRecoveryEvents.ts` — ekonomi recovery evrensel
-- `momentumEvents.ts` — momentum event'leri evrensel
+### Phase 5
 
-### Katman 2 — Kültürel Adaptasyon (~%30-40)
-Türk kültürüne özgü, İngilizce karşılığı farklı olacak:
-- `turkishEvents.ts` → `westernEvents.ts` (bayram→holidays, komşu→neighbor, esnaf→small business)
-- `ageSpecificEvents.ts` — yaşa özgü event'lerin bir kısmı kültürel (okul sistemi, askerlik vb.)
-- `familyArcEvents.ts` — aile dinamikleri kısmen kültürel (baba otoritesi, el öpme vb.)
-- `npcQuestlineEvents.ts` — NPC questline'larının bir kısmı kültürel referans içeriyor
+- Mevcut: Locale-aware NPC isim üretimi aktif (TR/EN havuz + runtime locale baglanti)
+- Kalan: Phase 5 kapsaminda kritik eksik yok
 
-## Implementation Adımları
+### Phase 6
 
-### Adım 1: i18n Altyapısını Genişlet (`src/i18n/`)
+- Mevcut: `EnglishExamGame` icin locale-aware soru kaynagi aktif, EN havuzu EN-native icerige tasindi
+- Kalan: Phase 6 kapsaminda kritik eksik yok
 
-**1a. `strings.ts`'e eksik UI/system string'lerini ekle:**
+### Phase 7
 
-Şu kategoriler lokalize edilecek:
-- `labels.stats.*` — Sağlık, Zeka, Karizma, vb. (7 stat)
-- `labels.skills.*` — Yazılım, Müzik, Spor, vb. (12 skill)
-- `labels.grades.*` — Matematik, Türkçe, vb. (8 ders)
-- `labels.personality.*` — Açıklık, Cesaret, vb. (5 eksen)
-- `labels.fateOutcomes.*` — Lanetli, Şanssız, Nötr, Şanslı, Kutsanmış
-- `labels.choiceTypes.*` — Pasif, Meydan Okuma, Çöküş, Nötr
-- `feedback.momentum.*` — Momentum feedback string'leri
-- `feedback.stress.*` — Stres uyarı mesajları
-- `feedback.recovery.*` — Recovery mesajları
-- `ending.*` — Ending başlıkları, açıklamaları, tier isimleri
-- `achievement.*` — 67 başarım isim + açıklama
+- Mevcut: Missing key/fallback/smoke/overflow validasyonlari tamamlandi
+- Kalan: Phase 7 kapsaminda kritik eksik yok
 
-**1b. `strings.ts`'deki shop namespace'ini kaldır** (IAP temizlendi)
+## Uygulama Plani (Phase 4-7)
 
-**1c. Locale detection:** `expo-localization` ekle, cihaz dilini otomatik algıla
+### Phase 4 - Event Translation ve Dogal Dil Polish
 
-### Adım 2: UI Hardcode String'leri Migrate Et
+Amaç: Event translation ve dogal dil polish isini `400/400` seviyesinde kapatmak.
 
-Tüm hardcoded Türkçe string'leri `t()` çağrısına çevir:
+TODO:
 
-| Dosya | Tahmini String Sayısı |
-|-------|----------------------|
-| `FeedbackOverlay.tsx` | ~60 (STAT_LABELS, SKILL_LABELS, GRADE_LABELS, vb.) |
-| `StatusHeader.tsx` | ~15 (stres uyarıları, risk seviyeleri) |
-| `GameScreen.tsx` | ~20 (toast mesajları, hata mesajları) |
-| `GameOverScreen.tsx` | ~15 (ending UI, reklam mesajları) |
-| `CharacterScreen.tsx` | ~25 (stat/skill/grade etiketleri) |
-| `TurnMediator.ts` | ~10 (fate outcome labels, momentum feedback) |
-| `endingResolver.ts` | ~40 (ending titles, descriptions, analysis labels) |
-| `gameUtils.ts` | ~20 (hata mesajları, hayat yolu açıklamaları) |
-| `achievementDefinitions.ts` | ~134 (67 × isim + açıklama) |
+- [x] `scripts/localization/event-source-catalog.json` uzerinden kalan prefix backlog'unu net listele
+- [x] Prefix bazli 3 dalga tamamlama:
+  - [x] Dalga A: `tr_*` + `econ_*` + `goal_*` (58 event)
+  - [x] Dalga B: `npc_*` + `npcq_*` (72 event)
+  - [x] Dalga C: `pers_*` + `mem_*` (58 event)
+- [x] Her event icin style QA checklist uygula:
+  - 2nd person voice tutarliligi
+  - secenek uzunluk dengesi
+  - feedback tonunun outcome ile uyumu
+  - placeholder bozulmama (`{playerName}` vb.)
+  - effect/mekanik degismeme
+- [x] Manuel duzeltmeleri `src/i18n/events/en.overrides.ts` icinde topla
+- [x] `src/i18n/events/en.generated.ts` ile override birlesimi dogrula
+- [x] Event callback regression testlerini calistir
 
-**Toplam: ~340 string** → `strings.ts`'e taşınacak
+Beklenen cikti:
 
-### Adım 3: Event Lokalizasyon Altyapısı
+- `400/400` manuel polish
+- Kalan prefix sayaci `0`
+- Dil dogalligi ve mekanik parity checklist raporu
 
-**3a. Locale-aware event loader oluştur:**
+### Phase 5 - NPC Names Locale-Aware
 
-```
-src/data/
-  events.ts              ← Mevcut (orchestrator)
-  locales/
-    tr/
-      turkishEvents.ts       ← Mevcut dosya taşınır
-      moralDilemmaEvents.ts  ← Mevcut dosya taşınır
-      personalityEvents.ts   ← ...
-      ageSpecificEvents.ts
-      familyArcEvents.ts
-      npcQuestlineEvents.ts
-      (+ diğer dosyalar)
-    en/
-      westernEvents.ts       ← turkishEvents'in kültürel adaptasyonu
-      moralDilemmaEvents.ts  ← Direkt çeviri
-      personalityEvents.ts   ← Direkt çeviri
-      ageSpecificEvents.ts   ← Kısmen adaptasyon
-      familyArcEvents.ts     ← Kısmen adaptasyon
-      npcQuestlineEvents.ts  ← Kısmen adaptasyon
-      (+ diğer dosyalar)
-```
+Amaç: Yeni uretilen NPC isimlerinin locale'e gore dogru havuzdan gelmesi.
 
-**3b. `events.ts` orchestrator'ını güncelle:**
+TODO:
 
-```typescript
-import { getLocale } from '../i18n/strings';
+- [x] Isim havuzlarini locale bazli ayir:
+  - TR havuzu
+  - EN havuzu
+- [x] `createRandomNPC` akisinda locale secimini bagla (`src/utils/gameUtils.ts`)
+- [x] Deterministic isim secimi ekle (save/load tutarliligi icin seed bazli secim)
+- [x] Mevcut save uyumlulugu:
+  - mevcut NPC isimleri migration'siz korunur
+  - sadece yeni NPC olusturmada locale-aware havuz kullanilir
+- [x] Sosyal ekran ve NPC kartlarinda gorunum regresyonu test et (smoke checklist + component smoke test)
 
-const loadEventsByLocale = (locale: AppLocale): GameEvent[] => {
-  // Locale-specific event files lazily imported
-  // Evrensel event'ler (moralDilemma, personality, npc, vb.) locale'e göre çevrilmiş versiyondan yüklenir
-  // Kültüre özgü event'ler (turkish → western) locale'e göre farklı dosyadan yüklenir
-};
-```
+Beklenen cikti:
 
-**3c. EventBuilder'a locale desteği ekle (opsiyonel):**
-EventBuilder değişmez — her locale kendi event dosyasında aynı builder'ı kullanır.
-Event ID'leri aynı kalır, sadece text/choice/feedback içeriği değişir.
+- EN locale'de yeni NPC isimlerinin EN havuzdan gelmesi
+- TR locale'de mevcut davranisin korunmasi
+- Save geri yuklemede isim sapmasi olmamasi
 
-### Adım 4: Katman 1 — Evrensel Event Çevirisi
+### Phase 6 - Exam Content Adaptation (EN)
 
-~700 event'in direkt çevirisi:
-- Event text (statik string'ler)
-- Choice text
-- Feedback text
-- Dynamic text callback'leri: İçerideki string'ler çevrilir, mantık aynı kalır
-- dynamicFeedback varyantları
+Amaç: EN locale'de sinavlarin "ceviri gibi degil, dogal EN egitim dili" ile oynanmasi.
 
-Çeviri yöntemi: AI-destekli ilk çeviri + manuel review
+TODO:
 
-### Adım 5: Katman 2 — Kültürel Adaptasyon
+- [x] Exam icerigini locale ayri kaynaklara tasima (ozellikle English exam)
+- [x] `src/components/exams/EnglishExamGame.tsx` soru bankasini EN-native hale getir:
+  - soru kokleri
+  - secenekler
+  - soru turu etiketleri
+  - loading/feedback UI metinleri
+- [x] Yas + zorluk kademesinde dogal ilerlemeyi koru (YOUNG/MIDDLE/ADVANCED)
+- [x] TR locale davranisini bozmadan EN icerigi ayir
+- [x] English exam icin hedefli unit test/snapshot ekle
 
-~400 event'in kültürel karşılığının yazılması:
+Beklenen cikti:
 
-**turkishEvents.ts → westernEvents.ts örnekleri:**
-- `tr_bayram_sabahi` → `en_holiday_morning` (Christmas/Thanksgiving sabahı)
-- `tr_ramazan_iftar` → `en_family_dinner_tradition` (aile yemeği geleneği)
-- `tr_kurban_bayrami` → `en_thanksgiving_feast` (Şükran Günü)
-- `tr_komsu_ziyaret` → `en_neighborhood_visit` (komşu BBQ/block party)
-- `tr_esnaf_baba` → `en_small_business_dad` (aile işletmesi)
+- EN locale'de EnglishExamGame ekraninda Turkce string kalmaması
+- Soru zorluk dengesi bozulmadan dogal EN metin akisi
 
-**Adaptasyon kuralları:**
-- Mekanik (effect, stat, age range, personality req) aynen kalır
-- Sadece narrative içerik (text, choice text, feedback) değişir
-- Event ID'si farklı olabilir ama aynı slot'a map'lenir
+### Phase 7 - Validation ve Testing
 
-### Adım 6: NPC İsimleri ve Kültürel Veriler
+Amaç: Uctan uca i18n kalite kapisi ve rapor.
 
-- `gameUtils.ts`'deki 150+ Türkçe NPC ismi → locale-aware isim havuzu
-- `tr`: Ayşe, Mehmet, Fatma, Ali...
-- `en`: Emma, James, Sarah, Michael...
-- İsim havuzu locale'e göre seçilir
+TODO:
 
-### Adım 7: Achievement Lokalizasyonu
+- [x] Missing key taramasi:
+  - static key parity kontrolu
+  - runtime missing-key warning toplama
+- [x] Fallback denetimi:
+  - EN key yoksa TR fallback calisiyor mu
+  - fallback zinciri beklenen yerde tetikleniyor mu
+- [x] Ekran bazli smoke test:
+  - MainMenu, GameScreen, SocialScreen, ReportCardScreen, SaveSlotPicker
+- [x] Text overflow denetimi:
+  - uzun EN string senaryolari
+  - buton/etiket/tooltip kirpma kontrolu
+- [x] CI raporu:
+  - test sonuclari
+  - kalan riskler
+  - ship/no-ship karari
 
-67 achievement'ın isim + açıklaması:
-- `strings.ts`'e `achievement.{id}.name` ve `achievement.{id}.description` olarak ekle
-- `achievementDefinitions.ts`'de hardcoded string yerine `t()` çağrısı kullan
+Beklenen cikti:
 
-### Adım 8: Test ve Doğrulama
+- Tek rapor dosyasi (i18n validation summary)
+- "kritik seviye issue yok" kapanis karari
 
-- Tüm event dosyalarının İngilizce karşılığının mevcut olduğunu doğrulayan CI testi
-- Missing translation key tespiti (dev mode'da console.warn)
-- Event ID eşleştirme testi: TR ve EN havuzlarında aynı ID'ler olmalı (Katman 1)
-- Kültürel adaptasyon event'lerinin mekanik eşdeğerlilik testi
+## Takvim (Hedef)
 
-## Dosya Değişiklik Özeti
+| Tarih Araligi | Hedef |
+|---|---|
+| 26 Subat 2026 - 02 Mart 2026 | Phase 4 Dalga A+B |
+| 03 Mart 2026 - 05 Mart 2026 | Phase 4 Dalga C + final polish |
+| 06 Mart 2026 - 08 Mart 2026 | Phase 5 implementasyonu |
+| 09 Mart 2026 - 12 Mart 2026 | Phase 6 EN exam adaptasyonu |
+| 13 Mart 2026 - 16 Mart 2026 | Phase 7 validation, rapor, release gate |
 
-| Dosya | Değişiklik Türü |
-|-------|----------------|
-| `src/i18n/strings.ts` | ~340 yeni string (tr+en) |
-| `src/i18n/eventStrings.ts` | Yeni — event-specific string registry (opsiyonel) |
-| `src/data/events.ts` | Locale-aware loading |
-| `src/data/locales/en/*.ts` | Yeni — 13+ İngilizce event dosyası |
-| `src/data/locales/tr/*.ts` | Mevcut dosyalar taşınır |
-| `src/components/FeedbackOverlay.tsx` | Hardcode → t() (~60 string) |
-| `src/components/StatusHeader.tsx` | Hardcode → t() (~15 string) |
-| `src/screens/GameScreen.tsx` | Hardcode → t() (~20 string) |
-| `src/screens/GameOverScreen.tsx` | Hardcode → t() (~15 string) |
-| `src/systems/TurnMediator.ts` | Hardcode → t() (~10 string) |
-| `src/utils/endingResolver.ts` | Hardcode → t() (~40 string) |
-| `src/utils/gameUtils.ts` | NPC isimleri locale-aware + hata mesajları t() |
-| `src/systems/achievementDefinitions.ts` | Hardcode → t() (~134 string) |
-| `src/builders/EventBuilder.ts` | Değişiklik yok |
-| `src/types/events.ts` | Değişiklik yok |
-| `package.json` | `expo-localization` eklenir |
+## Cikis Kriterleri (Done)
 
-## Uygulama Sırası
-
-1. **Adım 1** (1-2 gün): i18n altyapısı genişletme + expo-localization
-2. **Adım 2** (2-3 gün): UI hardcode string migration (~340 string)
-3. **Adım 3** (1-2 gün): Event lokalizasyon altyapısı (loader + folder structure)
-4. **Adım 4** (5-7 gün): Katman 1 evrensel event çevirisi (~700 event)
-5. **Adım 5** (5-7 gün): Katman 2 kültürel adaptasyon (~400 event)
-6. **Adım 6** (1 gün): NPC isimleri locale-aware
-7. **Adım 7** (1-2 gün): Achievement lokalizasyonu
-8. **Adım 8** (1-2 gün): Test ve doğrulama
-
-**Toplam: ~18-26 gün**
-
-## Riskler ve Dikkat Noktaları
-
-1. **Dinamik text callback'ler:** `(ctx) => string` fonksiyonlarının İngilizce karşılığı aynı mantıkla ama farklı string'lerle yazılmalı
-2. **Event ID tutarlılığı:** Katman 1'de TR ve EN event ID'leri aynı kalmalı (save uyumluluğu)
-3. **Katman 2'de mekanik eşdeğerlik:** westernEvents'teki effect/stat değerleri turkishEvents ile aynı olmalı
-4. **Bundle size:** İki locale'in tüm event dosyaları bundle'a girer — lazy loading düşünülebilir
-5. **Mevcut save'ler:** Dil değiştirildiğinde mevcut save'lerin event history'si (event ID) geçerli kalmalı
+- [x] Phase 4: `400/400` event polish ve prefix backlog sifir
+- [x] Phase 5: Locale-aware NPC isim üretimi prod akışında aktif
+- [x] Phase 6: EN exam içerikleri dogal ve testlerle dogrulanmis
+- [x] Phase 7: Missing key/fallback/smoke/overflow raporu tamam ve blocker yok

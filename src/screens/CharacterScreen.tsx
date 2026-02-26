@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, ViewStyle, TouchableOpacity } from 'react-native';
 import { FadeInUpView } from '../animations';
 import { getLetterGrade, calculateGradeAverage } from '../utils/schoolLogic';
-import { Family, FamilyEvolutionState, PersonalityState, Stats, Skills, SchoolGrades } from '../types';
+import { Family, FamilyEvolutionState, PersonalityState, Stats, Skills, SchoolGrades, TraitProgressData } from '../types';
 import { ensureTextContrast } from '../utils/colorContrast';
 import { getFamilyAtmosphereLabel } from '../utils/familyNarrative';
 import { getTraitName } from '../data/traits';
 import { ProgressBonus } from '../components/ProgressBonus';
+import { TraitProgressPanel } from '../components/TraitProgressPanel';
 import { tRuntime } from '../i18n/strings';
 
 interface ThemeTokens {
@@ -21,6 +22,7 @@ interface ThemeTokens {
 interface CharacterScreenProps {
   stats: Stats;
   traits: string[];
+  traitProgress: Record<string, TraitProgressData>;
   skills: Skills;
   schoolGrades: SchoolGrades;
   personalityState: Partial<PersonalityState> | undefined;
@@ -165,6 +167,7 @@ const getReadableStatColor = (color: string, theme: ThemeTokens): string =>
 const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
   stats,
   traits,
+  traitProgress,
   skills,
   schoolGrades,
   personalityState,
@@ -177,6 +180,8 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
   onOpenAchievements,
   achievementSummary,
 }) => {
+  const [isTraitProgressExpanded, setIsTraitProgressExpanded] = useState(false);
+
   const statConfig = STAT_CONFIG.map(stat => ({
     ...stat,
     max: stat.key === 'energy' ? Math.max(1, maxEnergy) : stat.max,
@@ -222,6 +227,7 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
   pushBonus(getPassiveBonusLabel('shoppingDiscount'), -15 * businessRatio);
 
   const averageGrade = calculateGradeAverage(schoolGrades);
+  const hasTraitProgress = Object.keys(traitProgress).length > 0;
   const readableAccentEvent = ensureTextContrast(theme.accentEvent, theme.surfaceBase, 4.5);
   const familyAtmosphere = getFamilyAtmosphereLabel(family || null, stats.familyRelation, familyEvolution);
   const familyWealthColor = family?.wealth === 'RICH'
@@ -410,6 +416,40 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
             {tRuntime('character.screen.noTraits', undefined, 'Henuz ozellik kazanmadin')}
           </Text>
         )}
+
+        {hasTraitProgress ? (
+          <View
+            style={{
+              marginTop: 14,
+              paddingTop: 12,
+              borderTopWidth: 1,
+              borderTopColor: theme.border,
+            }}
+          >
+            <TouchableOpacity
+              onPress={() => setIsTraitProgressExpanded(prev => !prev)}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: isTraitProgressExpanded ? 10 : 0,
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={tRuntime('traits.progress.title', undefined, 'Ozellik Formasyonu')}
+            >
+              <Text style={{ color: theme.textPrimary, fontWeight: '700', fontSize: 13 }}>
+                {tRuntime('traits.progress.title', undefined, 'Ozellik Formasyonu')}
+              </Text>
+              <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: '700' }}>
+                {isTraitProgressExpanded ? '▲' : '▼'}
+              </Text>
+            </TouchableOpacity>
+
+            {isTraitProgressExpanded ? (
+              <TraitProgressPanel traitProgress={traitProgress} theme={theme} />
+            ) : null}
+          </View>
+        ) : null}
       </CharacterSection>
 
       {achievementSummary ? (

@@ -16,6 +16,7 @@ import { CLIFFHANGER_EVENTS } from './cliffhangerEvents';
 import { applyProceduralEventBranching } from './eventBranchingEnhancer';
 import { EventBuilder } from '../builders/EventBuilder';
 import { validateEventGraph, validateEventTagStandard } from '../utils/eventValidation';
+import { withEventLocalizationKeys, withEventLocalizationKeysForAll } from '../i18n/events/keyMapper';
 
 // =================================================================
 // YAZGI - TÜM EVENTLER
@@ -48,7 +49,7 @@ const BASE_EVENTS: GameEvent[] = [
 ];
 
 const BRANCHED_EVENT_RESULT = applyProceduralEventBranching(BASE_EVENTS);
-export const EVENTS: GameEvent[] = BRANCHED_EVENT_RESULT.events;
+export const EVENTS: GameEvent[] = withEventLocalizationKeysForAll(BRANCHED_EVENT_RESULT.events);
 
 if (__DEV__) {
   console.info(
@@ -76,7 +77,7 @@ if (__DEV__) {
 }
 
 // Hiçbir event tetiklenmezse kullanılacak fallback
-export const FALLBACK_EVENT: GameEvent = new EventBuilder('fallback_generic')
+export const FALLBACK_EVENT: GameEvent = withEventLocalizationKeys(new EventBuilder('fallback_generic')
   .text((ctx) => {
     const p = ctx.personality;
     if (p.openness < 30) {
@@ -91,15 +92,16 @@ export const FALLBACK_EVENT: GameEvent = new EventBuilder('fallback_generic')
   .difficulty(1)
   .rarity('COMMON')
   .addChoice(choice => choice
+    .id('fallback_continue')
     .text('Günü bitir')
     .effect({ energy: 5 })
     .feedback('Bazen olaysız günler en iyisidir.')
     .choiceType('NEUTRAL')
   )
-  .build();
+  .build());
 
 // Hastane eventi - sağlık çok düşükse tetiklenir
-export const HOSPITAL_EVENT: GameEvent = new EventBuilder('evt_hastane')
+export const HOSPITAL_EVENT: GameEvent = withEventLocalizationKeys(new EventBuilder('evt_hastane')
   .text((ctx) => {
     if (ctx.stress.current > 70) {
       return "Gözlerini beyaz ışıklar altında açtın. Doktorlar 'tükenmişlik sendromu' diyor. Vücudun artık taşıyamadı.";
@@ -111,10 +113,11 @@ export const HOSPITAL_EVENT: GameEvent = new EventBuilder('evt_hastane')
   .rarity('RARE')
   .personalityCategory('BREAKDOWN')
   .addChoice(choice => choice
+    .id('hospital_rest')
     .text('Dinlen ve iyileş')
     .effect({ health: 30, money: -100, energy: 50 })
     .stressEffect(-40)
     .feedback('Birkaç gün hastanede kaldın. Yavaş yavaş toparlanıyorsun. Belki de daha dikkatli olmalısın.')
     .choiceType('PASSIVE')
   )
-  .build();
+  .build());

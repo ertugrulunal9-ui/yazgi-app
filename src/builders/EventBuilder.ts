@@ -34,6 +34,11 @@ export class ChoiceBuilder {
     return this;
   }
 
+  textKey(textKey: string): ChoiceBuilder {
+    this.value.textKey = textKey;
+    return this;
+  }
+
   effect(effect: Partial<Stats>): ChoiceBuilder {
     this.value.effect = effect;
     return this;
@@ -41,6 +46,11 @@ export class ChoiceBuilder {
 
   feedback(feedback: string): ChoiceBuilder {
     this.value.feedback = feedback;
+    return this;
+  }
+
+  feedbackKey(feedbackKey: string): ChoiceBuilder {
+    this.value.feedbackKey = feedbackKey;
     return this;
   }
 
@@ -179,6 +189,7 @@ export class ChoiceBuilder {
 export class EventBuilder {
   private idValue: string;
   private textValue: EventText | null = null;
+  private textKeyValue: string | undefined;
   private minAgeValue = 0;
   private maxAgeValue = 100;
   private choicesValue: (Choice | ((ctx: EventContext) => Choice))[] = [];
@@ -206,6 +217,11 @@ export class EventBuilder {
 
   text(text: EventText): EventBuilder {
     this.textValue = text;
+    return this;
+  }
+
+  textKey(textKey: string): EventBuilder {
+    this.textKeyValue = textKey;
     return this;
   }
 
@@ -333,6 +349,7 @@ export class EventBuilder {
     return {
       id: this.idValue,
       text: this.textValue,
+      textKey: this.textKeyValue,
       minAge: this.minAgeValue,
       maxAge: this.maxAgeValue,
       choices: this.choicesValue,

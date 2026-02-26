@@ -1,4 +1,5 @@
 import { Achievement, Stats, GameState, Skills, SchoolGrades } from '../types';
+import { tRuntime } from '../i18n/strings';
 import {
   hasBalancedOnboardingRoutine,
   isInOnboardingWindow,
@@ -857,17 +858,38 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
 
 export const ACHIEVEMENTS: Achievement[] = BASE_ACHIEVEMENTS.map(scaleAchievementReward);
 
+export const getAchievementName = (achievementId: string, fallback?: string): string => {
+  return tRuntime(`achievementData.${achievementId}.name`, undefined, fallback ?? achievementId);
+};
+
+export const getAchievementDescription = (achievementId: string, fallback?: string): string => {
+  return tRuntime(`achievementData.${achievementId}.description`, undefined, fallback ?? '');
+};
+
+const localizeAchievement = (achievement: Achievement): Achievement => {
+  return {
+    ...achievement,
+    name: getAchievementName(achievement.id, achievement.name),
+    description: getAchievementDescription(achievement.id, achievement.description),
+  };
+};
+
+export const getLocalizedAchievements = (): Achievement[] => {
+  return ACHIEVEMENTS.map(localizeAchievement);
+};
+
 // Helper: Get achievement by ID
 export const getAchievement = (id: string): Achievement | undefined => {
-  return ACHIEVEMENTS.find(a => a.id === id);
+  const achievement = ACHIEVEMENTS.find(a => a.id === id);
+  return achievement ? localizeAchievement(achievement) : undefined;
 };
 
 // Helper: Get achievements by category
 export const getAchievementsByCategory = (category: string): Achievement[] => {
-  return ACHIEVEMENTS.filter(a => a.category === category);
+  return ACHIEVEMENTS.filter(a => a.category === category).map(localizeAchievement);
 };
 
 // Helper: Get achievements by rarity
 export const getAchievementsByRarity = (rarity: string): Achievement[] => {
-  return ACHIEVEMENTS.filter(a => a.rarity === rarity);
+  return ACHIEVEMENTS.filter(a => a.rarity === rarity).map(localizeAchievement);
 };

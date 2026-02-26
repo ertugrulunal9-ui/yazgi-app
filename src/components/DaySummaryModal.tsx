@@ -14,6 +14,7 @@ interface DaySummaryModalProps {
   age: number;
   turn: number;
   dailyDecisionCount: number;
+  varietyBonus: number;
   energy: number;
   maxEnergy: number;
   stats: Stats;
@@ -41,6 +42,7 @@ export const DaySummaryModal: React.FC<DaySummaryModalProps> = ({
   visible,
   age,
   dailyDecisionCount,
+  varietyBonus,
   energy,
   maxEnergy,
   stats,
@@ -81,8 +83,25 @@ export const DaySummaryModal: React.FC<DaySummaryModalProps> = ({
         color: '#3b82f6',
       },
     ];
+    if (varietyBonus > 0) {
+      items.push({
+        icon: 'shape-plus',
+        label: tRuntime('app.summaryVarietyBonus', undefined, 'Cesitlilik Bonusu'),
+        value: tRuntime('app.summaryVarietyBonusValue', { bonus: varietyBonus }, `+${varietyBonus}`),
+        color: '#22c55e',
+      });
+    }
     return items;
-  }, [dailyDecisionCount, energy, maxEnergy, energyLabel, energyColor, stats.health, stats.intelligence]);
+  }, [
+    dailyDecisionCount,
+    energy,
+    maxEnergy,
+    energyLabel,
+    energyColor,
+    stats.health,
+    stats.intelligence,
+    varietyBonus,
+  ]);
 
   if (!visible) return null;
 
