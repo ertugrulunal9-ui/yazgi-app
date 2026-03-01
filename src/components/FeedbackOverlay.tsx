@@ -266,6 +266,30 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
           </Card>
         )}
 
+        {(selectedChoice?.blockEventIds?.length ?? 0) > 0 && (
+          <View style={{
+            backgroundColor: 'rgba(251, 146, 60, 0.08)',
+            borderRadius: 8,
+            paddingVertical: 6,
+            paddingHorizontal: 10,
+            marginBottom: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+          }}>
+            <Text style={{ fontSize: 12 }}>{'🔒'}</Text>
+            <Text style={{
+              color: '#fb923c',
+              fontSize: 11,
+              fontStyle: 'italic',
+              flex: 1,
+              lineHeight: 16,
+            }}>
+              {'Bu seçim bazı kapıları kapattı. Farklı bir yolda ne olurdu?'}
+            </Text>
+          </View>
+        )}
+
         {lastResult?.traitProgressUpdates && lastResult.traitProgressUpdates.length > 0 && (
           <View style={{ marginBottom: 16 }}>
             <TraitProgressChip

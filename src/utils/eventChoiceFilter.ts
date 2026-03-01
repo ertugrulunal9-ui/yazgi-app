@@ -1,4 +1,5 @@
 import { Choice, EventContext, Family, GameEvent, NPCRole, Personality, PersonalityRequirement, Skills, Stats } from '../types';
+import { tRuntime } from '../i18n/strings';
 
 const meetsPersonality = (
   requirements: PersonalityRequirement[] | undefined,
@@ -67,6 +68,22 @@ interface GetChoicesToRenderArgs {
   eventChoiceSet: Set<string>;
 }
 
+const buildNoEligibleChoice = (): Choice => ({
+  id: 'system_no_eligible_choice',
+  text: tRuntime(
+    'narrative.choiceFallback.text',
+    undefined,
+    'Su an bu durumda acik bir secenek yok. Durumu kabul edip devam et.'
+  ),
+  effect: {},
+  feedback: tRuntime(
+    'narrative.choiceFallback.feedback',
+    undefined,
+    'Kosullar netlesene kadar beklemeyi sectin. Hikaye bir sonraki adima akiyor.'
+  ),
+  choiceType: 'PASSIVE',
+});
+
 export const getChoicesToRender = ({
   currentEvent,
   resolveChoice,
@@ -90,5 +107,6 @@ export const getChoicesToRender = ({
     return true;
   });
 
-  return filtered.length > 0 ? filtered : currentEvent.choices;
+  if (filtered.length > 0) return filtered;
+  return [buildNoEligibleChoice()];
 };

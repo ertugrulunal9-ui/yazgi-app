@@ -53,9 +53,60 @@ import {
 import { getGoalChainStage } from '../data/goalChainEvents';
 import { tRuntime } from '../i18n/strings';
 import { buildChoiceFeedbackKey, buildChoiceTextKey, buildEventTextKey } from '../i18n/events/keyUtils';
+import { detectCausalLink } from '../utils/causalChain';
 
 const getEventById = (eventId: string): GameEvent | undefined =>
   EVENTS.find(evt => evt.id === eventId);
+
+const resolveArcOrRandomEvent = ({
+  cachedEligibleEvents,
+  context,
+  recentEventIds,
+  allSeenEvents,
+  currentActiveArcs,
+  adaptivePacingStreak,
+  eventFrequency,
+  currentTurn,
+  selectedGoal,
+}: {
+  cachedEligibleEvents: GameEvent[];
+  context: EventContext;
+  recentEventIds: string[];
+  allSeenEvents: Set<string> | string[];
+  currentActiveArcs: NonNullable<GameState['activeArcs']>;
+  adaptivePacingStreak?: number;
+  eventFrequency?: GameState['eventFrequency'];
+  currentTurn: number;
+  selectedGoal: GameState['selectedGoal'];
+}): { event: GameEvent; nextActiveArcs: NonNullable<GameState['activeArcs']> } => {
+  const arcSelection = selectStoryArcEvent({
+    arcs: STORY_ARCS,
+    activeArcs: currentActiveArcs,
+    events: cachedEligibleEvents,
+    context,
+    recentEventIds,
+    allSeenEvents,
+  });
+  const randomEvent = selectEventWithAdaptivePacing(
+    cachedEligibleEvents,
+    context,
+    recentEventIds,
+    allSeenEvents,
+    {
+      fallbackEvent: FALLBACK_EVENT,
+      adaptivePacingStreak,
+      eventFrequency,
+      currentTurn,
+      selectedGoal: selectedGoal ?? null,
+    }
+  );
+  const event = arcSelection.event ?? randomEvent;
+  const nextActiveArcs = arcSelection.event
+    ? arcSelection.activeArcs
+    : syncActiveArcsWithSelectedEvent(currentActiveArcs, STORY_ARCS, event.id, context);
+
+  return { event, nextActiveArcs };
+};
 
 const pickGoalMilestoneEvent = (
   gameState: GameState,
@@ -162,6 +213,30 @@ export const useEvents = () => {
     currentStats: Stats = stats
   ): number => calculateEndingErrorDebt(state, currentStats).total, [gameState, stats]);
 
+  const buildScheduledConditionContext = useCallback((
+    state: GameState,
+    currentStats: Stats,
+    options?: {
+      age?: number;
+      turn?: number;
+      stress?: number;
+      seenEventIds?: Set<string>;
+    }
+  ) => {
+    const seenEventIds = options?.seenEventIds ?? getEventChoiceSet(state);
+    return {
+      age: options?.age ?? state.age,
+      turn: options?.turn ?? state.turn,
+      stress: options?.stress ?? state.stress.current,
+      selectedGoal: state.selectedGoal ?? null,
+      traits: state.traits ?? [],
+      inventory: state.inventory ?? [],
+      seenEventIds,
+      stats: currentStats,
+      skills: state.skills ?? {},
+    };
+  }, []);
+
   const logSelectedEventAnalytics = useCallback((
     event: GameEvent,
     age: number,
@@ -257,8 +332,22 @@ export const useEvents = () => {
   const selectNewEvent = useCallback(() => {
     const ctx = buildEventContext();
     const scheduledEvents = gameState.scheduledEvents || [];
-    const dueScheduled = getDueScheduledEvents(scheduledEvents, gameState.age);
     const allSeenEvents = getEventChoiceSet(gameState);
+    const scheduledConditionContext = buildScheduledConditionContext(
+      gameState,
+      stats,
+      {
+        age: gameState.age,
+        turn: gameState.turn,
+        stress: gameState.stress.current,
+        seenEventIds: allSeenEvents,
+      }
+    );
+    const dueScheduled = getDueScheduledEvents(
+      scheduledEvents,
+      gameState.age,
+      scheduledConditionContext
+    );
     const currentActiveArcs = gameState.activeArcs || [];
     const burdenRisk = getBurdenRisk();
     const previousBurdenRisk = gameState.lastBurdenRisk ?? 0;
@@ -409,31 +498,17 @@ export const useEvents = () => {
     }
 
     const cachedEligibleEvents = getCachedEligibleEvents(ctx);
-    const arcSelection = selectStoryArcEvent({
-      arcs: STORY_ARCS,
-      activeArcs: currentActiveArcs,
-      events: cachedEligibleEvents,
+    const { event: evt, nextActiveArcs } = resolveArcOrRandomEvent({
+      cachedEligibleEvents,
       context: ctx,
       recentEventIds: gameState.recentEvents,
       allSeenEvents,
+      currentActiveArcs,
+      adaptivePacingStreak: gameState.adaptivePacingStreak,
+      eventFrequency: gameState.eventFrequency,
+      currentTurn: gameState.turn,
+      selectedGoal: gameState.selectedGoal,
     });
-    const randomEvent = selectEventWithAdaptivePacing(
-      cachedEligibleEvents,
-      ctx,
-      gameState.recentEvents,
-      allSeenEvents,
-      {
-        fallbackEvent: FALLBACK_EVENT,
-        adaptivePacingStreak: gameState.adaptivePacingStreak,
-        eventFrequency: gameState.eventFrequency,
-        currentTurn: gameState.turn,
-        selectedGoal: gameState.selectedGoal ?? null,
-      }
-    );
-    const evt = arcSelection.event ?? randomEvent;
-    const nextActiveArcs = arcSelection.event
-      ? arcSelection.activeArcs
-      : syncActiveArcsWithSelectedEvent(currentActiveArcs, STORY_ARCS, evt.id, ctx);
 
     const windowSize = getRecencyWindowSize(gameState.age);
     const updatedFrequency = {
@@ -444,6 +519,11 @@ export const useEvents = () => {
       },
     };
     logSelectedEventAnalytics(evt, gameState.age, gameState.turn);
+    const causalLink = detectCausalLink(
+      evt,
+      gameState.memories,
+      allSeenEvents,
+    );
     updateGameState({
       currentEvent: evt,
       phase: 'EVENT',
@@ -451,8 +531,18 @@ export const useEvents = () => {
       activeArcs: nextActiveArcs,
       eventFrequency: updatedFrequency,
       lastBurdenRisk: burdenRisk,
+      currentCausalLink: causalLink ?? null,
     });
-  }, [buildEventContext, gameState, getBurdenRisk, getCachedEligibleEvents, logSelectedEventAnalytics, stats, updateGameState]);
+  }, [
+    buildEventContext,
+    buildScheduledConditionContext,
+    gameState,
+    getBurdenRisk,
+    getCachedEligibleEvents,
+    logSelectedEventAnalytics,
+    stats,
+    updateGameState
+  ]);
 
   const handleEventChoice = useCallback((choice: Choice | ((ctx: EventContext) => Choice), choiceIndex?: number): TurnResult => {
     const resolved = resolveChoice(choice);
@@ -626,11 +716,8 @@ export const useEvents = () => {
       }));
     }
 
-    const scheduledTick = tickScheduledEvents(gameState.scheduledEvents || [], newAge);
-    let dueScheduledEvents = [...scheduledTick.due];
-    const pendingScheduledEvents = [...scheduledTick.pending];
-
     let nextFamilyEvolution = gameState.familyEvolution || { ...DEFAULT_FAMILY_EVOLUTION_STATE };
+    let familyEvolutionScheduledEvents: GameState['scheduledEvents'] = [];
     if (didAgeUp) {
       const evolutionUpdate = updateFamilyEvolutionOnAgeUp({
         previousState: nextFamilyEvolution,
@@ -639,9 +726,7 @@ export const useEvents = () => {
         age: newAge,
       });
       nextFamilyEvolution = evolutionUpdate.nextState;
-      if (evolutionUpdate.scheduledEvents.length > 0) {
-        dueScheduledEvents = [...dueScheduledEvents, ...evolutionUpdate.scheduledEvents];
-      }
+      familyEvolutionScheduledEvents = evolutionUpdate.scheduledEvents;
     }
 
     // S\u0131nav takip sistemi - KARNE KONTROL\u00DCNDEN \u00D6NCE s\u0131f\u0131rlama yapma!
@@ -700,6 +785,10 @@ export const useEvents = () => {
       personalityState: gameState.personalityState,
       turn: newTurn,
       pendingCliffhanger: gameState.pendingCliffhanger,
+      personality: gameState.personality,
+      memories: gameState.memories,
+      lastEventNpcId: gameState.currentEvent?.relatedNpcId,
+      npcs: updatedNPCs,
     });
     const composed = composeInnerThought(familyThought, strategicResult, gameState.innerThought);
     const nextInnerThought = composed.text;
@@ -742,6 +831,37 @@ export const useEvents = () => {
       familyRelation: statsAfterVarietyBonus.familyRelation,
       ...(shouldSyncMoney ? { money: moneyAfterAllowance } : {}),
     };
+    const allSeenEvents = getEventChoiceSet(gameState);
+    const scheduledConditionContext = buildScheduledConditionContext(
+      gameState,
+      {
+        ...statsAfterVarietyBonus,
+        energy: newEnergy,
+        money: moneyAfterAllowance,
+      },
+      {
+        age: newAge,
+        turn: newTurn,
+        stress: stressAfterRecovery.current,
+        seenEventIds: allSeenEvents,
+      }
+    );
+    const scheduledTick = tickScheduledEvents(
+      gameState.scheduledEvents || [],
+      newAge,
+      scheduledConditionContext
+    );
+    let dueScheduledEvents = [...scheduledTick.due];
+    const pendingScheduledEvents = [...scheduledTick.pending];
+    if (familyEvolutionScheduledEvents.length > 0) {
+      const familyEvolutionTick = tickScheduledEvents(
+        familyEvolutionScheduledEvents,
+        newAge,
+        scheduledConditionContext
+      );
+      dueScheduledEvents = [...dueScheduledEvents, ...familyEvolutionTick.due];
+      pendingScheduledEvents.push(...familyEvolutionTick.pending);
+    }
     const buildRemainingScheduledEvents = (selectedEventId?: string) => [
       ...pendingScheduledEvents,
       ...dueScheduledEvents
@@ -1149,7 +1269,6 @@ export const useEvents = () => {
         money: moneyAfterAllowance,
       },
     };
-    const allSeenEvents = getEventChoiceSet(gameState);
     const personalityGateEvent = selectMomentumGateEvent({
       personalityState: gameState.personalityState,
       context: ctx,
@@ -1208,31 +1327,17 @@ export const useEvents = () => {
     }
 
     const cachedEligibleEvents = getCachedEligibleEvents(ctx);
-    const arcSelection = selectStoryArcEvent({
-      arcs: STORY_ARCS,
-      activeArcs: currentActiveArcs,
-      events: cachedEligibleEvents,
+    const { event: evt, nextActiveArcs } = resolveArcOrRandomEvent({
+      cachedEligibleEvents,
       context: ctx,
       recentEventIds: gameState.recentEvents,
       allSeenEvents,
+      currentActiveArcs,
+      adaptivePacingStreak: gameState.adaptivePacingStreak,
+      eventFrequency: gameState.eventFrequency,
+      currentTurn: newTurn,
+      selectedGoal: gameState.selectedGoal,
     });
-    const randomEvent = selectEventWithAdaptivePacing(
-      cachedEligibleEvents,
-      ctx,
-      gameState.recentEvents,
-      allSeenEvents,
-      {
-        fallbackEvent: FALLBACK_EVENT,
-        adaptivePacingStreak: gameState.adaptivePacingStreak,
-        eventFrequency: gameState.eventFrequency,
-        currentTurn: newTurn,
-        selectedGoal: gameState.selectedGoal ?? null,
-      }
-    );
-    const evt = arcSelection.event ?? randomEvent;
-    const nextActiveArcs = arcSelection.event
-      ? arcSelection.activeArcs
-      : syncActiveArcsWithSelectedEvent(currentActiveArcs, STORY_ARCS, evt.id, ctx);
 
     const advWindowSize = getRecencyWindowSize(newAge);
     const advFrequency = {
@@ -1274,7 +1379,7 @@ export const useEvents = () => {
           consumableUsageThisTurn: nextConsumableUsageThisTurn,
       }
     });
-  }, [advanceTurnInContext, buildEventContext, gameState, getBurdenRisk, getCachedEligibleEvents, logSelectedEventAnalytics, stats]);
+  }, [advanceTurnInContext, buildEventContext, buildScheduledConditionContext, gameState, getBurdenRisk, getCachedEligibleEvents, logSelectedEventAnalytics, stats]);
 
   // Kader jetonu ile yeniden çekme
   const rerollChoice = useCallback((choice: Choice, choiceIndex: number) => {

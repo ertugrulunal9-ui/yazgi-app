@@ -1,0 +1,56 @@
+{
+  "runs": 1000,
+  "seed": 42,
+  "max_steps": 600,
+  "initial_state": {
+    "cash": 50000,
+    "daily_income": 14000,
+    "growth_rate": 0.0024,
+    "upkeep_rate": 0.0018,
+    "ad_boost_chance": 0.04,
+    "ad_boost_multiplier": 1.45,
+    "crash_chance": 0.05,
+    "crash_multiplier": 0.55
+  },
+  "step_updates": [
+    {
+      "var": "cash",
+      "expr": "cash + daily_income - max(0, cash * upkeep_rate)"
+    },
+    {
+      "var": "daily_income",
+      "expr": "daily_income * (1 + growth_rate)"
+    }
+  ],
+  "events": [
+    {
+      "label": "viral_boost",
+      "when": "random() < ad_boost_chance",
+      "updates": [
+        {
+          "var": "daily_income",
+          "expr": "daily_income * ad_boost_multiplier"
+        }
+      ]
+    },
+    {
+      "label": "market_crash",
+      "when": "random() < crash_chance",
+      "updates": [
+        {
+          "var": "cash",
+          "expr": "cash * crash_multiplier"
+        }
+      ]
+    }
+  ],
+  "milestones": {
+    "millionaire": "cash >= 1000000",
+    "billionaire": "cash >= 1000000000"
+  },
+  "stop_condition": "cash >= 1000000000",
+  "collect": {
+    "final_cash": "cash",
+    "final_daily_income": "daily_income"
+  }
+}

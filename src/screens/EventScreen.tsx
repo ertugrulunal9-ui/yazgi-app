@@ -98,6 +98,7 @@ export const EventScreen: React.FC = React.memo(() => {
           isDramaticEvent={isDramaticEvent}
           isBreakdownEvent={isBreakdownEvent}
           breakdownShakeX={breakdownShakeX}
+          causalLink={gameState.currentCausalLink}
         />
 
         <SwipeChoiceDeck

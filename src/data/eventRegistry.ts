@@ -1,17 +1,17 @@
-﻿/**
- * eventRegistry.ts â€” Build-time & dev-mode event validation
+/**
+ * eventRegistry.ts — Build-time & dev-mode event validation
  *
- * Zod schema'larÄ± event havuzunu erken yakalar:
- *   - minAge > maxAge Ã§eliÅŸkileri
- *   - GeÃ§ersiz id formatlarÄ± (snake_case zorunlu)
- *   - BoÅŸ choice listesi
- *   - Bilinmeyen rarity deÄŸerleri
+ * Zod schema'ları event havuzunu erken yakalar:
+ *   - minAge > maxAge çelişkileri
+ *   - Geçersiz id formatları (snake_case zorunlu)
+ *   - Boş choice listesi
+ *   - Bilinmeyen rarity değerleri
  *
- * SaveValidation.ts'te zaten `zod` kullanÄ±lÄ±yor; ek baÄŸÄ±mlÄ±lÄ±k yok.
+ * SaveValidation.ts'te zaten `zod` kullanılıyor; ek bağımlılık yok.
  *
- * KullanÄ±m:
+ * Kullanım:
  *   import { validateEventPool } from './eventRegistry';
- *   const validatedEvents = validateEventPool(rawEventPool);  // fÄ±rlatÄ±r veya dÃ¶ner
+ *   const validatedEvents = validateEventPool(rawEventPool);  // fırlatır veya döner
  */
 
 import { z } from 'zod';
@@ -23,9 +23,9 @@ import type { GameEvent } from '../types/events';
 
 const ChoiceSchema = z.object({
   id: z.string().optional(),
-  text: z.string().min(1, 'Choice text boÅŸ olamaz'),
+  text: z.string().min(1, 'Choice text boş olamaz'),
   effect: z.record(z.number()),
-  feedback: z.string().min(1, 'Feedback boÅŸ olamaz'),
+  feedback: z.string().min(1, 'Feedback boş olamaz'),
   icon: z.string().optional(),
   grantTraits: z.array(z.string()).optional(),
   gradeUpdates: z.record(z.number()).optional(),
@@ -57,19 +57,19 @@ const ChoiceSchema = z.object({
 const GameEventSchema = z.object({
   id: z
     .string()
-    .regex(/^[a-z][a-z0-9_]*$/, 'Event id snake_case olmalÄ± (Ã¶rn. "school_exam_day")'),
-  // text: string veya function â€” Zod function'Ä± doÄŸrulayamaz, sadece string branch'i validate edilir
-  text: z.union([z.string().min(1, 'Event text boÅŸ olamaz'), z.function()]),
-  minAge: z.number().int().min(0).max(18),
-  maxAge: z.number().int().min(0).max(18),
+    .regex(/^[a-z][a-z0-9_]*$/, 'Event id snake_case olmalı (örn. "school_exam_day")'),
+  // text: string veya function — Zod function'ı doğrulayamaz, sadece string branch'i validate edilir
+  text: z.union([z.string().min(1, 'Event text boş olamaz'), z.function()]),
+  minAge: z.number().int().min(0).max(100),
+  maxAge: z.number().int().min(0).max(100),
   condition: z.function().optional(),
   rarity: z.enum(['COMMON', 'UNCOMMON', 'RARE']).default('COMMON'),
   difficulty: z.number().min(1).max(5).optional(),
   isRepeatable: z.boolean().optional(),
   tags: z.array(z.string()).optional(),
-  // choices: static Choice nesneleri veya function â€” fonksiyonlar geÃ§ilir
+  // choices: static Choice nesneleri veya function — fonksiyonlar geçilir
   choices: z.array(z.union([ChoiceSchema, z.function()])).min(1, 'En az 1 choice gerekli'),
-  // KoÅŸullar loose-validate (partial stats/skills maps)
+  // Koşullar loose-validate (partial stats/skills maps)
   reqStats: z.record(z.number()).optional(),
   reqSkills: z.record(z.number()).optional(),
   reqTraits: z.array(z.string()).optional(),
@@ -87,7 +87,7 @@ const GameEventSchema = z.object({
   isMilestoneEvent: z.boolean().optional(),
 }).refine(
   (e) => e.minAge <= e.maxAge,
-  (e) => ({ message: `"${e.id}": minAge (${e.minAge}) maxAge'den (${e.maxAge}) bÃ¼yÃ¼k olamaz` }),
+  (e) => ({ message: `"${e.id}": minAge (${e.minAge}) maxAge'den (${e.maxAge}) büyük olamaz` }),
 );
 
 // =================================================================
@@ -101,11 +101,11 @@ export type EventValidationError = {
 };
 
 /**
- * TÃ¼m event havuzunu validate eder.
+ * Tüm event havuzunu validate eder.
  *
- * - Dev modunda veya build zamanÄ±nda Ã§aÄŸrÄ±lÄ±r.
- * - HatalÄ± event varsa console.error ile raporlar ve Error fÄ±rlatÄ±r.
- * - BaÅŸarÄ±lÄ±ysa type-safe GameEvent[] dÃ¶ner.
+ * - Dev modunda veya build zamanında çağrılır.
+ * - Hatalı event varsa console.error ile raporlar ve Error fırlatır.
+ * - Başarılıysa type-safe GameEvent[] döner.
  *
  * @example
  * import { ALL_EVENTS } from './events';
@@ -132,12 +132,12 @@ export function validateEventPool(events: unknown[]): GameEvent[] {
   if (failures.length > 0) {
     for (const f of failures) {
       console.error(
-        `EventRegistry: Event[${f.index}] id="${f.id ?? '?'}" geÃ§ersiz:\n` +
-        f.errors.map((e) => `  â€¢ ${e}`).join('\n'),
+        `EventRegistry: Event[${f.index}] id="${f.id ?? '?'}" geçersiz:\n` +
+        f.errors.map((e) => `  • ${e}`).join('\n'),
       );
     }
     throw new Error(
-      `EventRegistry: ${failures.length} event doÄŸrulama hatasÄ±. Detaylar iÃ§in console.error Ã§Ä±ktÄ±sÄ±na bakÄ±n.`,
+      `EventRegistry: ${failures.length} event doğrulama hatası. Detaylar için console.error çıktısına bakın.`,
     );
   }
 
@@ -145,8 +145,8 @@ export function validateEventPool(events: unknown[]): GameEvent[] {
 }
 
 /**
- * Tek bir event'i validate eder, geliÅŸtirme sÄ±rasÄ±nda kullanÄ±ÅŸlÄ±.
- * Hata varsa ilk hata mesajÄ±nÄ± dÃ¶ner, geÃ§erliyse null dÃ¶ner.
+ * Tek bir event'i validate eder, geliştirme sırasında kullanışlı.
+ * Hata varsa ilk hata mesajını döner, geçerliyse null döner.
  */
 export function validateSingleEvent(raw: unknown): string | null {
   const result = GameEventSchema.safeParse(raw);
@@ -155,8 +155,8 @@ export function validateSingleEvent(raw: unknown): string | null {
 }
 
 /**
- * DEV-only: event havuzunu validate eder ama hata fÄ±rlatmaz.
- * UyarÄ±larÄ± dÃ¶ner, production'da no-op.
+ * DEV-only: event havuzunu validate eder ama hata fırlatmaz.
+ * Uyarıları döner, production'da no-op.
  */
 export function auditEventPool(events: unknown[]): EventValidationError[] {
   if (process.env.NODE_ENV === 'production') return [];

@@ -24,16 +24,47 @@ const simulationModule = require(path.resolve(__dirname, '../src/tests/simulateG
 const runCount = Number(process.env.SIMULATION_RUNS || 50);
 const runCountSafe = Number.isFinite(runCount) && runCount > 0 ? Math.floor(runCount) : 50;
 const ciMode = process.argv.includes('--ci');
+const DEFAULT_CI_THRESHOLDS = {
+  balancedMinSuccess: 20,
+  balancedMaxSuccess: 60,
+  balancedMaxBreakdown: 12,
+  risktakerMinSuccess: 20,
+  risktakerMaxBreakdown: 55,
+};
+
+const readNumberEnv = (name, fallback) => {
+  const raw = process.env[name];
+  if (!raw) {
+    return fallback;
+  }
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
 
 if (simulationModule && typeof simulationModule.runSideBySideSimulation === 'function') {
   const report = simulationModule.runSideBySideSimulation(runCountSafe);
 
   if (ciMode) {
-    const balancedMinSuccess = Number(process.env.SIM_BALANCED_MIN_SUCCESS || 55);
-    const balancedMaxSuccess = Number(process.env.SIM_BALANCED_MAX_SUCCESS || 95);
-    const balancedMaxBreakdown = Number(process.env.SIM_BALANCED_MAX_BREAKDOWN || 30);
-    const risktakerMinSuccess = Number(process.env.SIM_RISKTAKER_MIN_SUCCESS || 45);
-    const risktakerMaxBreakdown = Number(process.env.SIM_RISKTAKER_MAX_BREAKDOWN || 70);
+    const balancedMinSuccess = readNumberEnv(
+      'SIM_BALANCED_MIN_SUCCESS',
+      DEFAULT_CI_THRESHOLDS.balancedMinSuccess
+    );
+    const balancedMaxSuccess = readNumberEnv(
+      'SIM_BALANCED_MAX_SUCCESS',
+      DEFAULT_CI_THRESHOLDS.balancedMaxSuccess
+    );
+    const balancedMaxBreakdown = readNumberEnv(
+      'SIM_BALANCED_MAX_BREAKDOWN',
+      DEFAULT_CI_THRESHOLDS.balancedMaxBreakdown
+    );
+    const risktakerMinSuccess = readNumberEnv(
+      'SIM_RISKTAKER_MIN_SUCCESS',
+      DEFAULT_CI_THRESHOLDS.risktakerMinSuccess
+    );
+    const risktakerMaxBreakdown = readNumberEnv(
+      'SIM_RISKTAKER_MAX_BREAKDOWN',
+      DEFAULT_CI_THRESHOLDS.risktakerMaxBreakdown
+    );
 
     const balancedSuccess = report?.balanced?.targetSuccessRate ?? 0;
     const balancedBreakdown = report?.balanced?.breakdownRate ?? 100;
@@ -41,6 +72,10 @@ if (simulationModule && typeof simulationModule.runSideBySideSimulation === 'fun
     const risktakerBreakdown = report?.risktaker?.breakdownRate ?? 100;
 
     const failures = [];
+
+    console.log(
+      `[simulate:ci] Active thresholds -> Balanced success: ${balancedMinSuccess}-${balancedMaxSuccess}, Balanced breakdown <= ${balancedMaxBreakdown}, Risktaker success >= ${risktakerMinSuccess}, Risktaker breakdown <= ${risktakerMaxBreakdown}`
+    );
 
     if (balancedSuccess < balancedMinSuccess || balancedSuccess > balancedMaxSuccess) {
       failures.push(

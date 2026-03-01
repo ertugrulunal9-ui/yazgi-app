@@ -19,7 +19,7 @@ export type EventMixCategory = 'goal' | 'relationship' | 'general';
  */
 export const classifyEventMixCategory = (
   event: GameEvent,
-  selectedGoal?: LifeGoal | null,
+  _selectedGoal?: LifeGoal | null,
 ): EventMixCategory => {
   const tags = event.tags ?? [];
   const id = event.id.toLowerCase();
@@ -27,7 +27,6 @@ export const classifyEventMixCategory = (
   // Goal event tespiti
   if (tags.includes('goal_specific') || tags.includes('goal_chain')) return 'goal';
   if (id.startsWith('goal_')) return 'goal';
-  if (event.reqGoal && event.reqGoal === selectedGoal) return 'goal';
 
   // Relationship event tespiti
   if (tags.includes('npc') || tags.includes('relationship') || tags.includes('social')) return 'relationship';

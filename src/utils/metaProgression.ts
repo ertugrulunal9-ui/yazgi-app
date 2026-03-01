@@ -52,6 +52,9 @@ export const createInitialMetaProgression = (timestamp: number = Date.now()): Me
   lifetimeEndingIds: [],
   recentRuns: [],
   updatedAt: timestamp,
+  goalCompletions: {},
+  unlockedEventIds: [],
+  unlockedRunModifiers: [],
 });
 
 export const calculateLegacyPointsForRun = ({
@@ -96,6 +99,17 @@ export const applyRunToMetaProgression = (
   ]);
 
   const totalLegacyPoints = Math.max(0, current.totalLegacyPoints + pointsEarned);
+
+  // goalCompletions: her goal için en iyi tier'ı sakla
+  const prevGoalCompletions = current.goalCompletions ?? {};
+  const goalCompletions = { ...prevGoalCompletions };
+  if (run.selectedGoal) {
+    const prev = goalCompletions[run.selectedGoal];
+    if (!prev || TIER_RANK[run.tier] > TIER_RANK[prev]) {
+      goalCompletions[run.selectedGoal] = run.tier;
+    }
+  }
+
   const nextMeta: MetaProgression = {
     ...current,
     version: META_VERSION,
@@ -109,6 +123,9 @@ export const applyRunToMetaProgression = (
     lifetimeEndingIds: Array.from(uniqueEndingIds),
     recentRuns: [runSummary, ...(current.recentRuns || [])].slice(0, MAX_RECENT_RUNS),
     updatedAt: Date.now(),
+    goalCompletions,
+    unlockedEventIds: current.unlockedEventIds ?? [],
+    unlockedRunModifiers: current.unlockedRunModifiers ?? [],
   };
 
   return { nextMeta, runSummary };

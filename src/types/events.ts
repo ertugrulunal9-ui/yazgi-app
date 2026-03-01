@@ -6,6 +6,7 @@ import type {
   Stats, Skills, SchoolGrades, Family,
   LifeGoal, FamilyWealth, FamilyDynamic,
 } from './core';
+import type { ScarEffect } from './scars';
 import type {
   Personality, StressState,
   PersonalityEffect, PersonalityRequirement,
@@ -161,6 +162,13 @@ export interface Choice {
   };
 
   conditionalOutcomes?: ConditionalOutcome[];
+
+  // Trade-off hint: seçim öncesi oyuncuya bedeli gösterir
+  tradeoffHint?: string;
+  tradeoffHintKey?: string;
+
+  /** Kalıcı yara izleri — bu seçim yapılırsa oyuncuya eklenir */
+  grantScars?: Omit<ScarEffect, 'sourceAge'>[];
 }
 
 // =================================================================
@@ -220,6 +228,8 @@ export interface GameEvent {
   reqStress?: { min?: number; max?: number };
   personalityCategory?: 'SOCIAL' | 'RISK' | 'MORAL' | 'CONFLICT' | 'GROWTH' | 'BREAKDOWN';
   challengesAxis?: keyof Personality;
+  /** Bu event yalnızca legacyUnlocks sistemiyle açıldıktan sonra görünür. */
+  requiresUnlock?: boolean;
 }
 
 // =================================================================

@@ -20,6 +20,7 @@ import type {
   GameEvent, ResultData, EventMemory,
   ScheduledEvent, ActiveStoryArc, ChildhoodState,
 } from './events';
+import type { ScarEffect } from './scars';
 
 // =================================================================
 // ACHIEVEMENT SYSTEM
@@ -103,6 +104,12 @@ export interface MetaProgression {
   lifetimeEndingIds: string[];
   recentRuns: MetaRunSummary[];
   updatedAt: number;
+  /** Her goal için ulaşılan en iyi tier. Replayability & legacy unlock için kullanılır. */
+  goalCompletions: Partial<Record<LifeGoal, CareerResult['type']>>;
+  /** Sonraki run'larda aktif olacak ek event ID'leri (legacy unlock sistemi). */
+  unlockedEventIds: string[];
+  /** Sonraki run'larda geçerli olacak modifier flag'leri ('poor_underdog_bonus' vb.). */
+  unlockedRunModifiers: string[];
 }
 
 // =================================================================
@@ -254,6 +261,16 @@ export interface GameState {
   };
   metaProgression?: MetaProgression;
   metaRunRecorded?: boolean;
+
+  /** Kalıcı yara izleri — dramatik seçimlerin geri alınamaz sonuçları */
+  scars?: ScarEffect[];
+
+  // Geçici: seçilen event'in geçmiş seçimlerle nedensel bağlantısı
+  currentCausalLink?: {
+    sourceEventId: string;
+    narrativeLine: string;
+    emotion: string;
+  } | null;
 }
 
 export type GameStateUpdate =

@@ -1,5 +1,6 @@
 import { GameState, Stats } from '../types';
 import { SaveSlotData, SaveSlotMetadata, SAVE_VERSION } from './SaveSlot';
+import { createInitialMetaProgression } from '../utils/metaProgression';
 import { generateChecksum } from '../utils/checksum';
 import { AsyncStorageLike } from './storageTypes';
 
@@ -72,7 +73,11 @@ export const migrateToVersion = (saveData: SaveSlotData, targetVersion: number):
   if (currentVersion < 2 && targetVersion >= 2) {
     migrated = migrateV1ToV2(migrated);
   }
-  
+
+  if (currentVersion < 3 && targetVersion >= 3) {
+    migrated = migrateV2ToV3(migrated);
+  }
+
   migrated.metadata.version = targetVersion;
   migrated.metadata.checksum = generateChecksum({
     playerName: migrated.playerName,
@@ -111,6 +116,24 @@ const migrateV1ToV2 = (saveData: SaveSlotData): SaveSlotData => {
         gameState.consumableUsageThisTurn && typeof gameState.consumableUsageThisTurn === 'object'
           ? gameState.consumableUsageThisTurn
           : {},
+      scars: Array.isArray(gameState.scars) ? gameState.scars : [],
+    },
+  };
+};
+
+const migrateV2ToV3 = (saveData: SaveSlotData): SaveSlotData => {
+  const existingMeta = saveData.gameState?.metaProgression;
+  return {
+    ...saveData,
+    gameState: {
+      ...saveData.gameState,
+      metaProgression: {
+        ...createInitialMetaProgression(),
+        ...(existingMeta ?? {}),
+        goalCompletions: (existingMeta as any)?.goalCompletions ?? {},
+        unlockedEventIds: (existingMeta as any)?.unlockedEventIds ?? [],
+        unlockedRunModifiers: (existingMeta as any)?.unlockedRunModifiers ?? [],
+      },
     },
   };
 };

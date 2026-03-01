@@ -15,6 +15,7 @@ import { NPC_QUESTLINE_EVENTS } from './npcQuestlineEvents';
 import { NPC_CHECKIN_EVENTS } from './npcCheckInEvents';
 import { CLIFFHANGER_EVENTS } from './cliffhangerEvents';
 import { applyProceduralEventBranching } from './eventBranchingEnhancer';
+import { validateEventPool } from './eventRegistry';
 import { EventBuilder } from '../builders/EventBuilder';
 import { validateEventGraph, validateEventTagStandard } from '../utils/eventValidation';
 import { withEventLocalizationKeys, withEventLocalizationKeysForAll } from '../i18n/events/keyMapper';
@@ -51,7 +52,10 @@ const BASE_EVENTS: GameEvent[] = [
 ];
 
 const BRANCHED_EVENT_RESULT = applyProceduralEventBranching(BASE_EVENTS);
-export const EVENTS: GameEvent[] = withEventLocalizationKeysForAll(BRANCHED_EVENT_RESULT.events);
+const VALIDATED_EVENTS: GameEvent[] = __DEV__
+  ? validateEventPool(BRANCHED_EVENT_RESULT.events)
+  : BRANCHED_EVENT_RESULT.events;
+export const EVENTS: GameEvent[] = withEventLocalizationKeysForAll(VALIDATED_EVENTS);
 
 if (__DEV__) {
   console.info(

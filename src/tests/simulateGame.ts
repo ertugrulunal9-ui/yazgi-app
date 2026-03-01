@@ -222,6 +222,27 @@ const buildEventContext = (
   skills: gameState.skills,
 });
 
+const buildScheduledConditionContext = (
+  gameState: GameState,
+  stats: Stats,
+  options?: {
+    age?: number;
+    turn?: number;
+    stress?: number;
+    seenEventIds?: Set<string>;
+  }
+) => ({
+  age: options?.age ?? gameState.age,
+  turn: options?.turn ?? gameState.turn,
+  stress: options?.stress ?? gameState.stress.current,
+  selectedGoal: gameState.selectedGoal ?? null,
+  traits: gameState.traits ?? [],
+  inventory: gameState.inventory ?? [],
+  seenEventIds: options?.seenEventIds ?? getEventChoiceSet(gameState),
+  stats,
+  skills: gameState.skills ?? {},
+});
+
 const resolveChoice = (
   choice: Choice | ((context: EventContext) => Choice),
   context: EventContext
@@ -627,8 +648,22 @@ const selectTurnEvent = (
   const allSeenEvents = getEventChoiceSet(gameState);
   const burdenRisk = calculateEndingErrorDebt(gameState, stats).total;
   const previousBurdenRisk = gameState.lastBurdenRisk ?? 0;
+  const scheduledConditionContext = buildScheduledConditionContext(
+    contextState,
+    contextStats,
+    {
+      age: newAge,
+      turn: newTurn,
+      stress: stressAfterRecovery.current,
+      seenEventIds: allSeenEvents,
+    }
+  );
 
-  const scheduledTick = tickScheduledEvents(gameState.scheduledEvents || [], newAge);
+  const scheduledTick = tickScheduledEvents(
+    gameState.scheduledEvents || [],
+    newAge,
+    scheduledConditionContext
+  );
   const dueScheduledEvents = [...scheduledTick.due];
   const pendingScheduledEvents = [...scheduledTick.pending];
 

@@ -19,6 +19,7 @@ import { Feather } from '@expo/vector-icons';
 import { Choice, PersonalityState, Stats } from '../types';
 import { selectionHaptic, importantDecision } from '../animations';
 import { getMomentumDialogueTag } from '../utils/momentumDialogue';
+import { generateTradeoffHint } from '../utils/tradeoffHints';
 import { tRuntime } from '../i18n/strings';
 import { useRuntimeLocale } from '../i18n/useRuntimeLocale';
 
@@ -162,6 +163,7 @@ export const SwipeChoiceCard: React.FC<SwipeChoiceCardProps> = React.memo(({
 
   const choiceTypeColor = CHOICE_TYPE_COLORS[choice.choiceType || 'NEUTRAL'];
   const dialogueTag = getMomentumDialogueTag(choice, personalityState);
+  const tradeoffHint = dialogueTag ? null : generateTradeoffHint(choice);
   const swipeHint = tRuntime('events.swipe.swipeHint', undefined, 'kaydir');
 
   // Stat hints from choice.effect
@@ -219,6 +221,11 @@ export const SwipeChoiceCard: React.FC<SwipeChoiceCardProps> = React.memo(({
           {dialogueTag && (
             <Text style={[styles.dialogueSubtitle, { color: dialogueTag.textColor }]}>
               {dialogueTag.subtitle}
+            </Text>
+          )}
+          {tradeoffHint && (
+            <Text style={[styles.tradeoffHint, { color: theme.textSecondary }]}>
+              {tradeoffHint}
             </Text>
           )}
 
@@ -303,6 +310,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     opacity: 0.92,
+  },
+  tradeoffHint: {
+    marginTop: 7,
+    fontSize: 12,
+    fontStyle: 'italic',
+    lineHeight: 17,
+    opacity: 0.75,
   },
   statRow: {
     flexDirection: 'row',

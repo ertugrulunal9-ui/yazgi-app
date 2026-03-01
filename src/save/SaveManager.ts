@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { devLog } from '../utils/devLogger';
 import { GameState, MetaProgression, Stats } from '../types';
 import { createInitialMetaProgression } from '../utils/metaProgression';
@@ -171,35 +172,152 @@ type SaveSnapshot = {
 };
 
 type EncryptionProvider = 'none' | 'webcrypto' | 'cryptojs';
+type SecureStoreResolutionReason =
+  | 'not_attempted'
+  | 'resolved_named'
+  | 'resolved_default'
+  | 'unexpected_shape'
+  | 'import_failed';
 
 let secureStoreModule: SecureStoreModule | null = null;
 let secureStoreResolveAttempted = false;
+let secureStoreResolvePromise: Promise<SecureStoreModule | null> | null = null;
+let secureStoreResolutionReason: SecureStoreResolutionReason = 'not_attempted';
+let secureStoreResolutionDetail: string | null = null;
+let secureStoreCachedNullLogged = false;
 let cryptoJsModule: CryptoJsLike | null = null;
 let cryptoJsResolveAttempted = false;
+let cryptoJsResolvePromise: Promise<CryptoJsLike | null> | null = null;
+
+const formatErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    return `${error.name}: ${error.message}`;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
+};
+
+const previewModuleKeys = (value: unknown): string => {
+  if (!value || typeof value !== 'object') return 'none';
+  const keys = Object.keys(value as Record<string, unknown>);
+  if (keys.length === 0) return '(empty)';
+  return keys.slice(0, 12).join(', ');
+};
+
+const hasSecureStoreContract = (candidate: unknown): candidate is SecureStoreModule => {
+  if (!candidate || typeof candidate !== 'object') return false;
+  const moduleCandidate = candidate as Partial<SecureStoreModule>;
+  return (
+    typeof moduleCandidate.getItemAsync === 'function'
+    && typeof moduleCandidate.setItemAsync === 'function'
+  );
+};
+
+const resolveSecureStoreModule = (mod: unknown): {
+  module: SecureStoreModule | null;
+  source: 'named' | 'default' | 'none';
+} => {
+  if (hasSecureStoreContract(mod)) {
+    return { module: mod, source: 'named' };
+  }
+  const defaultExport = (mod as { default?: unknown } | null)?.default;
+  if (hasSecureStoreContract(defaultExport)) {
+    return { module: defaultExport, source: 'default' };
+  }
+  return { module: null, source: 'none' };
+};
 
 const getSecureStore = async (): Promise<SecureStoreModule | null> => {
-  if (secureStoreResolveAttempted) return secureStoreModule;
-  secureStoreResolveAttempted = true;
-  try {
-    const mod = await import('expo-secure-store');
-    secureStoreModule = mod as unknown as SecureStoreModule;
-  } catch {
-    secureStoreModule = null;
+  if (secureStoreResolvePromise) {
+    return secureStoreResolvePromise;
   }
-  return secureStoreModule;
+
+  if (secureStoreResolveAttempted) {
+    if (!secureStoreModule && !secureStoreCachedNullLogged) {
+      secureStoreCachedNullLogged = true;
+      devLog.warn(
+        `[SaveManager] expo-secure-store is cached as unavailable (reason=${secureStoreResolutionReason}${
+          secureStoreResolutionDetail ? `, detail=${secureStoreResolutionDetail}` : ''
+        }, platform=${Platform.OS}, dev=${IS_DEV_RUNTIME})`
+      );
+    }
+    return secureStoreModule;
+  }
+
+  secureStoreResolveAttempted = true;
+  secureStoreResolvePromise = (async () => {
+    try {
+      const mod = await import('expo-secure-store');
+      const resolved = resolveSecureStoreModule(mod);
+      if (!resolved.module) {
+        secureStoreModule = null;
+        secureStoreResolutionReason = 'unexpected_shape';
+        secureStoreResolutionDetail = `exports=${previewModuleKeys(mod)} default=${previewModuleKeys(
+          (mod as { default?: unknown } | null)?.default
+        )}`;
+        devLog.warn(
+          `[SaveManager] expo-secure-store loaded with unexpected shape (platform=${Platform.OS}, dev=${IS_DEV_RUNTIME})`
+        );
+        devLog.debug(
+          '[SaveManager] expo-secure-store export keys:',
+          previewModuleKeys(mod),
+          'default keys:',
+          previewModuleKeys((mod as { default?: unknown } | null)?.default)
+        );
+        return secureStoreModule;
+      }
+      secureStoreModule = resolved.module;
+      secureStoreResolutionReason = resolved.source === 'default' ? 'resolved_default' : 'resolved_named';
+      secureStoreResolutionDetail = null;
+      return secureStoreModule;
+    } catch (error) {
+      secureStoreModule = null;
+      secureStoreResolutionReason = 'import_failed';
+      secureStoreResolutionDetail = formatErrorMessage(error);
+      devLog.warn(
+        `[SaveManager] expo-secure-store import failed (platform=${Platform.OS}, dev=${IS_DEV_RUNTIME}): ${formatErrorMessage(error)}`
+      );
+      return secureStoreModule;
+    }
+  })();
+
+  try {
+    return await secureStoreResolvePromise;
+  } finally {
+    secureStoreResolvePromise = null;
+  }
 };
 
 const getCryptoJs = async (): Promise<CryptoJsLike | null> => {
-  if (cryptoJsResolveAttempted) return cryptoJsModule;
-  cryptoJsResolveAttempted = true;
-  try {
-    const mod = await import('crypto-js');
-    cryptoJsModule = (mod as unknown as { default?: CryptoJsLike }).default
-      ?? (mod as unknown as CryptoJsLike);
-  } catch {
-    cryptoJsModule = null;
+  if (cryptoJsResolvePromise) {
+    return cryptoJsResolvePromise;
   }
-  return cryptoJsModule;
+
+  if (cryptoJsResolveAttempted) return cryptoJsModule;
+
+  cryptoJsResolveAttempted = true;
+  cryptoJsResolvePromise = (async () => {
+    try {
+      const mod = await import('crypto-js');
+      cryptoJsModule = (mod as unknown as { default?: CryptoJsLike }).default
+        ?? (mod as unknown as CryptoJsLike);
+    } catch {
+      cryptoJsModule = null;
+    }
+    return cryptoJsModule;
+  })();
+
+  try {
+    return await cryptoJsResolvePromise;
+  } finally {
+    cryptoJsResolvePromise = null;
+  }
 };
 
 // Auto-save callback tipi - oyun state'ini döndüren fonksiyon
@@ -613,7 +731,9 @@ class SaveManager {
     const secureStore = await getSecureStore();
     if (!secureStore) {
       this.integrityActive = false;
-      devLog.warn('SecureStore unavailable, save anti-tamper signatures are disabled.');
+      devLog.warn(
+        `SecureStore unavailable, save anti-tamper signatures are disabled (platform=${Platform.OS}).`
+      );
       return;
     }
 
@@ -643,7 +763,9 @@ class SaveManager {
     if (!secureStore) {
       this.encryptionActive = false;
       this.encryptionProvider = 'none';
-      devLog.warn('Secure save encryption unavailable, local save payloads use plaintext storage.');
+      devLog.warn(
+        `Secure save encryption unavailable (platform=${Platform.OS}); local save payloads use plaintext storage.`
+      );
       return;
     }
 

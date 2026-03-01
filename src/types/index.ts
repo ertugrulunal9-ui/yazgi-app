@@ -11,3 +11,4 @@ export * from './npc';
 export * from './fate';
 export * from './events';
 export * from './game';
+export * from './scars';

@@ -57,7 +57,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
   },
 
   {
-    id: 'tr_kreş_ilk_gun',
+    id: 'tr_kres_ilk_gun',
     tags: ['school', 'social'],
     text: "Bugün kreşe ilk gidişin. Annen seni bırakıp gidecek. Yabancı yüzler, garip sesler...",
     minAge: 2, maxAge: 4, difficulty: 2, rarity: 'UNCOMMON', isRepeatable: false,
@@ -1943,7 +1943,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
   },
 
   {
-    id: 'tr_harçlık',
+    id: 'tr_harclik',
     tags: ['money', 'finance'],
     text: "Hafta sonu harçlık günü! Baban sana 20 TL verdi. Ne yapacaksın?",
     minAge: 6, maxAge: 15, difficulty: 1, rarity: 'COMMON', isRepeatable: true,

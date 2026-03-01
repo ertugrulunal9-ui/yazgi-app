@@ -128,6 +128,12 @@ const CRISIS_SOCIAL_EXCLUSION: GameEvent = {
       stressEffect: -25,
       feedback: 'O gece çok kitap okudun. Ama sayfalardaki kelimeler bir türlü anlam ifade etmedi. Yalnızlık sessiz bir ağrıdır.',
       memory: { emotion: 'REGRET', weight: 'HIGH' },
+      grantScars: [{
+        id: 'scar_social_rejection',
+        label: 'Dışlanma İzi',
+        description: 'O gece hissettiklerini hiç unutmadın. Çok kalabalık yerlerde bile bir köşeye çekilme isteği hep orada.',
+        sourceEventId: 'evt_crisis_social_exclusion',
+      }],
     },
   ],
 };
@@ -161,6 +167,12 @@ const CRISIS_IDENTITY: GameEvent = {
       stressEffect: -15,
       feedback: 'Normal davranmaya devam ettin. Maskeyi çıkarmadın. Belki bir gün... ama bugün değil.',
       memory: { emotion: 'NEUTRAL', weight: 'MEDIUM' },
+      grantScars: [{
+        id: 'scar_lost_identity',
+        label: 'Kayıp Kimlik',
+        description: 'Maskeyi o gün taktın ve bir daha çıkaramadın. Kim olduğunu sormak yerine kim olman gerektiğini öğrendin.',
+        sourceEventId: 'evt_crisis_identity',
+      }],
     },
   ],
 };

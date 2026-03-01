@@ -374,11 +374,24 @@ export class TurnMediator {
       statsAfterChoice
     );
     const grantedTraits = effectiveChoice.grantTraits || [];
+    // Scar protection: filter out traits shielded by active scars
+    const activeScars = gameState.scars ?? [];
+    const scarProtectedTraits = new Set(activeScars.flatMap(s => s.traitProtection ?? []));
+    const filteredRemovedTraits = traitResult.removedTraits.filter(t => !scarProtectedTraits.has(t));
     const traitResolution = resolveTraitChanges({
       currentTraits: gameState.traits,
       gainedTraits: [...traitResult.newTraits, ...grantedTraits],
-      removedTraits: traitResult.removedTraits,
+      removedTraits: filteredRemovedTraits,
     });
+    // Accumulate scars granted by this choice
+    const newScars = choice.grantScars
+      ? [
+          ...activeScars,
+          ...choice.grantScars
+            .filter(s => !activeScars.some(existing => existing.id === s.id))
+            .map(s => ({ ...s, sourceAge: gameState.age })),
+        ]
+      : activeScars;
     const nextTraitProgress = { ...traitResult.updatedProgress };
     [...traitResolution.gainedTraits, ...traitResolution.removedTraits].forEach(traitId => {
       if (nextTraitProgress[traitId]) {
@@ -525,6 +538,7 @@ export class TurnMediator {
         adaptivePacingStreak: nextAdaptivePacingStreak,
         fate: updatedFate,
         pendingCliffhanger,
+        scars: newScars,
       },
       appliedChanges,
       newTraits: traitResolution.gainedTraits,

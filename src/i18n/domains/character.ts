@@ -44,6 +44,21 @@ export const characterStrings: DomainStrings = {
         SOCIAL: 'Insan odakli bir gelecek plani yaptin.',
       },
     },
+    identity: {
+      templates: {
+        age7: '{age} yasina girdin. Etrafindakiler seni \'{highLabel} ama {lowLabel}\' buluyor.',
+        age10: 'Tek haneli yaslar geride kaldi. Artik kim oldugun belirginlesiyor: {highLabel}, ama ayni zamanda {lowLabel}.',
+        age13: '{age} yasindayin. Sen {highLabel} birisin — ama {lowLabel} tarafin bazen ayagina dolasiyor.',
+        age15: '15... Lise ortasindayin. Sen {highLabel} birisin. {lowLabel} tarafin ise hâlâ seninle.',
+        age17: '17 oldun. Sen {highLabel} birisin ve bu seni buraya getirdi. Ama {lowLabel} tarafin da izini birakti.',
+        age18: '18... {highLabel} ve {lowLabel} — ikisi de senin hikayen.',
+      },
+      tendencySuffix: {
+        HELPFUL: 'Icindeki yardimsever ruh guclu.',
+        PRAGMATIC: 'Icindeki pragmatik yan her gecen gun netlesiyor.',
+        AGGRESSIVE: 'Icindeki savasci ruh hâlâ yaniyor.',
+      },
+    },
     zodiac: {
       fallbackRangeSeparator: ' to ',
     },
@@ -152,6 +167,21 @@ export const characterStrings: DomainStrings = {
         CREATIVE: 'You accepted taking risks for your creative goal.',
         WEALTH: 'Your financial goal now guides your decisions.',
         SOCIAL: 'You chose a people-centered future.',
+      },
+    },
+    identity: {
+      templates: {
+        age7: 'You turned {age}. People around you see you as \'{highLabel} but {lowLabel}\'.',
+        age10: 'Single-digit years are behind you. Who you are is becoming clear: {highLabel}, but also {lowLabel}.',
+        age13: 'You\'re {age}. You\'re a {highLabel} person — but your {lowLabel} side sometimes trips you up.',
+        age15: '15... Halfway through high school. You\'re {highLabel}. But your {lowLabel} side is still with you.',
+        age17: 'You turned 17. You\'re a {highLabel} person and that got you here. But your {lowLabel} side left its mark too.',
+        age18: '18... {highLabel} and {lowLabel} — both are your story.',
+      },
+      tendencySuffix: {
+        HELPFUL: 'The helper spirit inside you is strong.',
+        PRAGMATIC: 'Your pragmatic side grows clearer every day.',
+        AGGRESSIVE: 'The fighter spirit inside you still burns.',
       },
     },
     zodiac: {

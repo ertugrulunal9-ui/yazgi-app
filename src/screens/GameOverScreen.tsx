@@ -15,6 +15,8 @@ import {
   resolveEnding,
   TOTAL_ENDING_COUNT,
 } from '../utils/endingResolver';
+import { buildLifeStoryNarrative } from '../utils/memoryLogic';
+import { buildNarrativeWeightBreakdown } from '../utils/narrativeWeight';
 import { calculateLegacyPointsForRun, createInitialMetaProgression } from '../utils/metaProgression';
 import {
   getRemainingRewardedAds,
@@ -115,6 +117,27 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
       : t('endings.personalities.DEFAULT', undefined, 'You walked your own path in your own way.');
     return `${playerName}... ${base}`;
   }, [gameState.personalityState, playerName, t]);
+
+  const activeScars = gameState.scars ?? [];
+
+  const narrativeBreakdown = useMemo(() => (
+    buildNarrativeWeightBreakdown(gameState.memories ?? [], gameState.scars)
+  ), [gameState.memories, gameState.scars]);
+
+  const lifeStory = useMemo(() => {
+    const normalized = normalizePersonalityState(gameState.personalityState);
+    const dominant = (['HELPFUL', 'PRAGMATIC', 'AGGRESSIVE'] as PersonalityTendency[])
+      .slice()
+      .sort((a, b) => normalized[b].streak - normalized[a].streak)[0] ?? null;
+    return buildLifeStoryNarrative(
+      gameState.memories,
+      gameState.personality,
+      dominant,
+      gameState.family,
+      gameState.traits,
+      playerName,
+    );
+  }, [gameState.memories, gameState.personality, gameState.personalityState, gameState.family, gameState.traits, playerName]);
 
   const bestAlternativeGoal = useMemo(() => {
     const allScores = calculateAllGoalScores(gameState, stats);
@@ -494,6 +517,113 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                     );
                   })}
                 </View>
+              </View>
+            </FadeInUpView>
+          )}
+
+          {lifeStory.paragraphs.length > 0 && (
+            <FadeInUpView delay={450}>
+              <View style={{
+                marginBottom: 16,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: theme.border,
+                backgroundColor: theme.surfaceOverlay,
+                padding: metrics.pad,
+              }}>
+                <Text style={{ color: theme.textPrimary, fontWeight: '700', fontSize: 15, marginBottom: 10 }}>
+                  {'\u{1F4DC}'} {t('endings.lifeStory.title', undefined, 'Hayat Hikayen')}
+                </Text>
+                {lifeStory.paragraphs.map((para, i) => (
+                  <Text
+                    key={i}
+                    style={{
+                      color: theme.textSecondary,
+                      fontSize: 13,
+                      lineHeight: 20,
+                      marginBottom: i < lifeStory.paragraphs.length - 1 ? 10 : 0,
+                    }}
+                  >
+                    {para}
+                  </Text>
+                ))}
+              </View>
+            </FadeInUpView>
+          )}
+
+          {(narrativeBreakdown.positiveMemories.length > 0 || narrativeBreakdown.negativeMemories.length > 0) && (
+            <FadeInUpView delay={450}>
+              <View style={{
+                marginBottom: 16,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: 'rgba(139, 92, 246, 0.35)',
+                backgroundColor: 'rgba(139, 92, 246, 0.06)',
+                padding: metrics.pad,
+              }}>
+                <Text style={{ color: '#a78bfa', fontWeight: '700', fontSize: 15, marginBottom: 10 }}>
+                  {'\u2728'} {t('endings.narrativeWeight.title', undefined, 'Seni \u015eekillendiren Anlar')}
+                </Text>
+                {narrativeBreakdown.positiveMemories.map(mem => (
+                  <View key={mem.id} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 }}>
+                    <Text style={{ color: '#4ade80', fontSize: 13, marginRight: 6 }}>{'\u2B50'}</Text>
+                    <Text style={{ color: theme.textSecondary, fontSize: 12, flex: 1, lineHeight: 17 }}>
+                      {t(`events.${mem.eventId}.memory`, undefined, mem.eventId.replace(/_/g, ' '))}
+                      {mem.age ? ` — ${mem.age} ${t('character.ageUnit', undefined, 'ya\u015f\u0131nda')}` : ''}
+                    </Text>
+                  </View>
+                ))}
+                {narrativeBreakdown.negativeMemories.map(mem => (
+                  <View key={mem.id} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 }}>
+                    <Text style={{ color: '#fb923c', fontSize: 13, marginRight: 6 }}>{'\u26A0\uFE0F'}</Text>
+                    <Text style={{ color: theme.textSecondary, fontSize: 12, flex: 1, lineHeight: 17 }}>
+                      {t(`events.${mem.eventId}.memory`, undefined, mem.eventId.replace(/_/g, ' '))}
+                      {mem.age ? ` — ${mem.age} ${t('character.ageUnit', undefined, 'ya\u015f\u0131nda')}` : ''}
+                    </Text>
+                  </View>
+                ))}
+                {narrativeBreakdown.scarScore < 0 && (
+                  <Text style={{ color: '#ef4444', fontSize: 12, marginTop: 4, fontStyle: 'italic' }}>
+                    {t('endings.narrativeWeight.scarPenalty', { points: Math.abs(narrativeBreakdown.scarScore) }, 'Yara izleri sonu\u00e7lar\u0131n\u0131 {points} puan a\u015fa\u011f\u0131 \u00e7ekti.')}
+                  </Text>
+                )}
+                <Text style={{ color: '#a78bfa', fontSize: 11, marginTop: 8, opacity: 0.75 }}>
+                  {narrativeBreakdown.totalImpact >= 0
+                    ? t('endings.narrativeWeight.positiveImpact', { points: narrativeBreakdown.totalImpact }, 'Anlat\u0131 etkisi: +{points} puan')
+                    : t('endings.narrativeWeight.negativeImpact', { points: Math.abs(narrativeBreakdown.totalImpact) }, 'Anlat\u0131 etkisi: -{points} puan')
+                  }
+                </Text>
+              </View>
+            </FadeInUpView>
+          )}
+
+          {activeScars.length > 0 && (
+            <FadeInUpView delay={455}>
+              <View style={{
+                marginBottom: 16,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: 'rgba(239, 68, 68, 0.35)',
+                backgroundColor: 'rgba(239, 68, 68, 0.06)',
+                padding: metrics.pad,
+              }}>
+                <Text style={{ color: '#ef4444', fontWeight: '700', fontSize: 15, marginBottom: 10 }}>
+                  {'\uD83D\uDC94'} {t('endings.scars.title', undefined, 'Yara \u0130zleri')}
+                </Text>
+                {activeScars.map((scar, i) => (
+                  <View
+                    key={scar.id}
+                    style={{ marginBottom: i < activeScars.length - 1 ? 10 : 0 }}
+                  >
+                    <Text style={{ color: '#ef4444', fontWeight: '600', fontSize: 13 }}>
+                      {scar.label}
+                      {scar.sourceAge ? ` (${scar.sourceAge} ya\u015f\u0131nda)` : ''}
+                    </Text>
+                    <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2, lineHeight: 17 }}>
+                      {scar.description}
+                    </Text>
+                  </View>
+                ))}
               </View>
             </FadeInUpView>
           )}

@@ -222,6 +222,11 @@ const isEventEligibleWithSets = (
   if (!meetsNpcRole(event.reqNPCRole, context.npcs)) return false;
   if (!event.isRepeatable && allSeenSet.has(event.id)) return false;
   if (event.isRepeatable && recentSet.has(event.id)) return false;
+  // Legacy unlock: event yalnızca unlockedEventIds listesinde varsa göster
+  if (event.requiresUnlock) {
+    const unlocked = context.gameState?.metaProgression?.unlockedEventIds ?? [];
+    if (!unlocked.includes(event.id)) return false;
+  }
   return true;
 };
 

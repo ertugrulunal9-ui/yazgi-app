@@ -58,7 +58,13 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
         memory: { emotion: 'GUILT', weight: 'HIGH', customNote: 'Arkadaşını ihbar ettin' },
         futureEvents: [
           { trigger: 'TURNS', turnsLater: 10, eventId: 'dilemma_ispiyoncu_damgasi', priority: 'HIGH' }
-        ]
+        ],
+        grantScars: [{
+          id: 'scar_betrayal',
+          label: 'İhanet Kırığı',
+          description: 'Doğruyu söyledin ama bir arkadaşı kaybetmenin ağırlığı hep seninle. Yakın ilişkilerde güven kurmak bir türlü kolay gelmiyor.',
+          sourceEventId: 'dilemma_sinav_kopya_gorme',
+        }],
       },
       {
         id: 'protect_friend',
@@ -1492,7 +1498,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
         feedback: "Kardeşin ağladı, ceza aldı. Ama sen biliyorsun gerçeği. Her bakışında suçluluk...",
         memory: { emotion: 'GUILT', weight: 'HIGH', customNote: 'Kardeşini suçladın' },
         futureEvents: [
-          { trigger: 'TURNS', turnsLater: 20, eventId: 'dilemma_vazo_gerçek', priority: 'NORMAL' }
+          { trigger: 'TURNS', turnsLater: 20, eventId: 'dilemma_vazo_gercek', priority: 'NORMAL' }
         ],
       },
       {
@@ -1508,7 +1514,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
   },
 
   {
-    id: 'dilemma_vazo_gerçek',
+    id: 'dilemma_vazo_gercek',
     tags: ['moral', 'family', 'social'],
     text: "Yıllar sonra, kardeşin hâlâ 'o vazo olayını' hatırlıyor. 'Ben kırmamıştım' diyor hep. Gerçeği söyleyecek misin?",
     minAge: 10, maxAge: 18, difficulty: 3, rarity: 'RARE',

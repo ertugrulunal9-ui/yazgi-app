@@ -1,4 +1,6 @@
-import { EventMemory, MemoryEmotion, GameEvent, Personality } from '../types';
+import { EventMemory, Family, MemoryEmotion, GameEvent, Personality, PersonalityTendency } from '../types';
+import { getPersonalityArchetype, getArchetypeDescription, getPersonalityLevelDescription } from './personalitySystem';
+import { tRuntime } from '../i18n/strings';
 
 const NEGATIVE_EMOTIONS: readonly MemoryEmotion[] = ['REGRET', 'GUILT'];
 const POSITIVE_EMOTIONS: readonly MemoryEmotion[] = ['PRIDE', 'SATISFACTION'];
@@ -54,16 +56,18 @@ export const getRandomMemoryText = (
 
   const randomMem = targetMemories[Math.floor(Math.random() * targetMemories.length)];
   const yearsAgo = Math.max(0, (memories[memories.length - 1]?.age ?? randomMem.age) - randomMem.age);
-  const timing = yearsAgo <= 1 ? 'gecen yil' : `${yearsAgo} yil once`;
+  const timing = yearsAgo <= 1
+    ? tRuntime('narrative.memory.timing.lastYear')
+    : tRuntime('narrative.memory.timing.yearsAgo', { years: yearsAgo });
 
   if (randomMem.eventId === 'found_wallet') {
     if (emotionType === 'NEGATIVE') {
-      return 'Buldugun o cuzdan sahnesi yeniden zihninde canlaniyor; vicdanin sizliyor.';
+      return tRuntime('narrative.memory.random.foundWallet.negative');
     }
-    return 'Cuzdani sahibine teslim ettigin an aklina geliyor; dogru olanin agirligi hafifletiyor.';
+    return tRuntime('narrative.memory.random.foundWallet.positive');
   }
 
-  return `${timing} verdigin bir karar yine aklina dusuyor.`;
+  return tRuntime('narrative.memory.random.generic', { timing });
 };
 
 export interface MemoryAwareEventTextOptions {
@@ -88,22 +92,20 @@ const hashSeed = (value: string): number => {
 const getEmotionLine = (memory: EventMemory, currentAge: number): string => {
   const yearsAgo = Math.max(0, currentAge - memory.age);
   const agePrefix = yearsAgo <= 0
-    ? 'Az once'
-    : yearsAgo === 1
-      ? `${memory.age} yasinda`
-      : `${memory.age} yasinda`;
+    ? tRuntime('narrative.memory.agePrefix.current')
+    : tRuntime('narrative.memory.agePrefix.atAge', { age: memory.age });
 
   switch (memory.emotion) {
     case 'REGRET':
-      return `${agePrefix} yaptigin bir secimin golgesi icini hafifce yokluyor.`;
+      return tRuntime('narrative.memory.emotionLine.regret', { agePrefix });
     case 'GUILT':
-      return `${agePrefix} yasadigin bir sucluluk hissi sessizce geri donuyor.`;
+      return tRuntime('narrative.memory.emotionLine.guilt', { agePrefix });
     case 'PRIDE':
-      return `${agePrefix} gosterdigin cesaret bugun yine omurgani diklestiriyor.`;
+      return tRuntime('narrative.memory.emotionLine.pride', { agePrefix });
     case 'SATISFACTION':
-      return `${agePrefix} aldigin dogru karar icini yeniden sakinlestiriyor.`;
+      return tRuntime('narrative.memory.emotionLine.satisfaction', { agePrefix });
     default:
-      return `${agePrefix} bir ani zihninde kisa bir iz birakiyor.`;
+      return tRuntime('narrative.memory.emotionLine.neutral', { agePrefix });
   }
 };
 
@@ -181,15 +183,15 @@ export interface LifeReflection {
 const getDecisionNarrative = (memory: EventMemory): string => {
   switch (memory.emotion) {
     case 'PRIDE':
-      return `${memory.age} yaşında gurur duydun.`;
+      return tRuntime('narrative.memory.decisionNarrative.pride', { age: memory.age });
     case 'REGRET':
-      return `${memory.age} yaşında pişman oldun.`;
+      return tRuntime('narrative.memory.decisionNarrative.regret', { age: memory.age });
     case 'GUILT':
-      return `${memory.age} yaşında suçluluk hissettin.`;
+      return tRuntime('narrative.memory.decisionNarrative.guilt', { age: memory.age });
     case 'SATISFACTION':
-      return `${memory.age} yaşında huzur buldun.`;
+      return tRuntime('narrative.memory.decisionNarrative.satisfaction', { age: memory.age });
     default:
-      return `${memory.age} yaşında bir karar verdin.`;
+      return tRuntime('narrative.memory.decisionNarrative.neutral', { age: memory.age });
   }
 };
 
@@ -200,16 +202,16 @@ const getThemeSummary = (theme: LifeTheme, personality: Personality): string => 
 
   switch (theme) {
     case 'PRIDE_PATH':
-      if (isBrave) return 'Cesaretle dolu bir hayat yaşadın. Korkularını yendin ve iz bıraktın.';
-      if (isEmpath) return 'İnsanlara dokunarak hayatını anlamlı kıldın.';
-      if (isOpen) return 'Yeni deneyimlere açık bir hayat sürdün ve çok şey öğrendin.';
-      return 'Başarılarla dolu bir yolculuk geçirdin. Her adım seni güçlendirdi.';
+      if (isBrave) return tRuntime('narrative.memory.themeSummary.pridePath.brave');
+      if (isEmpath) return tRuntime('narrative.memory.themeSummary.pridePath.empath');
+      if (isOpen) return tRuntime('narrative.memory.themeSummary.pridePath.open');
+      return tRuntime('narrative.memory.themeSummary.pridePath.default');
     case 'REGRET_PATH':
-      if (isBrave) return 'Hatalar yaptın ama her seferinde ayağa kalktın. Bu cesaret seni tanımlıyor.';
-      if (isEmpath) return 'Pişmanlıkların seni daha anlayışlı bir insan yaptı.';
-      return 'Düşüşler ve dersler dolu bir yolculuk. Her hata seni olgunlaştırdı.';
+      if (isBrave) return tRuntime('narrative.memory.themeSummary.regretPath.brave');
+      if (isEmpath) return tRuntime('narrative.memory.themeSummary.regretPath.empath');
+      return tRuntime('narrative.memory.themeSummary.regretPath.default');
     case 'MIXED_PATH':
-      return 'Hem zaferler hem yenilgiler yaşadın. Bu denge seni gerçekten olgunlaştırdı.';
+      return tRuntime('narrative.memory.themeSummary.mixedPath');
   }
 };
 
@@ -257,4 +259,105 @@ export const buildLifeReflection = (
     dominantTheme,
     summaryNarrative,
   };
+};
+
+// =================================================================
+// HAYAT HİKAYESİ ANLATISI (Life Story Narrative)
+// Ending ekranında oyuncunun benzersiz hayat hikayesini 3-5 paragrafla anlatır.
+// =================================================================
+
+export interface LifeStoryNarrative {
+  paragraphs: string[];
+}
+
+const FAMILY_OPENING: Record<string, string> = {
+  SUPPORTIVE: 'narrative.memory.familyOpening.supportive',
+  STRICT: 'narrative.memory.familyOpening.strict',
+  CHAOTIC: 'narrative.memory.familyOpening.chaotic',
+};
+
+const FAMILY_OPENING_DEFAULT = 'narrative.memory.familyOpening.default';
+
+const PERSONALITY_AXES: (keyof Personality)[] = ['openness', 'courage', 'empathy', 'patience', 'conformity'];
+
+const TENDENCY_LABELS: Record<PersonalityTendency, string> = {
+  HELPFUL: 'narrative.memory.tendency.helpful',
+  PRAGMATIC: 'narrative.memory.tendency.pragmatic',
+  AGGRESSIVE: 'narrative.memory.tendency.aggressive',
+};
+
+const buildEarlyMemoryParagraph = (decisions: KeyDecision[]): string | null => {
+  const earlyDecisions = decisions.filter(d => d.age >= 7 && d.age <= 12);
+  if (earlyDecisions.length === 0) return null;
+
+  const lines = earlyDecisions.slice(0, 3).map(d => d.narrativeLine);
+  return tRuntime('narrative.memory.paragraph.earlyYears', { lines: lines.join(' ') });
+};
+
+const buildTeenMemoryParagraph = (decisions: KeyDecision[]): string | null => {
+  const teenDecisions = decisions.filter(d => d.age >= 13);
+  if (teenDecisions.length === 0) return null;
+
+  const lines = teenDecisions.slice(0, 3).map(d => d.narrativeLine);
+  return tRuntime('narrative.memory.paragraph.teenYears', { lines: lines.join(' ') });
+};
+
+const buildPersonalityParagraph = (
+  personality: Personality,
+  dominantTendency: PersonalityTendency | null,
+): string => {
+  const archetype = getPersonalityArchetype(personality);
+  const archetypeDesc = getArchetypeDescription(archetype);
+
+  let highAxis: keyof Personality = 'openness';
+  let highVal = -1;
+  for (const axis of PERSONALITY_AXES) {
+    if (personality[axis] > highVal) { highVal = personality[axis]; highAxis = axis; }
+  }
+  const highLabel = getPersonalityLevelDescription(highAxis, highVal);
+
+  let text = tRuntime('narrative.memory.paragraph.personality', {
+    archetypeDesc,
+    highLabel: highLabel.toLowerCase(),
+  });
+
+  if (dominantTendency) {
+    const tendencyLabel = tRuntime(TENDENCY_LABELS[dominantTendency]);
+    text += ` ${tRuntime('narrative.memory.paragraph.tendencySuffix', { tendency: tendencyLabel })}`;
+  }
+
+  return text;
+};
+
+export const buildLifeStoryNarrative = (
+  memories: EventMemory[],
+  personality: Personality,
+  dominantTendency: PersonalityTendency | null,
+  family: Family | null,
+  _traits: string[],
+  playerName: string,
+): LifeStoryNarrative => {
+  const reflection = buildLifeReflection(memories, personality);
+  const paragraphs: string[] = [];
+
+  // P1: Erken cocukluk + aile
+  const familyDynamic = family?.dynamic ?? 'SUPPORTIVE';
+  const openingKey = FAMILY_OPENING[familyDynamic] ?? FAMILY_OPENING_DEFAULT;
+  paragraphs.push(tRuntime(openingKey, { name: playerName }));
+
+  // P2: 7-12 yas anahtar anilar
+  const earlyPara = buildEarlyMemoryParagraph(reflection.keyDecisions);
+  if (earlyPara) paragraphs.push(earlyPara);
+
+  // P3: Kisilik kristallesmesi
+  paragraphs.push(buildPersonalityParagraph(personality, dominantTendency));
+
+  // P4: 13-18 yas donum noktalari
+  const teenPara = buildTeenMemoryParagraph(reflection.keyDecisions);
+  if (teenPara) paragraphs.push(teenPara);
+
+  // P5: Kapanış - dominant tema
+  paragraphs.push(reflection.summaryNarrative);
+
+  return { paragraphs };
 };

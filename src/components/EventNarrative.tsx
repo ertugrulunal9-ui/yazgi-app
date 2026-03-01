@@ -29,6 +29,9 @@ interface EventNarrativeProps {
   isDramaticEvent: boolean;
   isBreakdownEvent: boolean;
   breakdownShakeX: Animated.Value;
+  causalLink?: { narrativeLine: string; emotion: string } | null;
+  /** Seçim yapıldıktan sonra kaç alternatif yolun kapandığını gösterir. */
+  blockedPathCount?: number;
 }
 
 export const EventNarrative: React.FC<EventNarrativeProps> = React.memo(({
@@ -39,6 +42,8 @@ export const EventNarrative: React.FC<EventNarrativeProps> = React.memo(({
   isDramaticEvent,
   isBreakdownEvent,
   breakdownShakeX,
+  causalLink,
+  blockedPathCount,
 }) => {
   const eventVisual = EVENT_VISUALS[event.personalityCategory || ''] || {
     color: theme.accentEvent,
@@ -127,6 +132,54 @@ export const EventNarrative: React.FC<EventNarrativeProps> = React.memo(({
                 letterSpacing: 1,
               }}>
                 {(event.tags ?? []).includes('turning_point') ? 'D\u00F6n\u00FCm Noktas\u0131' : 'Kritik Karar'}
+              </Text>
+            </View>
+          )}
+
+          {causalLink && (
+            <View style={{
+              backgroundColor: 'rgba(168, 85, 247, 0.10)',
+              borderRadius: 8,
+              paddingVertical: 6,
+              paddingHorizontal: 10,
+              marginBottom: 10,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+            }}>
+              <Feather name="link" size={12} color="#a78bfa" />
+              <Text style={{
+                color: '#a78bfa',
+                fontSize: 12,
+                fontStyle: 'italic',
+                flex: 1,
+                lineHeight: 17,
+              }}>
+                {causalLink.narrativeLine}
+              </Text>
+            </View>
+          )}
+
+          {(blockedPathCount ?? 0) > 0 && (
+            <View style={{
+              backgroundColor: 'rgba(251, 146, 60, 0.08)',
+              borderRadius: 8,
+              paddingVertical: 5,
+              paddingHorizontal: 10,
+              marginBottom: 10,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+            }}>
+              <Feather name="lock" size={11} color="#fb923c" />
+              <Text style={{
+                color: '#fb923c',
+                fontSize: 11,
+                fontStyle: 'italic',
+                flex: 1,
+                lineHeight: 16,
+              }}>
+                {'Bu seçim bazı kapıları kapattı. Farklı bir yolda ne olurdu?'}
               </Text>
             </View>
           )}

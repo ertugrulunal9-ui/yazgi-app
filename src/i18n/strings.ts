@@ -11,6 +11,7 @@ import { traitsStrings } from './domains/traits';
 import { examsStrings } from './domains/exams';
 import { socialStrings } from './domains/social';
 import { characterStrings } from './domains/character';
+import { narrativeStrings } from './domains/narrative';
 import type { DomainStrings, NestedRecord, Primitive, PrimitiveArray } from './domains/types';
 
 export type { AppLocale };
@@ -27,6 +28,7 @@ const DOMAIN_BUNDLES: DomainStrings[] = [
   examsStrings,
   socialStrings,
   characterStrings,
+  narrativeStrings,
 ];
 
 const isRecord = (value: unknown): value is NestedRecord => (
@@ -185,3 +187,18 @@ export const tRuntime = (
   params?: Record<string, Primitive>,
   fallback?: string
 ): string => t(runtimeLocale, key, params, fallback);
+
+export const getRuntimeValue = (
+  key: string
+): Primitive | PrimitiveArray | NestedRecord | undefined => {
+  const localizedValue = getByPath(strings[runtimeLocale], key);
+  if (localizedValue !== undefined) return localizedValue;
+  return getByPath(strings[DEFAULT_LOCALE], key);
+};
+
+export const getRuntimeStringArray = (key: string): string[] => {
+  const value = getRuntimeValue(key);
+  if (!Array.isArray(value)) return [];
+  if (!value.every(entry => typeof entry === 'string')) return [];
+  return value as string[];
+};

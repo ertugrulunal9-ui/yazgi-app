@@ -1,0 +1,4 @@
+interface:
+  display_name: "Metin ve Hikaye Mimarisi"
+  short_description: "Dinamik diyalog ve olay kurgusu yardimcisi"
+  default_prompt: "Use $metin-ve-hikaye-mimarisi to generate mood-aware dialogue variants and coherent random event templates for my text-based game."

@@ -91,4 +91,106 @@ export const ECONOMIC_RECOVERY_EVENTS: GameEvent[] = [
       },
     ],
   },
+
+  // =================================================================
+  // POOR UNDERDOG — Breakthrough narrative events (HIGH PRIDE memory)
+  // Simülasyon verisine göre POOR run'da yeterli PRIDE anısı yok.
+  // Bu event'ler narrative weight sisteminin POOR oyunculara
+  // daha fazla ending score katkısı sağlamasını garantiler.
+  // =================================================================
+  {
+    id: 'econ_poor_breakthrough_moment',
+    tags: ['economy', 'recovery', 'growth', 'family', 'underdog'],
+    text: 'Sınıfın en iyi notunu aldın. Öğretmenin özel olarak seni çağırıp "Benden destek istersen her zaman buradayım" dedi.',
+    minAge: 10,
+    maxAge: 16,
+    rarity: 'UNCOMMON',
+    difficulty: 1,
+    isRepeatable: false,
+    reqFamily: { wealth: ['POOR'] },
+    personalityCategory: 'GROWTH',
+    choices: [
+      {
+        id: 'econ_breakthrough_accept_mentor',
+        text: 'Öğretmenin teklifini kabul et',
+        effect: { intelligence: 5, discipline: 3, familyRelation: 2, energy: -2 },
+        skillUpdates: { reading: 2, logic: 1 },
+        stressEffect: -8,
+        memory: { emotion: 'PRIDE', weight: 'HIGH' },
+        feedback: 'O gün bir şeyin değiştiğini hissettin. Belki de kaderine inanmaya başladın.',
+      },
+      {
+        id: 'econ_breakthrough_share_family',
+        text: 'Eve koşup annenle/babanla paylaş',
+        effect: { familyRelation: 8, charisma: 2, intelligence: 2 },
+        stressEffect: -12,
+        memory: { emotion: 'PRIDE', weight: 'HIGH' },
+        feedback: 'Annenin yüzündeki ifadeyi hiç unutmayacaksın. Birlikte ağladınız.',
+      },
+    ],
+  },
+  {
+    id: 'econ_poor_first_own_money',
+    tags: ['economy', 'recovery', 'growth', 'underdog'],
+    text: 'İlk kez kendi kazandığın parayla bir şey aldın — küçük bir şey ama tamamen senindi.',
+    minAge: 12,
+    maxAge: 17,
+    rarity: 'UNCOMMON',
+    difficulty: 1,
+    isRepeatable: false,
+    reqFamily: { wealth: ['POOR'] },
+    personalityCategory: 'GROWTH',
+    choices: [
+      {
+        id: 'econ_first_money_keep',
+        text: 'Kendin için küçük bir şey al',
+        effect: { charisma: 3, discipline: 2, money: -20 },
+        stressEffect: -10,
+        memory: { emotion: 'PRIDE', weight: 'HIGH' },
+        feedback: 'Parasız büyümek, bu anı daha da değerli kıldı. İçindeki kıpırtıyı hissedebiliyordun.',
+      },
+      {
+        id: 'econ_first_money_family',
+        text: 'Parayı aile masrafına ver',
+        effect: { familyRelation: 6, discipline: 4, money: -20 },
+        stressEffect: -6,
+        memory: { emotion: 'SATISFACTION', weight: 'HIGH' },
+        feedback: 'O gün gerçekten büyüdüğünü hissettin. Sorumluluk omzuna oturdu ama ağır gelmedi.',
+      },
+    ],
+  },
+  {
+    id: 'econ_poor_prove_them_wrong',
+    tags: ['economy', 'recovery', 'growth', 'underdog', 'social'],
+    text: 'Bir akraban "Sizin mahalleden pek bir şey çıkmaz" dedi. İçinde bir şey gerildi.',
+    minAge: 13,
+    maxAge: 17,
+    rarity: 'RARE',
+    difficulty: 3,
+    isRepeatable: false,
+    reqFamily: { wealth: ['POOR'] },
+    personalityCategory: 'MORAL',
+    challengesAxis: 'courage',
+    choices: [
+      {
+        id: 'econ_prove_silent_work',
+        text: 'Cevap vermeden, daha çok çalışmaya karar ver',
+        effect: { discipline: 5, intelligence: 3, energy: -3 },
+        skillUpdates: { work_ethic: 3 },
+        stressEffect: 8,
+        personalityEffects: [{ axis: 'courage', change: 4 }],
+        memory: { emotion: 'PRIDE', weight: 'HIGH' },
+        feedback: 'O sözler içinde yakıt oldu. Kanıtlamak için değil — sadece kendine yetmek için.',
+      },
+      {
+        id: 'econ_prove_speak_up',
+        text: 'Gözlerinin içine bakarak "Göreceksin" de',
+        effect: { charisma: 4, discipline: 2, familyRelation: -2 },
+        personalityEffects: [{ axis: 'courage', change: 6 }],
+        stressEffect: 5,
+        memory: { emotion: 'PRIDE', weight: 'HIGH' },
+        feedback: 'O an sesi titredi ama düşmedi. Cesaretini o günden sonra farklı tanıdın.',
+      },
+    ],
+  },
 ];

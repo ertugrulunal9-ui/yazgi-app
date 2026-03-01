@@ -13,6 +13,7 @@ import { ChoiceCard } from './ChoiceCard';
 import { AnimatedButton } from '../animations/ButtonAnimations';
 import { StaggeredFadeIn, buttonPress, importantDecision } from '../animations';
 import { getMomentumDialogueTag } from '../utils/momentumDialogue';
+import { generateTradeoffHint } from '../utils/tradeoffHints';
 import { tRuntime } from '../i18n/strings';
 import { useRuntimeLocale } from '../i18n/useRuntimeLocale';
 
@@ -111,6 +112,7 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
           const dialogueTag = getMomentumDialogueTag(resolved, personalityState);
           const originalIndex = originalChoices.indexOf(choice);
           const choiceIndex = originalIndex >= 0 ? originalIndex : index;
+          const buttonTradeoffHint = dialogueTag ? null : generateTradeoffHint(resolved);
           return (
             <AnimatedButton
               key={index}
@@ -140,6 +142,11 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
                 {dialogueTag && (
                   <Text style={[buttonFallbackStyles.tagSubtitle, { color: dialogueTag.textColor }]}>
                     {dialogueTag.subtitle}
+                  </Text>
+                )}
+                {buttonTradeoffHint && (
+                  <Text style={[buttonFallbackStyles.tradeoffHint, { color: theme.textSecondary }]}>
+                    {buttonTradeoffHint}
                   </Text>
                 )}
               </View>
@@ -273,5 +280,11 @@ const buttonFallbackStyles = StyleSheet.create({
     marginTop: 6,
     fontSize: 12,
     fontWeight: '600',
+  },
+  tradeoffHint: {
+    marginTop: 6,
+    fontSize: 12,
+    fontStyle: 'italic',
+    opacity: 0.75,
   },
 });

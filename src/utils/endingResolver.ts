@@ -9,8 +9,9 @@ import {
 } from '../types';
 import { BURDEN_CONSTANTS } from '../constants/gameConstants';
 import { tRuntime } from '../i18n/strings';
-import { buildSocialSummary } from './gameUtils';
-import type { NPCSummary } from './gameUtils';
+import { buildSocialSummary } from './socialSummary';
+import type { NPCSummary } from './socialSummary';
+import { calculateMemoryNarrativeWeight, calculateScarNarrativeWeight } from './narrativeWeight';
 
 export type EndingGoal = 'ACADEMIC' | 'CREATIVE' | 'ATHLETIC' | 'SOCIAL' | 'ENTERPRISE' | 'BALANCED';
 
@@ -816,7 +817,7 @@ const achievementBonusForGoal = (goal: EndingGoal, achievementIds: Set<string>):
     if (hasAchievement(achievementIds, 'broke_to_rich')) bonus += 6;
   }
 
-  return bonus;
+  return Math.min(bonus, 6);
 };
 
 type TranslationParams = Record<string, string | number | boolean>;
@@ -900,10 +901,10 @@ const flavorByAchievements = (
 };
 
 const calculateTier = (score: number, errorDebt: EndingErrorDebt): CareerResult['type'] => {
-  if (errorDebt.total >= 70) return 'FAILURE';
-  if (score >= 82) return 'LEGENDARY';
-  if (score >= 58) return 'SUCCESS';
-  if (score >= 40) return 'NORMAL';
+  if (errorDebt.total >= 60) return 'FAILURE';
+  if (score >= 90) return 'LEGENDARY';
+  if (score >= 70) return 'SUCCESS';
+  if (score >= 50) return 'NORMAL';
   return 'FAILURE';
 };
 
@@ -1498,11 +1499,11 @@ const checkSecretEndings = (
   const hasPartner = npcs.some(n => n.role === 'PARTNER');
   const npcCount = npcs.length;
 
-  // secret_true_balance: all core stats are 70+
+  // secret_true_balance: all core stats are 85+ (gerçekten olağanüstü denge)
   if (
-    stats.health >= 70 && stats.intelligence >= 70 &&
-    stats.charisma >= 70 && stats.discipline >= 70 &&
-    stats.familyRelation >= 70
+    stats.health >= 85 && stats.intelligence >= 85 &&
+    stats.charisma >= 85 && stats.discipline >= 85 &&
+    stats.familyRelation >= 85
   ) {
     return {
       id: 'secret_true_balance',
@@ -1516,8 +1517,11 @@ const checkSecretEndings = (
     };
   }
 
-  // secret_family_legacy: very high family relation
-  if (stats.familyRelation >= 90 && personality.empathy >= 70) {
+  // secret_family_legacy: extremely high family relation (98+) with high empathy, no permanent trauma
+  if (
+    stats.familyRelation >= 98 && personality.empathy >= 80 && stats.health >= 70 &&
+    (gameState.scars ?? []).length === 0
+  ) {
     return {
       id: 'secret_family_legacy',
       result: localizeCareerResult(
@@ -1631,6 +1635,8 @@ export const resolveEnding = ({
   const difficultyModifier = calculateDifficultyModifier(gameState, stats, resolvedDebt);
 
   const achievementBonus = achievementBonusForGoal(goal, achievementSet);
+  const memoryWeight = calculateMemoryNarrativeWeight(gameState.memories ?? []);
+  const scarWeight = calculateScarNarrativeWeight(gameState.scars);
   const rawScore = (compatibilityScore * 0.65) + (basePick.domainFit * 0.35);
   const debtPenalty = resolvedDebt.total * 0.65;
   const mismatchPenalty = mismatchAnalysis.isMismatch ? 8 : 0;
@@ -1638,6 +1644,8 @@ export const resolveEnding = ({
     rawScore
     + achievementBonus
     + difficultyModifier
+    + memoryWeight
+    + scarWeight
     - debtPenalty
     - mismatchPenalty
     - actionVersatility.penalty,
@@ -1646,14 +1654,11 @@ export const resolveEnding = ({
   );
 
   let tier = calculateTier(finalScore, resolvedDebt);
-  if (resolvedDebt.total < 70) { // FAILURE threshold ile senkronize
-    if (basePick.result.type === 'LEGENDARY' && resolvedDebt.total < 65) {
-      tier = 'LEGENDARY';
-    }
-    if (basePick.result.type === 'SUCCESS' && (tier === 'NORMAL' || tier === 'FAILURE') && finalScore >= 42) {
+  if (resolvedDebt.total < 60) { // FAILURE threshold ile senkronize
+    if (basePick.result.type === 'SUCCESS' && (tier === 'NORMAL' || tier === 'FAILURE') && finalScore >= 52) {
       tier = 'SUCCESS';
     }
-    if (basePick.result.type === 'NORMAL' && tier === 'FAILURE' && finalScore >= 35) {
+    if (basePick.result.type === 'NORMAL' && tier === 'FAILURE' && finalScore >= 42) {
       tier = 'NORMAL';
     }
   }
