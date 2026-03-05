@@ -86,7 +86,7 @@ const STEP_CONTENT: Record<Exclude<TutorialStep, 'COMPLETED'>, {
   },
   ENERGY_EXPLAIN: {
     title: 'Enerji Sistemi',
-    message: 'Her aktivite enerji harcar. Enerji bittiginde gunu bitirmen gerekir. Yeni gun = yeni enerji!',
+    message: 'Her aktivite enerji harcar. Enerji bittiginde gunu bitirmen gerekir. Ayrica stres, zorlayici secimlerle artar; gunu bitirmek ve daha dengeli secimler yapmak stresi azaltir.',
   },
   FATE_TOKEN_TUTORIAL: {
     title: 'Kader Tokeni',

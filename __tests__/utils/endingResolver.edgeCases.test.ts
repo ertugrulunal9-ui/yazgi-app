@@ -150,8 +150,8 @@ describe('endingResolver — Edge Cases', () => {
 
     it('tüm temel statlar 70+ → Gerçek Denge Ustası', () => {
       const balancedStats: Stats = {
-        health: 75, intelligence: 75, charisma: 75, discipline: 75,
-        money: 1000, energy: 80, familyRelation: 75,
+        health: 85, intelligence: 85, charisma: 85, discipline: 85,
+        money: 1000, energy: 80, familyRelation: 85,
       };
 
       const resolution = resolveEnding({
@@ -167,12 +167,13 @@ describe('endingResolver — Edge Cases', () => {
     it('aile ilişkisi 90+ ve empati 70+ → Aile Mirası', () => {
       const familyStats: Stats = {
         ...baseStats,
-        familyRelation: 95,
+        familyRelation: 98,
+        health: 70,
       };
 
       const resolution = resolveEnding({
         gameState: createGameState({
-          personality: { openness: 50, courage: 50, empathy: 75, patience: 50, conformity: 50 },
+          personality: { openness: 50, courage: 50, empathy: 80, patience: 50, conformity: 50 },
         }),
         stats: familyStats,
       });

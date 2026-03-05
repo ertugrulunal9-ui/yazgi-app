@@ -512,6 +512,7 @@ export const getInitialGameState = (options?: NewGameBootstrapOptions): GameStat
     activeArcs: [],
     familyEvolution: { ...DEFAULT_FAMILY_EVOLUTION_STATE },
     inventory,
+    purchasedItems: [],
     npcs,
     selectedNpcId: null,
     innerThought: '',

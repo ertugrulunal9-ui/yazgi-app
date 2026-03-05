@@ -9,6 +9,8 @@ describe('MonetizationService (ad-only)', () => {
     localStorage.clear();
     delete process.env.EXPO_PUBLIC_INTERSTITIAL_SESSION_CAP;
     delete process.env.EXPO_PUBLIC_INTERSTITIAL_COOLDOWN_MS;
+    delete process.env.EXPO_PUBLIC_ADMOB_ANDROID_REWARDED_UNIT_ID;
+    delete process.env.EXPO_PUBLIC_ADMOB_ANDROID_INTERSTITIAL_UNIT_ID;
     (monetizationService as any).__reset__();
     await monetizationService.initialize();
   });
@@ -71,12 +73,9 @@ describe('MonetizationService (ad-only)', () => {
     it('maps contextual rewarded placements to expected rewards', async () => {
       const examPrep = await monetizationService.showContextualRewardedAd('exam_prep');
       const energyRecovery = await monetizationService.showContextualRewardedAd('energy_depleted');
-      const relationBoost = await monetizationService.showContextualRewardedAd('relationship_boost');
-      const traitBoost = await monetizationService.showContextualRewardedAd('trait_boost');
-      const shoppingDiscount = await monetizationService.showContextualRewardedAd('shopping_discount');
-      const reportPreview = await monetizationService.showContextualRewardedAd('report_preview');
       const crisisRecovery = await monetizationService.showContextualRewardedAd('crisis_recovery');
       const altEnding = await monetizationService.showContextualRewardedAd('ending_alternative');
+      const undoChoice = await monetizationService.showContextualRewardedAd('undo_choice');
 
       expect(examPrep.success).toBe(true);
       expect(examPrep.rewardType).toBe('intelligence');
@@ -86,22 +85,6 @@ describe('MonetizationService (ad-only)', () => {
       expect(energyRecovery.rewardType).toBe('energy');
       expect(energyRecovery.amount).toBe(25);
 
-      expect(relationBoost.success).toBe(true);
-      expect(relationBoost.rewardType).toBe('utility');
-      expect(relationBoost.amount).toBe(5);
-
-      expect(traitBoost.success).toBe(true);
-      expect(traitBoost.rewardType).toBe('utility');
-      expect(traitBoost.amount).toBe(1);
-
-      expect(shoppingDiscount.success).toBe(true);
-      expect(shoppingDiscount.rewardType).toBe('utility');
-      expect(shoppingDiscount.amount).toBe(20);
-
-      expect(reportPreview.success).toBe(true);
-      expect(reportPreview.rewardType).toBe('utility');
-      expect(reportPreview.amount).toBe(0);
-
       expect(crisisRecovery.success).toBe(true);
       expect(crisisRecovery.rewardType).toBe('utility');
       expect(crisisRecovery.amount).toBe(0);
@@ -109,6 +92,94 @@ describe('MonetizationService (ad-only)', () => {
       expect(altEnding.success).toBe(true);
       expect(altEnding.rewardType).toBe('utility');
       expect(altEnding.amount).toBe(0);
+
+      expect(undoChoice.success).toBe(true);
+      expect(undoChoice.rewardType).toBe('utility');
+      expect(undoChoice.amount).toBe(0);
+    });
+
+    it('uses RewardedAdEventType.LOADED for rewarded ads with AdMob provider', async () => {
+      const service = monetizationService as any;
+      const listeners = new Map<string, ((payload?: any) => void)[]>();
+      const registeredTypes: string[] = [];
+
+      const eventNames = {
+        adLoaded: 'loaded',
+        adError: 'error',
+        adClosed: 'closed',
+        rewardedLoaded: 'rewarded_loaded',
+        earnedReward: 'rewarded_earned_reward',
+      } as const;
+
+      const rewardedAd = {
+        addAdEventListener: (type: string, listener: (payload?: any) => void) => {
+          registeredTypes.push(type);
+          listeners.set(type, [...(listeners.get(type) || []), listener]);
+          return () => {};
+        },
+        show: () => {
+          const earnedListeners = listeners.get(eventNames.earnedReward) || [];
+          earnedListeners.forEach(listener => listener({ amount: 20 }));
+        },
+        load: () => {
+          const loadedListeners = listeners.get(eventNames.rewardedLoaded) || [];
+          loadedListeners.forEach(listener => listener());
+        },
+      };
+
+      service.isInitialized = true;
+      service.adProvider = 'admob';
+      service.adMobModule = {
+        RewardedAd: {
+          createForAdRequest: () => rewardedAd,
+        },
+        AdEventType: {
+          LOADED: eventNames.adLoaded,
+          ERROR: eventNames.adError,
+          CLOSED: eventNames.adClosed,
+        },
+        RewardedAdEventType: {
+          LOADED: eventNames.rewardedLoaded,
+          EARNED_REWARD: eventNames.earnedReward,
+        },
+        TestIds: {
+          REWARDED: 'test-rewarded',
+          INTERSTITIAL: 'test-interstitial',
+        },
+      };
+      service.adsEnabled = true;
+      service.personalizedAdsEnabled = false;
+      service.rewardedAdCount = 0;
+      service.dailyAdLimit = 8;
+
+      const result = await service.showRewardedAd('energy');
+
+      expect(result.success).toBe(true);
+      expect(registeredTypes).toContain(eventNames.rewardedLoaded);
+      expect(registeredTypes).not.toContain(eventNames.adLoaded);
+    });
+
+    it('blocks placeholder AdMob unit IDs before ad request creation', async () => {
+      process.env.EXPO_PUBLIC_ADMOB_ANDROID_REWARDED_UNIT_ID = 'TODO_REPLACE_WITH_ADMOB_ANDROID_REWARDED_UNIT_ID';
+
+      const service = monetizationService as any;
+      const createForAdRequest = jest.fn();
+      service.isInitialized = true;
+      service.adProvider = 'admob';
+      service.adMobModule = {
+        RewardedAd: { createForAdRequest },
+        AdEventType: { LOADED: 'loaded', ERROR: 'error', CLOSED: 'closed' },
+        RewardedAdEventType: { LOADED: 'rewarded_loaded', EARNED_REWARD: 'earned_reward' },
+      };
+      service.adsEnabled = true;
+      service.rewardedAdCount = 0;
+      service.dailyAdLimit = 8;
+
+      const result = await service.showRewardedAd('energy');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('dependencies');
+      expect(createForAdRequest).not.toHaveBeenCalled();
     });
   });
 

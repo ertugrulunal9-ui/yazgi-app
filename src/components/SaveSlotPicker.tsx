@@ -9,6 +9,8 @@ import SaveManager from '../save/SaveManager';
 import { GameState, Stats } from '../types';
 import { tRuntime } from '../i18n/strings';
 
+const ENABLE_SAVE_TRANSFER = false;
+
 interface SaveSlotPickerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -132,6 +134,7 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
   };
 
   const handleExport = (slotId: string) => {
+    if (!ENABLE_SAVE_TRANSFER) return;
     setExportSlotId(slotId);
     setSaveModalTab('export');
     setShowExportModal(true);
@@ -202,6 +205,7 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
                   onSave={handleSave}
                   onDelete={handleDelete}
                   onExport={handleExport}
+                  showTransferActions={ENABLE_SAVE_TRANSFER}
                   isCurrentSlot={metadata.slotId === currentSlotId}
                   isAutoSave={metadata.slotId === 'auto'}
                   theme={theme}
@@ -211,22 +215,23 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
           )}
         </ScrollView>
 
-        {/* Import Footer */}
-        <View style={[styles.footer, { backgroundColor: theme.surfaceRaised, borderTopColor: theme.border }]}>
-          <TouchableOpacity
-            onPress={() => {
-              setExportSlotId(null);
-              setSaveModalTab('import');
-              setShowExportModal(true);
-            }}
-            style={[styles.importButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}
-            accessibilityLabel={tRuntime('save.importBtn')}
-            accessibilityRole="button"
-          >
-            <Feather name="download" size={16} color={theme.textPrimary} />
-            <Text style={[styles.importButtonText, { color: theme.textPrimary }]}>{tRuntime('save.importBtn')}</Text>
-          </TouchableOpacity>
-        </View>
+        {ENABLE_SAVE_TRANSFER && (
+          <View style={[styles.footer, { backgroundColor: theme.surfaceRaised, borderTopColor: theme.border }]}>
+            <TouchableOpacity
+              onPress={() => {
+                setExportSlotId(null);
+                setSaveModalTab('import');
+                setShowExportModal(true);
+              }}
+              style={[styles.importButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}
+              accessibilityLabel={tRuntime('save.importBtn')}
+              accessibilityRole="button"
+            >
+              <Feather name="download" size={16} color={theme.textPrimary} />
+              <Text style={[styles.importButtonText, { color: theme.textPrimary }]}>{tRuntime('save.importBtn')}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -241,16 +246,18 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
     return (
       <>
         {overlay}
-        <SaveExportModal
-          isOpen={showExportModal}
-          onClose={() => {
-            setShowExportModal(false);
-            setExportSlotId(null);
-          }}
-          slotId={exportSlotId ?? undefined}
-          initialTab={saveModalTab}
-          theme={theme}
-        />
+        {ENABLE_SAVE_TRANSFER && (
+          <SaveExportModal
+            isOpen={showExportModal}
+            onClose={() => {
+              setShowExportModal(false);
+              setExportSlotId(null);
+            }}
+            slotId={exportSlotId ?? undefined}
+            initialTab={saveModalTab}
+            theme={theme}
+          />
+        )}
       </>
     );
   }
@@ -266,16 +273,18 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
       >
         {overlay}
       </Modal>
-      <SaveExportModal
-        isOpen={showExportModal}
-        onClose={() => {
-          setShowExportModal(false);
-          setExportSlotId(null);
-        }}
-        slotId={exportSlotId ?? undefined}
-        initialTab={saveModalTab}
-        theme={theme}
-      />
+      {ENABLE_SAVE_TRANSFER && (
+        <SaveExportModal
+          isOpen={showExportModal}
+          onClose={() => {
+            setShowExportModal(false);
+            setExportSlotId(null);
+          }}
+          slotId={exportSlotId ?? undefined}
+          initialTab={saveModalTab}
+          theme={theme}
+        />
+      )}
     </>
   );
 };

@@ -4,20 +4,17 @@
  */
 import { Platform } from 'react-native';
 import SaveManager from '../save/SaveManager';
+import { isPremium as checkPremiumSubscription } from './subscriptionManager';
 import { devLog } from '../utils/devLogger';
 
 export type AdType = 'rewarded' | 'interstitial';
 export type RewardType = 'energy' | 'intelligence' | 'money';
 export type RewardedPlacement =
-  | 'hub'
   | 'exam_prep'
   | 'energy_depleted'
-  | 'relationship_boost'
-  | 'trait_boost'
-  | 'shopping_discount'
-  | 'report_preview'
   | 'crisis_recovery'
-  | 'ending_alternative';
+  | 'ending_alternative'
+  | 'undo_choice';
 
 export interface Product {
   id: string;
@@ -54,6 +51,7 @@ export interface ContextualRewardedAdResult {
 export type InterstitialBlockReason =
   | 'shown'
   | 'ads_disabled'
+  | 'premium_user'
   | 'session_cap'
   | 'cooldown'
   | 'provider_unavailable'
@@ -86,6 +84,7 @@ type AdMobModule = {
     CLOSED: string;
   };
   RewardedAdEventType?: {
+    LOADED: string;
     EARNED_REWARD: string;
   };
   TestIds?: {
@@ -117,6 +116,13 @@ const DEFAULT_INTERSTITIAL_SESSION_LIMIT = 2;
 const DEFAULT_INTERSTITIAL_COOLDOWN_MS = isTestRuntime ? 0 : 3 * 60 * 1000;
 const INTERSTITIAL_SESSION_LIMIT_BOUNDS = { min: 0, max: 10 } as const;
 const INTERSTITIAL_COOLDOWN_MS_BOUNDS = { min: 0, max: 3_600_000 } as const;
+const PLACEHOLDER_AD_IDENTIFIER_PATTERN = /(TODO|REPLACE|YOUR_|CHANGE_ME|<.*>|PLACEHOLDER)/i;
+const KNOWN_TEST_AD_UNIT_IDS = new Set([
+  'ca-app-pub-3940256099942544/5224354917',
+  'ca-app-pub-3940256099942544/1033173712',
+  'ca-app-pub-3940256099942544/1712485313',
+  'ca-app-pub-3940256099942544/4411468910',
+]);
 
 let asyncStorageModule: any = null;
 
@@ -177,6 +183,13 @@ const normalizeConfigString = (value: unknown): string | null => {
   return normalized.length > 0 ? normalized : null;
 };
 
+const normalizeAdIdentifier = (value: unknown): string | null => {
+  const normalized = normalizeConfigString(value);
+  if (!normalized) return null;
+  if (PLACEHOLDER_AD_IDENTIFIER_PATTERN.test(normalized)) return null;
+  return normalized;
+};
+
 const toBoundedInteger = (
   value: unknown,
   bounds: { min: number; max: number }
@@ -223,7 +236,7 @@ const getAdUnitIdFromConfig = (kind: AdType): string | null => {
         ? 'EXPO_PUBLIC_ADMOB_IOS_INTERSTITIAL_UNIT_ID'
         : 'EXPO_PUBLIC_ADMOB_ANDROID_INTERSTITIAL_UNIT_ID';
 
-  const envValue = normalizeConfigString(process.env[envKey]);
+  const envValue = normalizeAdIdentifier(process.env[envKey]);
   if (envValue) return envValue;
 
   const adMobConfig = getAdMobConfig();
@@ -236,7 +249,7 @@ const getAdUnitIdFromConfig = (kind: AdType): string | null => {
         ? 'iosInterstitialUnitId'
         : 'androidInterstitialUnitId';
 
-  return normalizeConfigString(adMobConfig[configKey]);
+  return normalizeAdIdentifier(adMobConfig[configKey]);
 };
 
 const getRuntimeInterstitialConfig = (): { sessionLimit: number; cooldownMs: number } => {
@@ -294,7 +307,7 @@ class MonetizationService {
     this.interstitialCooldownMs = DEFAULT_INTERSTITIAL_COOLDOWN_MS;
     this.lastInterstitialShownAt = 0;
     this.lastAdResetDate = null;
-    SaveManager.setPremiumUnlocked(true);
+    SaveManager.setPremiumUnlocked(false);
     SaveManager.setAdsDisabled(false);
   }
 
@@ -313,8 +326,7 @@ class MonetizationService {
     await this.loadAdCount();
     this.resetDailyAdCountIfNeeded();
 
-    // Ad-only: save slots fully unlocked, ads never disabled by purchases.
-    SaveManager.setPremiumUnlocked(true);
+    SaveManager.setPremiumUnlocked(checkPremiumSubscription());
     SaveManager.setAdsDisabled(false);
 
     this.isInitialized = true;
@@ -347,11 +359,16 @@ class MonetizationService {
   }
 
   isPremium(): boolean {
-    return false;
+    return checkPremiumSubscription();
   }
 
   async showRewardedAd(rewardType: RewardType): Promise<RewardedAdResult> {
     if (!this.isInitialized) await this.initialize();
+
+    if (this.isPremium()) {
+      return { success: false, error: 'Premium user — ads disabled' };
+    }
+
     this.resetDailyAdCountIfNeeded();
 
     if (!this.adsEnabled) {
@@ -406,11 +423,6 @@ class MonetizationService {
       rewardType: RewardType | 'utility';
       amount: number;
     }> = {
-      hub: {
-        adDriverRewardType: 'energy',
-        rewardType: 'energy',
-        amount: 20,
-      },
       exam_prep: {
         adDriverRewardType: 'intelligence',
         rewardType: 'intelligence',
@@ -420,26 +432,6 @@ class MonetizationService {
         adDriverRewardType: 'energy',
         rewardType: 'energy',
         amount: 25,
-      },
-      relationship_boost: {
-        adDriverRewardType: 'money',
-        rewardType: 'utility',
-        amount: 5,
-      },
-      trait_boost: {
-        adDriverRewardType: 'intelligence',
-        rewardType: 'utility',
-        amount: 1,
-      },
-      shopping_discount: {
-        adDriverRewardType: 'money',
-        rewardType: 'utility',
-        amount: 20,
-      },
-      report_preview: {
-        adDriverRewardType: 'money',
-        rewardType: 'utility',
-        amount: 0,
       },
       crisis_recovery: {
         adDriverRewardType: 'money',
@@ -451,9 +443,25 @@ class MonetizationService {
         rewardType: 'utility',
         amount: 0,
       },
+      undo_choice: {
+        adDriverRewardType: 'money',
+        rewardType: 'utility',
+        amount: 0,
+      },
     };
 
     const plan = placementMap[placement];
+
+    // Premium users keep reward utility without ad interruptions.
+    if (this.isPremium()) {
+      return {
+        success: true,
+        placement,
+        rewardType: plan.rewardType,
+        amount: plan.amount,
+      };
+    }
+
     const adResult = await this.showRewardedAd(plan.adDriverRewardType);
     if (!adResult.success) {
       return {
@@ -475,6 +483,10 @@ class MonetizationService {
 
   async showInterstitialAdDetailed(): Promise<InterstitialAdResult> {
     if (!this.isInitialized) await this.initialize();
+
+    if (this.isPremium()) {
+      return { shown: false, reason: 'premium_user', provider: this.adProvider };
+    }
 
     if (!this.adsEnabled) {
       return {
@@ -601,7 +613,9 @@ class MonetizationService {
     }
 
     const configured = getAdUnitIdFromConfig(kind);
-    return configured ?? null;
+    if (!configured) return null;
+    if (KNOWN_TEST_AD_UNIT_IDS.has(configured)) return null;
+    return configured;
   }
 
   private async showRewardedAdWithAdMob(
@@ -648,7 +662,7 @@ class MonetizationService {
       );
 
       unsubs.push(
-        rewardedAd.addAdEventListener(adEventType.LOADED, () => {
+        rewardedAd.addAdEventListener(rewardedEventType.LOADED, () => {
           try {
             void rewardedAd.show();
           } catch (error: any) {

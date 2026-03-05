@@ -12,12 +12,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LegacyPanel } from '../components/LegacyPanel';
 import { EndingGallery } from '../components/EndingGallery';
-import { GoalVisionOnboarding } from '../components/Onboarding';
 import { useGame } from '../context/GameContext';
 import { useMetaProgression } from '../context/MetaProgressionContext';
 import { useLegacyBonuses } from '../hooks/useGameSelectors';
 import { CharacterInfo, LifeGoal, PlayerGender } from '../types';
-import { getLifeGoalMeta, LIFE_GOAL_ORDER, LIFE_GOAL_SELECTION_EVENT_ID } from '../utils/lifeGoalSystem';
+import { getEndingHints } from '../utils/endingResolver';
 import { AppLocale, t as translateStatic } from '../i18n/strings';
 import { isFeatureEnabled } from '../config/featureFlags';
 import { getUnlockedLegacyPerks, hasLegacyPerk } from '../data/legacyPerks';
@@ -43,16 +42,6 @@ interface MainMenuScreenProps {
   locale?: AppLocale;
   onGameStart: () => void;
 }
-
-const GOAL_PICKER_ICONS: Record<LifeGoal, string> = {
-  ACADEMIC: '\u{1F9E0}',
-  ATHLETIC: '\u{1F3C3}',
-  CREATIVE: '\u{1F3A8}',
-  WEALTH: '\u{1F4BC}',
-  SOCIAL: '\u{1F91D}',
-};
-
-type GoalSelection = LifeGoal | 'BALANCED';
 
 interface DropdownPickerProps {
   value: string;
@@ -152,17 +141,31 @@ const DropdownPicker: React.FC<DropdownPickerProps> = ({
 };
 
 export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme, metrics, locale = 'tr', onGameStart }) => {
-  const { startNewGame, updateGameState } = useGame();
+  const { startNewGame } = useGame();
   const { metaProgression } = useMetaProgression();
   const legacyBonuses = useLegacyBonuses();
   const legacyLevel = metaProgression?.legacyLevel ?? 0;
+  const endingHints = useMemo(() => {
+    if (!metaProgression) return [];
+
+    const tierOrder = ['FAILURE', 'NORMAL', 'SUCCESS', 'LEGENDARY'];
+    const completions = metaProgression.goalCompletions ?? {};
+    const rankedGoals = (Object.keys(completions) as LifeGoal[])
+      .map(goal => ({
+        goal,
+        rank: tierOrder.indexOf(completions[goal] ?? 'FAILURE'),
+      }))
+      .sort((a, b) => b.rank - a.rank);
+
+    const dominantGoal = rankedGoals[0]?.goal ?? 'SOCIAL';
+    return getEndingHints(metaProgression, metaProgression.highestCompatibilityScore ?? 50, dominantGoal);
+  }, [metaProgression]);
   const legacyPerksEnabled = isFeatureEnabled('LEGACY_PERKS');
   const unlockedLegacyPerks = useMemo(
     () => legacyPerksEnabled ? getUnlockedLegacyPerks(legacyLevel) : [],
     [legacyLevel, legacyPerksEnabled]
   );
   const fastStartUnlocked = legacyPerksEnabled && hasLegacyPerk(legacyLevel, 'FAST_START');
-  const balancedGoalUnlocked = legacyPerksEnabled && hasLegacyPerk(legacyLevel, 'UNLOCK_BALANCED_GOAL');
 
   const [activeTab, setActiveTab] = useState<'play' | 'lives'>('play');
   const [firstName, setFirstName] = useState('');
@@ -171,9 +174,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
   const [birthMonth, setBirthMonth] = useState(1);
   const [birthDay, setBirthDay] = useState(1);
   const [birthCity, setBirthCity] = useState('');
-  const [selectedGoal, setSelectedGoal] = useState<GoalSelection | null>(null);
   const [useFastStart, setUseFastStart] = useState(false);
-  const [showGoalVision, setShowGoalVision] = useState(false);
 
   const tStatic = useCallback(
     (key: string, params?: Record<string, string | number | boolean>, fallback?: string) =>
@@ -190,12 +191,6 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
   const zodiacInfo = useMemo(() => getLocalizedZodiacInfo(locale), [locale]);
   const zodiacSign = useMemo(() => calculateZodiacSign(birthMonth, birthDay), [birthMonth, birthDay]);
   const zodiac = zodiacInfo[zodiacSign];
-  const goalOptions = useMemo<GoalSelection[]>(
-    () => (balancedGoalUnlocked ? [...LIFE_GOAL_ORDER, 'BALANCED'] : [...LIFE_GOAL_ORDER]),
-    [balancedGoalUnlocked]
-  );
-  const selectedLifeGoal = selectedGoal && selectedGoal !== 'BALANCED' ? selectedGoal : null;
-
   useEffect(() => {
     if (birthDay > maxDays) {
       setBirthDay(maxDays);
@@ -208,7 +203,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
     }
   }, [fastStartUnlocked, useFastStart]);
 
-  const isFormReady = Boolean(firstName.trim() && lastName.trim() && birthCity && selectedGoal);
+  const isFormReady = Boolean(firstName.trim() && lastName.trim() && birthCity);
 
   const handleRandomize = useCallback(() => {
     buttonPress();
@@ -219,8 +214,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
     setBirthMonth(random.birthMonth);
     setBirthDay(random.birthDay);
     setBirthCity(random.birthCity);
-    setSelectedGoal(goalOptions[Math.floor(Math.random() * goalOptions.length)] ?? 'ACADEMIC');
-  }, [goalOptions]);
+  }, []);
 
   const buildCharacterInfo = useCallback((): CharacterInfo => ({
     firstName: firstName.trim(),
@@ -232,7 +226,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
     zodiacSign,
   }), [birthCity, birthDay, birthMonth, firstName, gender, lastName, zodiacSign]);
 
-  const startGameWithSelectedGoal = useCallback((goal: GoalSelection) => {
+  const startGame = useCallback(() => {
     const characterInfo = buildCharacterInfo();
     successHaptic();
     startNewGame(
@@ -240,46 +234,26 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
       characterInfo,
       { fastStart: useFastStart }
     );
-
-    if (goal === 'BALANCED') {
-      updateGameState({
-        selectedGoal: null,
-        eventChoiceHistory: [LIFE_GOAL_SELECTION_EVENT_ID],
-      });
-    } else {
-      updateGameState({ selectedGoal: goal });
-    }
-
-    setShowGoalVision(false);
     onGameStart();
-  }, [buildCharacterInfo, onGameStart, startNewGame, updateGameState, useFastStart]);
+  }, [buildCharacterInfo, onGameStart, startNewGame, useFastStart]);
 
   const handleStartGame = useCallback(() => {
-    if (!isFormReady || !selectedGoal) {
+    if (!isFormReady) {
       buttonPress();
       Alert.alert(
         tStatic('app.missingInfoTitle', undefined, 'Eksik Bilgi'),
         tStatic(
           'app.completeRequiredFields',
           undefined,
-          'Baslamak icin ad, soyad, sehir ve hedef secimi gerekli.'
+          'Baslamak icin ad, soyad ve sehir gerekli.'
         )
       );
       return;
     }
 
     buttonPress();
-    if (selectedGoal === 'BALANCED') {
-      startGameWithSelectedGoal(selectedGoal);
-      return;
-    }
-    setShowGoalVision(true);
-  }, [isFormReady, selectedGoal, startGameWithSelectedGoal, tStatic]);
-
-  const handleGoalVisionContinue = useCallback(() => {
-    if (!selectedLifeGoal) return;
-    startGameWithSelectedGoal(selectedLifeGoal);
-  }, [selectedLifeGoal, startGameWithSelectedGoal]);
+    startGame();
+  }, [isFormReady, startGame, tStatic]);
 
   const containerStyle = useMemo(() => ({
     flex: 1,
@@ -551,52 +525,6 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
               </View>
             </View>
 
-            <View style={sectionStyle}>
-              <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
-                {tStatic('app.goalHeader', undefined, 'Bu Hayattaki Hedefin')}
-              </Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                {goalOptions.map((goal) => {
-                  const goalMeta = goal === 'BALANCED'
-                    ? {
-                      shortLabel: tStatic('app.goalBalanced', undefined, 'Dengeli'),
-                      statHint: tStatic('app.goalBalancedHint', undefined, 'Genel denge, tek bir alana baglanma'),
-                      accentColor: '#64748b',
-                    }
-                    : getLifeGoalMeta(goal);
-                  if (!goalMeta) return null;
-
-                  const isSelected = selectedGoal === goal;
-                  const goalColor = goalMeta.accentColor;
-                  const goalIcon = goal === 'BALANCED' ? '\u2696\uFE0F' : GOAL_PICKER_ICONS[goal];
-
-                  return (
-                    <TouchableOpacity
-                      key={goal}
-                      onPress={() => setSelectedGoal(goal)}
-                      activeOpacity={0.85}
-                      style={{
-                        width: '48.8%',
-                        borderRadius: 10,
-                        borderWidth: 1,
-                        borderColor: isSelected ? goalColor : theme.border,
-                        backgroundColor: isSelected ? `${goalColor}22` : theme.surfaceRaised,
-                        paddingVertical: 10,
-                        paddingHorizontal: 10,
-                      }}
-                    >
-                      <Text style={{ color: isSelected ? goalColor : theme.textPrimary, fontWeight: '800', fontSize: 13 }}>
-                        {goalIcon} {goalMeta.shortLabel}
-                      </Text>
-                      <Text style={{ color: theme.textSecondary, fontSize: 11, marginTop: 4 }}>
-                        {goalMeta.statHint}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-
             <LegacyPanel
               meta={metaProgression}
               theme={theme}
@@ -727,28 +655,12 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
               meta={metaProgression}
               theme={theme}
               metrics={metrics}
+              hints={endingHints}
             />
           </ScrollView>
         )}
       </View>
 
-      <Modal
-        visible={showGoalVision && selectedLifeGoal !== null}
-        animationType="fade"
-        presentationStyle="fullScreen"
-        onRequestClose={() => setShowGoalVision(false)}
-      >
-        {selectedLifeGoal ? (
-          <GoalVisionOnboarding
-            theme={theme}
-            metrics={metrics}
-            locale={locale}
-            selectedGoal={selectedLifeGoal}
-            onContinue={handleGoalVisionContinue}
-            onBack={() => setShowGoalVision(false)}
-          />
-        ) : null}
-      </Modal>
     </SafeAreaView>
   );
 });

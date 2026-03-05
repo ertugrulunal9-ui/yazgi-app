@@ -43,7 +43,7 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
   }
 
   if (gameState.phase === 'GAME_OVER') {
-    return <GameOverScreen theme={theme} metrics={metrics} onRestart={onRestart} npcs={gameState.npcs} />;
+    return <GameOverScreen theme={theme} metrics={metrics} onRestart={onRestart} />;
   }
 
   return (

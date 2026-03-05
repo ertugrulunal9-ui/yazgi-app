@@ -79,6 +79,25 @@ const getStressHint = (band: StressBand, t: TranslateFn): string | null => {
   return null;
 };
 
+const getStressReliefHint = (band: StressBand, t: TranslateFn): string | null => {
+  if (band !== 'ORANGE' && band !== 'RED') return null;
+  return t(
+    'ui.statusHeader.stressReliefActionsHint',
+    undefined,
+    "Ipucu: Sosyal sekmesinde NPC etkilesimleri stresi dusurur."
+  );
+};
+
+const formatStressSourceReason = (reason: string, t: TranslateFn): string => {
+  if (reason.startsWith('Event: ')) {
+    return t('ui.statusHeader.stressSourceEvent', undefined, 'Etkinlik secimi');
+  }
+  if (reason.startsWith('Hub Action: ')) {
+    return t('ui.statusHeader.stressSourceAction', undefined, 'Aksiyon secimi');
+  }
+  return reason;
+};
+
 const isLightHex = (hex: string): boolean => {
   const match = /^#([0-9a-fA-F]{6})$/.exec(hex);
   if (!match) return false;
@@ -415,6 +434,10 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
     return '#eab308';
   }, [stressBand]);
   const stressPercent = useMemo(() => Math.round(clamp(stressRatio, 0, 1) * 100), [stressRatio]);
+  const latestStressDelta = stress.latestSource?.amount ?? 0;
+  const latestStressReason = stress.latestSource
+    ? formatStressSourceReason(stress.latestSource.reason, t)
+    : null;
 
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const panelProgress = useRef(new Animated.Value(0)).current;
@@ -598,6 +621,30 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
               {getStressHint(stressBand, t)}
             </Text>
           )}
+          {getStressReliefHint(stressBand, t) != null && (
+            <Text style={[styles.stressMetaText, { color: theme.textSecondary }]}>
+              {getStressReliefHint(stressBand, t)}
+            </Text>
+          )}
+          {latestStressReason && latestStressDelta !== 0 && (
+            <Text style={[styles.stressMetaText, { color: theme.textSecondary }]}>
+              {t(
+                'ui.statusHeader.stressLastChange',
+                {
+                  amount: latestStressDelta > 0 ? `+${latestStressDelta}` : `${latestStressDelta}`,
+                  reason: latestStressReason,
+                },
+                `Son degisim: {amount} ({reason})`
+              )}
+            </Text>
+          )}
+          <Text style={[styles.stressMetaText, { color: theme.textSecondary }]}>
+            {t(
+              'ui.statusHeader.stressRecoveryHint',
+              { amount: stress.recoveryPerTurn },
+              `Gunu bitirince tahmini -{amount} stres toparlanir.`
+            )}
+          </Text>
         </Animated.View>
       ) : null}
 
@@ -817,6 +864,10 @@ const styles = StyleSheet.create({
   },
   stressHint: {
     fontSize: 11,
+    marginTop: 4,
+  },
+  stressMetaText: {
+    fontSize: 10,
     marginTop: 4,
   },
   statusItem: {

@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { useGame } from '../context/GameContext';
+import { useUI } from '../context/UIContext';
 import { Choice, EventContext, GameEvent, ExamSubject, ALL_EXAM_SUBJECTS, GameState, Stats } from '../types';
 import { earnToken, getEarnedTokenCount, spendToken } from '../systems/FateEngine';
 import { ageTransitionHaptic } from '../animations/HapticFeedback';
@@ -54,6 +55,17 @@ import { getGoalChainStage } from '../data/goalChainEvents';
 import { tRuntime } from '../i18n/strings';
 import { buildChoiceFeedbackKey, buildChoiceTextKey, buildEventTextKey } from '../i18n/events/keyUtils';
 import { detectCausalLink } from '../utils/causalChain';
+import { buildAgeMilestone } from '../utils/milestoneBuilder';
+import { isFeatureEnabled } from '../config/featureFlags';
+import { calculateTurnAllowance, checkSavingGoalCompletion, getDefaultSavingGoals } from '../utils/economySystem';
+import {
+  generateMicroGoal,
+  updateMicroGoalProgress,
+  generateSeasonGoal,
+  checkSeasonGoalCompletion,
+  cleanupExpiredMicroGoals,
+} from '../utils/goalTracking';
+import { isPremium as isPremiumUser } from '../services/subscriptionManager';
 
 const getEventById = (eventId: string): GameEvent | undefined =>
   EVENTS.find(evt => evt.id === eventId);
@@ -179,6 +191,7 @@ const buildForcedRecoveryEvent = (): GameEvent => ({
 
 export const useEvents = () => {
   const { gameState, stats, advanceTurnInContext, updateGameState, updateStats, setStats } = useGame();
+  const { showFloatingText } = useUI();
   const turnMediatorRef = useRef(new TurnMediator());
   const eligibilityCache = useRef<{ age: number; eligible: GameEvent[] }>({ age: -1, eligible: [] });
 
@@ -547,6 +560,13 @@ export const useEvents = () => {
   const handleEventChoice = useCallback((choice: Choice | ((ctx: EventContext) => Choice), choiceIndex?: number): TurnResult => {
     const resolved = resolveChoice(choice);
 
+    // Paket 10: Snapshot before choice for undo mechanic
+    const undoSnapshotUpdate: Partial<GameState> = {};
+    const unlimitedUndo = isPremiumUser();
+    if (isFeatureEnabled('UNDO_MECHANIC') && (unlimitedUndo || (gameState.undosUsedThisAge ?? 0) < 1)) {
+      undoSnapshotUpdate.undoSnapshot = { gameState: { ...gameState }, stats: { ...stats } };
+    }
+
     const turnResult = turnMediatorRef.current.processEventChoice({
       choice: resolved,
       choiceIndex,
@@ -568,7 +588,7 @@ export const useEvents = () => {
       }
       : turnResult.gameStateUpdates;
 
-    updateGameState(nextGameStateUpdates);
+    updateGameState({ ...nextGameStateUpdates, ...undoSnapshotUpdate });
 
     if (turnResult.eventId) {
       const eventName = gameState.currentEvent
@@ -689,6 +709,25 @@ export const useEvents = () => {
       }
       : buffTick.nextStats;
     let moneyAfterAllowance = statsAfterBuffTick.money;
+    let autoAllowance = 0;
+
+    // Paket 8: Otomatik harclik (her tur)
+    if (isFeatureEnabled('ECONOMY_DEPTH')) {
+      autoAllowance = gameState.family
+        ? calculateTurnAllowance(gameState.family, newAge, statsAfterBuffTick.familyRelation)
+        : 0;
+      moneyAfterAllowance += autoAllowance;
+      if (autoAllowance > 0) {
+        showFloatingText(
+          `+${autoAllowance} TL`,
+          24,
+          96,
+          '#22c55e',
+          { animationType: 'curve', duration: 1600 }
+        );
+      }
+    }
+
     const nextActiveBuffs = buffTick.nextActiveBuffs;
     const nextConsumableCooldowns = tickConsumableCooldowns(gameState.consumableCooldowns);
     const nextConsumableUsageThisTurn: Record<string, number> = {};
@@ -714,6 +753,113 @@ export const useEvents = () => {
         ...npc,
         age: npc.age + 1,
       }));
+    }
+
+    // --- Milestone Summary (Paket 4) ---
+    let pendingMilestone: import('../types/game').AgeMilestoneSummary | undefined;
+    let nextAgeStartStats = gameState._ageStartStats;
+    if (didAgeUp && isFeatureEnabled('MILESTONE_SUMMARY')) {
+      const prevStats = gameState._ageStartStats ?? stats;
+      const prevTraits = gameState.traits ?? [];
+      pendingMilestone = buildAgeMilestone({
+        age: gameState.age, // yaş henüz artmadı, tamamlanan yaşı logla
+        prevStats,
+        currentStats: statsAfterBuffTick,
+        prevTraits,
+        currentTraits: gameState.traits,
+        memories: gameState.memories ?? [],
+        prevNpcs: (gameState._ageStartNpcs ?? gameState.npcs ?? []).map(n => ({
+          id: n.id, name: n.name, role: n.role,
+        })),
+        currentNpcs: updatedNPCs,
+        prevGrades: gameState._ageStartGrades ?? gameState.schoolGrades,
+        currentGrades: gameState.schoolGrades,
+      });
+      // Sonraki yaş için snapshot al
+      nextAgeStartStats = { ...statsAfterBuffTick };
+    }
+
+    // Milestone state updates to spread into every advanceTurnInContext call
+    const milestoneUpdates = {
+      ...(pendingMilestone ? {
+        ageMilestoneSummaries: [
+          ...(gameState.ageMilestoneSummaries ?? []),
+          pendingMilestone,
+        ],
+      } : {}),
+      ...(didAgeUp ? {
+        _ageStartStats: nextAgeStartStats,
+        _ageStartNpcs: [...updatedNPCs],
+        _ageStartGrades: { ...gameState.schoolGrades },
+        undosUsedThisAge: 0, // reset undo counter on age up
+      } : {}),
+    };
+
+    // Paket 8: Biriktirme hedefi kontrolu
+    let economyUpdates: Partial<GameState> = {};
+    if (isFeatureEnabled('ECONOMY_DEPTH')) {
+      const currentGoals = gameState.savingGoals ?? getDefaultSavingGoals();
+      const { updatedGoals, completed } = checkSavingGoalCompletion(moneyAfterAllowance, newAge, currentGoals);
+      if (completed.length > 0) {
+        for (const c of completed) {
+          const bonus = c.statBonus;
+          if (bonus.health) moneyAfterAllowance += 0; // stat bonuses applied below
+          // Apply stat bonuses from completed goals
+          Object.entries(bonus).forEach(([key, val]) => {
+            if (typeof val === 'number') {
+              (statsAfterBuffTick as any)[key] = ((statsAfterBuffTick as any)[key] ?? 0) + val;
+            }
+          });
+        }
+      }
+      economyUpdates = { savingGoals: updatedGoals };
+    }
+
+    // Paket 5: Micro/season goal tracking
+    let goalUpdates: Partial<GameState> = {};
+    if (isFeatureEnabled('MICRO_GOALS')) {
+      // Update existing micro-goals (tick turnsRemaining)
+      let currentMicros = (gameState.microGoals ?? []).map(g =>
+        updateMicroGoalProgress(g, { stats: statsAfterBuffTick })
+      );
+      currentMicros = cleanupExpiredMicroGoals(currentMicros);
+
+      // Generate new micro-goal if none active
+      const activeCount = currentMicros.filter(g => !g.completed && g.turnsRemaining > 0).length;
+      if (activeCount === 0) {
+        const recentIds = currentMicros.map(g => g.id.replace(/_\d+$/, ''));
+        const newGoal = generateMicroGoal(newAge, statsAfterBuffTick, recentIds);
+        if (newGoal) currentMicros.push(newGoal);
+      }
+
+      // Season goal: assign on age up, check completion
+      let currentSeason = gameState.seasonGoal ?? null;
+      if (didAgeUp) {
+        // Check if previous season goal completed
+        if (currentSeason && !currentSeason.completed) {
+          const completed = checkSeasonGoalCompletion(currentSeason, statsAfterBuffTick, gameState.schoolGrades);
+          if (completed) {
+            currentSeason = { ...currentSeason, completed: true };
+            // Apply season goal reward
+            const reward = currentSeason.reward;
+            if (reward.money) moneyAfterAllowance += reward.money;
+            if (reward.statBonus) {
+              Object.entries(reward.statBonus).forEach(([key, val]) => {
+                if (typeof val === 'number') {
+                  (statsAfterBuffTick as any)[key] = ((statsAfterBuffTick as any)[key] ?? 0) + val;
+                }
+              });
+            }
+          }
+        }
+        // Assign new season goal for the new age
+        currentSeason = generateSeasonGoal(newAge, statsAfterBuffTick, currentSeason?.id);
+      }
+
+      goalUpdates = {
+        microGoals: currentMicros.slice(-10), // keep max 10 in history
+        seasonGoal: currentSeason,
+      };
     }
 
     let nextFamilyEvolution = gameState.familyEvolution || { ...DEFAULT_FAMILY_EVOLUTION_STATE };
@@ -901,6 +1047,9 @@ export const useEvents = () => {
           money: endingMoney,
         },
         newGameState: {
+          ...milestoneUpdates,
+          ...economyUpdates,
+          ...goalUpdates,
           phase: 'GAME_OVER',
           age: newAge,
           turn: newTurn,
@@ -971,6 +1120,9 @@ export const useEvents = () => {
           advanceTurnInContext({
             newStats: turnAdvanceStats,
             newGameState: {
+              ...milestoneUpdates,
+          ...economyUpdates,
+          ...goalUpdates,
               age: newAge,
               turn: newTurn,
               totalTurns: newTotalTurns,
@@ -1049,6 +1201,9 @@ export const useEvents = () => {
       advanceTurnInContext({
         newStats: turnAdvanceStats,
         newGameState: {
+          ...milestoneUpdates,
+          ...economyUpdates,
+          ...goalUpdates,
           age: newAge,
           turn: newTurn,
           totalTurns: newTotalTurns,
@@ -1117,6 +1272,9 @@ export const useEvents = () => {
       advanceTurnInContext({
         newStats: turnAdvanceStats,
         newGameState: {
+          ...milestoneUpdates,
+          ...economyUpdates,
+          ...goalUpdates,
           age: newAge,
           turn: newTurn,
           totalTurns: newTotalTurns,
@@ -1160,6 +1318,9 @@ export const useEvents = () => {
       advanceTurnInContext({
         newStats: turnAdvanceStats,
         newGameState: {
+          ...milestoneUpdates,
+          ...economyUpdates,
+          ...goalUpdates,
           age: newAge,
           turn: newTurn,
           totalTurns: newTotalTurns,
@@ -1222,6 +1383,9 @@ export const useEvents = () => {
       advanceTurnInContext({
         newStats: turnAdvanceStats,
         newGameState: {
+          ...milestoneUpdates,
+          ...economyUpdates,
+          ...goalUpdates,
           age: newAge,
           turn: newTurn,
           totalTurns: newTotalTurns,
@@ -1295,6 +1459,9 @@ export const useEvents = () => {
       advanceTurnInContext({
         newStats: turnAdvanceStats,
         newGameState: {
+          ...milestoneUpdates,
+          ...economyUpdates,
+          ...goalUpdates,
           age: newAge,
           turn: newTurn,
           totalTurns: newTotalTurns,
@@ -1351,6 +1518,7 @@ export const useEvents = () => {
     advanceTurnInContext({
       newStats: turnAdvanceStats,
       newGameState: {
+        ...milestoneUpdates,
         age: newAge,
         turn: newTurn,
         totalTurns: newTotalTurns,
@@ -1443,6 +1611,22 @@ export const useEvents = () => {
     });
   }, [gameState, stats, updateGameState]);
 
+  // Paket 10: Undo — restore pre-choice snapshot
+  const undoLastChoice = useCallback(() => {
+    if (!isFeatureEnabled('UNDO_MECHANIC')) return false;
+    const snapshot = gameState.undoSnapshot;
+    if (!snapshot) return false;
+
+    const restoredState = snapshot.gameState;
+    setStats(snapshot.stats);
+    updateGameState({
+      ...restoredState,
+      undoSnapshot: undefined,
+      undosUsedThisAge: (gameState.undosUsedThisAge ?? 0) + 1,
+    });
+    return true;
+  }, [gameState, setStats, updateGameState]);
+
   return {
     currentEvent: gameState.currentEvent,
     selectNewEvent,
@@ -1456,5 +1640,6 @@ export const useEvents = () => {
     advanceTurn,
     markExamTaken,
     completeExamPeriod,
+    undoLastChoice,
   };
 };

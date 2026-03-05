@@ -157,19 +157,19 @@ describe('personalitySystem', () => {
       { ...baseStress, current: 90, turnsSinceBreakdown: 5 },
       { ...basePersonality, patience: 20 }
     );
-    expect(lowPatience).toBe(15);
+    expect(lowPatience).toBe(11.25);
 
     const midPatience = calculateBreakdownRisk(
       { ...baseStress, current: 90, turnsSinceBreakdown: 12 },
       { ...basePersonality, patience: 40 }
     );
-    expect(midPatience).toBe(24);
+    expect(midPatience).toBe(18);
 
     const highPatience = calculateBreakdownRisk(
       { ...baseStress, current: 90, turnsSinceBreakdown: 12 },
       { ...basePersonality, patience: 70 }
     );
-    expect(highPatience).toBe(20);
+    expect(highPatience).toBe(15);
   });
 
   it('checks personality and stress requirements for pass/fail cases', () => {

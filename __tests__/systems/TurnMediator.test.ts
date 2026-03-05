@@ -96,7 +96,30 @@ describe('TurnMediator', () => {
     expect(result.gameStateUpdates.phase).toBe('RESULT');
     expect(result.gameStateUpdates.eventChoiceHistory).toContain('evt_test');
     expect(result.gameStateUpdates.lastResult?.gradeChanges?.math).toBe(3);
-    expect(result.gameStateUpdates.schoolGrades?.math).toBe(3);
+    expect(result.gameStateUpdates.schoolGrades?.math).toBe(63);
+  });
+
+  it('applies grade updates as deltas and clamps below zero', () => {
+    const gameState = createBaseGameState();
+    gameState.schoolGrades.math = 2;
+    const stats = createBaseStats();
+    const choice: Choice = {
+      id: 'ch_grade_drop',
+      text: 'Dikkatini kaybet',
+      effect: {},
+      feedback: 'Matematikte zayifladin.',
+      gradeUpdates: { math: -10 },
+    };
+
+    const result = mediator.processEventChoice({
+      choice,
+      gameState,
+      stats,
+      choiceIndex: 0,
+    });
+
+    expect(result.gameStateUpdates.lastResult?.gradeChanges?.math).toBe(-10);
+    expect(result.gameStateUpdates.schoolGrades?.math).toBe(0);
   });
 
   it('updates NPC relationship and role based on npcRelationChange', () => {

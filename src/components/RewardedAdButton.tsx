@@ -1,11 +1,8 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { showRewardedAd, getRemainingRewardedAds } from '../services/monetization';
-import {
-  logRewardedAdRequested,
-  logRewardedAdResult,
-} from '../utils/analyticsEvents';
+import { getRemainingRewardedAds, showRewardedAd } from '../services/monetization';
+import { logRewardedAdRequested, logRewardedAdResult } from '../utils/analyticsEvents';
 import type { MonetizationPlacement } from '../utils/analyticsEvents';
 import { tRuntime } from '../i18n/strings';
 
@@ -16,80 +13,121 @@ interface RewardedAdButtonProps {
   placement?: MonetizationPlacement;
   theme: {
     surfaceBase: string;
-    surfaceRaised: string;
     textPrimary: string;
     textSecondary: string;
     border: string;
   };
 }
 
-const REWARD_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
-  energy: 'zap',
-  intelligence: 'cpu',
-  money: 'dollar-sign',
+type RewardPlan = {
+  rewardType: 'energy' | 'intelligence' | 'money';
+  icon: keyof typeof Feather.glyphMap;
+  accent: string;
+  label: string;
 };
 
-const REWARD_COLORS: Record<string, string> = {
-  energy: '#22c55e',
-  intelligence: '#3b82f6',
-  money: '#eab308',
+const resolveRewardPlan = (placement: MonetizationPlacement, currentEnergy: number): RewardPlan => {
+  if (placement === 'exam_prep') {
+    return {
+      rewardType: 'intelligence',
+      icon: 'cpu',
+      accent: '#3b82f6',
+      label: tRuntime('ads.intelligenceTitle', undefined, 'Odak Bonusu'),
+    };
+  }
+
+  if (placement === 'energy_depleted') {
+    return {
+      rewardType: 'energy',
+      icon: 'zap',
+      accent: '#16a34a',
+      label: tRuntime('ads.energyTitle', undefined, 'Enerji Kazan'),
+    };
+  }
+
+  if (placement === 'crisis_recovery' || placement === 'ending_alternative' || placement === 'undo_choice') {
+    return {
+      rewardType: 'money',
+      icon: 'shield',
+      accent: '#f59e0b',
+      label: tRuntime('ads.utilityReward', undefined, 'Avantaj Kazan'),
+    };
+  }
+
+  return currentEnergy < 30
+    ? {
+      rewardType: 'energy',
+      icon: 'zap',
+      accent: '#16a34a',
+      label: tRuntime('ads.energyTitle', undefined, 'Enerji Kazan'),
+    }
+    : {
+      rewardType: 'intelligence',
+      icon: 'cpu',
+      accent: '#3b82f6',
+      label: tRuntime('ads.intelligenceTitle', undefined, 'Odak Bonusu'),
+    };
 };
 
 export const RewardedAdButton: React.FC<RewardedAdButtonProps> = ({
   onRewardClaimed,
   currentEnergy,
   disabled,
-  placement = 'hub',
+  placement = 'unknown',
   theme,
 }) => {
-  const [showOptions, setShowOptions] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const remainingAds = getRemainingRewardedAds();
 
-  const handleWatchAd = async (rewardType: 'energy' | 'intelligence' | 'money') => {
+  const plan = useMemo(
+    () => resolveRewardPlan(placement, currentEnergy),
+    [placement, currentEnergy]
+  );
+
+  const handleWatchAd = async () => {
     const remainingBefore = getRemainingRewardedAds();
 
     try {
       setLoading(true);
       setError(null);
-      setShowOptions(false);
       void logRewardedAdRequested({
         placement,
-        rewardType,
+        rewardType: plan.rewardType,
         remainingBefore,
       });
 
-      const result = await showRewardedAd(rewardType);
+      const result = await showRewardedAd(plan.rewardType);
       const remainingAfter = getRemainingRewardedAds();
 
       if (result.success && result.reward) {
         onRewardClaimed(result.reward);
         void logRewardedAdResult({
           placement,
-          rewardType,
+          rewardType: plan.rewardType,
           success: true,
           amount: result.reward.amount,
           remainingAfter,
         });
-      } else {
-        const errorMessage = result.error || 'Rewarded ad failed';
-        setError(result.error || tRuntime('ads.adFailed'));
-        void logRewardedAdResult({
-          placement,
-          rewardType,
-          success: false,
-          remainingAfter,
-          errorMessage,
-        });
-        setTimeout(() => setError(null), 3000);
+        return;
       }
-    } catch (err: any) {
-      const errorMessage = err?.message || 'Rewarded ad exception';
-      setError(err.message || tRuntime('ads.adError'));
+
+      const errorMessage = result.error || tRuntime('ads.adFailed', undefined, 'Reklam gosterilemedi');
+      setError(errorMessage);
       void logRewardedAdResult({
         placement,
-        rewardType,
+        rewardType: plan.rewardType,
+        success: false,
+        remainingAfter,
+        errorMessage,
+      });
+      setTimeout(() => setError(null), 3000);
+    } catch (err: any) {
+      const errorMessage = err?.message || tRuntime('ads.adError', undefined, 'Reklam hatasi');
+      setError(errorMessage);
+      void logRewardedAdResult({
+        placement,
+        rewardType: plan.rewardType,
         success: false,
         remainingAfter: getRemainingRewardedAds(),
         errorMessage,
@@ -100,127 +138,48 @@ export const RewardedAdButton: React.FC<RewardedAdButtonProps> = ({
     }
   };
 
-  const isEnergyLow = currentEnergy < 30;
+  const isDisabled = Boolean(disabled) || loading || remainingAds === 0;
 
   return (
     <View style={styles.container}>
-      {/* Main Button */}
       <TouchableOpacity
-        onPress={() => setShowOptions(!showOptions)}
-        disabled={disabled || loading || remainingAds === 0}
+        onPress={handleWatchAd}
+        disabled={isDisabled}
         style={[
           styles.mainButton,
-          (disabled || loading || remainingAds === 0) && styles.mainButtonDisabled,
+          {
+            backgroundColor: `${plan.accent}22`,
+            borderColor: plan.accent,
+          },
+          isDisabled && styles.mainButtonDisabled,
         ]}
         accessibilityLabel={tRuntime('ads.watchAdAria')}
         accessibilityRole="button"
         accessibilityHint={tRuntime('ads.watchAdHint')}
       >
-        <Feather name="video" size={20} color="#fff" />
-        <Text style={styles.mainButtonText}>{tRuntime('ads.watchAd')}</Text>
-        {remainingAds > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{remainingAds}</Text>
-          </View>
-        )}
+        <View style={[styles.iconWrap, { backgroundColor: plan.accent }]}>
+          <Feather name={plan.icon} size={16} color="#ffffff" />
+        </View>
+
+        <View style={styles.textWrap}>
+          <Text style={[styles.mainButtonText, { color: theme.textPrimary }]}>
+            {loading
+              ? tRuntime('ads.loading', undefined, 'Yukleniyor...')
+              : tRuntime('ads.watchAdForReward', undefined, 'Reklam Izle')} {plan.label}
+          </Text>
+          <Text style={[styles.subText, { color: theme.textSecondary }]}>
+            {tRuntime('ads.remaining', { remaining: remainingAds }, `${remainingAds} hak kaldi`)}
+          </Text>
+        </View>
+
+        <View style={[styles.badge, { borderColor: theme.border, backgroundColor: theme.surfaceBase }]}>
+          <Text style={[styles.badgeText, { color: theme.textPrimary }]}>{remainingAds}</Text>
+        </View>
       </TouchableOpacity>
 
-      {/* Error Message */}
       {error && (
-        <View style={styles.errorContainer}>
+        <View style={[styles.errorContainer, { borderColor: '#ef4444' }]}>
           <Text style={styles.errorText}>{error}</Text>
-        </View>
-      )}
-
-      {/* Options Dropdown */}
-      {showOptions && remainingAds > 0 && (
-        <View style={[styles.dropdown, { backgroundColor: theme.surfaceBase, borderColor: theme.border }]}>
-          <View style={styles.dropdownHeader}>
-            <Text style={styles.dropdownTitle}>{tRuntime('ads.dropdownTitle')}</Text>
-            <Text style={styles.dropdownSubtitle}>{tRuntime('ads.remaining', { remaining: remainingAds })}</Text>
-          </View>
-
-          <View style={styles.optionsList}>
-            {/* Energy Reward */}
-            <TouchableOpacity
-              onPress={() => handleWatchAd('energy')}
-              disabled={loading}
-              style={[
-                styles.optionButton,
-                { backgroundColor: theme.surfaceRaised },
-                isEnergyLow && styles.optionButtonHighlighted,
-              ]}
-              accessibilityLabel={tRuntime('ads.energyAria')}
-              accessibilityRole="button"
-            >
-              <View style={[styles.optionIcon, { backgroundColor: REWARD_COLORS.energy }]}>
-                <Feather name={REWARD_ICONS.energy} size={20} color="#fff" />
-              </View>
-              <View style={styles.optionInfo}>
-                <Text style={[styles.optionTitle, { color: theme.textPrimary }]}>{tRuntime('ads.energyTitle')}</Text>
-                <Text style={[styles.optionDescription, { color: theme.textSecondary }]}>{tRuntime('ads.energyDesc')}</Text>
-              </View>
-              {isEnergyLow && (
-                <View style={styles.recommendedBadge}>
-                  <Text style={styles.recommendedText}>{tRuntime('ads.recommended')}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-
-            {/* Intelligence Reward */}
-            <TouchableOpacity
-              onPress={() => handleWatchAd('intelligence')}
-              disabled={loading}
-              style={[styles.optionButton, { backgroundColor: theme.surfaceRaised }]}
-              accessibilityLabel={tRuntime('ads.intelligenceAria')}
-              accessibilityRole="button"
-            >
-              <View style={[styles.optionIcon, { backgroundColor: REWARD_COLORS.intelligence }]}>
-                <Feather name={REWARD_ICONS.intelligence} size={20} color="#fff" />
-              </View>
-              <View style={styles.optionInfo}>
-                <Text style={[styles.optionTitle, { color: theme.textPrimary }]}>{tRuntime('ads.intelligenceTitle')}</Text>
-                <Text style={[styles.optionDescription, { color: theme.textSecondary }]}>{tRuntime('ads.intelligenceDesc')}</Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* Money Reward */}
-            <TouchableOpacity
-              onPress={() => handleWatchAd('money')}
-              disabled={loading}
-              style={[styles.optionButton, { backgroundColor: theme.surfaceRaised }]}
-              accessibilityLabel={tRuntime('ads.moneyAria')}
-              accessibilityRole="button"
-            >
-              <View style={[styles.optionIcon, { backgroundColor: REWARD_COLORS.money }]}>
-                <Feather name={REWARD_ICONS.money} size={20} color="#fff" />
-              </View>
-              <View style={styles.optionInfo}>
-                <Text style={[styles.optionTitle, { color: theme.textPrimary }]}>{tRuntime('ads.moneyTitle')}</Text>
-                <Text style={[styles.optionDescription, { color: theme.textSecondary }]}>{tRuntime('ads.moneyDesc')}</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-
-          <View style={[styles.dropdownFooter, { borderTopColor: theme.border }]}>
-            <TouchableOpacity
-              onPress={() => setShowOptions(false)}
-              style={styles.cancelButton}
-              accessibilityLabel={tRuntime('ads.cancelAria')}
-              accessibilityRole="button"
-            >
-              <Text style={[styles.cancelText, { color: theme.textSecondary }]}>{tRuntime('ads.cancel')}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-
-      {/* No Ads Remaining */}
-      {showOptions && remainingAds === 0 && (
-        <View style={[styles.dropdown, styles.noAdsDropdown, { backgroundColor: theme.surfaceBase, borderColor: theme.border }]}>
-          <Text style={styles.noAdsEmoji}>🎬</Text>
-          <Text style={[styles.noAdsTitle, { color: theme.textPrimary }]}>{tRuntime('ads.noAdsTitle')}</Text>
-          <Text style={[styles.noAdsSubtitle, { color: theme.textSecondary }]}>{tRuntime('ads.noAdsSubtitle')}</Text>
         </View>
       )}
     </View>
@@ -234,154 +193,59 @@ const styles = StyleSheet.create({
   mainButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    gap: 10,
     borderRadius: 12,
-    backgroundColor: '#9333ea',
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minHeight: 48,
   },
   mainButtonDisabled: {
-    opacity: 0.5,
+    opacity: 0.55,
   },
-  mainButtonText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  badge: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    backgroundColor: '#eab308',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+  iconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  textWrap: {
+    flex: 1,
+  },
+  mainButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  subText: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  badge: {
+    minWidth: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
   badgeText: {
-    color: '#000',
     fontSize: 12,
     fontWeight: '700',
   },
   errorContainer: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
     marginTop: 8,
-    backgroundColor: 'rgba(239, 68, 68, 0.2)',
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.5)',
-    padding: 8,
     borderRadius: 8,
-    zIndex: 50,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.14)',
   },
   errorText: {
     color: '#fecaca',
     fontSize: 12,
   },
-  dropdown: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    marginTop: 8,
-    minWidth: 280,
-    borderRadius: 12,
-    borderWidth: 1,
-    overflow: 'hidden',
-    zIndex: 50,
-  },
-  dropdownHeader: {
-    padding: 12,
-    backgroundColor: 'rgba(88, 28, 135, 0.8)',
-  },
-  dropdownTitle: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  dropdownSubtitle: {
-    color: '#d8b4fe',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  optionsList: {
-    padding: 8,
-    gap: 4,
-  },
-  optionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 12,
-    borderRadius: 10,
-    minHeight: 48,
-  },
-  optionButtonHighlighted: {
-    backgroundColor: 'rgba(34, 197, 94, 0.2)',
-    borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.5)',
-  },
-  optionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  optionInfo: {
-    flex: 1,
-  },
-  optionTitle: {
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  optionDescription: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  recommendedBadge: {
-    backgroundColor: 'rgba(234, 179, 8, 0.2)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  recommendedText: {
-    color: '#fde047',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  dropdownFooter: {
-    padding: 8,
-    borderTopWidth: 1,
-  },
-  cancelButton: {
-    paddingVertical: 10,
-    alignItems: 'center',
-    minHeight: 48,
-    justifyContent: 'center',
-  },
-  cancelText: {
-    fontSize: 13,
-  },
-  noAdsDropdown: {
-    padding: 16,
-    alignItems: 'center',
-  },
-  noAdsEmoji: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
-  noAdsTitle: {
-    fontWeight: '700',
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  noAdsSubtitle: {
-    fontSize: 12,
-  },
 });
 
 export default RewardedAdButton;
-

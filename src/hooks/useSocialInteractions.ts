@@ -1,21 +1,52 @@
 import { useCallback } from 'react';
 import { getTraitName } from '../data/traits';
-import { GameState, GameStateUpdate, NPC, Skills, Stats, TraitChangeFeedback } from '../types';
+import {
+  GameState,
+  GameStateUpdate,
+  NPC,
+  Personality,
+  Skills,
+  Stats,
+  TraitChangeFeedback,
+} from '../types';
 import {
   checkTraitFormation,
   getMaxEnergy,
   resolveTraitChanges,
 } from '../utils/gameUtils';
 import { buildTraitChangeFeedback } from '../utils/traitFeedback';
+import { resolveInteractionOutcome } from '../utils/npcInteractionOutcomes';
+import { isFeatureEnabled } from '../config/featureFlags';
+import { updateStress } from '../utils/personalitySystem';
 import {
   logHubAction,
   logTraitChanges,
   logTraitFormed,
 } from '../utils/analyticsEvents';
 import { createTraitShareText, formatShareMessage } from '../utils/shareUtils';
+import { tRuntime } from '../i18n/strings';
 
 type ToastType = 'success' | 'error' | 'info' | 'warning';
 type SocialActionType = 'CHAT' | 'HANGOUT' | 'GIFT' | 'STUDY' | 'FLIRT' | 'HELP' | 'COMPETE' | 'GOSSIP';
+
+const SOCIAL_STRESS_RELIEF_BY_ACTION: Record<SocialActionType, number> = {
+  CHAT: -7,
+  HANGOUT: -10,
+  GIFT: -6,
+  STUDY: -5,
+  FLIRT: -6,
+  HELP: -8,
+  COMPETE: -4,
+  GOSSIP: -4,
+};
+
+export const calculateSocialStressEffect = (
+  actionType: SocialActionType,
+  outcomeStressEffect: number = 0
+): number => {
+  const baseStressRelief = SOCIAL_STRESS_RELIEF_BY_ACTION[actionType] ?? -5;
+  return Math.min(-2, baseStressRelief + outcomeStressEffect);
+};
 
 interface SocialInteractionResult {
   success: boolean;
@@ -63,11 +94,14 @@ export const useSocialInteractions = ({
   enqueueToast,
   triggerMilestoneShare,
 }: UseSocialInteractionsOptions): UseSocialInteractionsResult => {
+  const clampAxis = (value: number): number => Math.max(0, Math.min(100, value));
+
   const handleSocialInteract = useCallback((
     npcId: string,
     actionType: SocialActionType
   ): SocialInteractionResult => {
-    const result = interactWithNPC(
+    const npc = gameState.npcs.find(item => item.id === npcId);
+    const baseResult = interactWithNPC(
       npcId,
       actionType,
       gameState.personality,
@@ -75,10 +109,25 @@ export const useSocialInteractions = ({
       stats.money,
       gameState.skills
     );
+    let result = baseResult;
+
+    if (baseResult.success && npc && isFeatureEnabled('NPC_RICH_FEEDBACK')) {
+      const outcome = resolveInteractionOutcome(actionType, npc.personality);
+      const localizedFeedback = tRuntime(outcome.feedbackKey, undefined, baseResult.message);
+      result = {
+        ...baseResult,
+        message: localizedFeedback,
+      };
+    }
+
     if (result.success && result.cost) {
       const socialActionId = `social_${String(actionType).toLowerCase()}`;
       const energyCost = Math.max(0, result.cost.energy);
       const moneyCost = Math.max(0, result.cost.money);
+      const richFeedbackEnabled = Boolean(npc && isFeatureEnabled('NPC_RICH_FEEDBACK'));
+      const interactionOutcome = richFeedbackEnabled && npc
+        ? resolveInteractionOutcome(actionType, npc.personality)
+        : null;
       const statsAfterInteraction: Stats = {
         ...stats,
         energy: Math.max(0, stats.energy - energyCost),
@@ -115,13 +164,44 @@ export const useSocialInteractions = ({
       if (moneyCost > 0) {
         updates.money = -moneyCost;
       }
+      if (interactionOutcome?.statEffects) {
+        for (const [key, value] of Object.entries(interactionOutcome.statEffects)) {
+          if (typeof value !== 'number' || value === 0) continue;
+          updates[key as keyof Stats] = (updates[key as keyof Stats] ?? 0) + value;
+        }
+      }
       if (Object.keys(updates).length > 0) {
         updateStats(updates);
       }
+
+      let nextPersonality: Personality | undefined;
+      if (interactionOutcome?.personalityEffect) {
+        const axis = interactionOutcome.personalityEffect.axis as keyof Personality;
+        if (axis in gameState.personality) {
+          nextPersonality = {
+            ...gameState.personality,
+            [axis]: clampAxis(
+              (gameState.personality[axis] ?? 50) + interactionOutcome.personalityEffect.delta
+            ),
+          };
+        }
+      }
+
+      const outcomeStressEffect = interactionOutcome?.stressEffect ?? 0;
+      const combinedStressEffect = calculateSocialStressEffect(actionType, outcomeStressEffect);
+      const nextStress = updateStress(
+        gameState.stress,
+        combinedStressEffect,
+        `Social: ${actionType}`,
+        gameState.turn
+      );
+
       updateGameState({
         traits: traitResolution.traits,
         traitProgress: nextTraitProgress,
         maxEnergy: nextMaxEnergy,
+        ...(nextPersonality ? { personality: nextPersonality } : {}),
+        stress: nextStress,
       });
       if (traitResult.progressUpdates.length > 0) {
         onTraitProgressUpdates(traitResult.progressUpdates);

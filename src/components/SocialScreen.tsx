@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, Alert, ListRenderItemInfo } from 'react-native';
-import { NPC, Skills } from '../types';
+import type { NPC, Skills, SocialGroup } from '../types';
 import { getThemeTokens, getDensityMetrics } from '../utils/themeUtils';
 import { selectionHaptic, buttonPress } from '../animations/HapticFeedback';
 import { applySkillsToSocialCost } from '../utils/gameUtils';
@@ -12,6 +12,7 @@ import {
 import { ensureTextContrast } from '../utils/colorContrast';
 import { tRuntime } from '../i18n/strings';
 import { useRuntimeLocale } from '../i18n/useRuntimeLocale';
+import { SocialGroupCard } from './SocialGroupCard';
 
 interface SocialScreenProps {
   npcs: NPC[];
@@ -27,6 +28,8 @@ interface SocialScreenProps {
   ) => { success: boolean; message: string; cost?: { energy: number; money: number } };
   onOfferRelationshipBoostAd?: (npcId: string, npcName: string) => Promise<void> | void;
   onMeetNew: () => { success: boolean; npc?: NPC };
+  getPlayerGroups?: () => SocialGroup[];
+  onLeaveGroup?: (groupId: string) => void;
   theme?: ReturnType<typeof getThemeTokens>;
   metrics?: ReturnType<typeof getDensityMetrics>;
 }
@@ -145,7 +148,7 @@ const SocialResourceBar: React.FC<SocialResourceBarProps> = ({ currentEnergy, cu
       {'\u26A1'} {currentEnergy}
     </Text>
     <Text style={[styles.resourceText, { color: theme.textPrimary }]}>
-      {'\u{1F4B0}'} \u20BA{currentMoney}
+      {'\u{1F4B0}'} {'\u20BA'}{Math.floor(currentMoney).toLocaleString('tr-TR')}
     </Text>
   </View>
 );
@@ -222,7 +225,6 @@ const SocialNPCCard: React.FC<SocialNPCCardProps> = React.memo(({
           ]}
         />
       </View>
-
       {selected ? (
         <View style={styles.actionButtons}>
           <Text style={[styles.actionTitle, { color: theme.textPrimary }]}>
@@ -318,6 +320,8 @@ const SocialScreenRoot: React.FC<SocialScreenProps> = ({
   onInteract,
   onOfferRelationshipBoostAd,
   onMeetNew,
+  getPlayerGroups,
+  onLeaveGroup,
   theme: themeOverride,
   metrics: metricsOverride,
 }) => {
@@ -326,6 +330,10 @@ const SocialScreenRoot: React.FC<SocialScreenProps> = ({
   const theme = themeOverride || getThemeTokens('dark');
   const metrics = metricsOverride || getDensityMetrics('standard');
   const [selectedNPC, setSelectedNPC] = useState<NPC | null>(null);
+  const playerGroups = useMemo(
+    () => (getPlayerGroups ? getPlayerGroups() : []),
+    [getPlayerGroups]
+  );
 
   const interactionOptions = useMemo<InteractionOption[]>(() => (
     INTERACTION_BASE_OPTIONS.map(base => {
@@ -429,7 +437,16 @@ const SocialScreenRoot: React.FC<SocialScreenProps> = ({
         onInteract={handleInteraction}
       />
     );
-  }, [selectedNPC?.id, theme, getRelationshipColor, handleNPCSelect, availableInteractions, canAfford, skills, handleInteraction]);
+  }, [
+    selectedNPC?.id,
+    theme,
+    getRelationshipColor,
+    handleNPCSelect,
+    availableInteractions,
+    canAfford,
+    skills,
+    handleInteraction,
+  ]);
 
   const npcKeyExtractor = useCallback((item: NPC) => item.id, []);
 
@@ -437,6 +454,23 @@ const SocialScreenRoot: React.FC<SocialScreenProps> = ({
     <>
       <SocialHeader onBack={onBack} theme={theme} />
       <SocialResourceBar currentEnergy={currentEnergy} currentMoney={currentMoney} theme={theme} />
+
+      {playerGroups.length > 0 && (
+        <View style={styles.groupsSection}>
+          <Text style={[styles.groupsTitle, { color: theme.textPrimary }]}>
+            Gruplar
+          </Text>
+          {playerGroups.map(group => (
+            <SocialGroupCard
+              key={group.id}
+              group={group}
+              members={npcs.filter(npc => group.members.includes(npc.id))}
+              theme={theme}
+              onLeaveGroup={onLeaveGroup}
+            />
+          ))}
+        </View>
+      )}
 
       <TouchableOpacity
         style={[styles.meetNewButton, { backgroundColor: meetColor }]}
@@ -456,7 +490,7 @@ const SocialScreenRoot: React.FC<SocialScreenProps> = ({
         </View>
       </TouchableOpacity>
     </>
-  ), [onBack, theme, currentEnergy, currentMoney, meetColor, handleMeetNew]);
+  ), [onBack, theme, currentEnergy, currentMoney, playerGroups, npcs, onLeaveGroup, meetColor, handleMeetNew]);
 
   const emptyComponent = useMemo(() => (
     <View style={[styles.emptyState, { backgroundColor: theme.surfaceBase }]}>
@@ -561,6 +595,16 @@ const styles = StyleSheet.create({
   resourceText: {
     fontSize: 16,
     fontWeight: '700',
+  },
+  groupsSection: {
+    marginBottom: 12,
+  },
+  groupsTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+    letterSpacing: 0.5,
   },
   meetNewButton: {
     flexDirection: 'row',

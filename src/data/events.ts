@@ -14,6 +14,9 @@ import { GOAL_SPECIFIC_EVENTS } from './goalSpecificEvents';
 import { NPC_QUESTLINE_EVENTS } from './npcQuestlineEvents';
 import { NPC_CHECKIN_EVENTS } from './npcCheckInEvents';
 import { CLIFFHANGER_EVENTS } from './cliffhangerEvents';
+import { BUTTERFLY_EFFECT_EVENTS } from './butterflyEffectEvents';
+import { ITEM_UNLOCK_EVENTS } from './itemUnlockEvents';
+import { SOCIAL_GROUP_EVENTS } from './socialGroupEvents';
 import { applyProceduralEventBranching } from './eventBranchingEnhancer';
 import { validateEventPool } from './eventRegistry';
 import { EventBuilder } from '../builders/EventBuilder';
@@ -49,6 +52,10 @@ const BASE_EVENTS: GameEvent[] = [
   ...NPC_QUESTLINE_EVENTS,
   // Cliffhanger / oturum kancasi eventleri
   ...CLIFFHANGER_EVENTS,
+  // Kelebek etkisi — geri dönüşü olmayan kararlar
+  ...BUTTERFLY_EFFECT_EVENTS,
+  ...ITEM_UNLOCK_EVENTS,
+  ...SOCIAL_GROUP_EVENTS,
 ];
 
 const BRANCHED_EVENT_RESULT = applyProceduralEventBranching(BASE_EVENTS);

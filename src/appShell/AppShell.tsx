@@ -19,11 +19,13 @@ import { logTutorialCompleted, logSessionStart, logSessionEnd } from '../utils/a
 import { clearSlotSave, getCurrentSlotId, setCurrentSlotId } from '../utils/gameUtils';
 import { stripRuntimeGameStateCaches } from '../utils/gameStateAdapter';
 import { getOnboardingCohort, isInOnboardingWindow, getCohortDisplayMeta } from '../utils/onboardingGuidance';
+import { PaywallModal } from '../components/PaywallModal';
 import { AnalyticsTracker } from './AnalyticsTracker';
 import { AppNavigator } from './AppNavigator';
 import { SettingsPanel } from './SettingsPanel';
 import { useAppBootstrap } from './useAppBootstrap';
 import { t as translateStatic } from '../i18n/strings';
+import { canOpenPremiumPaywall } from '../services/subscriptionManager';
 import {
   FeatureFlag,
   getFeatureFlagsSnapshot,
@@ -71,6 +73,7 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
     settingsOpen: false,
   });
   const [savePickerOpen, setSavePickerOpen] = useState(false);
+  const [paywallOpen, setPaywallOpen] = useState(false);
   const [soundMuted, setSoundMuted] = useState(false);
   const [devFeatureFlags, setDevFeatureFlags] = useState(() => getFeatureFlagsSnapshot());
   const [showSessionEndTeaser, setShowSessionEndTeaser] = useState(false);
@@ -620,7 +623,17 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
           setSavePickerOpen(true);
           setAppState(prev => ({ ...prev, settingsOpen: false }));
         }}
+        onOpenPaywall={() => {
+          if (!canOpenPremiumPaywall()) return;
+          setPaywallOpen(true);
+          setAppState(prev => ({ ...prev, settingsOpen: false }));
+        }}
         onResetGame={handleResetGame}
+      />
+
+      <PaywallModal
+        visible={paywallOpen}
+        onClose={() => setPaywallOpen(false)}
       />
 
       <AppNavigator

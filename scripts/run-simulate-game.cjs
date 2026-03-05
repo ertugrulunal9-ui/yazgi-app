@@ -29,7 +29,7 @@ const DEFAULT_CI_THRESHOLDS = {
   balancedMaxSuccess: 60,
   balancedMaxBreakdown: 12,
   risktakerMinSuccess: 20,
-  risktakerMaxBreakdown: 55,
+  risktakerMaxBreakdown: 15, // debt threshold 95 + stat floor fix sonrasi: 35% -> ~9-13%
 };
 
 const readNumberEnv = (name, fallback) => {

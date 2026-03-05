@@ -78,6 +78,14 @@ export const migrateToVersion = (saveData: SaveSlotData, targetVersion: number):
     migrated = migrateV2ToV3(migrated);
   }
 
+  if (currentVersion < 4 && targetVersion >= 4) {
+    migrated = migrateV3ToV4(migrated);
+  }
+
+  if (currentVersion < 5 && targetVersion >= 5) {
+    migrated = migrateV4ToV5(migrated);
+  }
+
   migrated.metadata.version = targetVersion;
   migrated.metadata.checksum = generateChecksum({
     playerName: migrated.playerName,
@@ -134,6 +142,41 @@ const migrateV2ToV3 = (saveData: SaveSlotData): SaveSlotData => {
         unlockedEventIds: (existingMeta as any)?.unlockedEventIds ?? [],
         unlockedRunModifiers: (existingMeta as any)?.unlockedRunModifiers ?? [],
       },
+    },
+  };
+};
+
+const migrateV3ToV4 = (saveData: SaveSlotData): SaveSlotData => {
+  const gs = saveData.gameState;
+  return {
+    ...saveData,
+    gameState: {
+      ...gs,
+      permanentFlags: (gs as any).permanentFlags ?? {},
+      microGoals: Array.isArray((gs as any).microGoals) ? (gs as any).microGoals : [],
+      seasonGoal: (gs as any).seasonGoal ?? null,
+      savingGoals: Array.isArray((gs as any).savingGoals) ? (gs as any).savingGoals : [],
+      ageMilestoneSummaries: Array.isArray((gs as any).ageMilestoneSummaries)
+        ? (gs as any).ageMilestoneSummaries
+        : [],
+      _ageStartStats: (gs as any)._ageStartStats ?? undefined,
+      _ageStartNpcs: Array.isArray((gs as any)._ageStartNpcs) ? (gs as any)._ageStartNpcs : undefined,
+      _ageStartGrades: (gs as any)._ageStartGrades ?? undefined,
+      undoSnapshot: null,
+      undosUsedThisAge: (gs as any).undosUsedThisAge ?? 0,
+    },
+  };
+};
+
+const migrateV4ToV5 = (saveData: SaveSlotData): SaveSlotData => {
+  const gs = saveData.gameState;
+  return {
+    ...saveData,
+    gameState: {
+      ...gs,
+      purchasedItems: Array.isArray((gs as any).purchasedItems)
+        ? (gs as any).purchasedItems
+        : [],
     },
   };
 };

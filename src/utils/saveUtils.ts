@@ -30,12 +30,37 @@ export const formatLastPlayed = (timestamp: number): string => {
   }
 };
 
+const isWebClipboardAvailable = (): boolean => (
+  typeof navigator !== 'undefined'
+  && typeof navigator.clipboard !== 'undefined'
+);
+
+const isReactNativeRuntime = (): boolean => (
+  typeof navigator !== 'undefined'
+  && navigator.product === 'ReactNative'
+);
+
 export const copyToClipboard = async (text: string): Promise<boolean> => {
   try {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      await navigator.clipboard.writeText(text);
+    const normalized = String(text ?? '');
+
+    if (isWebClipboardAvailable()) {
+      await navigator.clipboard.writeText(normalized);
       return true;
     }
+
+    if (isReactNativeRuntime()) {
+      try {
+        const clipboard = await import('expo-clipboard');
+        if (typeof clipboard.setStringAsync === 'function') {
+          await clipboard.setStringAsync(normalized);
+          return true;
+        }
+      } catch {
+        // Native clipboard module is optional in test/web environments.
+      }
+    }
+
     return false;
   } catch (error) {
     console.error('Copy to clipboard failed:', error);
@@ -45,9 +70,21 @@ export const copyToClipboard = async (text: string): Promise<boolean> => {
 
 export const readFromClipboard = async (): Promise<string | null> => {
   try {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+    if (isWebClipboardAvailable()) {
       return await navigator.clipboard.readText();
     }
+
+    if (isReactNativeRuntime()) {
+      try {
+        const clipboard = await import('expo-clipboard');
+        if (typeof clipboard.getStringAsync === 'function') {
+          return await clipboard.getStringAsync();
+        }
+      } catch {
+        // Native clipboard module is optional in test/web environments.
+      }
+    }
+
     return null;
   } catch (error) {
     console.error('Read from clipboard failed:', error);
@@ -61,49 +98,108 @@ export const generateQRCode = (data: string): string => {
 };
 
 export const downloadFile = (filename: string, content: string): void => {
-  try {
-    const blob = new Blob([content], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  } catch (error) {
+  const run = async () => {
+    const normalizedContent = String(content ?? '');
+    const normalizedFilename = (filename && filename.trim().length > 0)
+      ? filename.trim()
+      : `yazgi_save_${Date.now()}.json`;
+
+    const hasDocument = typeof document !== 'undefined';
+    if (hasDocument) {
+      const blob = new Blob([normalizedContent], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = normalizedFilename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      return;
+    }
+
+    if (!isReactNativeRuntime()) {
+      return;
+    }
+
+    const [{ File, Paths }, sharing] = await Promise.all([
+      import('expo-file-system'),
+      import('expo-sharing'),
+    ]);
+
+    const targetName = normalizedFilename.endsWith('.json')
+      ? normalizedFilename
+      : `${normalizedFilename}.json`;
+    const file = new File(Paths.cache, targetName);
+    if (file.exists) {
+      file.delete();
+    }
+    file.create({ intermediates: true, overwrite: true });
+    file.write(normalizedContent);
+
+    const canShare = await sharing.isAvailableAsync();
+    if (canShare) {
+      await sharing.shareAsync(file.uri, {
+        mimeType: 'application/json',
+        UTI: 'public.json',
+        dialogTitle: targetName,
+      });
+    }
+  };
+
+  void run().catch((error) => {
     console.error('Download file failed:', error);
-  }
+  });
 };
 
 export const readFile = (): Promise<string | null> => {
   return new Promise((resolve) => {
-    try {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.json';
-      
-      input.onchange = (e: Event) => {
-        const target = e.target as HTMLInputElement;
-        const file = target.files?.[0];
-        if (!file) {
-          resolve(null);
-          return;
-        }
-        
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          resolve(event.target?.result as string || null);
+    const run = async () => {
+      const hasDocument = typeof document !== 'undefined';
+      if (hasDocument) {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+
+        input.onchange = (e: Event) => {
+          const target = e.target as HTMLInputElement;
+          const file = target.files?.[0];
+          if (!file) {
+            resolve(null);
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            resolve(event.target?.result as string || null);
+          };
+          reader.onerror = () => resolve(null);
+          reader.readAsText(file);
         };
-        reader.onerror = () => resolve(null);
-        reader.readAsText(file);
-      };
-      
-      input.click();
-    } catch (error) {
+
+        input.click();
+        return;
+      }
+
+      if (!isReactNativeRuntime()) {
+        resolve(null);
+        return;
+      }
+
+      const { File } = await import('expo-file-system');
+      const picked = await File.pickFileAsync(undefined, 'application/json');
+      const selected = Array.isArray(picked) ? picked[0] : picked;
+      if (!selected) {
+        resolve(null);
+        return;
+      }
+      resolve(await selected.text());
+    };
+
+    void run().catch((error) => {
       console.error('Read file failed:', error);
       resolve(null);
-    }
+    });
   });
 };
 

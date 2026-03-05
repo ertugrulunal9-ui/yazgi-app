@@ -64,7 +64,7 @@ export const buildNPCPersonalityReaction = (
   if (npc.role === 'ACQUAINTANCE' || age < 8) return null;
 
   const trigger = hashSeed(`npc_react:${npc.id}:${turn}`) % 10;
-  if (trigger >= 4) return null;
+  if (trigger >= 6) return null;
 
   const dominantAxis = findDominantAxis(personality);
   const roleKey = roleKeyByRole[npc.role];

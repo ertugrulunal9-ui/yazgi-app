@@ -180,12 +180,19 @@ export function updateStress(
 /**
  * Doğal stres azalması (her tur)
  */
+export function getStressRecoveryRate(stress: StressState, personality: Personality): number {
+  // Sabırlı karakterler daha hızlı toparlar
+  const baseRate = personality.patience > 70 ? 5 : personality.patience > 40 ? 3 : 2;
+
+  // Eşik aşılınca vücut acil toparlanma moduna girer: her 10 puan üstü için +2 bonus
+  const aboveThreshold = Math.max(0, stress.current - stress.threshold);
+  const urgencyBonus = Math.floor(aboveThreshold / 10) * 2;
+  return baseRate + urgencyBonus;
+}
+
 export function naturalStressRecovery(stress: StressState, personality: Personality): StressState {
   const newStress = { ...stress };
-
-  // Sabırlı karakterler daha hızlı toparlar
-  const recoveryRate = personality.patience > 70 ? 5 : personality.patience > 40 ? 3 : 2;
-
+  const recoveryRate = getStressRecoveryRate(newStress, personality);
   newStress.current = Math.max(0, newStress.current - recoveryRate);
 
   return newStress;
@@ -197,8 +204,10 @@ export function naturalStressRecovery(stress: StressState, personality: Personal
 export function calculateBreakdownRisk(stress: StressState, personality: Personality): number {
   if (stress.current < stress.threshold) return 0;
 
-  // Stres eşiğini aştıysa risk başlar
-  const overThreshold = stress.current - stress.threshold;
+  // Stres eşiğini aştıysa risk başlar — ilk 5 puan "uyarı bölgesi" (henüz gerçek risk değil)
+  const rawOverThreshold = stress.current - stress.threshold;
+  const effectiveOverThreshold = Math.max(0, rawOverThreshold - 5);
+  if (effectiveOverThreshold === 0) return 0;
 
   // Sabırsız karakterler daha kolay patlar
   const patienceMultiplier = personality.patience < 30 ? 1.5 : personality.patience < 50 ? 1.2 : 1.0;
@@ -206,7 +215,7 @@ export function calculateBreakdownRisk(stress: StressState, personality: Persona
   // Son breakdown'dan bu yana geçen süre
   const timeMultiplier = stress.turnsSinceBreakdown < 10 ? 0.5 : 1.0; // Yakın zamanda patladıysa tolerans
 
-  return Math.min(100, overThreshold * patienceMultiplier * timeMultiplier);
+  return Math.min(100, effectiveOverThreshold * patienceMultiplier * timeMultiplier);
 }
 
 /**

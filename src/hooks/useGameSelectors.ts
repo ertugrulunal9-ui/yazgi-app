@@ -26,6 +26,7 @@ import {
 import { getAcademicState, getCharacterState, getEventState, getProgressState, getSocialState } from '../utils/gameStateAdapter';
 import { getLegacyBonusBreakdown } from '../utils/metaProgression';
 import { getMomentumVisibilityFromPersonalityState } from '../utils/momentumVisibility';
+import { getStressRecoveryRate } from '../utils/personalitySystem';
 
 export const getMomentumVisibility = (state: GameState): MomentumVisibility => {
   return getMomentumVisibilityFromPersonalityState(state.personalityState);
@@ -80,13 +81,18 @@ export const useStress = () => {
   return useMemo(() => {
     const stress = context.gameState.stress ?? { current: 0, threshold: 70 };
     const threshold = stress.threshold > 0 ? stress.threshold : 70;
+    const personality = context.gameState.personality;
+    const latestSource = stress.sources?.[0];
+    const recoveryPerTurn = getStressRecoveryRate(stress, personality);
 
     return {
       current: stress.current,
       threshold,
       ratio: stress.current / threshold,
+      latestSource,
+      recoveryPerTurn,
     };
-  }, [context.gameState.stress]);
+  }, [context.gameState.personality, context.gameState.stress]);
 };
 
 /**

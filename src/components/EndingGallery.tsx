@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Text, View } from 'react-native';
-import { MetaProgression } from '../types';
+import type { LifeGoal, MetaProgression } from '../types';
 import { ENDING_ID_LIST, ENDING_ID_LOOKUP, TOTAL_ENDING_COUNT } from '../utils/endingResolver';
 import { getDensityMetrics, getThemeTokens } from '../utils/themeUtils';
 
@@ -8,6 +8,7 @@ interface EndingGalleryProps {
   meta?: MetaProgression | null;
   theme: ReturnType<typeof getThemeTokens>;
   metrics: ReturnType<typeof getDensityMetrics>;
+  hints?: Array<{ goalPath: LifeGoal; tier: string; progressPercent: number }>;
 }
 
 const getEndingColor = (tier: 'FAILURE' | 'NORMAL' | 'SUCCESS' | 'LEGENDARY' | 'MISMATCH' | 'SECRET') => {
@@ -19,7 +20,15 @@ const getEndingColor = (tier: 'FAILURE' | 'NORMAL' | 'SUCCESS' | 'LEGENDARY' | '
   return '#a855f7';
 };
 
-export const EndingGallery: React.FC<EndingGalleryProps> = ({ meta, theme, metrics }) => {
+const GOAL_PREFIX_BY_PATH: Record<LifeGoal, string> = {
+  ACADEMIC: 'academic',
+  ATHLETIC: 'athletic',
+  CREATIVE: 'creative',
+  WEALTH: 'enterprise',
+  SOCIAL: 'social',
+};
+
+export const EndingGallery: React.FC<EndingGalleryProps> = ({ meta, theme, metrics, hints = [] }) => {
   const discoveredIds = useMemo(
     () => new Set(meta?.lifetimeEndingIds || []),
     [meta?.lifetimeEndingIds]
@@ -31,6 +40,17 @@ export const EndingGallery: React.FC<EndingGalleryProps> = ({ meta, theme, metri
     () => ENDING_ID_LIST.map(id => ENDING_ID_LOOKUP[id]).filter(Boolean),
     []
   );
+
+  const hintByEndingId = useMemo(() => {
+    const lookup: Record<string, number> = {};
+    hints.forEach(hint => {
+      const prefix = GOAL_PREFIX_BY_PATH[hint.goalPath];
+      if (!prefix) return;
+      const endingId = `${prefix}_${String(hint.tier).toLowerCase()}`;
+      lookup[endingId] = hint.progressPercent;
+    });
+    return lookup;
+  }, [hints]);
 
   return (
     <View style={{
@@ -51,6 +71,7 @@ export const EndingGallery: React.FC<EndingGalleryProps> = ({ meta, theme, metri
         {galleryEntries.map(entry => {
           const unlocked = discoveredIds.has(entry.id);
           const accent = getEndingColor(entry.tier);
+          const hintProgress = hintByEndingId[entry.id];
 
           return (
             <View
@@ -87,6 +108,19 @@ export const EndingGallery: React.FC<EndingGalleryProps> = ({ meta, theme, metri
               >
                 {unlocked ? entry.title : '???'}
               </Text>
+              {!unlocked && typeof hintProgress === 'number' && (
+                <Text
+                  style={{
+                    textAlign: 'center',
+                    fontSize: 10,
+                    marginTop: 4,
+                    color: theme.textSecondary,
+                    fontStyle: 'italic',
+                  }}
+                >
+                  Hint: %{hintProgress}
+                </Text>
+              )}
             </View>
           );
         })}
@@ -94,4 +128,3 @@ export const EndingGallery: React.FC<EndingGalleryProps> = ({ meta, theme, metri
     </View>
   );
 };
-

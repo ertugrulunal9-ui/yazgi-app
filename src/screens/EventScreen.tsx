@@ -6,6 +6,8 @@ import { Z_INDEX } from '../constants/zIndex';
 import { SwipeChoiceDeck } from '../components/SwipeChoiceDeck';
 import { EventNarrative } from '../components/EventNarrative';
 import { FeedbackOverlay } from '../components/FeedbackOverlay';
+import { FateIndicator } from '../components/FateIndicator';
+import { isFeatureEnabled } from '../config/featureFlags';
 import { useEventScreenController } from '../hooks/useEventScreenController';
 
 export const EventScreen: React.FC = React.memo(() => {
@@ -20,11 +22,14 @@ export const EventScreen: React.FC = React.memo(() => {
     handleContinue,
     handleCrisisRecoveryAd,
     handleReroll,
+    canUndo,
+    handleUndo,
     selectedChoice,
     canReroll,
     buttonEnabled,
     hasCrisisRecoveryOption,
     crisisRecoveryLoading,
+    undoLoading,
     breakdownShakeX,
     isBreakdownEvent,
     isDramaticEvent,
@@ -71,6 +76,9 @@ export const EventScreen: React.FC = React.memo(() => {
         buttonEnabled={buttonEnabled}
         hasCrisisRecoveryOption={hasCrisisRecoveryOption}
         crisisRecoveryLoading={crisisRecoveryLoading}
+        undoLoading={undoLoading}
+        canUndo={canUndo}
+        onUndo={handleUndo}
         onContinue={handleContinue}
         onRecoverWithAd={handleCrisisRecoveryAd}
         onReroll={handleReroll}
@@ -90,6 +98,14 @@ export const EventScreen: React.FC = React.memo(() => {
         overScrollMode="never"
         bounces={false}
       >
+        {isFeatureEnabled('FATE_TRANSPARENCY') && gameState.fate && (
+          <FateIndicator
+            fateState={gameState.fate}
+            personalityCategory={gameState.currentEvent.personalityCategory}
+            theme={theme}
+          />
+        )}
+
         <EventNarrative
           event={gameState.currentEvent}
           eventText={eventText}

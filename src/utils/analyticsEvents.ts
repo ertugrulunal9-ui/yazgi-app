@@ -335,18 +335,13 @@ export const logPurchase = async (
 };
 
 export type MonetizationPlacement =
-  | 'hub'
   | 'save_slots'
   | 'game_over_restart'
   | 'exam_prep'
   | 'energy_depleted'
-  | 'relationship_boost'
-  | 'trait_boost'
-  | 'shopping_discount'
-  | 'report_preview'
   | 'crisis_recovery'
   | 'ending_alternative'
-  | 'day_summary'
+  | 'undo_choice'
   | 'age_transition'
   | 'settings'
   | 'unknown';

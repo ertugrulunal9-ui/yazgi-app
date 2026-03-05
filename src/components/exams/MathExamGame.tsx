@@ -78,12 +78,19 @@ const getMathConfig = (age: number): MathConfig => {
     return MATH_CONFIG_BY_AGE.EXPERT;
 };
 
+const scaleHardValue = (difficulty: Difficulty, value: number, factor: number, minValue: number): number => {
+    if (difficulty !== 'HARD') return value;
+    return Math.max(minValue, Math.floor(value * factor));
+};
+
 // Generate a math question based on difficulty and age
 const generateQuestion = (difficulty: Difficulty, age: number, id: number): MathQuestion => {
     let num1: number, num2: number, operator: '+' | '-' | '×' | '÷', answer: number;
 
     const config = getMathConfig(age);
-    const maxNum = config.maxNum[difficulty];
+    const maxNum = scaleHardValue(difficulty, config.maxNum[difficulty], 0.55, 25);
+    const multiplyMax = scaleHardValue(difficulty, config.multiplyMax, 0.7, 8);
+    const divideMax = scaleHardValue(difficulty, config.divideMax, 0.7, 6);
     const operators = config.operators[difficulty];
 
     operator = operators[Math.floor(Math.random() * operators.length)];
@@ -100,13 +107,13 @@ const generateQuestion = (difficulty: Difficulty, age: number, id: number): Math
             answer = num1 - num2;
             break;
         case '×':
-            num1 = Math.floor(Math.random() * config.multiplyMax) + 1;
-            num2 = Math.floor(Math.random() * config.multiplyMax) + 1;
+            num1 = Math.floor(Math.random() * multiplyMax) + 1;
+            num2 = Math.floor(Math.random() * multiplyMax) + 1;
             answer = num1 * num2;
             break;
         case '÷':
-            num2 = Math.floor(Math.random() * config.divideMax) + 1;
-            answer = Math.floor(Math.random() * config.divideMax) + 1;
+            num2 = Math.floor(Math.random() * divideMax) + 1;
+            answer = Math.floor(Math.random() * divideMax) + 1;
             num1 = num2 * answer;
             break;
         default:
@@ -200,10 +207,11 @@ const MathExamGame: React.FC<MathExamGameProps> = ({
 
     // Calculate balloon speed based on difficulty
     const getBalloonSpeed = useCallback(() => {
-        const baseSpeed = difficulty === 'EASY' ? 6500 : difficulty === 'MEDIUM' ? 4500 : 3000;
+        const baseSpeed = difficulty === 'EASY' ? 6500 : difficulty === 'MEDIUM' ? 5000 : 4200;
         // Speed up as game progresses
-        const progressPenalty = gameState.currentQuestion * 150;
-        return Math.max(baseSpeed - progressPenalty, 2000);
+        const progressPenalty = gameState.currentQuestion * (difficulty === 'HARD' ? 60 : 110);
+        const minSpeed = difficulty === 'HARD' ? 3400 : 2600;
+        return Math.max(baseSpeed - progressPenalty, minSpeed);
     }, [difficulty, gameState.currentQuestion]);
 
     // Generate new question

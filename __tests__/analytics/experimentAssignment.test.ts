@@ -20,13 +20,13 @@ jest.mock('../../src/config/featureFlags', () => ({
     PARTIAL_ENERGY_RECOVERY: false,
     VARIETY_BONUS: false,
     REPETITION_PENALTY: false,
-    AD_RELATIONSHIP_BOOST: false,
-    AD_TRAIT_BOOST: false,
-    AD_SHOPPING_DISCOUNT: false,
-    AD_REPORT_PREVIEW: false,
     CONSUMABLE_ITEMS: false,
     CAREER_PATH_ACTIONS: false,
     LEGACY_PERKS: false,
+    MILESTONE_SUMMARY: true,
+    FATE_TRANSPARENCY: true,
+    ECONOMY_DEPTH: true,
+    MICRO_GOALS: true,
   },
   isFeatureEnabled: jest.fn((flag: string) => false),
 }));
@@ -107,13 +107,13 @@ describe('Flags Bitmask', () => {
   });
 
   it('reflects enabled flags in correct positions', () => {
-    // Enable PARTIAL_ENERGY_RECOVERY (bit 0 = MSB) and CONSUMABLE_ITEMS (bit 7)
+    // Enable PARTIAL_ENERGY_RECOVERY (bit 0 = MSB) and CONSUMABLE_ITEMS (bit 3)
     (isFeatureEnabled as jest.Mock).mockImplementation((flag: string) => {
       return flag === 'PARTIAL_ENERGY_RECOVERY' || flag === 'CONSUMABLE_ITEMS';
     });
     const bitmask = buildFlagsBitmask();
     expect(bitmask[0]).toBe('1'); // PARTIAL_ENERGY_RECOVERY
-    expect(bitmask[7]).toBe('1'); // CONSUMABLE_ITEMS
+    expect(bitmask[3]).toBe('1'); // CONSUMABLE_ITEMS
     expect(bitmask[1]).toBe('0'); // VARIETY_BONUS
   });
 });

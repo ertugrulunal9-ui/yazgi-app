@@ -201,7 +201,7 @@ const getEventById = (eventId: string): GameEvent | undefined =>
   EVENTS.find(event => event.id === eventId);
 
 const hasCriticalBurdenCrossed = (currentRisk: number, previousRisk: number): boolean =>
-  currentRisk > 85 && previousRisk <= 85;
+  currentRisk > 95 && previousRisk <= 95;
 
 const buildEventContext = (
   gameState: GameState,
@@ -332,7 +332,8 @@ const scoreActionForBot = (
   action: SubAction,
   risk: number,
   profile: BotProfile,
-  selectedGoal: LifeGoal | null | undefined
+  selectedGoal: LifeGoal | null | undefined,
+  stats?: Stats
 ): number => {
   const effect = action.effect || {};
   const positiveEnergy = Math.max(0, effect.energy ?? 0);
@@ -352,6 +353,11 @@ const scoreActionForBot = (
   const goalBonus = getGoalActionBonus(action.id, selectedGoal, profile);
 
   if (profile === 'RISKTAKER') {
+    const healthCritical = (stats?.health ?? 50) < 35;
+    const disciplineCritical = (stats?.discipline ?? 50) < 30;
+    const statFloorCritical = healthCritical || disciplineCritical;
+    const healthBonus = healthCritical ? positiveHealth * 3.0 : 0;
+    const disciplineBonus = disciplineCritical ? positiveDiscipline * 2.0 : 0;
     const growth = (
       positiveIntelligence * 2.1
       + positiveDiscipline * 1.7
@@ -360,8 +366,11 @@ const scoreActionForBot = (
       + positiveHealth * 0.9
       + (isProductiveAction(action) ? 6 : 0)
       + goalBonus
+      + healthBonus
+      + disciplineBonus
     );
-    const recoveryPenalty = isRecoveryAction(action) ? 25 : 0;
+    // Stat floor modunda recovery cezasi kaldirilir
+    const recoveryPenalty = (isRecoveryAction(action) && !statFloorCritical) ? 25 : 0;
     const riskPushBonus = risk > 70 ? 4 : 0;
     return growth + riskPushBonus - recoveryPenalty;
   }
@@ -420,7 +429,9 @@ const executeBotAction = (
     return { gameState, stats };
   }
 
-  if (profile === 'RISKTAKER' && risk > 70) {
+  const statFloorCritical = (stats?.health ?? 50) < 35 || (stats?.discipline ?? 50) < 30;
+
+  if (profile === 'RISKTAKER' && risk > 70 && !statFloorCritical) {
     const nonRecovery = actions.filter(action => !isRecoveryAction(action));
     const aggressivePool = nonRecovery.filter(action =>
       risktakerAllowedPrefixes.some(prefix => action.id.startsWith(prefix))
@@ -439,7 +450,7 @@ const executeBotAction = (
   const ranked = [...actions]
     .map(action => ({
       action,
-      score: scoreActionForBot(action, risk, profile, gameState.selectedGoal) + rng(),
+      score: scoreActionForBot(action, risk, profile, gameState.selectedGoal, stats) + rng(),
     }))
     .sort((a, b) => b.score - a.score)
     .map(item => item.action);
@@ -476,7 +487,9 @@ const isRecoveryChoice = (choice: Choice): boolean => {
   const text = (choice.text || '').toLowerCase();
   const feedback = (choice.feedback || '').toLowerCase();
   const energyGain = (choice.effect?.energy ?? 0) > 0;
+  const stressRelief = (choice.stressEffect ?? 0) < -5; // dogrudan stres dusuruyor
   return energyGain
+    || stressRelief
     || text.includes('dinlen')
     || text.includes('mola')
     || text.includes('uyu')
@@ -512,7 +525,9 @@ const scoreChoiceForRisk = (
   choice: Choice,
   risk: number,
   profile: BotProfile,
-  selectedGoal: LifeGoal | null | undefined
+  selectedGoal: LifeGoal | null | undefined,
+  gameState?: GameState,
+  stats?: Stats
 ): number => {
   const effect = choice.effect || {};
   const healing = Math.max(0, effect.health ?? 0) + Math.max(0, effect.energy ?? 0);
@@ -522,8 +537,22 @@ const scoreChoiceForRisk = (
   const goalBonus = getChoiceGoalBonus(choice, selectedGoal, profile);
 
   if (profile === 'RISKTAKER') {
-    const recoveryPenalty = isRecoveryChoice(choice) ? 18 : 0;
-    return (growth * 1.6) + (stability * 1.1) + (money * 1.3) + goalBonus - recoveryPenalty;
+    const stressCurrent = gameState?.stress?.current ?? 0;
+    const stressThreshold = gameState?.stress?.threshold ?? 70;
+    const stressCritical = stressCurrent >= stressThreshold * 0.70;
+
+    // Stat floor koruması: health < 35 veya discipline < 30 → acil toparlanma modu
+    const healthCritical = (stats?.health ?? 50) < 35;
+    const disciplineCritical = (stats?.discipline ?? 50) < 30;
+    if (healthCritical || disciplineCritical) {
+      const healthBonus = healthCritical ? Math.max(0, (effect.health ?? 0)) * 2.5 : 0;
+      const disciplineBonus = disciplineCritical ? Math.max(0, (effect.discipline ?? 0)) * 2 : 0;
+      return healing + stability + growth + money + goalBonus + healthBonus + disciplineBonus;
+    }
+
+    const recoveryMod = isRecoveryChoice(choice) ? (stressCritical ? 12 : -18) : 0;
+    // Risktaker hafif saglik korumasi — tamamen ihmal etmez
+    return (growth * 1.6) + (stability * 1.1) + (healing * 0.4) + (money * 1.3) + goalBonus + recoveryMod;
   }
 
   if (risk > 60) {
@@ -582,14 +611,21 @@ const pickEventChoice = (
   const weighted = resolvedChoices.map((choice, index) => ({
     choice,
     index,
-    score: scoreChoiceForRisk(choice, risk, profile, gameState.selectedGoal) + rng(),
+    score: scoreChoiceForRisk(choice, risk, profile, gameState.selectedGoal, gameState, stats) + rng(),
   }));
   weighted.sort((a, b) => b.score - a.score);
 
   if (profile === 'RISKTAKER' && risk > 70) {
-    const nonRecovery = weighted.filter(entry => !isRecoveryChoice(entry.choice));
-    const picked = nonRecovery[0] || weighted[0];
-    return { choice: picked.choice, choiceIndex: picked.index };
+    // Kritik streste veya stat floor modunda recovery filtrelemez
+    const stressCurrent = gameState.stress?.current ?? 0;
+    const stressThreshold = gameState.stress?.threshold ?? 70;
+    const stressCritical = stressCurrent >= stressThreshold * 0.70;
+    const statFloorCritical = (stats?.health ?? 50) < 35 || (stats?.discipline ?? 50) < 30;
+    if (!stressCritical && !statFloorCritical) {
+      const nonRecovery = weighted.filter(entry => !isRecoveryChoice(entry.choice));
+      const picked = nonRecovery[0] || weighted[0];
+      return { choice: picked.choice, choiceIndex: picked.index };
+    }
   }
 
   if (risk > 60) {

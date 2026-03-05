@@ -1,0 +1,231 @@
+﻿{
+    "meta":  {
+                 "executionDate":  "2026-03-03",
+                 "tester":  "Galile",
+                 "build":  "android-1.0.0(1)"
+             },
+    "results":  [
+                    {
+                        "id":  "TC-P0-01",
+                        "platform":  "ios",
+                        "status":  "PENDING",
+                        "evidence":  [
+
+                                     ],
+                        "defectId":  "",
+                        "notes":  ""
+                    },
+                    {
+                        "id":  "TC-P0-01",
+                        "platform":  "android",
+                        "status":  "FAIL",
+                        "evidence":  [
+                                         "reports/qa/evidence/android_launch_2026-03-03_00-35-32.png",
+                                         "reports/qa/evidence/TC-P0-01_android_pre_2026-03-03_00-47-10.png",
+                                         "reports/qa/evidence/TC-P0-01_android_fail_store_unavailable_2026-03-03_00-53-32.png"
+                                     ],
+                        "defectId":  "QA-P0-01",
+                        "notes":  "Purchase cannot start: paywall shows store unavailable; RevenueCat key missing (env empty, app.json uses TODO placeholder)"
+                    },
+                    {
+                        "id":  "TC-P0-02",
+                        "platform":  "ios",
+                        "status":  "PENDING",
+                        "evidence":  [
+
+                                     ],
+                        "defectId":  "",
+                        "notes":  ""
+                    },
+                    {
+                        "id":  "TC-P0-02",
+                        "platform":  "android",
+                        "status":  "PENDING",
+                        "evidence":  [
+
+                                     ],
+                        "defectId":  "",
+                        "notes":  ""
+                    },
+                    {
+                        "id":  "TC-P0-03",
+                        "platform":  "ios",
+                        "status":  "PENDING",
+                        "evidence":  [
+
+                                     ],
+                        "defectId":  "",
+                        "notes":  ""
+                    },
+                    {
+                        "id":  "TC-P0-03",
+                        "platform":  "android",
+                        "status":  "PENDING",
+                        "evidence":  [
+
+                                     ],
+                        "defectId":  "",
+                        "notes":  ""
+                    },
+                    {
+                        "id":  "TC-P0-04",
+                        "platform":  "ios",
+                        "status":  "PENDING",
+                        "evidence":  [
+
+                                     ],
+                        "defectId":  "",
+                        "notes":  ""
+                    },
+                    {
+                        "id":  "TC-P0-04",
+                        "platform":  "android",
+                        "status":  "PENDING",
+                        "evidence":  [
+
+                                     ],
+                        "defectId":  "",
+                        "notes":  ""
+                    },
+                    {
+                        "id":  "TC-P0-05",
+                        "platform":  "ios",
+                        "status":  "PENDING",
+                        "evidence":  [
+
+                                     ],
+                        "defectId":  "",
+                        "notes":  ""
+                    },
+                    {
+                        "id":  "TC-P0-05",
+                        "platform":  "android",
+                        "status":  "PENDING",
+                        "evidence":  [
+
+                                     ],
+                        "defectId":  "",
+                        "notes":  ""
+                    },
+                    {
+                        "id":  "TC-P0-06",
+                        "platform":  "ios",
+                        "status":  "PENDING",
+                        "evidence":  [
+
+                                     ],
+                        "defectId":  "",
+                        "notes":  ""
+                    },
+                    {
+                        "id":  "TC-P0-06",
+                        "platform":  "android",
+                        "status":  "PENDING",
+                        "evidence":  [
+
+                                     ],
+                        "defectId":  "",
+                        "notes":  ""
+                    },
+                    {
+                        "id":  "TC-P0-07",
+                        "platform":  "ios",
+                        "status":  "PENDING",
+                        "evidence":  [
+
+                                     ],
+                        "defectId":  "",
+                        "notes":  ""
+                    },
+                    {
+                        "id":  "TC-P0-07",
+                        "platform":  "android",
+                        "status":  "PENDING",
+                        "evidence":  [
+
+                                     ],
+                        "defectId":  "",
+                        "notes":  ""
+                    },
+                    {
+                        "id":  "TC-P0-08",
+                        "platform":  "ios",
+                        "status":  "PENDING",
+                        "evidence":  [
+
+                                     ],
+                        "defectId":  "",
+                        "notes":  ""
+                    },
+                    {
+                        "id":  "TC-P0-08",
+                        "platform":  "android",
+                        "status":  "PASS",
+                        "evidence":  [
+                                         "reports/qa/evidence/TC-P0-01_android_fail_store_unavailable_2026-03-03_00-53-32.png"
+                                     ],
+                        "defectId":  "",
+                        "notes":  "Missing-config safety verified at runtime; store unavailable handled without crash."
+                    },
+                    {
+                        "id":  "TC-P1-01",
+                        "platform":  "ios",
+                        "status":  "PENDING",
+                        "evidence":  [
+
+                                     ],
+                        "defectId":  "",
+                        "notes":  ""
+                    },
+                    {
+                        "id":  "TC-P1-01",
+                        "platform":  "android",
+                        "status":  "PENDING",
+                        "evidence":  [
+
+                                     ],
+                        "defectId":  "",
+                        "notes":  ""
+                    },
+                    {
+                        "id":  "TC-P1-02",
+                        "platform":  "ios",
+                        "status":  "PENDING",
+                        "evidence":  [
+
+                                     ],
+                        "defectId":  "",
+                        "notes":  ""
+                    },
+                    {
+                        "id":  "TC-P1-02",
+                        "platform":  "android",
+                        "status":  "PENDING",
+                        "evidence":  [
+
+                                     ],
+                        "defectId":  "",
+                        "notes":  ""
+                    },
+                    {
+                        "id":  "TC-P1-03",
+                        "platform":  "ios",
+                        "status":  "PENDING",
+                        "evidence":  [
+
+                                     ],
+                        "defectId":  "",
+                        "notes":  ""
+                    },
+                    {
+                        "id":  "TC-P1-03",
+                        "platform":  "android",
+                        "status":  "PENDING",
+                        "evidence":  [
+
+                                     ],
+                        "defectId":  "",
+                        "notes":  ""
+                    }
+                ]
+}

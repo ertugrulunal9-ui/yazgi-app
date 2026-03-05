@@ -537,6 +537,16 @@ export function validateSaveData(data: unknown): ValidationResult {
 }
 
 const VALID_PERSONALITY_AXES = ['openness', 'courage', 'empathy', 'patience', 'conformity'] as const;
+const clampNumber = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
+const STATS_BOUNDS: Record<keyof typeof DEFAULT_STATS, { min: number; max?: number; fallback: number }> = {
+  health: { min: 0, max: 200, fallback: DEFAULT_STATS.health },
+  intelligence: { min: 0, max: 200, fallback: DEFAULT_STATS.intelligence },
+  charisma: { min: 0, max: 200, fallback: DEFAULT_STATS.charisma },
+  discipline: { min: 0, max: 200, fallback: DEFAULT_STATS.discipline },
+  money: { min: 0, fallback: DEFAULT_STATS.money },
+  energy: { min: 0, max: 200, fallback: DEFAULT_STATS.energy },
+  familyRelation: { min: 0, max: 120, fallback: DEFAULT_STATS.familyRelation },
+};
 
 /**
  * Attempt to auto-repair common issues
@@ -584,6 +594,46 @@ function attemptAutoRepair(
       }
 
       const gs = repaired.gameState as Record<string, unknown>;
+
+      if (path.startsWith('gameState.schoolGrades.')) {
+        const subject = path.split('.')[2];
+        if (!gs.schoolGrades || typeof gs.schoolGrades !== 'object') {
+          gs.schoolGrades = {};
+        }
+
+        const schoolGrades = gs.schoolGrades as Record<string, unknown>;
+        const existingValue = schoolGrades[subject];
+        if (typeof existingValue === 'number') {
+          const clamped = clampNumber(existingValue, 0, 100);
+          if (clamped !== existingValue) {
+            schoolGrades[subject] = clamped;
+            repairLog.push(`Repaired ${path}: clamped to ${clamped}`);
+          }
+        } else {
+          schoolGrades[subject] = 50;
+          repairLog.push(`Repaired ${path}: set to default 50`);
+        }
+      }
+
+      if (path.startsWith('gameState.skills.')) {
+        const skill = path.split('.')[2];
+        if (!gs.skills || typeof gs.skills !== 'object') {
+          gs.skills = {};
+        }
+
+        const skills = gs.skills as Record<string, unknown>;
+        const existingValue = skills[skill];
+        if (typeof existingValue === 'number') {
+          const clamped = clampNumber(existingValue, 0, 100);
+          if (clamped !== existingValue) {
+            skills[skill] = clamped;
+            repairLog.push(`Repaired ${path}: clamped to ${clamped}`);
+          }
+        } else {
+          skills[skill] = 0;
+          repairLog.push(`Repaired ${path}: set to default 0`);
+        }
+      }
 
       // Missing array fields
       if (issue.code === 'invalid_type' && issue.expected === 'array') {
@@ -657,11 +707,23 @@ function attemptAutoRepair(
         repaired.stats = DEFAULT_STATS;
         repairLog.push(`Repaired stats: set to defaults`);
       }
-      if (path === 'stats.money') {
-        const statsObj = repaired.stats as Record<string, unknown>;
-        if (typeof statsObj.money === 'number' && statsObj.money < 0) {
-          statsObj.money = 0;
-          repairLog.push('Repaired stats.money: clamped to 0');
+
+      const statsObj = repaired.stats as Record<string, unknown>;
+      const statKey = path.split('.')[1] as keyof typeof DEFAULT_STATS;
+      const bounds = STATS_BOUNDS[statKey];
+      if (bounds) {
+        const currentValue = statsObj[statKey];
+        if (typeof currentValue === 'number' && Number.isFinite(currentValue)) {
+          const clamped = bounds.max === undefined
+            ? Math.max(bounds.min, currentValue)
+            : clampNumber(currentValue, bounds.min, bounds.max);
+          if (clamped !== currentValue) {
+            statsObj[statKey] = clamped;
+            repairLog.push(`Repaired ${path}: clamped to ${clamped}`);
+          }
+        } else {
+          statsObj[statKey] = bounds.fallback;
+          repairLog.push(`Repaired ${path}: set to default ${bounds.fallback}`);
         }
       }
     }

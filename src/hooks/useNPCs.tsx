@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useGame } from '../context/GameContext';
 import { NPC, NPCRole, SocialGroup, RelationshipMilestone, ScheduledEvent, Skills } from '../types';
 import { applySkillsToSocialCost, getTeamworkRelationMultiplier } from '../utils/gameUtils';
@@ -74,6 +74,10 @@ const createMilestoneScheduledEvent = (milestone: RelationshipMilestone, npcId: 
 
 export const useNPCs = () => {
   const { gameState, updateGameState, setGameState } = useGame();
+  const activeNpcs = useMemo(
+    () => gameState.npcs.filter(npc => npc.isRemoved !== true),
+    [gameState.npcs]
+  );
 
   // =================================================================
   // İLİŞKİ YÖNETİMİ
@@ -257,15 +261,15 @@ export const useNPCs = () => {
 
   /** Role'e göre NPC'leri getir */
   const getNPCsByRole = useCallback((role: NPCRole): NPC[] => {
-    return gameState.npcs.filter(npc => npc.role === role);
-  }, [gameState.npcs]);
+    return activeNpcs.filter(npc => npc.role === role);
+  }, [activeNpcs]);
 
   /** En yakın NPC'leri getir (relationship sırasına göre) */
   const getClosestNPCs = useCallback((count: number): NPC[] => {
-    return [...gameState.npcs]
+    return [...activeNpcs]
       .sort((a, b) => b.relationship - a.relationship)
       .slice(0, count);
-  }, [gameState.npcs]);
+  }, [activeNpcs]);
 
   /**
    * ID ile NPC getir
@@ -274,22 +278,22 @@ export const useNPCs = () => {
    * @important Çağıran taraf undefined kontrolü yapmalıdır
    */
   const getNPCById = useCallback((npcId: string): NPC | undefined => {
-    return gameState.npcs.find(npc => npc.id === npcId);
-  }, [gameState.npcs]);
+    return activeNpcs.find(npc => npc.id === npcId);
+  }, [activeNpcs]);
 
   /** Arkadaş sayısını getir */
   const getFriendCount = useCallback((): number => {
-    return gameState.npcs.filter(npc =>
+    return activeNpcs.filter(npc =>
       npc.role === 'FRIEND' || npc.role === 'BEST_FRIEND'
     ).length;
-  }, [gameState.npcs]);
+  }, [activeNpcs]);
 
   /** Düşman sayısını getir */
   const getEnemyCount = useCallback((): number => {
-    return gameState.npcs.filter(npc =>
+    return activeNpcs.filter(npc =>
       npc.role === 'RIVAL' || npc.role === 'ENEMY'
     ).length;
-  }, [gameState.npcs]);
+  }, [activeNpcs]);
 
   // =================================================================
   // ORTAK ANILAR
@@ -435,11 +439,11 @@ export const useNPCs = () => {
 
   /** NPC'leri başlat */
   const initializeNPCs = useCallback(() => {
-    if (gameState.npcs.length === 0) {
+    if (activeNpcs.length === 0) {
       const newNPCs = generateNPCs(gameState.age, gameState.turn);
       updateGameState({ npcs: newNPCs });
     }
-  }, [gameState.npcs.length, gameState.age, gameState.turn, updateGameState]);
+  }, [activeNpcs.length, gameState.age, gameState.turn, updateGameState]);
 
   /** NPC seç */
   const selectNPC = useCallback((npcId: string | null) => {
@@ -458,7 +462,7 @@ export const useNPCs = () => {
 
   return {
     // State
-    npcs: gameState.npcs,
+    npcs: activeNpcs,
     selectedNpcId: gameState.selectedNpcId,
     socialGroups: gameState.socialGroups,
     socialReputation: gameState.socialReputation,
@@ -507,7 +511,7 @@ export const useNPCs = () => {
       currentMoney?: number,
       skills?: Skills
     ) => {
-      const npc = gameState.npcs.find(n => n.id === npcId);
+      const npc = activeNpcs.find(n => n.id === npcId);
       if (!npc) return { success: false, message: 'NPC bulunamadı', cost: { energy: 0, money: 0 } };
 
       // Yaş kontrolü - etkileşim yaşa uygun mu?
@@ -615,7 +619,7 @@ export const useNPCs = () => {
 
       return { success: true, message, relationChange: actualIncrease, cost: adjustedCost };
     }, [
-      gameState.npcs,
+      activeNpcs,
       gameState.age,
       gameState.characterInfo,
       gameState.character,

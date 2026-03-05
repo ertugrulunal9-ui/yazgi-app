@@ -12,7 +12,7 @@ import type {
   PersonalityEffect, PersonalityRequirement,
   ChoiceType, PersonalityMomentumSignal,
 } from './personality';
-import type { NPCRole, NPC } from './npc';
+import type { NPCRole, NPC, SocialGroup } from './npc';
 import type { FateRollResult } from './fate';
 // Circular type import — GameState is optional field in EventContext; TS handles it fine.
 import type { GameState } from './game';
@@ -169,6 +169,20 @@ export interface Choice {
 
   /** Kalıcı yara izleri — bu seçim yapılırsa oyuncuya eklenir */
   grantScars?: Omit<ScarEffect, 'sourceAge'>[];
+
+  /** Kalıcı bayraklar — geri dönüşü olmayan kararların sonucu (Paket 6) */
+  setPermanentFlags?: Record<string, boolean>;
+
+  tags?: string[];
+  itemId?: string;
+  socialGroupAction?: {
+    type: 'CREATE' | 'JOIN' | 'LEAVE' | 'REPUTATION';
+    groupType?: SocialGroup['type'];
+    groupName?: string;
+    memberRoles?: NPCRole[];
+    reputationDelta?: number;
+  };
+  socialReputationChange?: number;
 }
 
 // =================================================================
@@ -230,6 +244,9 @@ export interface GameEvent {
   challengesAxis?: keyof Personality;
   /** Bu event yalnızca legacyUnlocks sistemiyle açıldıktan sonra görünür. */
   requiresUnlock?: boolean;
+
+  /** Kalıcı bayrak gereksinimleri — bu bayraklar set edilmiş olmalı (Paket 6) */
+  reqPermanentFlags?: Record<string, boolean>;
 }
 
 // =================================================================

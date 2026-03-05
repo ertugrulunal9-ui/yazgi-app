@@ -7,9 +7,9 @@ import { useEvents } from './useEvents';
 import { useFloatingTexts, usePlayerStats } from './useGameSelectors';
 import { getEventChoiceSet } from '../utils/gameStateAdapter';
 import { getChoicesToRender } from '../utils/eventChoiceFilter';
-import { devLog } from '../utils/devLogger';
-import { getRemainingRewardedAds, showContextualRewardedAd } from '../services/monetization';
+import { getRemainingRewardedAds, isPremium, showContextualRewardedAd } from '../services/monetization';
 import { logRewardedAdRequested, logRewardedAdResult } from '../utils/analyticsEvents';
+import { isFeatureEnabled } from '../config/featureFlags';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const MIN_RESULT_DISPLAY_TIME = 1000;
@@ -26,6 +26,7 @@ export const useEventScreenController = () => {
     resolveChoice,
     getCrisisRecoveryPreview,
     applyCrisisRecovery,
+    undoLastChoice,
   } = useEvents();
 
   const continueHandledRef = useRef(false);
@@ -35,8 +36,7 @@ export const useEventScreenController = () => {
   const [buttonEnabled, setButtonEnabled] = useState(false);
   const [crisisRecoveryLoading, setCrisisRecoveryLoading] = useState(false);
   const [crisisRecoveryClaimed, setCrisisRecoveryClaimed] = useState(false);
-
-  devLog.log('[EventScreen] Render - phase:', gameState.phase, 'hasEvent:', !!gameState.currentEvent, 'lastResult:', !!gameState.lastResult);
+  const [undoLoading, setUndoLoading] = useState(false);
 
   useEffect(() => {
     if (gameState.phase !== 'RESULT') return undefined;
@@ -48,7 +48,6 @@ export const useEventScreenController = () => {
 
     const timer = setTimeout(() => {
       setButtonEnabled(true);
-      devLog.log('[EventScreen] Continue button is now enabled');
     }, MIN_RESULT_DISPLAY_TIME);
 
     return () => clearTimeout(timer);
@@ -58,9 +57,11 @@ export const useEventScreenController = () => {
     if (gameState.phase !== 'RESULT') {
       setCrisisRecoveryLoading(false);
       setCrisisRecoveryClaimed(false);
+      setUndoLoading(false);
       return;
     }
     setCrisisRecoveryLoading(false);
+    setUndoLoading(false);
   }, [gameState.currentEvent?.id, gameState.phase]);
 
   useEffect(() => {
@@ -196,6 +197,108 @@ export const useEventScreenController = () => {
     }
   }, [applyCrisisRecovery, crisisRecoveryLoading, hasCrisisRecoveryOption, showFloatingText]);
 
+  const canUndo = useMemo(() => (
+    isFeatureEnabled('UNDO_MECHANIC') &&
+    gameState.phase === 'RESULT' &&
+    gameState.undoSnapshot != null
+  ), [gameState.phase, gameState.undoSnapshot]);
+
+  const handleUndo = useCallback(async () => {
+    if (!canUndo || undoLoading) return;
+
+    setUndoLoading(true);
+    try {
+      // Premium users undo directly without ad
+      if (isPremium()) {
+        const undone = undoLastChoice();
+        if (!undone) {
+          showFloatingText(
+            'Geri alma su an kullanilamiyor.',
+            SCREEN_WIDTH * 0.2,
+            118,
+            '#fda4af',
+            { animationType: 'bounce', duration: 1800 }
+          );
+        }
+        return;
+      }
+
+      // Free users need to watch a rewarded ad
+      const remainingBefore = getRemainingRewardedAds();
+      void logRewardedAdRequested({
+        placement: 'undo_choice',
+        rewardType: 'utility',
+        remainingBefore,
+      });
+
+      const adResult = await showContextualRewardedAd('undo_choice');
+      const remainingAfter = getRemainingRewardedAds();
+
+      if (!adResult.success) {
+        showFloatingText(
+          adResult.error || 'Reklam gosterilemedi.',
+          SCREEN_WIDTH * 0.2,
+          118,
+          '#fda4af',
+          { animationType: 'bounce', duration: 1800 }
+        );
+        void logRewardedAdResult({
+          placement: 'undo_choice',
+          rewardType: 'utility',
+          success: false,
+          remainingAfter,
+          errorMessage: adResult.error,
+        });
+        return;
+      }
+
+      const undone = undoLastChoice();
+      if (!undone) {
+        showFloatingText(
+          'Geri alma verisi bulunamadi.',
+          SCREEN_WIDTH * 0.2,
+          118,
+          '#fda4af',
+          { animationType: 'bounce', duration: 1800 }
+        );
+        void logRewardedAdResult({
+          placement: 'undo_choice',
+          rewardType: 'utility',
+          success: false,
+          remainingAfter,
+          errorMessage: 'Undo snapshot missing',
+        });
+        return;
+      }
+
+      void logRewardedAdResult({
+        placement: 'undo_choice',
+        rewardType: 'utility',
+        success: true,
+        amount: 1,
+        remainingAfter,
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown undo error';
+      showFloatingText(
+        'Geri alma sirasinda hata olustu.',
+        SCREEN_WIDTH * 0.2,
+        118,
+        '#fda4af',
+        { animationType: 'bounce', duration: 1800 }
+      );
+      void logRewardedAdResult({
+        placement: 'undo_choice',
+        rewardType: 'utility',
+        success: false,
+        remainingAfter: getRemainingRewardedAds(),
+        errorMessage,
+      });
+    } finally {
+      setUndoLoading(false);
+    }
+  }, [canUndo, undoLastChoice, undoLoading, showFloatingText]);
+
   const isBreakdownEvent = gameState.phase === 'EVENT' && gameState.currentEvent?.personalityCategory === 'BREAKDOWN';
   const isDramaticEvent = gameState.phase === 'EVENT' && gameState.currentEvent != null && (
     (gameState.currentEvent.difficulty ?? 0) >= 4 ||
@@ -267,11 +370,14 @@ export const useEventScreenController = () => {
     handleContinue,
     handleCrisisRecoveryAd,
     handleReroll,
+    canUndo,
+    handleUndo,
     selectedChoice: lastSelectedChoiceRef.current?.choice ?? null,
     canReroll: !!lastSelectedChoiceRef.current,
     buttonEnabled,
     hasCrisisRecoveryOption,
     crisisRecoveryLoading,
+    undoLoading,
     breakdownShakeX,
     isBreakdownEvent,
     isDramaticEvent,

@@ -11,6 +11,7 @@ import { Haptics } from '../../utils/haptics';
 import { Difficulty, GameState } from './MiniGameContainer';
 import seenQuestionsTracker from '../../utils/seenQuestionsTracker';
 import { balanceCorrectAnswerDistribution } from './questionOptionBalancer';
+import { buildFriendlyHardPool } from './difficultyTuning';
 
 type QuestionType = 'DATE' | 'PERSON' | 'EVENT' | 'PLACE' | 'ORDER';
 
@@ -202,7 +203,17 @@ const getQuestionPool = (age: number, difficulty: Difficulty): HistoryQuestion[]
     else if (age <= 11) ageGroup = 'MIDDLE';
     else ageGroup = 'ADVANCED';
 
-    return QUESTIONS[ageGroup][difficulty] || QUESTIONS[ageGroup]['MEDIUM'];
+    const pools = QUESTIONS[ageGroup];
+
+    if (difficulty !== 'HARD') {
+        return pools[difficulty] || pools.MEDIUM;
+    }
+
+    return buildFriendlyHardPool(
+        difficulty,
+        pools.MEDIUM || pools.EASY,
+        pools.HARD || pools.MEDIUM
+    );
 };
 
 const getQuestionTypeEmoji = (type: QuestionType): string => {

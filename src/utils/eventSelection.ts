@@ -155,7 +155,7 @@ const meetsSkills = (
 
 const meetsNpcRole = (reqNPCRole: NPCRole | undefined, npcs: EventContext['npcs']): boolean => {
   if (!reqNPCRole) return true;
-  return Boolean(npcs?.some(npc => npc.role === reqNPCRole));
+  return Boolean(npcs?.some(npc => npc.role === reqNPCRole && !npc.isRemoved));
 };
 
 const meetsMemory = (
@@ -222,6 +222,13 @@ const isEventEligibleWithSets = (
   if (!meetsNpcRole(event.reqNPCRole, context.npcs)) return false;
   if (!event.isRepeatable && allSeenSet.has(event.id)) return false;
   if (event.isRepeatable && recentSet.has(event.id)) return false;
+  // Paket 6: kalıcı bayrak gereksinimleri
+  if (event.reqPermanentFlags) {
+    const flags = context.gameState?.permanentFlags ?? {};
+    for (const [key, required] of Object.entries(event.reqPermanentFlags)) {
+      if (Boolean(flags[key]) !== required) return false;
+    }
+  }
   // Legacy unlock: event yalnızca unlockedEventIds listesinde varsa göster
   if (event.requiresUnlock) {
     const unlocked = context.gameState?.metaProgression?.unlockedEventIds ?? [];

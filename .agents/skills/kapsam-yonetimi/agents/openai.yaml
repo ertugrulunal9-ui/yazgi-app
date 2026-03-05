@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kapsam Yonetimi"
+  short_description: "MVP kapsamini netlestir, 4 haftalik sprint plani cikar"
+  default_prompt: "Use $kapsam-yonetimi to prioritize my current and planned features and build a 4-week MVP sprint roadmap."

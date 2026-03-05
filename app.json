@@ -29,7 +29,7 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "androidAppId": "ca-app-pub-7452780443706539~6798586178",
           "iosAppId": "ca-app-pub-3940256099942544~1458002511"
         }
       ],
@@ -54,14 +54,24 @@
     "extra": {
       "_admob_note": "LAUNCH CHECKLIST: Replace test app IDs in plugins.react-native-google-mobile-ads AND fill ad unit IDs below with production values from AdMob console (admob.google.com)",
       "admob": {
-        "androidRewardedUnitId": "TODO_REPLACE_WITH_ADMOB_ANDROID_REWARDED_UNIT_ID",
+        "androidRewardedUnitId": "ca-app-pub-7452780443706539/8447534175",
         "iosRewardedUnitId": "TODO_REPLACE_WITH_ADMOB_IOS_REWARDED_UNIT_ID",
-        "androidInterstitialUnitId": "TODO_REPLACE_WITH_ADMOB_ANDROID_INTERSTITIAL_UNIT_ID",
+        "androidInterstitialUnitId": "ca-app-pub-7452780443706539/7601150500",
         "iosInterstitialUnitId": "TODO_REPLACE_WITH_ADMOB_IOS_INTERSTITIAL_UNIT_ID"
       },
       "monetization": {
         "interstitialSessionLimit": 2,
         "interstitialCooldownMs": 180000
+      },
+      "revenueCat": {
+        "iosApiKey": "TODO_REPLACE_WITH_REVENUECAT_IOS_API_KEY",
+        "androidApiKey": "goog_VKJbyVvVAJNrTCYOOHKPkFUaeii"
+      },
+      "premiumRollout": {
+        "_note": "Kill-switch and operation gates for dark-launch control",
+        "killSwitch": false,
+        "purchasesEnabled": true,
+        "restoreEnabled": true
       },
       "cloudSync": {
         "enabled": false

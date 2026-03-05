@@ -302,7 +302,7 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
             </Text>
           </View>
           <Text style={{ color: ensureTextContrast('#15803d', theme.surfaceBase, 4.5), fontWeight: '700', fontSize: 18 }}>
-            \u20BA{stats.money}
+            {'\u20BA'}{Math.floor(stats.money).toLocaleString('tr-TR')}
           </Text>
         </View>
       </CharacterSection>

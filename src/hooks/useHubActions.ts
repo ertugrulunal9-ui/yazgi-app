@@ -12,7 +12,6 @@ import {
   logTraitFormed,
 } from '../utils/analyticsEvents';
 import { createTraitShareText, formatShareMessage } from '../utils/shareUtils';
-import { isFeatureEnabled } from '../config/featureFlags';
 
 type ToastType = 'success' | 'error' | 'info' | 'warning';
 type TranslateFn = (
@@ -32,10 +31,6 @@ interface UseHubActionsOptions {
   updateGameState: (updates: GameStateUpdate) => void;
   claimEnergyRecoveryAd: () => Promise<void>;
   promptExamPrepAndStartExam: (examType: ExamGameType) => void;
-  promptShoppingDiscount: (
-    action: SubAction,
-    executeAction: (actionToRun: SubAction) => void
-  ) => void;
   meetNewNPC: () => { success: boolean; npc?: { name: string } };
   onCloseBottomSheet: () => void;
   onTraitProgressUpdates: (traitIds: string[]) => void;
@@ -59,7 +54,6 @@ export const useHubActions = ({
   updateGameState,
   claimEnergyRecoveryAd,
   promptExamPrepAndStartExam,
-  promptShoppingDiscount,
   meetNewNPC,
   onCloseBottomSheet,
   onTraitProgressUpdates,
@@ -200,16 +194,8 @@ export const useHubActions = ({
     buttonPress();
     selectionHaptic();
 
-    const isShoppingAction = action.id.startsWith('shopping_');
-    const shoppingDiscountEnabled = isFeatureEnabled('AD_SHOPPING_DISCOUNT');
-
-    if (!isShoppingAction || !shoppingDiscountEnabled) {
-      executeHubAction(action);
-      return;
-    }
-
-    promptShoppingDiscount(action, executeHubAction);
-  }, [executeHubAction, promptShoppingDiscount]);
+    executeHubAction(action);
+  }, [executeHubAction]);
 
   return {
     executeHubAction,

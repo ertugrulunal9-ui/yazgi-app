@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Alert, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import ViewShot from 'react-native-view-shot';
+import type ViewShot from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { useGame } from '../context/GameContext';
 import { useMetaProgression } from '../context/MetaProgressionContext';
@@ -11,6 +11,7 @@ import { getTraitName } from '../data/traits';
 import {
   EndingGoal,
   calculateAllGoalScores,
+  getEndingHints,
   generateFutureVision,
   resolveEnding,
   TOTAL_ENDING_COUNT,
@@ -30,9 +31,9 @@ import {
   logRewardedAdResult,
   logShareEvent,
 } from '../utils/analyticsEvents';
-import { LifeGoal, NPC, PersonalityTendency } from '../types';
+import { LifeGoal, PersonalityTendency } from '../types';
 import { normalizePersonalityState } from '../systems/PersonalityMomentumEngine';
-import { ShareCard } from '../components/ShareCard';
+import { RunCard } from '../components/RunCard';
 import {
   FadeInDownView,
   FadeInUpView,
@@ -51,7 +52,6 @@ interface GameOverScreenProps {
   theme: ReturnType<typeof getThemeTokens>;
   metrics: ReturnType<typeof getDensityMetrics>;
   onRestart: () => void;
-  npcs?: NPC[];
 }
 
 const getTierBadgeColor = (tier: string): string => {
@@ -70,12 +70,26 @@ const ENDING_GOAL_TO_LIFE_GOAL: Record<EndingGoal, LifeGoal | null> = {
   BALANCED: null,
 };
 
-export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, onRestart, npcs: npcsProp }) => {
+const LIFE_GOAL_LABELS: Record<LifeGoal, string> = {
+  ACADEMIC: 'Akademik',
+  ATHLETIC: 'Atletik',
+  CREATIVE: 'Yaratici',
+  WEALTH: 'Finansal',
+  SOCIAL: 'Sosyal',
+};
+
+const firstSentence = (value: string): string => {
+  const normalized = value.replace(/\s+/g, ' ').trim();
+  if (!normalized) return '';
+  const match = normalized.match(/^[^.!?]+[.!?]?/);
+  return match ? match[0].trim() : normalized;
+};
+
+export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, onRestart }) => {
   const { gameState, playerName, stats } = useGame();
   const { t } = useUI();
   const { metaProgression } = useMetaProgression();
   const safeMeta = metaProgression ?? createInitialMetaProgression();
-  const npcs = npcsProp ?? gameState.npcs;
 
   const endingResolution = useMemo(() => (
     resolveEnding({
@@ -169,11 +183,6 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
     return '\u{1F325}\uFE0F';
   }, [futureVision.mood]);
 
-  const highlightedRelations = useMemo(() => {
-    const rolePriority: NPC['role'][] = ['PARTNER', 'BEST_FRIEND', 'CRUSH', 'FRIEND', 'RIVAL', 'ENEMY'];
-    return rolePriority.flatMap(role => npcs.filter(npc => npc.role === role)).slice(0, 4);
-  }, [npcs]);
-
   const shareCardRef = useRef<ViewShot | null>(null);
   const [isSharing, setIsSharing] = useState(false);
   const [altEndingUnlocked, setAltEndingUnlocked] = useState(false);
@@ -184,6 +193,21 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
     discovered.add(endingResolution.id);
     return discovered.size;
   }, [endingResolution.id, safeMeta.lifetimeEndingIds]);
+
+  const dominantGoalPath = useMemo<LifeGoal>(() => {
+    const mapped = ENDING_GOAL_TO_LIFE_GOAL[endingResolution.goal];
+    return mapped ?? gameState.selectedGoal ?? 'SOCIAL';
+  }, [endingResolution.goal, gameState.selectedGoal]);
+
+  const endingHints = useMemo(() => (
+    getEndingHints(safeMeta, compatibilityScore, dominantGoalPath)
+  ), [safeMeta, compatibilityScore, dominantGoalPath]);
+
+  const lifeStorySummary = useMemo(() => {
+    const firstParagraph = lifeStory.paragraphs[0] || '';
+    const sentence = firstSentence(firstParagraph);
+    return sentence || 'Hayatim inisli cikisli bir yoldu.';
+  }, [lifeStory.paragraphs]);
 
   const handleShareLife = async () => {
     if (isSharing) return;
@@ -342,6 +366,36 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
             </Text>
           </FadeInUpView>
 
+          <FadeInUpView delay={100}>
+            <ShimmerButton
+              onPress={handleShareLife}
+              disabled={isSharing}
+              style={{
+                paddingVertical: 12,
+                paddingHorizontal: 14,
+                borderRadius: 12,
+                alignItems: 'center',
+                overflow: 'hidden',
+                backgroundColor: `${tierColor}22`,
+                borderWidth: 1,
+                borderColor: tierColor,
+                marginBottom: 12,
+                opacity: isSharing ? 0.7 : 1,
+              }}
+            >
+              <Text style={{
+                color: tierColor,
+                fontWeight: '800',
+                fontFamily: theme.fontHeading,
+                fontSize: 14,
+              }}>
+                {isSharing
+                  ? t('ui.cardPreparing', undefined, 'Kart Hazirlaniyor...')
+                  : t('buttons.shareLife', undefined, 'Hayatini Paylas')}
+              </Text>
+            </ShimmerButton>
+          </FadeInUpView>
+
           <FadeInUpView delay={110}>
             <Text style={{
               color: theme.textSecondary,
@@ -419,6 +473,37 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
               </View>
             </View>
           </FadeInUpView>
+
+          {endingHints.length > 0 && (
+            <FadeInUpView delay={320}>
+              <View style={{ marginBottom: 16 }}>
+                <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
+                  {t('endings.discoveryHints', undefined, 'Bir Sonraki Kesif Ipuclari')}
+                </Text>
+                {endingHints.map((hint, index) => (
+                  <View
+                    key={`${hint.goalPath}_${hint.tier}_${index}`}
+                    style={{
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      backgroundColor: theme.surfaceOverlay,
+                      borderRadius: 10,
+                      paddingVertical: 8,
+                      paddingHorizontal: 10,
+                      marginBottom: 8,
+                    }}
+                  >
+                    <Text style={{ color: theme.textPrimary, fontWeight: '700', fontSize: 13 }}>
+                      {LIFE_GOAL_LABELS[hint.goalPath]} {hint.tier}
+                    </Text>
+                    <Text style={{ color: theme.textSecondary, marginTop: 2, fontSize: 12 }}>
+                      %{hint.progressPercent} yaklastin
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </FadeInUpView>
+          )}
 
           <FadeInUpView delay={340}>
             <View style={{ marginBottom: 16 }}>
@@ -752,35 +837,6 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
             </FadeInUpView>
           )}
 
-          <FadeInUpView delay={500}>
-            <ShimmerButton
-              onPress={handleShareLife}
-              disabled={isSharing}
-              style={{
-                padding: metrics.pad,
-                borderRadius: 12,
-                alignItems: 'center',
-                overflow: 'hidden',
-                backgroundColor: theme.surfaceOverlay,
-                borderWidth: 1,
-                borderColor: theme.border,
-                marginBottom: 10,
-                opacity: isSharing ? 0.7 : 1,
-              }}
-            >
-              <Text style={{
-                color: theme.textPrimary,
-                fontWeight: '700',
-                fontFamily: theme.fontHeading,
-                fontSize: 15,
-              }}>
-                {isSharing
-                  ? t('ui.cardPreparing', undefined, 'Kart Hazirlaniyor...')
-                  : t('buttons.shareLife', undefined, 'Hayatimi Paylas')}
-              </Text>
-            </ShimmerButton>
-          </FadeInUpView>
-
           <FadeInUpView delay={540}>
             <ShimmerButton
               onPress={handleRestart}
@@ -809,26 +865,18 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
     </SafeAreaView>
 
     <View style={{ position: 'absolute', left: -9999, top: -9999 }}>
-      <ViewShot
+      <RunCard
         ref={shareCardRef}
-        options={{ format: 'png', quality: 1, result: 'tmpfile' }}
-      >
-        <ShareCard
-          theme={theme}
-          playerName={playerName}
-          age={gameState.age}
-          zodiacSign={gameState.characterInfo?.zodiacSign}
-          tier={tier}
-          endingTitle={result.title}
-          traitIds={gameState.traits}
-          legacyLevel={safeMeta.legacyLevel}
-          closestNpcName={highlightedRelations.length > 0 ? highlightedRelations[0].name : undefined}
-          topMemories={(gameState.memories || [])
-            .filter(m => m.weight === 'HIGH')
-            .slice(0, 2)
-            .map(m => m.eventId.replace(/_/g, ' '))}
-        />
-      </ViewShot>
+        theme={theme}
+        endingTier={tier}
+        endingTitle={result.title}
+        summary={lifeStorySummary}
+        topMemories={(gameState.memories || [])
+          .filter(memory => memory.weight === 'HIGH' || memory.weight === 'MEDIUM')
+          .slice(0, 3)
+          .map(memory => memory.eventId.replace(/_/g, ' '))}
+        finalStats={stats}
+      />
     </View>
     </View>
   );

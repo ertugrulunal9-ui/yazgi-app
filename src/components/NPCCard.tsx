@@ -293,7 +293,6 @@ const arePropsEqual = (prev: NPCCardProps, next: NPCCardProps): boolean => {
     if (prev.npc.personality !== next.npc.personality) return false;
     if (prev.npc.age !== next.npc.age) return false;
     if (prev.npc.gender !== next.npc.gender) return false;
-
     // Traits array comparison (shallow)
     if (prev.npc.traits.length !== next.npc.traits.length) return false;
     for (let i = 0; i < prev.npc.traits.length; i++) {

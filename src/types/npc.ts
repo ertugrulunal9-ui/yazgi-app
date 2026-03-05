@@ -49,4 +49,6 @@ export interface NPC {
   sharedMemories: string[];
   isInPlayerGroup: boolean;
   groupId?: string;
+  /** true ise NPC kalıcı olarak oyundan çıkmış (taşınma, ölüm, vb.) */
+  isRemoved?: boolean;
 }

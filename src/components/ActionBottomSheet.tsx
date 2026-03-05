@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import { devLog } from '../utils/devLogger';
 import {
   ActionCategory,
   SubAction,
@@ -177,12 +176,8 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
     return `${effectiveEnergyCost} enerji harcar ve karakterini etkiler`;
   }, []);
 
-  // Debug log on every render
-  devLog.log('[ActionBottomSheet] RENDER - visible:', visible, 'category:', category?.title, 'internalVisible:', internalVisible);
-
   // Sync internal state with props
   useEffect(() => {
-    devLog.log('[ActionBottomSheet] useEffect - visible changed to:', visible);
     if (visible) {
       setInternalVisible(true);
       setOverlayEnabled(false);
@@ -201,7 +196,6 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
     if (!visible) return;
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      devLog.log('[ActionBottomSheet] Back button pressed');
       onClose();
       return true;
     });
@@ -210,25 +204,15 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
   }, [visible, onClose]);
 
   const handleActionPress = useCallback((action: SubAction) => {
-    devLog.log('[ActionBottomSheet] ========== PRESS ==========');
-    devLog.log('[ActionBottomSheet] Action:', action.text);
-
     const state = resolveActionState(action);
 
-    devLog.log('[ActionBottomSheet] Age:', currentAge, 'Required:', state.effectiveMinAge);
-    devLog.log('[ActionBottomSheet] Energy:', currentEnergy, 'Cost:', state.effectiveEnergyCost);
-
     if (!state.isLocked) {
-      devLog.log('[ActionBottomSheet] >>> Calling onSelectAction <<<');
       onSelectAction(action);
-    } else {
-      devLog.log('[ActionBottomSheet] LOCKED');
     }
   }, [currentAge, currentEnergy, onSelectAction, resolveActionState]);
 
   // Don't render if not visible
   if (!internalVisible || !category) {
-    devLog.log('[ActionBottomSheet] Not rendering - internalVisible:', internalVisible, 'category:', !!category);
     return null;
   }
 
@@ -256,7 +240,6 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
     return (
       <Pressable
         onPress={() => {
-          devLog.log('[ActionBottomSheet] Pressable onPress:', action.text);
           handleActionPress(action);
         }}
         style={({ pressed }) => [
@@ -334,8 +317,6 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
     );
   };
 
-  devLog.log('[ActionBottomSheet] Rendering full component');
-
   return (
     <View style={styles.container}>
       {/* Overlay - tap to close */}
@@ -343,7 +324,6 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
         style={styles.overlay}
         pointerEvents={overlayEnabled ? 'auto' : 'none'}
         onPress={() => {
-          devLog.log('[ActionBottomSheet] Overlay pressed - closing');
           onClose();
         }}
         accessibilityRole="button"
@@ -380,7 +360,6 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
           </View>
           <TouchableOpacity
             onPress={() => {
-              devLog.log('[ActionBottomSheet] Close button pressed');
               onClose();
             }}
             style={[styles.closeButton, { backgroundColor: theme.surfaceBase || '#111827' }]}

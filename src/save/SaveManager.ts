@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { devLog } from '../utils/devLogger';
+import { isPremium as hasPremiumSubscription } from '../services/subscriptionManager';
 import { GameState, MetaProgression, Stats } from '../types';
 import { createInitialMetaProgression } from '../utils/metaProgression';
 import {
@@ -15,6 +16,7 @@ import {
   SAVE_SCHEMA_VERSION,
   SAVE_EXPORT_VERSION,
   MAX_BACKUP_HISTORY,
+  MAX_FREE_SLOTS,
   MAX_TOTAL_SLOTS,
   AUTO_SAVE_SLOT_ID,
   createEmptySlot,
@@ -356,7 +358,7 @@ class SaveManager {
         status: 'offline',
         pendingSlots: [],
       },
-      isPremiumUnlocked: true,
+      isPremiumUnlocked: false,
       adsDisabled: false,
     };
     this.metaProgression = createInitialMetaProgression();
@@ -758,6 +760,13 @@ class SaveManager {
   private async ensureEncryptionInitialized(): Promise<void> {
     if (this.encryptionInitAttempted) return;
     this.encryptionInitAttempted = true;
+    // V4+: encryption disabled for writes. These fields & methods are retained
+    // only for backward-compatible decryption of pre-V4 encrypted saves.
+    void this.encryptionActive;
+    void this.encryptionProvider;
+    void this.encryptWithWebCrypto;
+    void this.encryptWithCryptoJs;
+    void this.encryptForStorage;
 
     const [secureStore, cryptoJs] = await Promise.all([getSecureStore(), getCryptoJs()]);
     if (!secureStore) {
@@ -923,25 +932,7 @@ class SaveManager {
   }
 
   private async encryptForStorage(rawValue: string): Promise<string> {
-    await this.ensureEncryptionInitialized();
-    if (!this.encryptionActive || !this.encryptionSecret) {
-      return rawValue;
-    }
-
-    try {
-      if (this.encryptionProvider === 'webcrypto') {
-        const encrypted = await this.encryptWithWebCrypto(rawValue, this.encryptionSecret);
-        if (encrypted) return encrypted;
-      }
-
-      if (this.encryptionProvider === 'cryptojs' || this.encryptionProvider === 'webcrypto') {
-        const encrypted = await this.encryptWithCryptoJs(rawValue, this.encryptionSecret);
-        if (encrypted) return encrypted;
-      }
-    } catch (error) {
-      console.error('Save payload encryption failed:', error);
-    }
-
+    // V4+: encryption removed for offline single-player game. Plaintext only.
     return rawValue;
   }
 
@@ -970,11 +961,8 @@ class SaveManager {
   }
 
   private async writeProtectedStorageItem(key: string, value: string): Promise<void> {
-    const storedValue = await this.encryptForStorage(value);
-    if (!this.isEncryptedStoragePayload(storedValue) && !IS_DEV_RUNTIME) {
-      throw new Error(`Encrypted storage required in production for key: ${key}`);
-    }
-    await this.storage.setItem(key, storedValue);
+    // V4+: encryption disabled, write plaintext directly.
+    await this.storage.setItem(key, value);
   }
 
   private async readProtectedStorageItem(key: string): Promise<string | null> {
@@ -983,17 +971,10 @@ class SaveManager {
       return null;
     }
 
+    // Backward compat: if stored value is encrypted (pre-V4), decrypt it.
     const plainValue = await this.decryptFromStorage(rawValue);
     if (plainValue === null) {
       return null;
-    }
-
-    if (!this.isEncryptedStoragePayload(rawValue) && this.encryptionActive) {
-      try {
-        await this.writeProtectedStorageItem(key, plainValue);
-      } catch (error) {
-        devLog.warn(`Failed to migrate plaintext storage item to encrypted key: ${key}`, error);
-      }
     }
 
     return plainValue;
@@ -1110,7 +1091,6 @@ class SaveManager {
   async initialize(): Promise<void> {
     try {
       await this.ensureIntegrityInitialized();
-      await this.ensureEncryptionInitialized();
       await this.loadManagerState();
       await this.loadMetaProgression();
 
@@ -1132,11 +1112,11 @@ class SaveManager {
 
   async getAllSlotMetadata(): Promise<SaveSlotMetadata[]> {
     const metadata: SaveSlotMetadata[] = [];
-    const maxSlots = MAX_TOTAL_SLOTS;
+    const maxSlots = this.getAvailableSlots();
 
     for (let i = 1; i <= maxSlots; i++) {
       const slotId = i.toString();
-      const meta = this.state.metadata[slotId] || createEmptySlot(slotId, false);
+      const meta = this.state.metadata[slotId] || createEmptySlot(slotId, this.isPremiumSlot(slotId));
       metadata.push(meta);
     }
 
@@ -1196,6 +1176,11 @@ class SaveManager {
     options?: { importedMetadata?: Partial<SaveSlotMetadata> }
   ): Promise<boolean> {
     try {
+      if (!this.canAccessSlot(slotId)) {
+        devLog.warn(`Blocked save to premium slot ${slotId} without active premium entitlement.`);
+        return false;
+      }
+
       // Check if slot is already being saved
       if (this.saveLocks.get(slotId)) {
         devLog.log(`Slot ${slotId} is locked, queueing save...`);
@@ -1216,7 +1201,7 @@ class SaveManager {
       // Acquire lock
       this.saveLocks.set(slotId, true);
 
-      const isPremium = false;
+      const isPremium = this.isPremiumSlot(slotId);
 
       const existingMeta = {
         ...(this.state.metadata[slotId] || {}),
@@ -1313,6 +1298,11 @@ class SaveManager {
 
   async loadFromSlot(slotId: string): Promise<SaveSlotData | null> {
     try {
+      if (!this.canAccessSlot(slotId)) {
+        devLog.warn(`Blocked load from premium slot ${slotId} without active premium entitlement.`);
+        return null;
+      }
+
       const { rawData, keyVersion } = await this.readSlotDataWithFallback(slotId);
       if (!rawData) return null;
 
@@ -1633,7 +1623,22 @@ class SaveManager {
   }
 
   getAvailableSlots(): number {
-    return MAX_TOTAL_SLOTS;
+    return this.hasPremiumSlotsEnabled() ? MAX_TOTAL_SLOTS : MAX_FREE_SLOTS;
+  }
+
+  private hasPremiumSlotsEnabled(): boolean {
+    return hasPremiumSubscription();
+  }
+
+  private isPremiumSlot(slotId: string): boolean {
+    const numeric = Number.parseInt(slotId, 10);
+    return Number.isFinite(numeric) && numeric > MAX_FREE_SLOTS;
+  }
+
+  private canAccessSlot(slotId: string): boolean {
+    if (slotId === AUTO_SAVE_SLOT_ID) return true;
+    if (!this.isPremiumSlot(slotId)) return true;
+    return this.hasPremiumSlotsEnabled();
   }
 
   private async createBackup(slotId: string, saveData: SaveSlotData): Promise<void> {

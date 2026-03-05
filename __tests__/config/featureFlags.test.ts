@@ -57,14 +57,14 @@ describe('featureFlags', () => {
       incidentMode: false,
       flags: {
         PARTIAL_ENERGY_RECOVERY: true,
-        AD_TRAIT_BOOST: true,
+        MICRO_GOALS: false,
       },
     });
 
     await featureFlags.initializeFeatureFlags();
 
     expect(featureFlags.isFeatureEnabled('PARTIAL_ENERGY_RECOVERY')).toBe(true);
-    expect(featureFlags.isFeatureEnabled('AD_TRAIT_BOOST')).toBe(true);
+    expect(featureFlags.isFeatureEnabled('MICRO_GOALS')).toBe(false);
     expect(featureFlags.isFeatureEnabled('VARIETY_BONUS')).toBe(false);
     expect(remoteConfigInstance?.setConfigSettings).toHaveBeenCalledWith({
       minimumFetchIntervalMillis: 300000,
@@ -98,13 +98,17 @@ describe('featureFlags', () => {
       PARTIAL_ENERGY_RECOVERY: false,
       VARIETY_BONUS: false,
       REPETITION_PENALTY: false,
-      AD_RELATIONSHIP_BOOST: false,
-      AD_TRAIT_BOOST: false,
-      AD_SHOPPING_DISCOUNT: false,
-      AD_REPORT_PREVIEW: false,
       CONSUMABLE_ITEMS: false,
       CAREER_PATH_ACTIONS: false,
       LEGACY_PERKS: false,
+      MILESTONE_SUMMARY: true,
+      PERMANENT_FLAGS: false,
+      FATE_TRANSPARENCY: true,
+      ECONOMY_DEPTH: true,
+      MICRO_GOALS: true,
+      NPC_RICH_FEEDBACK: true,
+      UNDO_MECHANIC: true,
+      PREMIUM_SUBSCRIPTION: false,
     });
   });
 });

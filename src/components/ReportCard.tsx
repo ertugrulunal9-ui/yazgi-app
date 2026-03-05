@@ -17,13 +17,14 @@ const ReportCard = React.memo<ReportCardProps>(({ grades, family, onClose, age, 
   useRuntimeLocale();
 
   // Modal yerine absolute positioning kullan (Android uyumluluğu için)
-  if (!visible) return null;
 
   const statusBarHeight = Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0;
   const average = useMemo(() =>
     Math.round(calculateGradeAverage(grades)),
     [grades]
   );
+
+  if (!visible) return null;
 
   const getGradeColor = (score: number) => {
     if (score >= 85) return '#10b981'; // Yeşil - Mükemmel

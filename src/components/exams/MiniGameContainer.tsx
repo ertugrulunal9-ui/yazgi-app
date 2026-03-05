@@ -322,27 +322,27 @@ function getQuestionCount(difficulty: Difficulty, age: number): number {
     let base: number;
     if (age <= 8) {
         // İlkokul 1-2
-        base = difficulty === 'EASY' ? 4 : difficulty === 'MEDIUM' ? 5 : 6;
+        base = difficulty === 'EASY' ? 4 : difficulty === 'MEDIUM' ? 5 : 5;
     } else if (age <= 11) {
         // İlkokul 3-5
-        base = difficulty === 'EASY' ? 5 : difficulty === 'MEDIUM' ? 7 : 8;
+        base = difficulty === 'EASY' ? 5 : difficulty === 'MEDIUM' ? 7 : 7;
     } else if (age <= 14) {
         // Ortaokul
-        base = difficulty === 'EASY' ? 6 : difficulty === 'MEDIUM' ? 8 : 10;
+        base = difficulty === 'EASY' ? 6 : difficulty === 'MEDIUM' ? 8 : 9;
     } else {
         // Lise
-        base = difficulty === 'EASY' ? 6 : difficulty === 'MEDIUM' ? 10 : 12;
+        base = difficulty === 'EASY' ? 6 : difficulty === 'MEDIUM' ? 10 : 11;
     }
 
     return base;
 }
 
 function getTimeLimit(difficulty: Difficulty): number {
-    // Soru başına ortalama süre: EASY ~15sn, MEDIUM ~10sn, HARD ~12sn
+    // HARD modu kullanıcı dostu olacak şekilde daha geniş süre penceresi alır
     switch (difficulty) {
         case 'EASY': return 90;    // 5-6 soru için 90 saniye
         case 'MEDIUM': return 90;  // 8-9 soru için 90 saniye
-        case 'HARD': return 120;   // 10-11 soru için 120 saniye
+        case 'HARD': return 165;   // Azaltılmış soru yüküyle daha rahat tempo
     }
 }
 

@@ -2,6 +2,7 @@ import {
   CareerResult,
   GameState,
   LifeGoal,
+  MetaProgression,
   SchoolGrades,
   Skills,
   Stats,
@@ -641,6 +642,61 @@ export const calculateAllGoalScores = (
     }))
     .sort((a, b) => b.score - a.score);
 };
+
+export interface EndingHint {
+  goalPath: LifeGoal;
+  tier: CareerResult['type'];
+  progressPercent: number;
+}
+
+const GOAL_PATHS: LifeGoal[] = ['ACADEMIC', 'ATHLETIC', 'CREATIVE', 'WEALTH', 'SOCIAL'];
+const TIER_ORDER: CareerResult['type'][] = ['FAILURE', 'NORMAL', 'SUCCESS', 'LEGENDARY'];
+const TIER_TARGET_SCORE: Record<CareerResult['type'], number> = {
+  FAILURE: 20,
+  NORMAL: 45,
+  SUCCESS: 65,
+  LEGENDARY: 85,
+};
+
+const getNextTierToChase = (
+  bestTier: CareerResult['type'] | undefined
+): CareerResult['type'] | null => {
+  if (!bestTier) return 'NORMAL';
+  const idx = TIER_ORDER.indexOf(bestTier);
+  if (idx < 0 || idx >= TIER_ORDER.length - 1) return null;
+  return TIER_ORDER[idx + 1];
+};
+
+export function getEndingHints(
+  metaProgression: MetaProgression,
+  currentScore: number,
+  dominantGoal: LifeGoal
+): EndingHint[] {
+  const goalCompletions = metaProgression.goalCompletions ?? {};
+  const normalizedScore = clamp(currentScore, 0, 100);
+
+  const candidates: EndingHint[] = GOAL_PATHS.flatMap(goalPath => {
+    const bestTier = goalCompletions[goalPath] as CareerResult['type'] | undefined;
+    const nextTier = getNextTierToChase(bestTier);
+    if (!nextTier) return [];
+
+    const tierTarget = TIER_TARGET_SCORE[nextTier];
+    const dominantBoost = goalPath === dominantGoal ? 1 : 0.72;
+    const bestTierIndex = bestTier ? TIER_ORDER.indexOf(bestTier) : -1;
+    const baseline = bestTierIndex >= 0 ? (bestTierIndex + 1) * 18 : 8;
+    const progress = clamp(Math.round((normalizedScore / tierTarget) * 100 * dominantBoost + baseline), 0, 99);
+
+    return [{
+      goalPath,
+      tier: nextTier,
+      progressPercent: progress,
+    }];
+  });
+
+  return candidates
+    .sort((a, b) => b.progressPercent - a.progressPercent)
+    .slice(0, 3);
+}
 
 const calculateBaseErrorDebt = (
   gameState: GameState,
@@ -1792,4 +1848,3 @@ export function generateFutureVision(
     mood,
   };
 }
-

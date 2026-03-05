@@ -68,4 +68,56 @@ describe('SaveValidation', () => {
     expect(result.valid).toBe(true);
     expect(result.data?.gameState.characterInfo).toBeUndefined();
   });
+
+  it('auto-repairs out-of-range school grades', () => {
+    const saveData = {
+      metadata: baseMetadata,
+      playerName: 'Test User',
+      stats: baseStats,
+      gameState: {
+        age: 10,
+        turn: 5,
+        phase: 'HUB' as const,
+        schoolGrades: {
+          math: -12,
+          science: 140,
+          language: 60,
+        },
+      },
+    };
+
+    const result = validateSaveData(saveData);
+
+    expect(result.valid).toBe(true);
+    expect(result.repaired).toBe(true);
+    expect(result.data?.gameState.schoolGrades?.math).toBe(0);
+    expect(result.data?.gameState.schoolGrades?.science).toBe(100);
+    expect(result.data?.gameState.schoolGrades?.language).toBe(60);
+  });
+
+  it('auto-repairs out-of-range stats including intelligence cap', () => {
+    const saveData = {
+      metadata: baseMetadata,
+      playerName: 'Test User',
+      stats: {
+        ...baseStats,
+        intelligence: 999,
+        familyRelation: 180,
+        money: -55,
+      },
+      gameState: {
+        age: 10,
+        turn: 5,
+        phase: 'HUB' as const,
+      },
+    };
+
+    const result = validateSaveData(saveData);
+
+    expect(result.valid).toBe(true);
+    expect(result.repaired).toBe(true);
+    expect(result.data?.stats.intelligence).toBe(200);
+    expect(result.data?.stats.familyRelation).toBe(120);
+    expect(result.data?.stats.money).toBe(0);
+  });
 });

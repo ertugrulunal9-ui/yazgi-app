@@ -3,11 +3,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts } from 'expo-font';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Appearance } from 'react-native';
-import { initializeFeatureFlags } from '../config/featureFlags';
+import {
+  initializeFeatureFlags,
+  subscribeFeatureFlags,
+} from '../config/featureFlags';
 import { getLoadingQuoteByAge } from '../data/loadingQuotes';
 import { AppLocale, DEFAULT_LOCALE } from '../i18n/strings';
 import { analyticsService } from '../services/analytics';
 import { initMonetization, setPersonalizedAdsEnabled as setMonetizationPersonalizedAdsEnabled } from '../services/monetization';
+import { initializeSubscriptions } from '../services/subscriptionManager';
 import {
   DEFAULT_UI_PREFS,
   DensityMode,
@@ -96,15 +100,39 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
   }, []);
 
   useEffect(() => {
-    initMonetization().catch((error) => {
-      console.warn('Monetization init failed:', error);
-    });
-  }, []);
+    let cancelled = false;
+    let unsubscribeFlags: (() => void) | null = null;
 
-  useEffect(() => {
-    initializeFeatureFlags().catch((error) => {
-      console.warn('Feature flag init failed:', error);
-    });
+    const initializeRuntimeServices = async () => {
+      try {
+        await initializeFeatureFlags();
+      } catch (error) {
+        console.warn('Feature flag init failed:', error);
+      }
+
+      if (cancelled) return;
+
+      initMonetization().catch((error) => {
+        console.warn('Monetization init failed:', error);
+      });
+
+      initializeSubscriptions().catch((error) => {
+        console.warn('Subscription init failed:', error);
+      });
+
+      unsubscribeFlags = subscribeFeatureFlags(() => {
+        initializeSubscriptions().catch((error) => {
+          console.warn('Subscription init failed:', error);
+        });
+      });
+    };
+
+    void initializeRuntimeServices();
+
+    return () => {
+      cancelled = true;
+      unsubscribeFlags?.();
+    };
   }, []);
 
   useEffect(() => {

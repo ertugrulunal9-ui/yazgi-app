@@ -11,6 +11,7 @@ interface SaveSlotCardProps {
   onSave: (slotId: string) => void;
   onDelete: (slotId: string) => void;
   onExport: (slotId: string) => void;
+  showTransferActions?: boolean;
   isCurrentSlot: boolean;
   isAutoSave?: boolean;
   theme: {
@@ -29,6 +30,7 @@ export const SaveSlotCard: React.FC<SaveSlotCardProps> = ({
   onSave,
   onDelete,
   onExport,
+  showTransferActions = true,
   isCurrentSlot,
   isAutoSave = false,
   theme,
@@ -159,15 +161,17 @@ export const SaveSlotCard: React.FC<SaveSlotCardProps> = ({
         >
           <Text style={[styles.saveButtonText, { color: theme.textPrimary }]}>{tRuntime('save.saveBtn')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          onPress={handleExport}
-          disabled={isCorrupted}
-          style={[styles.exportButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }, isCorrupted && styles.buttonDisabled]}
-          accessibilityLabel={tRuntime('save.exportSave')}
-          accessibilityRole="button"
-        >
-          <Text style={styles.exportIcon}>📤</Text>
-        </TouchableOpacity>
+        {showTransferActions && (
+          <TouchableOpacity
+            onPress={handleExport}
+            disabled={isCorrupted}
+            style={[styles.exportButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }, isCorrupted && styles.buttonDisabled]}
+            accessibilityLabel={tRuntime('save.exportSave')}
+            accessibilityRole="button"
+          >
+            <Text style={styles.exportIcon}>EXP</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );

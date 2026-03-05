@@ -11,6 +11,7 @@ import { Haptics } from '../../utils/haptics';
 import { Difficulty, GameState } from './MiniGameContainer';
 import seenQuestionsTracker from '../../utils/seenQuestionsTracker';
 import { balanceCorrectAnswerDistribution } from './questionOptionBalancer';
+import { buildFriendlyHardPool } from './difficultyTuning';
 
 type QuestionType = 'EXPERIMENT' | 'BODY' | 'NATURE' | 'PHYSICS' | 'CHEMISTRY';
 
@@ -117,10 +118,24 @@ const QUESTIONS_BY_AGE: Record<string, ScienceQuestion[]> = {
     ],
 };
 
-const getQuestionPool = (age: number): ScienceQuestion[] => {
-    if (age <= 8) return QUESTIONS_BY_AGE.YOUNG;
-    if (age <= 11) return QUESTIONS_BY_AGE.MIDDLE;
-    return QUESTIONS_BY_AGE.ADVANCED;
+const getQuestionPool = (age: number, difficulty: Difficulty): ScienceQuestion[] => {
+    if (age <= 8) {
+        return QUESTIONS_BY_AGE.YOUNG;
+    }
+
+    if (age <= 11) {
+        return buildFriendlyHardPool(
+            difficulty,
+            QUESTIONS_BY_AGE.YOUNG,
+            QUESTIONS_BY_AGE.MIDDLE
+        );
+    }
+
+    return buildFriendlyHardPool(
+        difficulty,
+        QUESTIONS_BY_AGE.MIDDLE,
+        QUESTIONS_BY_AGE.ADVANCED
+    );
 };
 
 const getQuestionTypeEmoji = (type: QuestionType): string => {
@@ -168,7 +183,7 @@ const ScienceExamGame: React.FC<ScienceExamGameProps> = ({
 
     useEffect(() => {
         const loadQuestions = async () => {
-            const pool = getQuestionPool(age);
+            const pool = getQuestionPool(age, difficulty);
             const selected = await seenQuestionsTracker.selectQuestionsForExam(
                 'science',
                 pool,
@@ -185,7 +200,7 @@ const ScienceExamGame: React.FC<ScienceExamGameProps> = ({
             }
         };
         loadQuestions();
-    }, [age, gameState.totalQuestions]);
+    }, [age, difficulty, gameState.totalQuestions]);
 
     // Cevabı onayla (doğrudan seçilen index ile)
     const confirmAnswer = useCallback((optionIndex: number) => {

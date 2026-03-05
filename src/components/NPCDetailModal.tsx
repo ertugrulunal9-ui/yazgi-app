@@ -222,7 +222,7 @@ export const NPCDetailModal: React.FC<NPCDetailModalProps> = ({
                       ) : null}
                       {option.money > 0 ? (
                         <Text style={[styles.costText, { color: affordable ? theme.textSecondary : '#ef4444' }]}>
-                          {'\u{1F4B0}'}\u20BA{option.money}
+                          {'\u{1F4B0}'}{'\u20BA'}{option.money}
                         </Text>
                       ) : null}
                     </View>

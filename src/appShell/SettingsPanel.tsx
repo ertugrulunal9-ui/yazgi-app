@@ -13,6 +13,7 @@ import {
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FeatureFlag, FeatureFlagState } from '../config/featureFlags';
+import { canOpenPremiumPaywall, isPremium } from '../services/subscriptionManager';
 import { DENSITY_OPTION_COLORS, DANGER_COLOR, MOTION_OPTION_COLOR, THEME_OPTION_COLORS } from '../constants/themeColors';
 import { Z_INDEX } from '../constants/zIndex';
 import { useUI } from '../context/UIContext';
@@ -32,6 +33,7 @@ interface SettingsPanelProps {
   onPersonalizedAdsEnabledChange: (enabled: boolean) => void;
   onSoundMuteChange: (muted: boolean) => void;
   onOpenSavePicker: () => void;
+  onOpenPaywall: () => void;
   onResetGame: () => void;
   devFeatureFlags?: FeatureFlagState;
   onDevFeatureFlagToggle?: (flag: FeatureFlag, enabled: boolean) => void;
@@ -57,6 +59,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   onPersonalizedAdsEnabledChange,
   onSoundMuteChange,
   onOpenSavePicker,
+  onOpenPaywall,
   onResetGame,
   devFeatureFlags,
   onDevFeatureFlagToggle,
@@ -83,6 +86,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   const settingsPanelStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: settingsTranslateX.value }],
   }));
+  const showPremiumEntry = canOpenPremiumPaywall() && !isPremium();
 
   const readableMotionColor = ensureTextContrast(MOTION_OPTION_COLOR, theme.surfaceBase);
   const readableDangerColor = ensureTextContrast(DANGER_COLOR, theme.surfaceBase);
@@ -509,6 +513,38 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     />
                   </View>
                 ))}
+              </View>
+            )}
+
+            {showPremiumEntry && (
+              <View style={{ marginBottom: 28 }}>
+                <TouchableOpacity
+                  onPress={onOpenPaywall}
+                  style={{
+                    paddingVertical: 16,
+                    paddingHorizontal: 16,
+                    borderRadius: 14,
+                    backgroundColor: '#d9770615',
+                    borderWidth: 2,
+                    borderColor: '#d97706',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                  }}
+                  accessibilityLabel="Premium'a gec"
+                  accessibilityRole="button"
+                >
+                  <Feather name="star" color="#d97706" size={22} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: '#d97706', fontSize: 16, fontWeight: '700' }}>
+                      {t('settings.goPremium', undefined, 'Yazgi Premium')}
+                    </Text>
+                    <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>
+                      {t('settings.premiumDesc', undefined, 'Reklamsiz, sinirsiz geri al, ozel eventler')}
+                    </Text>
+                  </View>
+                  <Feather name="chevron-right" color="#d97706" size={20} />
+                </TouchableOpacity>
               </View>
             )}
 

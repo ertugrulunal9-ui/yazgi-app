@@ -7,6 +7,7 @@ import { Card, StatChange, TypewriterText } from './ui';
 import { FateTokenDisplay, hasNegativeOutcome } from './FateTokenDisplay';
 import { TraitProgressChip } from './TraitProgressChip';
 import { buildPrimaryFeedbackMessage, EventOutcomeSummary } from '../utils/feedbackPrioritizer';
+import { isFeatureEnabled } from '../config/featureFlags';
 
 const STAT_KEYS = ['health', 'energy', 'intelligence', 'charisma', 'discipline', 'money', 'familyRelation'] as const;
 const SKILL_KEYS = ['coding', 'music', 'sports', 'design', 'athletics', 'logic', 'reading', 'teamwork', 'art', 'writing', 'work_ethic', 'business'] as const;
@@ -39,8 +40,11 @@ interface FeedbackOverlayProps {
   buttonEnabled: boolean;
   hasCrisisRecoveryOption: boolean;
   crisisRecoveryLoading: boolean;
+  undoLoading: boolean;
+  canUndo: boolean;
+  onUndo: () => void | Promise<void>;
   onContinue: () => void;
-  onRecoverWithAd: () => void;
+  onRecoverWithAd: () => void | Promise<void>;
   onReroll: () => void;
 }
 
@@ -60,6 +64,9 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
   buttonEnabled,
   hasCrisisRecoveryOption,
   crisisRecoveryLoading,
+  undoLoading,
+  canUndo,
+  onUndo,
   onContinue,
   onRecoverWithAd,
   onReroll,
@@ -230,6 +237,37 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
           />
         </Card>
 
+        {isFeatureEnabled('FATE_TRANSPARENCY') && lastResult?.fateRoll && (() => {
+          const fr = lastResult.fateRoll;
+          const outcomeLabel = FATE_OUTCOME_LABELS[fr.outcome] ?? fr.outcome;
+          const isGood = fr.outcome === 'BLESSED' || fr.outcome === 'FORTUNATE';
+          const isBad = fr.outcome === 'UNLUCKY' || fr.outcome === 'CURSED';
+          const multiplierMap: Record<string, number> = { BLESSED: 35, FORTUNATE: 15, NEUTRAL: 0, UNLUCKY: 20, CURSED: 50 };
+          const pct = multiplierMap[fr.outcome] ?? 0;
+          const desc = isGood
+            ? `${t('fate.indicator.prefix', undefined, 'Sans')}: ${outcomeLabel}! ${t('fate.indicator.effectsBuffed', { pct: String(pct) }, `Etkiler %${pct} guclendi`)}`
+            : isBad
+              ? `${t('fate.indicator.prefix', undefined, 'Sans')}: ${outcomeLabel}. ${t('fate.indicator.effectsNerfed', { pct: String(pct) }, `Negatif etkiler %${pct} artti`)}`
+              : `${t('fate.indicator.prefix', undefined, 'Sans')}: ${outcomeLabel}`;
+          const color = isGood ? '#22c55e' : isBad ? '#f97316' : '#94a3b8';
+          return (
+            <View style={{
+              marginBottom: 12,
+              paddingVertical: 8,
+              paddingHorizontal: 12,
+              backgroundColor: isGood ? 'rgba(34,197,94,0.08)' : isBad ? 'rgba(249,115,22,0.08)' : 'rgba(148,163,184,0.06)',
+              borderRadius: 10,
+              borderLeftWidth: 3,
+              borderLeftColor: color,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+            }}>
+              <Text style={{ color, fontSize: 13, fontWeight: '700', flex: 1 }}>{desc}</Text>
+            </View>
+          );
+        })()}
+
         {priorityFeedback?.secondary && (
           <View style={{
             marginBottom: 12,
@@ -342,6 +380,30 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
           >
             <Text style={{ ...buttonTextStyle, color: '#22c55e' }}>
               {crisisRecoveryLoading ? t('ui.feedbackOverlay.adPreparing') : t('ui.feedbackOverlay.watchAdRecover')}
+            </Text>
+          </AnimatedButton>
+        )}
+
+        {isFeatureEnabled('UNDO_MECHANIC') && canUndo && (
+          <AnimatedButton
+            onPress={() => {
+              void onUndo();
+            }}
+            disabled={undoLoading}
+            animationType="pressScale"
+            style={{
+              ...buttonStyle,
+              backgroundColor: theme.surfaceRaised,
+              borderColor: '#f59e0b',
+              opacity: undoLoading ? 0.75 : 1,
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('ui.feedbackOverlay.undoChoice', undefined, 'Secimi Geri Al')}
+          >
+            <Text style={{ ...buttonTextStyle, color: '#f59e0b' }}>
+              {undoLoading
+                ? t('ui.feedbackOverlay.undoLoading', undefined, 'Geri aliniyor...')
+                : t('ui.feedbackOverlay.undoChoice', undefined, 'Secimi Geri Al')}
             </Text>
           </AnimatedButton>
         )}

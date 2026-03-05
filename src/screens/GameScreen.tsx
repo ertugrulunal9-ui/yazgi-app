@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
 
-import { Alert, View, Text, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGame } from '../context/GameContext';
 import { useUI } from '../context/UIContext';
@@ -67,7 +67,10 @@ import {
 import ReportCard from '../components/ReportCard';
 import { ExamPeriodModal } from '../components/ExamPeriodModal';
 import { DaySummaryModal } from '../components/DaySummaryModal';
+import { AgeMilestoneModal } from '../components/AgeMilestoneModal';
+import { GoalTracker } from '../components/GoalTracker';
 import { isFeatureEnabled } from '../config/featureFlags';
+import type { AgeMilestoneSummary } from '../types/game';
 
 interface GameScreenProps {
   onPhaseChange: (tab: AppTab) => void;
@@ -81,7 +84,12 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
   const { floatingTexts, removeFloatingText } = useFloatingTexts();
   const { stats } = useStats();
   const { advanceTurn, markExamTaken, completeExamPeriod, selectNewEvent } = useEvents();
-  const { interactWithNPC, meetNewNPC, updateRelationship } = useNPCs();
+  const {
+    interactWithNPC,
+    meetNewNPC,
+    leaveGroup,
+    getPlayerGroups,
+  } = useNPCs();
   const previousAgeRef = useRef(gameState.age);
   const previousHealthCriticalRef = useRef(stats.health <= 20);
 
@@ -126,8 +134,9 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
   const [achievementToastIds, setAchievementToastIds] = useState<string[]>([]);
   const [achievementToastVisible, setAchievementToastVisible] = useState(false);
   const [achievementsOpen, setAchievementsOpen] = useState(false);
+  const [currentMilestoneToShow, setCurrentMilestoneToShow] = useState<AgeMilestoneSummary | null>(null);
+  const shownMilestoneAgesRef = useRef<Set<number>>(new Set());
   // shopOpen state removed — IAP disabled
-  const lastTraitBoostPromptKeyRef = useRef<number>(0);
   const unlockedAchievementIds = useMemo(
     () => unlockedAchievements.map(a => a.achievementId),
     [unlockedAchievements]
@@ -186,38 +195,15 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     clearExamPrepBoost,
     claimEnergyRecoveryAd,
     claimExamPrepBoostAd,
-    claimTraitBoostAd,
-    offerRelationshipBoostAd,
-    claimReportPreviewAd,
-    promptShoppingDiscount,
+    claimUndoAd, // Used by Paket 10 undo mechanic
   } = useAdRewards({
     t,
     stats,
     maxEnergy: gameState.maxEnergy,
-    turn: gameState.turn,
-    traitProgress: gameState.traitProgress || {},
-    schoolGrades: gameState.schoolGrades,
     enqueueToast,
     updateStats,
-    updateGameState,
-    updateRelationship,
   });
-
-  useEffect(() => {
-    if (!traitChipVisible || traitChipTraits.length === 0) return;
-    if (!isFeatureEnabled('AD_TRAIT_BOOST')) return;
-    if (lastTraitBoostPromptKeyRef.current === traitChipKey) return;
-    lastTraitBoostPromptKeyRef.current = traitChipKey;
-
-    Alert.alert(
-      t('app.ads.traitBoostTitle', undefined, 'Trait Takviyesi'),
-      t('app.ads.traitBoostDescription', undefined, 'Reklam izleyip +1 trait ilerlemesi almak ister misin?'),
-      [
-        { text: t('buttons.decline', undefined, 'Vazgec'), style: 'cancel' },
-        { text: t('buttons.watchAd', undefined, 'Reklam Izle'), onPress: () => void claimTraitBoostAd() },
-      ]
-    );
-  }, [claimTraitBoostAd, t, traitChipKey, traitChipTraits.length, traitChipVisible]);
+  void claimUndoAd; // Paket 10 — will be wired to undo mechanic
 
   useEffect(() => {
     if (achievementsLoading) return;
@@ -266,6 +252,24 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     }
     previousHealthCriticalRef.current = isCritical;
   }, [stats.health]);
+
+  useEffect(() => {
+    if (!isFeatureEnabled('MILESTONE_SUMMARY')) return;
+    const summaries = gameState.ageMilestoneSummaries;
+    if (!summaries?.length) return;
+
+    const lastSummary = summaries[summaries.length - 1];
+    if (!shownMilestoneAgesRef.current.has(lastSummary.age)) {
+      setCurrentMilestoneToShow(lastSummary);
+    }
+  }, [gameState.ageMilestoneSummaries]);
+
+  const handleMilestoneClose = useCallback(() => {
+    if (currentMilestoneToShow) {
+      shownMilestoneAgesRef.current.add(currentMilestoneToShow.age);
+    }
+    setCurrentMilestoneToShow(null);
+  }, [currentMilestoneToShow]);
 
   const {
     examGameVisible,
@@ -378,7 +382,6 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     updateGameState,
     claimEnergyRecoveryAd,
     promptExamPrepAndStartExam,
-    promptShoppingDiscount,
     meetNewNPC,
     onCloseBottomSheet: handleCloseBottomSheet,
     onTraitProgressUpdates: showTraitProgressChip,
@@ -405,13 +408,20 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
   const renderHubContent = useCallback(() => {
     return (
       <FadeInUpView>
+        {isFeatureEnabled('MICRO_GOALS') && (
+          <GoalTracker
+            microGoals={gameState.microGoals ?? []}
+            seasonGoal={gameState.seasonGoal ?? null}
+            theme={theme}
+          />
+        )}
         <ActionGrid
           categories={availableCategories}
           onCategoryPress={handleCategoryPress}
         />
       </FadeInUpView>
     );
-  }, [availableCategories, handleCategoryPress]);
+  }, [availableCategories, gameState.microGoals, gameState.seasonGoal, handleCategoryPress, theme]);
 
   // Styles
   const safeAreaStyle = useMemo(() => ({
@@ -492,8 +502,6 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
   }, [onPhaseChange]);
 
   const activeContentTab = currentTab === 'settings' ? 'hub' : currentTab;
-  const relationshipBoostEnabled = isFeatureEnabled('AD_RELATIONSHIP_BOOST');
-  const reportPreviewEnabled = isFeatureEnabled('AD_REPORT_PREVIEW');
 
   return (
     <View style={{ flex: 1 }}>
@@ -583,8 +591,9 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
                   skills={gameState.skills}
                   onBack={() => onPhaseChange('hub')}
                   onInteract={handleSocialInteract}
-                  onOfferRelationshipBoostAd={relationshipBoostEnabled ? offerRelationshipBoostAd : undefined}
                   onMeetNew={handleMeetNewNPC}
+                  getPlayerGroups={getPlayerGroups}
+                  onLeaveGroup={leaveGroup}
                   theme={theme}
                 />
               </View>
@@ -735,8 +744,6 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
         visible={(gameState.isExamPeriod || false) && !examGameVisible}
         examsTaken={gameState.examsTakenThisYear || []}
         onTakeExam={handleExamPeriodExam}
-        reportPreviewEnabled={reportPreviewEnabled}
-        onWatchReportPreviewAd={reportPreviewEnabled ? () => void claimReportPreviewAd() : undefined}
         onClose={handleExamPeriodClose}
       />
 
@@ -753,6 +760,14 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
         theme={theme}
         onContinue={handleDaySummaryContinue}
       />
+
+      {isFeatureEnabled('MILESTONE_SUMMARY') && currentMilestoneToShow && (
+        <AgeMilestoneModal
+          visible
+          milestone={currentMilestoneToShow}
+          onClose={handleMilestoneClose}
+        />
+      )}
     </View>
   );
 };

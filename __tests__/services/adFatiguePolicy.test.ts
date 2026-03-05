@@ -21,7 +21,7 @@ describe('adFatiguePolicy', () => {
   describe('canOfferAd', () => {
     it('allows first ad offer', () => {
       const state = createInitialAdFatigueState();
-      const result = canOfferAd(state, 'hub', 5);
+      const result = canOfferAd(state, 'energy_depleted', 5);
       expect(result.allowed).toBe(true);
     });
 
@@ -30,7 +30,7 @@ describe('adFatiguePolicy', () => {
         ...createInitialAdFatigueState(),
         totalAdsShownThisSession: AD_FATIGUE_POLICY.globalDailyCap,
       };
-      const result = canOfferAd(state, 'hub', 100);
+      const result = canOfferAd(state, 'energy_depleted', 100);
       expect(result.allowed).toBe(false);
       expect(result.reason).toBe('GLOBAL_CAP_REACHED');
     });
@@ -38,9 +38,9 @@ describe('adFatiguePolicy', () => {
     it('blocks when placement cap reached', () => {
       const state = {
         ...createInitialAdFatigueState(),
-        placementCounts: { hub: AD_FATIGUE_POLICY.perPlacementSessionCap },
+        placementCounts: { energy_depleted: AD_FATIGUE_POLICY.perPlacementSessionCap },
       };
-      const result = canOfferAd(state, 'hub', 100);
+      const result = canOfferAd(state, 'energy_depleted', 100);
       expect(result.allowed).toBe(false);
       expect(result.reason).toBe('PLACEMENT_CAP_REACHED');
     });
@@ -48,9 +48,9 @@ describe('adFatiguePolicy', () => {
     it('allows different placement even if another is capped', () => {
       const state = {
         ...createInitialAdFatigueState(),
-        placementCounts: { hub: AD_FATIGUE_POLICY.perPlacementSessionCap },
+        placementCounts: { energy_depleted: AD_FATIGUE_POLICY.perPlacementSessionCap },
       };
-      const result = canOfferAd(state, 'trait_boost', 100);
+      const result = canOfferAd(state, 'exam_prep', 100);
       expect(result.allowed).toBe(true);
     });
 
@@ -59,7 +59,7 @@ describe('adFatiguePolicy', () => {
         ...createInitialAdFatigueState(),
         lastOfferTurn: 10,
       };
-      const result = canOfferAd(state, 'hub', 11); // Only 1 turn apart, need minTurnsBetweenOffers
+      const result = canOfferAd(state, 'energy_depleted', 11); // Only 1 turn apart, need minTurnsBetweenOffers
       expect(result.allowed).toBe(false);
     });
 
@@ -68,7 +68,7 @@ describe('adFatiguePolicy', () => {
         ...createInitialAdFatigueState(),
         lastOfferTurn: 10,
       };
-      const result = canOfferAd(state, 'hub', 10 + AD_FATIGUE_POLICY.minTurnsBetweenOffers);
+      const result = canOfferAd(state, 'energy_depleted', 10 + AD_FATIGUE_POLICY.minTurnsBetweenOffers);
       expect(result.allowed).toBe(true);
     });
 
@@ -77,7 +77,7 @@ describe('adFatiguePolicy', () => {
         ...createInitialAdFatigueState(),
         snoozeTurnsRemaining: 2,
       };
-      const result = canOfferAd(state, 'hub', 100);
+      const result = canOfferAd(state, 'energy_depleted', 100);
       expect(result.allowed).toBe(false);
       expect(result.reason).toBe('DECLINE_SNOOZE_ACTIVE');
     });
@@ -86,15 +86,15 @@ describe('adFatiguePolicy', () => {
   describe('recordAdShown', () => {
     it('increments total and placement count', () => {
       const state = createInitialAdFatigueState();
-      const next = recordAdShown(state, 'hub', 5);
+      const next = recordAdShown(state, 'energy_depleted', 5);
       expect(next.totalAdsShownThisSession).toBe(1);
-      expect(next.placementCounts.hub).toBe(1);
+      expect(next.placementCounts.energy_depleted).toBe(1);
       expect(next.lastShownTurn).toBe(5);
     });
 
     it('resets consecutive declines', () => {
       const state = { ...createInitialAdFatigueState(), consecutiveDeclines: 2 };
-      const next = recordAdShown(state, 'hub', 5);
+      const next = recordAdShown(state, 'energy_depleted', 5);
       expect(next.consecutiveDeclines).toBe(0);
       expect(next.snoozeTurnsRemaining).toBe(0);
     });

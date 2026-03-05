@@ -2,8 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { buttonPress, gradeBad, gradeGood, selectionHaptic, turnAdvance } from '../animations';
 import { SchoolGrades } from '../types';
 import { calculateVarietyBonus } from '../utils/gameUtils';
-import { logInterstitialOpportunity, logInterstitialResult } from '../utils/analyticsEvents';
-import { showInterstitialAdDetailed } from '../services/monetization';
 
 type TranslateFn = (
   key: string,
@@ -23,7 +21,7 @@ interface UseModalOrchestrationResult {
   daySummaryVisible: boolean;
   daySummaryVarietyBonus: number;
   handleEndDay: () => void;
-  handleDaySummaryContinue: () => Promise<void>;
+  handleDaySummaryContinue: () => void;
 }
 
 export const useModalOrchestration = ({
@@ -66,15 +64,8 @@ export const useModalOrchestration = ({
     setDaySummaryVisible(true);
   }, []);
 
-  const handleDaySummaryContinue = useCallback(async () => {
+  const handleDaySummaryContinue = useCallback(() => {
     setDaySummaryVisible(false);
-    void logInterstitialOpportunity({ placement: 'day_summary' });
-    const interstitial = await showInterstitialAdDetailed();
-    void logInterstitialResult({
-      placement: 'day_summary',
-      shown: interstitial.shown,
-      reason: interstitial.reason,
-    });
     turnAdvance();
     try {
       advanceTurn();

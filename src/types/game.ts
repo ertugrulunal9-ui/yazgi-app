@@ -10,6 +10,7 @@ import type {
   ExamSubject, TraitProgressData,
   CharacterInfo,
 } from './core';
+import type { MemoryEmotion } from './events';
 import type {
   Personality, StressState,
   PersonalityShift, PersonalityState,
@@ -64,6 +65,87 @@ export interface UnlockedAchievement {
   unlockedAt: number;
   timestamp: string;
 }
+
+// =================================================================
+// MILESTONE SUMMARY (Paket 4)
+// =================================================================
+
+export interface AgeMilestoneSummary {
+  age: number;
+  traitsGained: string[];
+  traitsLost: string[];
+  keyMemories: Array<{ eventId: string; emotion: MemoryEmotion; summary: string }>;
+  statDeltas: Partial<Stats>;
+  npcChanges: Array<{ npcId: string; name: string; oldRole: string; newRole: string }>;
+  academicHighlight?: string;
+}
+
+// =================================================================
+// MICRO / SEASON GOALS (Paket 5)
+// =================================================================
+
+export type MicroGoalType = 'ACTION' | 'STAT' | 'SOCIAL' | 'ACADEMIC';
+
+export interface MicroGoal {
+  id: string;
+  descriptionKey: string;
+  type: MicroGoalType;
+  condition: {
+    actionId?: string;
+    statKey?: keyof Stats;
+    threshold?: number;
+    npcInteraction?: boolean;
+    count?: number;
+  };
+  progress: number;
+  target: number;
+  turnsRemaining: number;
+  reward: { xp?: number; money?: number; statBonus?: Partial<Stats> };
+  completed: boolean;
+}
+
+export interface SeasonGoal {
+  id: string;
+  descriptionKey: string;
+  targetAge: number;
+  condition: {
+    statKey?: keyof Stats;
+    gradeKey?: keyof SchoolGrades;
+    threshold: number;
+    npcRole?: string;
+  };
+  reward: { money?: number; traitProgress?: string; statBonus?: Partial<Stats> };
+  completed: boolean;
+}
+
+// =================================================================
+// ECONOMY — SAVING GOALS (Paket 8)
+// =================================================================
+
+export interface SavingGoal {
+  id: string;
+  name: string;
+  targetAmount: number;
+  unlockAge: number;
+  reward: {
+    item?: string;
+    statBonus?: Partial<Stats>;
+  };
+  completed: boolean;
+}
+
+// =================================================================
+// UNDO SNAPSHOT (Paket 10)
+// =================================================================
+
+export interface TurnSnapshot {
+  gameState: GameState;
+  stats: Stats;
+}
+
+// =================================================================
+// NPC REACTION (Paket 2)
+// =================================================================
 
 // =================================================================
 // CAREER & META PROGRESSION
@@ -271,6 +353,41 @@ export interface GameState {
     narrativeLine: string;
     emotion: string;
   } | null;
+
+  // --- V4 alanları ---
+
+  /** Kalıcı bayraklar — geri dönüşü olmayan kararların sonuçları (Paket 6) */
+  permanentFlags?: Record<string, boolean>;
+
+  /** Otomatik atanan mikro-hedefler (Paket 5) */
+  microGoals?: MicroGoal[];
+
+  /** Yaş bazlı sezon hedefi (Paket 5) */
+  seasonGoal?: SeasonGoal | null;
+
+  /** Biriktirme hedefleri — bisiklet, telefon, bilgisayar (Paket 8) */
+  savingGoals?: SavingGoal[];
+  purchasedItems?: string[];
+
+  /** Yaş geçişi özet kayıtları (Paket 4) */
+  ageMilestoneSummaries?: AgeMilestoneSummary[];
+
+  /** Yaş başında stat snapshot'ı — milestone delta hesabı için (Paket 4) */
+  _ageStartStats?: Stats;
+
+  /** Yaş başında NPC snapshot'ı — milestone NPC değişim tespiti için (Paket 4) */
+  _ageStartNpcs?: NPC[];
+
+  /** Yaş başında not snapshot'ı — milestone akademik öne çıkan için (Paket 4) */
+  _ageStartGrades?: SchoolGrades;
+
+  /** Son seçim öncesi snapshot — undo için (Paket 10) */
+  undoSnapshot?: TurnSnapshot | null;
+
+  /** Bu yaşta kullanılan undo sayısı, max 1 (Paket 10) */
+  undosUsedThisAge?: number;
+
+  /** Son NPC tepkisi — FeedbackOverlay ve NPCCard'da gösterilir (Paket 2) */
 }
 
 export type GameStateUpdate =

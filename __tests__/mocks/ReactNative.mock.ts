@@ -3,11 +3,13 @@
 export const View = 'View';
 export const Text = 'Text';
 export const TouchableOpacity = 'TouchableOpacity';
+export const TouchableWithoutFeedback = 'TouchableWithoutFeedback';
 export const Pressable = 'Pressable';
 export const ScrollView = 'ScrollView';
 export const FlatList = 'FlatList';
 export const TextInput = 'TextInput';
 export const Modal = 'Modal';
+export const ActivityIndicator = 'ActivityIndicator';
 export const SafeAreaView = 'SafeAreaView';
 export const StyleSheet = {
   create: <T extends Record<string, unknown> | Record<string, unknown>[]>(
@@ -74,11 +76,13 @@ export default {
   View,
   Text,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   Pressable,
   ScrollView,
   FlatList,
   TextInput,
   Modal,
+  ActivityIndicator,
   SafeAreaView,
   StyleSheet,
   Animated,

@@ -68,7 +68,7 @@ export const onboardingDomainStrings: DomainStrings = {
           },
           ENERGY_EXPLAIN: {
             title: 'Enerji Sistemi',
-            message: 'Her aktivite enerji harcar. Enerji bittiginde gunu bitirmen gerekir. Yeni gun = yeni enerji!',
+            message: 'Her aktivite enerji harcar. Enerji bittiginde gunu bitirmen gerekir. Ayrica stres, zorlayici secimlerle artar; gunu bitirmek ve daha dengeli secimler yapmak stresi azaltir.',
           },
           FATE_TOKEN_TUTORIAL: {
             title: 'Kader Tokeni',
@@ -153,7 +153,7 @@ export const onboardingDomainStrings: DomainStrings = {
           },
           ENERGY_EXPLAIN: {
             title: 'Energy System',
-            message: 'Every action costs energy. When energy is depleted, you need to end the day. New day = new energy!',
+            message: 'Every action costs energy. When energy is depleted, you need to end the day. Stress rises with demanding choices, and it drops when you end the day and make more balanced choices.',
           },
           FATE_TOKEN_TUTORIAL: {
             title: 'Fate Token',

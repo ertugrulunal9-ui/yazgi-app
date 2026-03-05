@@ -12,6 +12,7 @@ import { AppLocale, getRuntimeLocale, tRuntime } from '../../i18n/strings';
 import { Difficulty, GameState } from './MiniGameContainer';
 import seenQuestionsTracker from '../../utils/seenQuestionsTracker';
 import { balanceCorrectAnswerDistribution } from './questionOptionBalancer';
+import { buildFriendlyHardPool } from './difficultyTuning';
 import {
     EnglishQuestion,
     EnglishQuestionType,
@@ -198,7 +199,29 @@ const getTurkishQuestionPool = (age: number, difficulty: Difficulty): EnglishQue
     else if (age <= 11) ageGroup = 'MIDDLE';
     else ageGroup = 'ADVANCED';
 
-    return TURKISH_QUESTIONS[ageGroup][difficulty] || TURKISH_QUESTIONS[ageGroup]['MEDIUM'];
+    const pools = TURKISH_QUESTIONS[ageGroup];
+
+    if (difficulty !== 'HARD') {
+        return pools[difficulty] || pools.MEDIUM;
+    }
+
+    return buildFriendlyHardPool(
+        difficulty,
+        pools.MEDIUM || pools.EASY,
+        pools.HARD || pools.MEDIUM
+    );
+};
+
+const getEnglishLocalizedPool = (age: number, difficulty: Difficulty): EnglishQuestion[] => {
+    if (difficulty !== 'HARD') {
+        return getEnglishQuestionPool(age, difficulty);
+    }
+
+    return buildFriendlyHardPool(
+        difficulty,
+        getEnglishQuestionPool(age, 'MEDIUM'),
+        getEnglishQuestionPool(age, 'HARD')
+    );
 };
 
 const getLocalizedQuestionPool = (
@@ -207,7 +230,7 @@ const getLocalizedQuestionPool = (
     locale: AppLocale
 ): EnglishQuestion[] => (
     locale === 'en'
-        ? getEnglishQuestionPool(age, difficulty)
+        ? getEnglishLocalizedPool(age, difficulty)
         : getTurkishQuestionPool(age, difficulty)
 );
 

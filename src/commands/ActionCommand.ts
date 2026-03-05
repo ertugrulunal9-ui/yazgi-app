@@ -468,6 +468,9 @@ export class HubActionCommand implements ActionCommand {
     const nextInventory = shouldAddPurchasedItemToInventory && action.purchaseItemId
       ? Array.from(new Set([...(gameState.inventory || []), action.purchaseItemId]))
       : gameState.inventory;
+    const nextPurchasedItems = shouldAddPurchasedItemToInventory && action.purchaseItemId
+      ? Array.from(new Set([...(gameState.purchasedItems || []), action.purchaseItemId]))
+      : (gameState.purchasedItems || []);
 
     return {
       status: 'success',
@@ -486,6 +489,7 @@ export class HubActionCommand implements ActionCommand {
         personalityState: momentumResult.nextState,
         dailyDecisionCount: (gameState.dailyDecisionCount ?? 0) + 1,
         ...(shouldAddPurchasedItemToInventory ? { inventory: nextInventory } : {}),
+        ...(shouldAddPurchasedItemToInventory ? { purchasedItems: nextPurchasedItems } : {}),
         ...(isConsumablePurchase
           ? {
               activeBuffs: nextActiveBuffs,

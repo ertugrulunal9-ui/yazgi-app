@@ -22,6 +22,7 @@ import {
   PersonalityMomentumSignal,
   PersonalityState,
   PersonalityTendency,
+  SocialGroup,
   ScheduledEvent,
   SchoolGrades,
   Stats,
@@ -73,6 +74,11 @@ export interface MomentumFeedback {
   unlockedNow: boolean;
   bonusPercent: number;
   feedbackText: string;
+}
+
+interface SocialGroupActionResult {
+  socialGroups: SocialGroup[];
+  npcs: NPC[];
 }
 
 const MOMENTUM_TENDENCIES: PersonalityTendency[] = ['HELPFUL', 'PRAGMATIC', 'AGGRESSIVE'];
@@ -128,6 +134,23 @@ const isTendencySignal = (
 );
 
 const roundTo2 = (value: number): number => Math.round(value * 100) / 100;
+const clampGrade = (value: number): number => Math.max(0, Math.min(100, value));
+
+const applyGradeUpdates = (
+  currentGrades: SchoolGrades,
+  gradeUpdates: Partial<SchoolGrades>
+): SchoolGrades => {
+  const nextGrades: SchoolGrades = { ...currentGrades };
+
+  (Object.keys(gradeUpdates) as Array<keyof SchoolGrades>).forEach((subject) => {
+    const delta = gradeUpdates[subject];
+    if (typeof delta !== 'number' || Number.isNaN(delta)) return;
+    const currentValue = typeof nextGrades[subject] === 'number' ? nextGrades[subject] : 0;
+    nextGrades[subject] = clampGrade(currentValue + delta);
+  });
+
+  return nextGrades;
+};
 
 const shouldShowMomentumFlavorFeedback = (
   previousStreak: number,
@@ -362,6 +385,7 @@ export class TurnMediator {
     });
 
     const gradeUpdates: Partial<SchoolGrades> = effectiveChoice.gradeUpdates || {};
+    const nextSchoolGrades = applyGradeUpdates(gameState.schoolGrades, gradeUpdates);
     const skillUpdates = effectiveChoice.skillUpdates || {};
     const skillResult = Object.keys(skillUpdates).length > 0
       ? applySkillUpdates(gameState.skills, skillUpdates, gameState.traits)
@@ -438,6 +462,18 @@ export class TurnMediator {
       : (gameState.scheduledEvents || []);
 
     const updatedNPCs = this.updateRelationships(gameState.npcs, choice.npcRelationChange, gameState.turn);
+    const socialGroupResult = this.applySocialGroupAction(
+      choice.socialGroupAction,
+      gameState.socialGroups || [],
+      updatedNPCs,
+      gameState.age,
+      gameState.turn
+    );
+    const nextPurchasedItems = (
+      choice.tags?.includes('shopping') && choice.itemId
+    )
+      ? Array.from(new Set([...(gameState.purchasedItems || []), choice.itemId]))
+      : (gameState.purchasedItems || []);
 
     const continuationEventId = futureEvents[0]?.eventId ?? gameState.currentEvent?.continuationEventId;
     const generatedPendingCliffhanger = eventId.startsWith('cliff_') && futureEvents.length > 0
@@ -524,10 +560,16 @@ export class TurnMediator {
         eventChoiceHistory: newEventHistory,
         traits: traitResolution.traits,
         traitProgress: nextTraitProgress,
-        schoolGrades: { ...gameState.schoolGrades, ...gradeUpdates },
+        schoolGrades: nextSchoolGrades,
         skills: skillResult.newSkills,
-        npcs: updatedNPCs,
+        npcs: socialGroupResult.npcs,
+        socialGroups: socialGroupResult.socialGroups,
+        socialReputation: Math.max(
+          0,
+          Math.min(100, (gameState.socialReputation ?? 50) + (choice.socialReputationChange ?? 0))
+        ),
         inventory: nextInventory,
+        purchasedItems: nextPurchasedItems,
         scheduledEvents: newScheduledEvents as ScheduledEvent[],
         maxEnergy: nextMaxEnergy,
         stress: triggerResults.stressUpdate,
@@ -539,12 +581,151 @@ export class TurnMediator {
         fate: updatedFate,
         pendingCliffhanger,
         scars: newScars,
+        // Paket 6: kalıcı bayraklar
+        ...(choice.setPermanentFlags ? {
+          permanentFlags: {
+            ...(gameState.permanentFlags ?? {}),
+            ...choice.setPermanentFlags,
+          },
+        } : {}),
       },
       appliedChanges,
       newTraits: traitResolution.gainedTraits,
       removedTraits: traitResolution.removedTraits,
       traitChanges,
     };
+  }
+
+  private applySocialGroupAction(
+    action: Choice['socialGroupAction'] | undefined,
+    socialGroups: SocialGroup[],
+    npcs: NPC[],
+    currentAge: number,
+    currentTurn: number
+  ): SocialGroupActionResult {
+    if (!action) {
+      return { socialGroups, npcs };
+    }
+
+    if (action.type === 'CREATE') {
+      const desiredType = action.groupType ?? 'FRIEND_GROUP';
+      const alreadyInType = socialGroups.some(group => group.isPlayerMember && group.type === desiredType);
+      if (alreadyInType) {
+        return { socialGroups, npcs };
+      }
+
+      const rolePool: string[] = action.memberRoles && action.memberRoles.length > 0
+        ? action.memberRoles
+        : ['BEST_FRIEND', 'FRIEND'];
+      const members = npcs
+        .filter(npc => rolePool.includes(npc.role))
+        .slice(0, 4);
+
+      if (members.length === 0) {
+        return { socialGroups, npcs };
+      }
+
+      const newGroup: SocialGroup = {
+        id: `group_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        name: action.groupName || 'Yeni Grup',
+        members: members.map(npc => npc.id),
+        leaderId: members[0]?.id ?? null,
+        type: desiredType,
+        reputation: 50,
+        isPlayerMember: true,
+        formedAtAge: currentAge,
+        formedAtTurn: currentTurn,
+      };
+
+      const nextNpcs = npcs.map(npc => (
+        newGroup.members.includes(npc.id)
+          ? { ...npc, isInPlayerGroup: true, groupId: newGroup.id }
+          : npc
+      ));
+
+      return {
+        socialGroups: [...socialGroups, newGroup],
+        npcs: nextNpcs,
+      };
+    }
+
+    if (action.type === 'JOIN') {
+      const targetGroup = socialGroups.find(group => (
+        !group.isPlayerMember &&
+        (!action.groupType || group.type === action.groupType)
+      ));
+
+      if (!targetGroup) {
+        return { socialGroups, npcs };
+      }
+
+      const nextSocialGroups = socialGroups.map(group => (
+        group.id === targetGroup.id
+          ? { ...group, isPlayerMember: true }
+          : group
+      ));
+
+      const nextNpcs = npcs.map(npc => (
+        targetGroup.members.includes(npc.id)
+          ? { ...npc, isInPlayerGroup: true, groupId: targetGroup.id }
+          : npc
+      ));
+
+      return {
+        socialGroups: nextSocialGroups,
+        npcs: nextNpcs,
+      };
+    }
+
+    if (action.type === 'LEAVE') {
+      const groupIdsToLeave = socialGroups
+        .filter(group => group.isPlayerMember && (!action.groupType || group.type === action.groupType))
+        .map(group => group.id);
+
+      if (groupIdsToLeave.length === 0) {
+        return { socialGroups, npcs };
+      }
+
+      const nextSocialGroups = socialGroups.map(group => (
+        groupIdsToLeave.includes(group.id)
+          ? { ...group, isPlayerMember: false }
+          : group
+      ));
+
+      const nextNpcs = npcs.map(npc => (
+        npc.groupId && groupIdsToLeave.includes(npc.groupId)
+          ? { ...npc, isInPlayerGroup: false, groupId: undefined }
+          : npc
+      ));
+
+      return {
+        socialGroups: nextSocialGroups,
+        npcs: nextNpcs,
+      };
+    }
+
+    if (action.type === 'REPUTATION') {
+      const delta = action.reputationDelta ?? 0;
+      if (delta === 0) {
+        return { socialGroups, npcs };
+      }
+
+      const nextSocialGroups = socialGroups.map(group => {
+        const matchesType = !action.groupType || group.type === action.groupType;
+        if (!group.isPlayerMember || !matchesType) return group;
+        return {
+          ...group,
+          reputation: Math.max(0, Math.min(100, group.reputation + delta)),
+        };
+      });
+
+      return {
+        socialGroups: nextSocialGroups,
+        npcs,
+      };
+    }
+
+    return { socialGroups, npcs };
   }
 
   private updateRelationships(npcs: NPC[], relationChange: number | undefined, currentTurn: number): NPC[] {

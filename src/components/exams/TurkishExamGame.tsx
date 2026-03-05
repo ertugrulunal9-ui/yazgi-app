@@ -11,6 +11,7 @@ import { Haptics } from '../../utils/haptics';
 import { Difficulty, GameState } from './MiniGameContainer';
 import seenQuestionsTracker from '../../utils/seenQuestionsTracker';
 import { balanceCorrectAnswerDistribution } from './questionOptionBalancer';
+import { buildFriendlyHardPool } from './difficultyTuning';
 
 type QuestionType = 'SYNONYM' | 'ANTONYM' | 'MEANING' | 'FILL_BLANK' | 'SPELLING';
 
@@ -133,10 +134,24 @@ const QUESTIONS_BY_AGE: Record<string, TurkishQuestion[]> = {
 };
 
 // Yaşa göre soru havuzu seç
-const getQuestionPool = (age: number): TurkishQuestion[] => {
-    if (age <= 8) return QUESTIONS_BY_AGE.YOUNG;
-    if (age <= 11) return QUESTIONS_BY_AGE.MIDDLE;
-    return QUESTIONS_BY_AGE.ADVANCED;
+const getQuestionPool = (age: number, difficulty: Difficulty): TurkishQuestion[] => {
+    if (age <= 8) {
+        return QUESTIONS_BY_AGE.YOUNG;
+    }
+
+    if (age <= 11) {
+        return buildFriendlyHardPool(
+            difficulty,
+            QUESTIONS_BY_AGE.YOUNG,
+            QUESTIONS_BY_AGE.MIDDLE
+        );
+    }
+
+    return buildFriendlyHardPool(
+        difficulty,
+        QUESTIONS_BY_AGE.MIDDLE,
+        QUESTIONS_BY_AGE.ADVANCED
+    );
 };
 
 // Soru türüne göre emoji
@@ -196,7 +211,7 @@ const TurkishExamGame: React.FC<TurkishExamGameProps> = ({
     // Soruları başlangıçta ayarla
     useEffect(() => {
         const loadQuestions = async () => {
-            const pool = getQuestionPool(age);
+            const pool = getQuestionPool(age, difficulty);
             const selected = await seenQuestionsTracker.selectQuestionsForExam(
                 'turkish',
                 pool,
@@ -213,7 +228,7 @@ const TurkishExamGame: React.FC<TurkishExamGameProps> = ({
             }
         };
         loadQuestions();
-    }, [age, gameState.totalQuestions]);
+    }, [age, difficulty, gameState.totalQuestions]);
 
     // Cevabı onayla (doğrudan seçilen index ile)
     const confirmAnswer = useCallback((optionIndex: number) => {

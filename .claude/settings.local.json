@@ -30,7 +30,15 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(find:*)",
-      "Bash(SIMULATION_RUNS=200 node scripts/run-simulate-game.cjs --ci)"
+      "Bash(SIMULATION_RUNS=200 node scripts/run-simulate-game.cjs --ci)",
+      "Bash(xargs -I {} basename {})",
+      "Bash(git -C /c/Yazgi log --oneline)",
+      "Bash(node scripts/run-simulate-game.cjs 1000)",
+      "Bash(SIMULATION_RUNS=500 node scripts/run-simulate-game.cjs)",
+      "Bash(SIMULATION_RUNS=500 node scripts/run-simulate-game.cjs --ci)",
+      "Bash(SIMULATION_RUNS=1000 node scripts/run-simulate-game.cjs)",
+      "Bash(xargs -I {} sh -c 'echo \"\"=== {} ===\"\" && find /c/Yazgi/src/{} -maxdepth 1 -type f | wc -l')",
+      "Bash(git -C C:/Yazgi log --oneline)"
     ]
   }
 }

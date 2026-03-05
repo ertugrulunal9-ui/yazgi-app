@@ -7,26 +7,31 @@ describe('Rewarded ad placements registry', () => {
     await monetizationService.initialize();
   });
 
-  it('registers phase 3 rewarded placements', async () => {
-    const relationship = await monetizationService.showContextualRewardedAd('relationship_boost');
-    const trait = await monetizationService.showContextualRewardedAd('trait_boost');
-    const shopping = await monetizationService.showContextualRewardedAd('shopping_discount');
-    const report = await monetizationService.showContextualRewardedAd('report_preview');
+  it('registers reduced rewarded placements', async () => {
+    const examPrep = await monetizationService.showContextualRewardedAd('exam_prep');
+    const energyRecovery = await monetizationService.showContextualRewardedAd('energy_depleted');
+    const crisisRecovery = await monetizationService.showContextualRewardedAd('crisis_recovery');
+    const endingAlternative = await monetizationService.showContextualRewardedAd('ending_alternative');
+    const undoChoice = await monetizationService.showContextualRewardedAd('undo_choice');
 
-    expect(relationship.success).toBe(true);
-    expect(relationship.rewardType).toBe('utility');
-    expect(relationship.amount).toBe(5);
+    expect(examPrep.success).toBe(true);
+    expect(examPrep.rewardType).toBe('intelligence');
+    expect(examPrep.amount).toBe(15);
 
-    expect(trait.success).toBe(true);
-    expect(trait.rewardType).toBe('utility');
-    expect(trait.amount).toBe(1);
+    expect(energyRecovery.success).toBe(true);
+    expect(energyRecovery.rewardType).toBe('energy');
+    expect(energyRecovery.amount).toBe(25);
 
-    expect(shopping.success).toBe(true);
-    expect(shopping.rewardType).toBe('utility');
-    expect(shopping.amount).toBe(20);
+    expect(crisisRecovery.success).toBe(true);
+    expect(crisisRecovery.rewardType).toBe('utility');
+    expect(crisisRecovery.amount).toBe(0);
 
-    expect(report.success).toBe(true);
-    expect(report.rewardType).toBe('utility');
-    expect(report.amount).toBe(0);
+    expect(endingAlternative.success).toBe(true);
+    expect(endingAlternative.rewardType).toBe('utility');
+    expect(endingAlternative.amount).toBe(0);
+
+    expect(undoChoice.success).toBe(true);
+    expect(undoChoice.rewardType).toBe('utility');
+    expect(undoChoice.amount).toBe(0);
   });
 });
