@@ -15,6 +15,7 @@ import {
   getStatCap,
   getTraitMultiplier,
 } from '../utils/gameUtils';
+import { tRuntime } from '../i18n/strings';
 import { getMomentumMultiplierForStat } from './PersonalityMomentumEngine';
 
 export interface StatChangeConfig {
@@ -179,16 +180,19 @@ export class StatEngine {
       const ratio = detail.originalDelta > 0 ? detail.finalDelta / detail.originalDelta : 1;
 
       if (detail.burdenMultiplier < 1 && ratio < 0.75) {
-        if (!messages.includes('Çok yorgunsun, kazancın azaldı.')) {
-          messages.push('Çok yorgunsun, kazancın azaldı.');
+        const tiredPenalty = tRuntime('feedback.statNarrative.tiredPenalty');
+        if (!messages.includes(tiredPenalty)) {
+          messages.push(tiredPenalty);
         }
       } else if (detail.traitMultiplier > 1.2 && detail.finalDelta > detail.originalDelta) {
-        if (!messages.includes('Yeteneklerin devreye girdi!')) {
-          messages.push('Yeteneklerin devreye girdi!');
+        const traitBoost = tRuntime('feedback.statNarrative.traitBoost');
+        if (!messages.includes(traitBoost)) {
+          messages.push(traitBoost);
         }
       } else if (detail.momentumMultiplier > 1.1) {
-        if (!messages.includes('Momentum bonusu aldın!')) {
-          messages.push('Momentum bonusu aldın!');
+        const momentumBoost = tRuntime('feedback.statNarrative.momentumBoost');
+        if (!messages.includes(momentumBoost)) {
+          messages.push(momentumBoost);
         }
       }
     }

@@ -167,3 +167,55 @@ export const getLegacyBonusBreakdown = (meta: MetaProgression): LegacyBonusBreak
   };
 };
 
+// =================================================================
+// DAILY LOGIN REWARD
+// =================================================================
+
+export interface DailyLoginResult {
+  isNewDay: boolean;
+  streak: number;
+  legacyPointsBonus: number;
+  updatedMeta: MetaProgression;
+}
+
+const todayDateString = (): string => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+const daysBetween = (a: string, b: string): number => {
+  const msPerDay = 86400000;
+  return Math.round((new Date(b).getTime() - new Date(a).getTime()) / msPerDay);
+};
+
+const STREAK_BONUS: Array<{ minStreak: number; points: number }> = [
+  { minStreak: 7, points: 15 },
+  { minStreak: 4, points: 10 },
+  { minStreak: 1, points: 5 },
+];
+
+export const checkDailyLogin = (meta: MetaProgression): DailyLoginResult => {
+  const today = todayDateString();
+  const lastDate = meta.lastLoginDate;
+
+  if (lastDate === today) {
+    return { isNewDay: false, streak: meta.loginStreak ?? 1, legacyPointsBonus: 0, updatedMeta: meta };
+  }
+
+  const prevStreak = meta.loginStreak ?? 0;
+  const diff = lastDate ? daysBetween(lastDate, today) : 999;
+  const newStreak = diff === 1 ? prevStreak + 1 : 1;
+  const bonus = (STREAK_BONUS.find(s => newStreak >= s.minStreak)?.points ?? 5);
+  const newTotalPoints = (meta.totalLegacyPoints ?? 0) + bonus;
+
+  const updatedMeta: MetaProgression = {
+    ...meta,
+    lastLoginDate: today,
+    loginStreak: newStreak,
+    totalLegacyPoints: newTotalPoints,
+    legacyLevel: deriveLegacyLevel(newTotalPoints),
+  };
+
+  return { isNewDay: true, streak: newStreak, legacyPointsBonus: bonus, updatedMeta };
+};
+

@@ -9,6 +9,7 @@ import { getTraitName } from '../data/traits';
 import { ProgressBonus } from '../components/ProgressBonus';
 import { TraitProgressPanel } from '../components/TraitProgressPanel';
 import { tRuntime } from '../i18n/strings';
+import { StatHistoryChart } from '../components/StatHistoryChart';
 
 interface ThemeTokens {
   textPrimary: string;
@@ -38,6 +39,7 @@ interface CharacterScreenProps {
     total: number;
     percentage: number;
   };
+  statSnapshots?: Array<{ age: number; stats: Stats }>;
 }
 
 interface CharacterSectionProps {
@@ -57,34 +59,32 @@ interface CharacterSectionTitleProps {
 const STAT_CONFIG: Array<{
   key: keyof Stats;
   labelKey: string;
-  fallbackLabel: string;
   emoji: string;
   color: string;
   max: number;
 }> = [
-  { key: 'health', labelKey: 'labels.stats.health', fallbackLabel: 'Saglik', emoji: '\u2764\uFE0F', color: '#ef4444', max: 100 },
-  { key: 'energy', labelKey: 'labels.stats.energy', fallbackLabel: 'Enerji', emoji: '\u26A1', color: '#ca8a04', max: 100 },
-  { key: 'intelligence', labelKey: 'labels.stats.intelligence', fallbackLabel: 'Zeka', emoji: '\u{1F9E0}', color: '#2563eb', max: 100 },
-  { key: 'charisma', labelKey: 'labels.stats.charisma', fallbackLabel: 'Karizma', emoji: '\u2728', color: '#7e22ce', max: 100 },
-  { key: 'discipline', labelKey: 'labels.stats.discipline', fallbackLabel: 'Disiplin', emoji: '\u{1F4DA}', color: '#0f766e', max: 100 },
-  { key: 'familyRelation', labelKey: 'labels.stats.familyRelation', fallbackLabel: 'Aile Iliskisi', emoji: '\u{1F46A}', color: '#be185d', max: 100 },
+  { key: 'health', labelKey: 'labels.stats.health', emoji: '\u2764\uFE0F', color: '#ef4444', max: 100 },
+  { key: 'energy', labelKey: 'labels.stats.energy', emoji: '\u26A1', color: '#ca8a04', max: 100 },
+  { key: 'intelligence', labelKey: 'labels.stats.intelligence', emoji: '\u{1F9E0}', color: '#2563eb', max: 100 },
+  { key: 'charisma', labelKey: 'labels.stats.charisma', emoji: '\u2728', color: '#7e22ce', max: 100 },
+  { key: 'discipline', labelKey: 'labels.stats.discipline', emoji: '\u{1F4DA}', color: '#0f766e', max: 100 },
+  { key: 'familyRelation', labelKey: 'labels.stats.familyRelation', emoji: '\u{1F46A}', color: '#be185d', max: 100 },
 ];
 
 const SUBJECT_CONFIG: Array<{
   key: keyof SchoolGrades;
   labelKey: string;
-  fallbackLabel: string;
   emoji: string;
   color: string;
 }> = [
-  { key: 'math', labelKey: 'labels.grades.math', fallbackLabel: 'Matematik', emoji: '\u{1F522}', color: '#2563eb' },
-  { key: 'turkish', labelKey: 'labels.grades.turkish', fallbackLabel: 'Turkce', emoji: '\u{1F4DD}', color: '#7e22ce' },
-  { key: 'science', labelKey: 'labels.grades.science', fallbackLabel: 'Fen Bilgisi', emoji: '\u{1F52C}', color: '#047857' },
-  { key: 'language', labelKey: 'labels.grades.language', fallbackLabel: 'Yabanci Dil', emoji: '\u{1F30D}', color: '#b45309' },
-  { key: 'history', labelKey: 'labels.grades.history', fallbackLabel: 'Tarih', emoji: '\u{1F4DC}', color: '#be185d' },
-  { key: 'geography', labelKey: 'labels.grades.geography', fallbackLabel: 'Cografya', emoji: '\u{1F5FA}\uFE0F', color: '#0e7490' },
-  { key: 'art', labelKey: 'labels.grades.art', fallbackLabel: 'Gorsel Sanatlar', emoji: '\u{1F3A8}', color: '#c2410c' },
-  { key: 'music', labelKey: 'labels.grades.music', fallbackLabel: 'Muzik', emoji: '\u{1F3B5}', color: '#15803d' },
+  { key: 'math', labelKey: 'labels.grades.math', emoji: '\u{1F522}', color: '#2563eb' },
+  { key: 'turkish', labelKey: 'labels.grades.turkish', emoji: '\u{1F4DD}', color: '#7e22ce' },
+  { key: 'science', labelKey: 'labels.grades.science', emoji: '\u{1F52C}', color: '#047857' },
+  { key: 'language', labelKey: 'labels.grades.language', emoji: '\u{1F30D}', color: '#b45309' },
+  { key: 'history', labelKey: 'labels.grades.history', emoji: '\u{1F4DC}', color: '#be185d' },
+  { key: 'geography', labelKey: 'labels.grades.geography', emoji: '\u{1F5FA}\uFE0F', color: '#0e7490' },
+  { key: 'art', labelKey: 'labels.grades.art', emoji: '\u{1F3A8}', color: '#c2410c' },
+  { key: 'music', labelKey: 'labels.grades.music', emoji: '\u{1F3B5}', color: '#15803d' },
 ];
 
 type PassiveBonusKey =
@@ -179,13 +179,14 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
   cardStyle,
   onOpenAchievements,
   achievementSummary,
+  statSnapshots,
 }) => {
   const [isTraitProgressExpanded, setIsTraitProgressExpanded] = useState(false);
 
   const statConfig = STAT_CONFIG.map(stat => ({
     ...stat,
     max: stat.key === 'energy' ? Math.max(1, maxEnergy) : stat.max,
-    label: tRuntime(stat.labelKey, undefined, stat.fallbackLabel),
+    label: tRuntime(stat.labelKey, undefined, stat.key),
   }));
 
   const getSkillRatio = (value: number) => Math.max(0, Math.min(1, value / 100));
@@ -614,7 +615,7 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
             const baseGradeColor = value >= 70 ? '#15803d' : value >= 50 ? '#b45309' : '#b91c1c';
             const gradeColor = ensureTextContrast(baseGradeColor, theme.surfaceBase, 4.5);
             const readableSubjectColor = ensureTextContrast(subject.color, theme.surfaceBase, 4.5);
-            const subjectLabel = tRuntime(subject.labelKey, undefined, subject.fallbackLabel);
+            const subjectLabel = tRuntime(subject.labelKey, undefined, subject.key);
 
             return (
               <FadeInUpView key={subject.key} delay={index * 40}>
@@ -676,6 +677,22 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
               )}
             </Text>
           </View>
+        </CharacterSection>
+      ) : null}
+
+      {statSnapshots && statSnapshots.length >= 1 ? (
+        <CharacterSection
+          title={tRuntime('character.screen.sections.statHistory', undefined, 'Geçmiş')}
+          icon="📈"
+          cardStyle={cardStyle}
+          theme={theme}
+        >
+          <StatHistoryChart
+            snapshots={statSnapshots}
+            currentAge={age}
+            currentStats={stats}
+            theme={theme}
+          />
         </CharacterSection>
       ) : null}
     </FadeInUpView>

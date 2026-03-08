@@ -18,7 +18,8 @@ import {
   getActionEffectiveMinAge,
   resolveActionEffectForFamily,
 } from '../data/actions';
-import { getEffectiveOwnedItems, getItem } from '../data/items';
+import { getEffectiveOwnedItems, getItemName } from '../data/items';
+import { useUI } from '../context/UIContext';
 import { ActionHistoryItem, FamilyWealth, Skills } from '../types';
 import { applySkillsToHubAction } from '../utils/gameUtils';
 
@@ -88,6 +89,7 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
   inventory,
   familyWealth,
 }) => {
+  const { locale, t } = useUI();
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
   const [internalVisible, setInternalVisible] = useState(false);
@@ -109,7 +111,7 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
     const effectiveEnergyCost = adjusted.energyCost;
     const effectiveMinAge = getActionEffectiveMinAge(action, ownedItems);
     const missingItemId = (action.requiredItemIds || []).find(itemId => !ownedItems.includes(itemId));
-    const missingItemName = missingItemId ? (getItem(missingItemId)?.name || missingItemId) : null;
+    const missingItemName = missingItemId ? getItemName(missingItemId, locale) : null;
     const isOwnedItem = Boolean(action.purchaseItemId && ownedItems.includes(action.purchaseItemId));
     const requiredMoney = adjusted.effect.money !== undefined && adjusted.effect.money < 0
       ? Math.abs(adjusted.effect.money)
@@ -138,7 +140,7 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
       effectiveEnergyCost,
       effectiveMinAge,
     };
-  }, [actionHistory, currentAge, currentEnergy, currentMoney, familyWealth, inventory, skills]);
+  }, [actionHistory, currentAge, currentEnergy, currentMoney, familyWealth, inventory, locale, skills]);
 
   const getActionAccessibilityHint = useCallback((
     action: SubAction,
@@ -153,28 +155,33 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
       return action.accessibilityHint;
     }
     if (lockReason === 'age') {
-      return `${effectiveMinAge || action.minAge} yasindan sonra acilir`;
+      return t('actions.sheet.ageUnlockHint', { age: effectiveMinAge || action.minAge || 0 });
     }
     if (lockReason === 'item') {
-      return `${missingItemName || 'Gerekli esya'} olmadan bu aksiyon acilmaz`;
+      return t('actions.sheet.itemUnlockHint', {
+        itemName: missingItemName || t('actions.sheet.requiredItemFallback'),
+      });
     }
     if (lockReason === 'owned') {
-      return 'Bu esya zaten sende var';
+      return t('actions.sheet.ownedItemHint');
     }
     if (lockReason === 'money') {
-      return `Bu aksiyon icin en az ${requiredMoney || 0} para gerekir`;
+      return t('actions.sheet.moneyRequirementHint', { amount: requiredMoney || 0 });
     }
     if (lockReason === 'energy') {
-      return `Bu aksiyon icin en az ${effectiveEnergyCost} enerji gerekir`;
+      return t('actions.sheet.energyRequirementHint', { amount: effectiveEnergyCost });
     }
     if (typeof moneyDelta === 'number' && moneyDelta !== 0) {
       const moneyText = moneyDelta < 0
-        ? `${Math.abs(moneyDelta)} para harcar`
-        : `${moneyDelta} para kazandirir`;
-      return `${effectiveEnergyCost} enerji harcar, ${moneyText} ve karakterini etkiler`;
+        ? t('actions.sheet.moneySpentHint', { amount: Math.abs(moneyDelta) })
+        : t('actions.sheet.moneyGainedHint', { amount: moneyDelta });
+      return t('actions.sheet.actionImpactWithMoneyHint', {
+        energy: effectiveEnergyCost,
+        moneyText,
+      });
     }
-    return `${effectiveEnergyCost} enerji harcar ve karakterini etkiler`;
-  }, []);
+    return t('actions.sheet.actionImpactHint', { energy: effectiveEnergyCost });
+  }, [t]);
 
   // Sync internal state with props
   useEffect(() => {
@@ -219,15 +226,17 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
   const renderActionItem = ({ item: action }: { item: SubAction }) => {
     const state = resolveActionState(action);
     const lockLabel = state.lockReason === 'age'
-      ? `Kilitli: ${state.effectiveMinAge || action.minAge} yasindan sonra acilir`
+      ? t('actions.sheet.lockAge', { age: state.effectiveMinAge || action.minAge || 0 })
       : state.lockReason === 'item'
-        ? `Kilitli: Gerekli esya ${state.missingItemName}`
+        ? t('actions.sheet.lockItem', {
+          itemName: state.missingItemName || t('actions.sheet.requiredItemFallback'),
+        })
         : state.lockReason === 'owned'
-          ? 'Bu esya zaten sende var'
+          ? t('actions.sheet.lockOwned')
           : state.lockReason === 'money'
-            ? `En az ${state.requiredMoney} para gerekli`
+            ? t('actions.sheet.lockMoney', { amount: state.requiredMoney || 0 })
             : state.lockReason === 'energy'
-              ? 'Yetersiz enerji'
+              ? t('actions.sheet.lockEnergy')
               : '';
     const actionPriceLabel = state.moneyDelta < 0
       ? `${action.text} (₺${Math.abs(state.moneyDelta)})`
@@ -327,8 +336,8 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
           onClose();
         }}
         accessibilityRole="button"
-        accessibilityLabel="Aksiyon listesini kapat"
-        accessibilityHint="Alt paneli kapatip oyun ekranina geri doner"
+        accessibilityLabel={t('actions.sheet.closeListAria')}
+        accessibilityHint={t('actions.sheet.closeListHint')}
       />
 
       {/* Bottom Sheet */}
@@ -364,8 +373,8 @@ export const ActionBottomSheet: React.FC<ActionBottomSheetProps> = ({
             }}
             style={[styles.closeButton, { backgroundColor: theme.surfaceBase || '#111827' }]}
             accessibilityRole="button"
-            accessibilityLabel="Aksiyon panelini kapat"
-            accessibilityHint="Secim yapmadan onceki ekrana geri doner"
+            accessibilityLabel={t('actions.sheet.closePanelAria')}
+            accessibilityHint={t('actions.sheet.closePanelHint')}
           >
             <Feather name="x" color={theme.textPrimary || '#fff'} size={18} />
           </TouchableOpacity>

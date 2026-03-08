@@ -5,8 +5,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
   // ===== GENETIC TRAITS =====
   {
     id: 'GENIUS',
-    name: '🧠 Deha',
-    description: 'Doğuştan zekisin. Matematik, fizik ve kompleks problemler sana kolay geliyor.',
+    name: '',
+    description: '',
     type: 'POSITIVE',
     category: 'GENETIC',
     effects: {
@@ -15,8 +15,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
   },
   {
     id: 'ATHLETIC',
-    name: '⚽ Sporcu',
-    description: 'Doğal atlet. Fiziksel aktivitelerde parlaksın, hızlı ve çeviksin.',
+    name: '',
+    description: '',
     type: 'POSITIVE',
     category: 'GENETIC',
     effects: {
@@ -26,8 +26,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
   },
   {
     id: 'CHARISMATIC',
-    name: '✨ Karizmatik',
-    description: 'Doğal liderlik yeteneği var. İnsanlar senden hoşlanıyor ve güveniyor.',
+    name: '',
+    description: '',
     type: 'POSITIVE',
     category: 'GENETIC',
     effects: {
@@ -36,8 +36,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
   },
   {
     id: 'SICKLY',
-    name: '🤒 Hastalıklı',
-    description: 'Bağışıklık sistemi zayıf. Sık hastalanıyorsun, iyileşmek uzun sürüyor.',
+    name: '',
+    description: '',
     type: 'NEGATIVE',
     category: 'GENETIC',
     effects: {
@@ -46,8 +46,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
   },
   {
     id: 'CLUMSY',
-    name: '🪶 Beceriksiz',
-    description: 'Hareket koordinasyonunda problem yaşıyorsun. Sık sık şeyler düşürüyor ve çarpıyorsun.',
+    name: '',
+    description: '',
     type: 'NEGATIVE',
     category: 'GENETIC',
     effects: {
@@ -58,8 +58,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
   // ===== ACQUIRED POSITIVE TRAITS =====
   {
     id: 'EMPATHETIC',
-    name: '❤️ Empatik',
-    description: 'İnsanların duygularını anlayabiliyorsun. Başkasının acısını kendi acın gibi hissediyorsun.',
+    name: '',
+    description: '',
     type: 'POSITIVE',
     category: 'ACQUIRED',
     formation: {
@@ -76,8 +76,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
   },
   {
     id: 'ORGANIZED',
-    name: '📋 Organize',
-    description: 'Hayatın düzenli, her şey yerine konuyor. Planlama yapabiliyorsun ve disiplinlisin.',
+    name: '',
+    description: '',
     type: 'POSITIVE',
     category: 'ACQUIRED',
     formation: {
@@ -93,8 +93,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
   },
   {
     id: 'BRAVE',
-    name: '🦁 Cesur',
-    description: 'Korkun çok az. Riskli durumları seversin ve zorluktan kaçmazsın.',
+    name: '',
+    description: '',
     type: 'POSITIVE',
     category: 'ACQUIRED',
     formation: {
@@ -110,8 +110,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
   },
   {
     id: 'DISCIPLINED',
-    name: '💪 Disiplinli',
-    description: 'Kendine katı kurallar koymuşsun. Hedeflerine ulaşmak için gerekirse ne yapman gerekiyorsa yapıyorsun.',
+    name: '',
+    description: '',
     type: 'POSITIVE',
     category: 'ACQUIRED',
     formation: {
@@ -129,8 +129,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
   },
   {
     id: 'AMBITIOUS',
-    name: '🚀 Hırslı',
-    description: "Büyük hayallerin var. Dünya'yı fethetme, tarihe adını yazdırma gibi fikirleri seviyorsun.",
+    name: '',
+    description: '',
     type: 'POSITIVE',
     category: 'ACQUIRED',
     formation: {
@@ -147,8 +147,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
   },
   {
     id: 'CREATIVE',
-    name: '🎨 Yaratıcı',
-    description: 'İmajinatifsin ve orijinal fikirlerin var. Sanat, tasarım, yazı vb. alanlarda parla.',
+    name: '',
+    description: '',
     type: 'POSITIVE',
     category: 'ACQUIRED',
     formation: {
@@ -164,8 +164,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
   },
   {
     id: 'BOOKWORM',
-    name: '📚 Kitap Kurdu',
-    description: 'Okumayı çok seversin. Kitaplar senin en iyi arkadaşın. Diller konusunda yeteneklisin.',
+    name: '',
+    description: '',
     type: 'POSITIVE',
     category: 'ACQUIRED',
     formation: {
@@ -182,8 +182,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
   },
   {
     id: 'NIGHT_OWL',
-    name: '🌙 Gece Kuşu',
-    description: 'Gece saatlerinde çok daha verimlisin. Güne başlayınca yavaş hareketlisin ama gece dinçleşiyorsun.',
+    name: '',
+    description: '',
     type: 'POSITIVE',
     category: 'ACQUIRED',
     formation: {
@@ -197,8 +197,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
   },
   {
     id: 'SOCIAL_BUTTERFLY',
-    name: '🦋 Sosyal Kelebek',
-    description: 'İnsanlardan hoşlanıyorsun ve rahatça dostluk kurabiliyorsun. Partiler senin alanın.',
+    name: '',
+    description: '',
     type: 'POSITIVE',
     category: 'ACQUIRED',
     formation: {
@@ -214,8 +214,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
   },
   {
     id: 'ENTREPRENEUR',
-    name: '💼 Girişimci',
-    description: 'Parayla ilişki kurman doğal. İşletmecilik, yatırım ve finansal konularda yetenekhisin.',
+    name: '',
+    description: '',
     type: 'POSITIVE',
     category: 'ACQUIRED',
     formation: {
@@ -232,8 +232,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
   },
   {
     id: 'HONEST',
-    name: '✅ Dürüst',
-    description: 'Doğruluğu her şeyden öne alıyorsun. Yalan söylemek seni rahatsız ediyor.',
+    name: '',
+    description: '',
     type: 'POSITIVE',
     category: 'ACQUIRED',
     formation: {
@@ -251,8 +251,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
   // ===== ACQUIRED NEGATIVE TRAITS =====
   {
     id: 'LAZY',
-    name: '😴 Tembel',
-    description: 'Hiçbir şey yapmak istemiyorsun. Enerji seviyende ise sorun yok ama çalışmak sana korkunç geliyor.',
+    name: '',
+    description: '',
     type: 'NEGATIVE',
     category: 'ACQUIRED',
     formation: {
@@ -270,8 +270,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
   },
   {
     id: 'PROCRASTINATOR',
-    name: '⏰ Ertelemeci',
-    description: 'Her zaman son dakikaya bırakıyorsun. Zaman yönetiminde sorun yaşıyorsun ve stres altındasın.',
+    name: '',
+    description: '',
     type: 'NEGATIVE',
     category: 'ACQUIRED',
     formation: {
@@ -286,8 +286,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
   },
   {
     id: 'COWARD',
-    name: '😰 Korkak',
-    description: 'Riskli durumlardan kaçıyorsun. Hayal kırıklığı ve başarısızlıktan çok korkuyorsun.',
+    name: '',
+    description: '',
     type: 'NEGATIVE',
     category: 'ACQUIRED',
     formation: {
@@ -303,8 +303,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
   },
   {
     id: 'CHEATER',
-    name: '😏 Hileci',
-    description: 'Kuralları önemsiyor. Her yolu denemeye ve hile yapmaya isteklisin.',
+    name: '',
+    description: '',
     type: 'NEGATIVE',
     category: 'ACQUIRED',
     formation: {
@@ -318,8 +318,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
   },
   {
     id: 'BURNOUT_PRONE',
-    name: '🔥 Tükenmişlik Eğilimli',
-    description: 'Çok çalışıyorsun ve kendine hiç bakamıyorsun. Yorgunluğun çok kolaylıkla ölümcül hale geliyor.',
+    name: '',
+    description: '',
     type: 'NEGATIVE',
     category: 'ACQUIRED',
     formation: {
@@ -339,8 +339,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
   },
   {
     id: 'REBELLIOUS',
-    name: '🔥 İsyankar',
-    description: 'Otoriteye karşı direniş gösteriyorsun. Kuralları kırmaktan hoşlanıyorsun.',
+    name: '',
+    description: '',
     type: 'NEGATIVE',
     category: 'ACQUIRED',
     formation: {
@@ -358,8 +358,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
   // ===== NEUTRAL/SPECIAL TRAITS =====
   {
     id: 'GAMER',
-    name: '🎮 Oyuncu',
-    description: 'Video oyunları çok seviyorsun ve çoğu oyunda başarılısın. Bu zamanını çalabilir ama eğleniyorsun.',
+    name: '',
+    description: '',
     type: 'NEUTRAL',
     category: 'ACQUIRED',
     formation: {
@@ -373,8 +373,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
   },
   {
     id: 'LONE_WOLF',
-    name: '🐺 Yalnız Kurt',
-    description: 'İnsanlardan daha çok yalnız olmayı tercih ediyorsun. Kalabalık ortamlarda rahatsız hissediyorsun.',
+    name: '',
+    description: '',
     type: 'NEUTRAL',
     category: 'ACQUIRED',
     formation: {
@@ -390,8 +390,8 @@ export const TRAIT_DEFINITIONS: TraitDefinition[] = [
   },
   {
     id: 'PRAGMATIC',
-    name: '🎯 Pragmatik',
-    description: 'Rasyonelsin ve pratik çözümleri seversin. Romantizm sana pek ilginç gelmiyor.',
+    name: '',
+    description: '',
     type: 'NEUTRAL',
     category: 'ACQUIRED',
     formation: {
@@ -410,11 +410,11 @@ export const getTrait = (traitId: string): TraitDefinition | undefined => {
 };
 
 export const getTraitName = (traitId: string): string => {
-  return tRuntime(`traits.${traitId}.name`, undefined, getTrait(traitId)?.name ?? traitId);
+  return tRuntime(`traits.${traitId}.name`, undefined, getTrait(traitId)?.name || traitId);
 };
 
 export const getTraitDescription = (traitId: string): string => {
-  return tRuntime(`traits.${traitId}.description`, undefined, getTrait(traitId)?.description ?? '');
+  return tRuntime(`traits.${traitId}.description`, undefined, getTrait(traitId)?.description || '');
 };
 
 export const getRandomGeneticTraits = (count: number = 1): string[] => {

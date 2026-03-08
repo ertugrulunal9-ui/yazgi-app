@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet } from 'react-native';
+import { useUI } from '../context/UIContext';
 import { getThemeTokens } from '../utils/themeUtils';
 import { MetaProgression } from '../types';
 
@@ -26,7 +27,8 @@ export const SessionEndTeaser: React.FC<SessionEndTeaserProps> = ({
   metaProgression,
   theme: themeOverride,
 }) => {
-  const theme = themeOverride || getThemeTokens('dark');
+  const { theme: runtimeTheme, t } = useUI();
+  const theme = themeOverride || runtimeTheme || getThemeTokens('dark');
   const nextLevelTarget = metaProgression ? (metaProgression.legacyLevel + 1) * 80 : 0;
   const legacyToNext = metaProgression ? Math.max(0, nextLevelTarget - metaProgression.totalLegacyPoints) : 0;
 
@@ -37,7 +39,7 @@ export const SessionEndTeaser: React.FC<SessionEndTeaserProps> = ({
       <View style={[styles.overlay]}>
         <View style={[styles.card, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}>
           <Text style={[styles.title, { color: theme.textPrimary }]}>
-            Devam Edecek...
+            {t('sessionEnd.title')}
           </Text>
 
           {pendingCliffhanger && (
@@ -54,7 +56,7 @@ export const SessionEndTeaser: React.FC<SessionEndTeaserProps> = ({
           {momentumStreak != null && momentumStreak >= 3 && (
             <View style={styles.section}>
               <Text style={[styles.streakText, { color: theme.accentGrade }]}>
-                {momentumStreak} tur serisi devam ediyor!
+                {t('sessionEnd.streakActive', { count: momentumStreak })}
               </Text>
             </View>
           )}
@@ -62,7 +64,7 @@ export const SessionEndTeaser: React.FC<SessionEndTeaserProps> = ({
           {traitNearUnlock && (
             <View style={styles.section}>
               <Text style={[styles.traitText, { color: theme.textSecondary }]}>
-                "{traitNearUnlock}" ozelligine cok yakinsin...
+                {t('sessionEnd.traitNearUnlock', { trait: traitNearUnlock })}
               </Text>
             </View>
           )}
@@ -70,11 +72,14 @@ export const SessionEndTeaser: React.FC<SessionEndTeaserProps> = ({
           {metaProgression && (
             <View style={styles.section}>
               <Text style={[styles.streakText, { color: theme.textPrimary }]}>
-                Legacy Seviye {metaProgression.legacyLevel} | {metaProgression.totalLegacyPoints} puan
+                {t('sessionEnd.legacyProgress', {
+                  level: metaProgression.legacyLevel,
+                  points: metaProgression.totalLegacyPoints,
+                })}
               </Text>
               {legacyToNext > 0 && (
                 <Text style={[styles.traitText, { color: theme.textSecondary }]}>
-                  Sonraki seviyeye {legacyToNext} puan kaldi.
+                  {t('sessionEnd.nextLevel', { points: legacyToNext })}
                 </Text>
               )}
             </View>
@@ -84,9 +89,9 @@ export const SessionEndTeaser: React.FC<SessionEndTeaserProps> = ({
             style={[styles.button, { backgroundColor: theme.accentEvent }]}
             onPress={onClose}
             accessibilityRole="button"
-            accessibilityLabel="Kapat"
+            accessibilityLabel={t('sessionEnd.closeAria')}
           >
-            <Text style={styles.buttonText}>Merak Ediyorum!</Text>
+            <Text style={styles.buttonText}>{t('sessionEnd.cta')}</Text>
           </TouchableOpacity>
         </View>
       </View>

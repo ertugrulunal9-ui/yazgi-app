@@ -14,7 +14,7 @@ describe('traitFeedback', () => {
     const lazyRemoval = changes.find(change => change.traitId === 'LAZY' && change.changeType === 'REMOVED');
 
     expect(lazyRemoval).toBeDefined();
-    expect(lazyRemoval?.summary).toContain('kaldirildi (cakisma:');
+    expect(lazyRemoval?.summary).toContain('kaldırıldı (çatışma:');
   });
 
   it('deduplicates repeated trait ids', () => {
@@ -26,4 +26,3 @@ describe('traitFeedback', () => {
     expect(removedCount).toBe(1);
   });
 });
-

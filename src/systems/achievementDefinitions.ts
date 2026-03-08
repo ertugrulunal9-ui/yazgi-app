@@ -16,24 +16,17 @@ const hasUnlockedAchievement = (gameState: GameState, achievementId: string): bo
   return (gameState.unlockedAchievements || []).some(entry => entry.achievementId === achievementId);
 };
 
-const ACHIEVEMENT_MONEY_REWARD_SCALE = 0.4;
-const MIN_ACHIEVEMENT_MONEY_REWARD = 25;
-const MAX_ACHIEVEMENT_MONEY_REWARD = 2000;
+const removeMonetaryReward = (achievement: Achievement): Achievement => {
+  if (!achievement.reward) {
+    return achievement;
+  }
 
-const scaleAchievementReward = (achievement: Achievement): Achievement => {
-  if (!achievement.reward?.money) return achievement;
+  const { money: _removedMoney, ...remainingReward } = achievement.reward;
+  const hasRemainingReward = remainingReward.stats || remainingReward.item;
+
   return {
     ...achievement,
-    reward: {
-      ...achievement.reward,
-      money: Math.min(
-        MAX_ACHIEVEMENT_MONEY_REWARD,
-        Math.max(
-          MIN_ACHIEVEMENT_MONEY_REWARD,
-          Math.round(achievement.reward.money * ACHIEVEMENT_MONEY_REWARD_SCALE)
-        )
-      ),
-    },
+    reward: hasRemainingReward ? remainingReward : undefined,
   };
 };
 
@@ -42,8 +35,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   // === ONBOARDING CHAIN (FIRST 3 SESSIONS) ===
   {
     id: ONBOARDING_CHAIN_IDS.step1,
-    name: 'Ilk Karar',
-    description: 'Ilk 3 oturumda ilk event kararini ver',
+    name: '',
+    description: '',
     category: 'EVENTS',
     rarity: 'COMMON',
     icon: '🧭',
@@ -56,8 +49,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: ONBOARDING_CHAIN_IDS.step2,
-    name: 'Kendine Uygun Yol',
-    description: 'Cohort hedefindeki ilk aksiyonu tamamla',
+    name: '',
+    description: '',
     category: 'EVENTS',
     rarity: 'RARE',
     icon: '🧩',
@@ -71,8 +64,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: ONBOARDING_CHAIN_IDS.step3,
-    name: 'Rutin Kurucu',
-    description: 'Ilk 3 oturumda dengeli bir rutin olustur',
+    name: '',
+    description: '',
     category: 'EVENTS',
     rarity: 'EPIC',
     icon: '🎯',
@@ -88,8 +81,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   // === STATS CATEGORY (15) ===
   {
     id: 'genius',
-    name: 'Dahi',
-    description: 'Zeka 90\'a ulaş',
+    name: '',
+    description: '',
     category: 'STATS',
     rarity: 'EPIC',
     icon: '🧠',
@@ -99,8 +92,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'super_genius',
-    name: 'Süper Dahi',
-    description: 'Zeka 100\'e ulaş',
+    name: '',
+    description: '',
     category: 'STATS',
     rarity: 'LEGENDARY',
     icon: '🎓',
@@ -110,8 +103,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'healthy',
-    name: 'Sağlıklı Yaşam',
-    description: 'Sağlık 90\'a ulaş',
+    name: '',
+    description: '',
     category: 'STATS',
     rarity: 'RARE',
     icon: '💪',
@@ -121,8 +114,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'athlete',
-    name: 'Atlet',
-    description: 'Sağlık 100\'e ulaş',
+    name: '',
+    description: '',
     category: 'STATS',
     rarity: 'EPIC',
     icon: '🏆',
@@ -132,8 +125,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'charming',
-    name: 'Karizmatik',
-    description: 'Karizma 90\'a ulaş',
+    name: '',
+    description: '',
     category: 'STATS',
     rarity: 'RARE',
     icon: '✨',
@@ -143,8 +136,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'superstar',
-    name: 'Süperstar',
-    description: 'Karizma 100\'e ulaş',
+    name: '',
+    description: '',
     category: 'STATS',
     rarity: 'EPIC',
     icon: '🌟',
@@ -154,8 +147,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'disciplined',
-    name: 'Disiplinli',
-    description: 'Disiplin 90\'a ulaş',
+    name: '',
+    description: '',
     category: 'STATS',
     rarity: 'RARE',
     icon: '⚡',
@@ -165,8 +158,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'iron_will',
-    name: 'Demir İrade',
-    description: 'Disiplin 100\'e ulaş',
+    name: '',
+    description: '',
     category: 'STATS',
     rarity: 'EPIC',
     icon: '🛡️',
@@ -176,8 +169,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'balanced',
-    name: 'Dengeli',
-    description: 'Tüm statlar 70+',
+    name: '',
+    description: '',
     category: 'STATS',
     rarity: 'EPIC',
     icon: '⚖️',
@@ -190,8 +183,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'perfectionist',
-    name: 'Mükemmeliyetçi',
-    description: 'Tüm statlar 90+',
+    name: '',
+    description: '',
     category: 'STATS',
     rarity: 'LEGENDARY',
     icon: '💎',
@@ -204,8 +197,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'early_start',
-    name: 'Erken Başlangıç',
-    description: 'Tüm statlar 50+ ile başla',
+    name: '',
+    description: '',
     category: 'STATS',
     rarity: 'RARE',
     icon: '🌟',
@@ -218,8 +211,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'energetic',
-    name: 'Enerjik',
-    description: 'Enerji 80+ ile bir yaşa başla',
+    name: '',
+    description: '',
     category: 'STATS',
     rarity: 'COMMON',
     icon: '⚡',
@@ -229,8 +222,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'family_man',
-    name: 'Aile Bağları',
-    description: 'Aile ilişkisi 90+',
+    name: '',
+    description: '',
     category: 'STATS',
     rarity: 'RARE',
     icon: '👨‍👩‍👧',
@@ -240,8 +233,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'survivor',
-    name: 'Hayatta Kalma',
-    description: 'Sağlık 10\'un altına düşüp toparlan',
+    name: '',
+    description: '',
     category: 'STATS',
     rarity: 'RARE',
     icon: '🩹',
@@ -253,8 +246,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'broke_to_rich',
-    name: 'Fakir\'den Zengine',
-    description: 'Para 0\'a düşüp 50k\'ya çık',
+    name: '',
+    description: '',
     category: 'MONEY',
     rarity: 'EPIC',
     icon: '📈',
@@ -266,8 +259,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'early_bloomer',
-    name: 'Erken Gelişim',
-    description: '10 yaşından önce herhangi bir stat 80+',
+    name: '',
+    description: '',
     category: 'STATS',
     rarity: 'RARE',
     icon: '🌱',
@@ -284,8 +277,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   // === MONEY CATEGORY (8) ===
   {
     id: 'first_income',
-    name: 'İlk Gelir',
-    description: 'İlk kez para kazan',
+    name: '',
+    description: '',
     category: 'MONEY',
     rarity: 'COMMON',
     icon: '💵',
@@ -295,8 +288,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'thousandaire',
-    name: 'Binlik',
-    description: '1,000₺ biriktir',
+    name: '',
+    description: '',
     category: 'MONEY',
     rarity: 'COMMON',
     icon: '💰',
@@ -306,8 +299,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'ten_thousandaire',
-    name: 'On Binlik',
-    description: '10,000₺ biriktir',
+    name: '',
+    description: '',
     category: 'MONEY',
     rarity: 'RARE',
     icon: '💸',
@@ -317,8 +310,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'rich',
-    name: 'Zengin',
-    description: '50,000₺ biriktir',
+    name: '',
+    description: '',
     category: 'MONEY',
     rarity: 'EPIC',
     icon: '🤑',
@@ -328,8 +321,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'millionaire',
-    name: 'Milyoner',
-    description: '1,000,000₺ biriktir',
+    name: '',
+    description: '',
     category: 'MONEY',
     rarity: 'LEGENDARY',
     icon: '💎',
@@ -339,8 +332,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'young_entrepreneur',
-    name: 'Genç Girişimci',
-    description: '14 yaşından önce 10k+ biriktir',
+    name: '',
+    description: '',
     category: 'MONEY',
     rarity: 'EPIC',
     icon: '👨‍💼',
@@ -350,8 +343,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'spender',
-    name: 'Savurgan',
-    description: 'Toplam 100k+ harca',
+    name: '',
+    description: '',
     category: 'MONEY',
     rarity: 'RARE',
     icon: '💳',
@@ -361,8 +354,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'investor',
-    name: 'Yatırımcı',
-    description: 'Para 30k+ olduğunda eşya al',
+    name: '',
+    description: '',
     category: 'MONEY',
     rarity: 'RARE',
     icon: '📊',
@@ -372,8 +365,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'saver',
-    name: 'Biriktirici',
-    description: 'Para 20k+ biriktir',
+    name: '',
+    description: '',
     category: 'MONEY',
     rarity: 'RARE',
     icon: '💰',
@@ -385,8 +378,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   // === SKILLS CATEGORY (8) ===
   {
     id: 'coder',
-    name: 'Kodlayıcı',
-    description: 'Kodlama 50+',
+    name: '',
+    description: '',
     category: 'SKILLS',
     rarity: 'COMMON',
     icon: '💻',
@@ -396,8 +389,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'code_master',
-    name: 'Kod Ustası',
-    description: 'Kodlama 80+',
+    name: '',
+    description: '',
     category: 'SKILLS',
     rarity: 'EPIC',
     icon: '🖥️',
@@ -407,8 +400,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'musician',
-    name: 'Müzisyen',
-    description: 'Müzik 50+',
+    name: '',
+    description: '',
     category: 'SKILLS',
     rarity: 'COMMON',
     icon: '🎵',
@@ -418,8 +411,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'virtuoso',
-    name: 'Virtüöz',
-    description: 'Müzik 80+',
+    name: '',
+    description: '',
     category: 'SKILLS',
     rarity: 'EPIC',
     icon: '🎼',
@@ -429,8 +422,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'sportsman',
-    name: 'Sporcu',
-    description: 'Spor 50+',
+    name: '',
+    description: '',
     category: 'SKILLS',
     rarity: 'COMMON',
     icon: '⚽',
@@ -440,8 +433,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'pro_athlete',
-    name: 'Profesyonel Atlet',
-    description: 'Spor 80+',
+    name: '',
+    description: '',
     category: 'SKILLS',
     rarity: 'EPIC',
     icon: '🥇',
@@ -451,8 +444,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'designer',
-    name: 'Tasarımcı',
-    description: 'Tasarım 50+',
+    name: '',
+    description: '',
     category: 'SKILLS',
     rarity: 'COMMON',
     icon: '🎨',
@@ -462,8 +455,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'renaissance',
-    name: 'Rönesans İnsanı',
-    description: 'Tüm yetenekler 60+',
+    name: '',
+    description: '',
     category: 'SKILLS',
     rarity: 'LEGENDARY',
     icon: '🎭',
@@ -476,8 +469,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'skill_master',
-    name: 'Yetenek Ustası',
-    description: 'Bir yetenek 90+',
+    name: '',
+    description: '',
     category: 'SKILLS',
     rarity: 'EPIC',
     icon: '🎯',
@@ -492,8 +485,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   // === SCHOOL CATEGORY (8) ===
   {
     id: 'straight_a',
-    name: 'Pür A',
-    description: 'Tüm notlar 90+',
+    name: '',
+    description: '',
     category: 'SCHOOL',
     rarity: 'EPIC',
     icon: '📚',
@@ -505,8 +498,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'math_genius',
-    name: 'Matematik Dehası',
-    description: 'Matematik 95+',
+    name: '',
+    description: '',
     category: 'SCHOOL',
     rarity: 'RARE',
     icon: '🔢',
@@ -516,8 +509,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'scientist',
-    name: 'Bilim İnsanı',
-    description: 'Fen 95+',
+    name: '',
+    description: '',
     category: 'SCHOOL',
     rarity: 'RARE',
     icon: '🔬',
@@ -527,8 +520,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'wordsmith',
-    name: 'Edebiyatçı',
-    description: 'Dil 95+',
+    name: '',
+    description: '',
     category: 'SCHOOL',
     rarity: 'RARE',
     icon: '📖',
@@ -538,8 +531,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'perfect_student',
-    name: 'Mükemmel Öğrenci',
-    description: 'Tüm notlar 100',
+    name: '',
+    description: '',
     category: 'SCHOOL',
     rarity: 'LEGENDARY',
     icon: '🏆',
@@ -551,8 +544,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'comeback_kid',
-    name: 'Dönüş Yapan',
-    description: 'Bir derste 40\'tan 90\'a çık',
+    name: '',
+    description: '',
     category: 'SCHOOL',
     rarity: 'RARE',
     icon: '📈',
@@ -562,8 +555,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'studious',
-    name: 'Çalışkan',
-    description: '50+ kez ders çalış',
+    name: '',
+    description: '',
     category: 'SCHOOL',
     rarity: 'COMMON',
     icon: '✏️',
@@ -575,8 +568,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'scholar',
-    name: 'Bilgin',
-    description: '100+ kez ders çalış',
+    name: '',
+    description: '',
     category: 'SCHOOL',
     rarity: 'RARE',
     icon: '🎓',
@@ -588,8 +581,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'grade_improver',
-    name: 'Not İyileştirici',
-    description: 'Bir derste 30\'tan 80\'a çık',
+    name: '',
+    description: '',
     category: 'SCHOOL',
     rarity: 'RARE',
     icon: '📈',
@@ -601,8 +594,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   // === EVENTS CATEGORY (6) ===
   {
     id: 'event_10',
-    name: 'Hikaye Başlıyor',
-    description: '10 olay tamamla',
+    name: '',
+    description: '',
     category: 'EVENTS',
     rarity: 'COMMON',
     icon: '📜',
@@ -612,8 +605,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'event_50',
-    name: 'Tecrübeli',
-    description: '50 olay tamamla',
+    name: '',
+    description: '',
     category: 'EVENTS',
     rarity: 'RARE',
     icon: '📋',
@@ -623,8 +616,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'event_100',
-    name: 'Hikaye Ustası',
-    description: '100 olay tamamla',
+    name: '',
+    description: '',
     category: 'EVENTS',
     rarity: 'EPIC',
     icon: '📚',
@@ -634,8 +627,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'adventurer',
-    name: 'Maceracı',
-    description: '10 farklı olay türü yaşa',
+    name: '',
+    description: '',
     category: 'EVENTS',
     rarity: 'RARE',
     icon: '🗺️',
@@ -648,8 +641,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'memory_keeper',
-    name: 'Anı Koleksiyoncusu',
-    description: '20+ anı biriktir',
+    name: '',
+    description: '',
     category: 'EVENTS',
     rarity: 'RARE',
     icon: '💭',
@@ -659,8 +652,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'nostalgia',
-    name: 'Nostalji',
-    description: '50+ anı biriktir',
+    name: '',
+    description: '',
     category: 'EVENTS',
     rarity: 'EPIC',
     icon: '🎞️',
@@ -672,8 +665,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   // === SOCIAL CATEGORY (5) ===
   {
     id: 'friendly',
-    name: 'Arkadaş Canlısı',
-    description: '3+ arkadaş edin',
+    name: '',
+    description: '',
     category: 'SOCIAL',
     rarity: 'COMMON',
     icon: '👥',
@@ -683,8 +676,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'popular',
-    name: 'Popüler',
-    description: '5+ arkadaş edin',
+    name: '',
+    description: '',
     category: 'SOCIAL',
     rarity: 'RARE',
     icon: '⭐',
@@ -694,8 +687,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'lover',
-    name: 'Aşık',
-    description: 'Bir partner edin',
+    name: '',
+    description: '',
     category: 'SOCIAL',
     rarity: 'RARE',
     icon: '❤️',
@@ -705,8 +698,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'social_butterfly',
-    name: 'Sosyal Kelebek',
-    description: '10+ NPC ile tanış',
+    name: '',
+    description: '',
     category: 'SOCIAL',
     rarity: 'EPIC',
     icon: '🦋',
@@ -716,8 +709,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'heartbreaker',
-    name: 'Kalp Kırıcı',
-    description: '3+ kişiyle romantik ilişki yaşa',
+    name: '',
+    description: '',
     category: 'SOCIAL',
     rarity: 'RARE',
     icon: '💔',
@@ -729,8 +722,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   // === SURVIVAL CATEGORY (5) ===
   {
     id: 'first_year',
-    name: 'İlk Yıl',
-    description: '1 yaşına ulaş',
+    name: '',
+    description: '',
     category: 'SURVIVAL',
     rarity: 'COMMON',
     icon: '🎂',
@@ -740,8 +733,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'teenager',
-    name: 'Ergen',
-    description: '13 yaşına ulaş',
+    name: '',
+    description: '',
     category: 'SURVIVAL',
     rarity: 'COMMON',
     icon: '🧒',
@@ -751,8 +744,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'almost_adult',
-    name: 'Neredeyse Yetişkin',
-    description: '18 yaşına ulaş',
+    name: '',
+    description: '',
     category: 'SURVIVAL',
     rarity: 'RARE',
     icon: '🎓',
@@ -762,8 +755,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'workaholic',
-    name: 'İşkolik',
-    description: '50+ kez çalış',
+    name: '',
+    description: '',
     category: 'SURVIVAL',
     rarity: 'RARE',
     icon: '💼',
@@ -773,8 +766,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'hoarder',
-    name: 'Biriktirici',
-    description: '10+ eşya topla',
+    name: '',
+    description: '',
     category: 'SURVIVAL',
     rarity: 'RARE',
     icon: '📦',
@@ -786,8 +779,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   // === SECRET ACHIEVEMENTS (5) ===
   {
     id: 'lucky_seven',
-    name: '???',
-    description: '???',
+    name: '',
+    description: '',
     category: 'SECRET',
     rarity: 'LEGENDARY',
     icon: '🍀',
@@ -800,8 +793,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'night_owl',
-    name: '???',
-    description: '???',
+    name: '',
+    description: '',
     category: 'SECRET',
     rarity: 'RARE',
     icon: '🦉',
@@ -814,8 +807,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'rebel',
-    name: '???',
-    description: '???',
+    name: '',
+    description: '',
     category: 'SECRET',
     rarity: 'EPIC',
     icon: '😈',
@@ -828,8 +821,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'minimalist',
-    name: '???',
-    description: '???',
+    name: '',
+    description: '',
     category: 'SECRET',
     rarity: 'RARE',
     icon: '🎯',
@@ -842,8 +835,8 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'speed_runner',
-    name: '???',
-    description: '???',
+    name: '',
+    description: '',
     category: 'SECRET',
     rarity: 'LEGENDARY',
     icon: '⚡',
@@ -856,21 +849,21 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
 ];
 
-export const ACHIEVEMENTS: Achievement[] = BASE_ACHIEVEMENTS.map(scaleAchievementReward);
+export const ACHIEVEMENTS: Achievement[] = BASE_ACHIEVEMENTS.map(removeMonetaryReward);
 
 export const getAchievementName = (achievementId: string, fallback?: string): string => {
-  return tRuntime(`achievementData.${achievementId}.name`, undefined, fallback ?? achievementId);
+  return tRuntime(`achievementData.${achievementId}.name`, undefined, fallback || achievementId);
 };
 
 export const getAchievementDescription = (achievementId: string, fallback?: string): string => {
-  return tRuntime(`achievementData.${achievementId}.description`, undefined, fallback ?? '');
+  return tRuntime(`achievementData.${achievementId}.description`, undefined, fallback || '');
 };
 
 const localizeAchievement = (achievement: Achievement): Achievement => {
   return {
     ...achievement,
-    name: getAchievementName(achievement.id, achievement.name),
-    description: getAchievementDescription(achievement.id, achievement.description),
+    name: '',
+    description: '',
   };
 };
 

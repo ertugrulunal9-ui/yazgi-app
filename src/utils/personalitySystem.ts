@@ -10,6 +10,7 @@ import {
   EventContext,
   Family,
 } from '../types';
+import { getRuntimeStringArray, tRuntime } from '../i18n/strings';
 
 // =================================================================
 // KİŞİLİK SİSTEMİ YARDIMCI FONKSİYONLARI
@@ -319,26 +320,7 @@ export function getPersonalityArchetype(personality: Personality): PersonalityAr
  * Kişilik arketipine göre Türkçe açıklama
  */
 export function getArchetypeDescription(archetype: PersonalityArchetype): string {
-  switch (archetype) {
-    case 'INTROVERT_CAUTIOUS':
-      return 'İçine kapanık ve temkinli. Güvenli seçimler yapıyor, riskten kaçınıyor.';
-    case 'INTROVERT_BRAVE':
-      return 'Sessiz ama cesur. Tek başına büyük işler başarabilir.';
-    case 'EXTROVERT_CAUTIOUS':
-      return 'Sosyal ama dikkatli. İnsanları seviyor ama maceradan kaçınıyor.';
-    case 'EXTROVERT_BRAVE':
-      return 'Doğal lider. Hem sosyal hem de risk almaktan korkmuyor.';
-    case 'EMPATH':
-      return 'Derin empatik. Başkalarının acısını kendi acısı gibi hissediyor.';
-    case 'PRAGMATIST':
-      return 'Pragmatik. Duygulardan çok mantığa göre karar veriyor.';
-    case 'REBEL':
-      return 'İsyankar ruh. Kurallara ve otoriteye karşı.';
-    case 'CONFORMIST':
-      return 'Uyumcu. Kurallara saygılı, toplum normlarına bağlı.';
-    case 'BALANCED':
-      return 'Dengeli kişilik. Duruma göre adapte olabiliyor.';
-  }
+  return tRuntime(`storyText.personality.archetypes.${archetype}`, undefined, archetype);
 }
 
 /**
@@ -351,55 +333,52 @@ export function generateInnerThought(
 ): string {
   const archetype = getPersonalityArchetype(personality);
 
-  // Yüksek stres durumunda
   if (stress.current > 70) {
-    const stressThoughts = [
-      'Kafam çok karışık...',
-      'Nefes almakta zorlanıyorum.',
-      'Her şey çok fazla...',
-      'Biraz yalnız kalmam lazım.',
-      'Patlayacak gibi hissediyorum.',
-    ];
-    return stressThoughts[Math.floor(Math.random() * stressThoughts.length)];
+    const stressThoughts = getRuntimeStringArray('storyText.personality.innerThoughts.stressHigh');
+    if (stressThoughts.length > 0) {
+      return stressThoughts[Math.floor(Math.random() * stressThoughts.length)];
+    }
+    return tRuntime('storyText.personality.innerThoughts.daily.default');
   }
 
-  // Arketip ve bağlama göre düşünceler
   if (context === 'SOCIAL') {
     switch (archetype) {
       case 'INTROVERT_CAUTIOUS':
-        return 'Keşke evde kalsaydım...';
+        return tRuntime('storyText.personality.innerThoughts.social.INTROVERT_CAUTIOUS');
       case 'INTROVERT_BRAVE':
-        return 'İnsanlar yoruyor ama yapılması gereken şey belli.';
+        return tRuntime('storyText.personality.innerThoughts.social.INTROVERT_BRAVE');
       case 'EXTROVERT_CAUTIOUS':
-        return 'İnsanlarla olmak güzel ama dikkatli olmalıyım.';
+        return tRuntime('storyText.personality.innerThoughts.social.EXTROVERT_CAUTIOUS');
       case 'EXTROVERT_BRAVE':
-        return 'Hadi biraz ortamı ısıtalım!';
+        return tRuntime('storyText.personality.innerThoughts.social.EXTROVERT_BRAVE');
       case 'EMPATH':
-        return 'Herkesin ne hissettiğini anlayabiliyorum.';
+        return tRuntime('storyText.personality.innerThoughts.social.EMPATH');
       default:
-        return 'Bakalım bugün neler olacak.';
+        return tRuntime('storyText.personality.innerThoughts.social.default');
     }
   }
 
   if (context === 'RISK') {
     if (personality.courage > 70) {
-      return 'Risk almadan kazanılmaz!';
-    } else if (personality.courage < 30) {
-      return 'Bu çok tehlikeli görünüyor...';
+      return tRuntime('storyText.personality.innerThoughts.risk.brave');
     }
-    return 'Düşünmem lazım...';
+    if (personality.courage < 30) {
+      return tRuntime('storyText.personality.innerThoughts.risk.cautious');
+    }
+    return tRuntime('storyText.personality.innerThoughts.risk.default');
   }
 
   if (context === 'MORAL') {
     if (personality.empathy > 70) {
-      return 'Doğru olanı yapmalıyım, ne pahasına olursa olsun.';
-    } else if (personality.empathy < 30) {
-      return 'Önce kendimi düşünmeliyim.';
+      return tRuntime('storyText.personality.innerThoughts.moral.empath');
     }
-    return 'Bu zor bir karar...';
+    if (personality.empathy < 30) {
+      return tRuntime('storyText.personality.innerThoughts.moral.selfish');
+    }
+    return tRuntime('storyText.personality.innerThoughts.moral.default');
   }
 
-  return 'Hayat devam ediyor.';
+  return tRuntime('storyText.personality.innerThoughts.daily.default');
 }
 
 /**
@@ -470,48 +449,13 @@ export function enrichChoicesWithPersonality(
  * Kişilik ekseninin Türkçe adı
  */
 export function getPersonalityAxisName(axis: keyof Personality): string {
-  switch (axis) {
-    case 'openness': return 'Açıklık';
-    case 'courage': return 'Cesaret';
-    case 'empathy': return 'Empati';
-    case 'patience': return 'Sabır';
-    case 'conformity': return 'Uyum';
-  }
+  return tRuntime(`labels.personality.${axis}`, undefined, axis);
 }
 
 /**
  * Kişilik değerine göre seviye açıklaması
  */
 export function getPersonalityLevelDescription(axis: keyof Personality, value: number): string {
-  const descriptions: Record<keyof Personality, { low: string; mid: string; high: string }> = {
-    openness: {
-      low: 'İçe kapanık',
-      mid: 'Dengeli sosyal',
-      high: 'Dışa dönük',
-    },
-    courage: {
-      low: 'Temkinli',
-      mid: 'Dengeli',
-      high: 'Cesur',
-    },
-    empathy: {
-      low: 'Pragmatik',
-      mid: 'Dengeli',
-      high: 'Empatik',
-    },
-    patience: {
-      low: 'Dürtüsel',
-      mid: 'Dengeli',
-      high: 'Sabırlı',
-    },
-    conformity: {
-      low: 'İsyankar',
-      mid: 'Dengeli',
-      high: 'Uyumcu',
-    },
-  };
-
-  if (value < 35) return descriptions[axis].low;
-  if (value > 65) return descriptions[axis].high;
-  return descriptions[axis].mid;
+  const bucket = value < 35 ? 'low' : value > 65 ? 'high' : 'mid';
+  return tRuntime(`storyText.personality.levels.${axis}.${bucket}`);
 }

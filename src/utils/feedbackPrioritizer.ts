@@ -6,6 +6,7 @@
  */
 
 import { FateOutcome, Stats } from '../types';
+import { tRuntime } from '../i18n/strings';
 
 export type FeedbackPriority = 'CRITICAL' | 'NOTABLE' | 'BACKGROUND';
 export type FeedbackChannel = 'stat' | 'trait' | 'personality' | 'npc' | 'fate' | 'momentum';
@@ -38,13 +39,13 @@ const PRIORITY_ORDER: Record<FeedbackPriority, number> = {
   BACKGROUND: 2,
 };
 
-const FATE_MESSAGES: Record<FateOutcome, string> = {
-  BLESSED: 'Kader bugün seninle — her şey yolunda gitti.',
-  FORTUNATE: 'Şans biraz güldü; işler beklediğinden iyi gitti.',
+const getFateMessages = (): Record<FateOutcome, string> => ({
+  BLESSED: tRuntime('feedback.prioritizer.fateBlessed'),
+  FORTUNATE: tRuntime('feedback.prioritizer.fateFortunate'),
   NEUTRAL: '',
-  UNLUCKY: 'Bugün şans yüz çevirdi.',
-  CURSED: 'En kötü an... Her şey ters gitti.',
-};
+  UNLUCKY: tRuntime('feedback.prioritizer.fateUnlucky'),
+  CURSED: tRuntime('feedback.prioritizer.fateCursed'),
+});
 
 /**
  * Event sonuç özetini alır, öncelik sıralı feedback listesi döndürür.
@@ -59,14 +60,14 @@ export const prioritizeFeedback = (outcome: EventOutcomeSummary): EventFeedbackI
     items.push({
       type: 'stat',
       priority: 'CRITICAL',
-      message: 'Sağlığın kritik seviyede! Dinlenmelisin.',
+      message: tRuntime('feedback.prioritizer.healthCritical'),
       delay: 0,
     });
   } else if (outcome.newStats.energy < 10) {
     items.push({
       type: 'stat',
       priority: 'CRITICAL',
-      message: 'Enerji tükendi. Bir mola ver.',
+      message: tRuntime('feedback.prioritizer.energyDepleted'),
       delay: 0,
     });
   }
@@ -76,7 +77,7 @@ export const prioritizeFeedback = (outcome: EventOutcomeSummary): EventFeedbackI
     items.push({
       type: 'trait',
       priority: 'NOTABLE',
-      message: `"${outcome.newTraitName}" özelliğini kazandın!`,
+      message: tRuntime('feedback.prioritizer.newTrait', { traitName: outcome.newTraitName }),
       delay: 500,
     });
   }
@@ -86,26 +87,28 @@ export const prioritizeFeedback = (outcome: EventOutcomeSummary): EventFeedbackI
     items.push({
       type: 'fate',
       priority: 'NOTABLE',
-      message: FATE_MESSAGES.CURSED,
+      message: getFateMessages().CURSED,
       delay: 200,
     });
   } else if (outcome.fateOutcome === 'BLESSED') {
     items.push({
       type: 'fate',
       priority: 'NOTABLE',
-      message: FATE_MESSAGES.BLESSED,
+      message: getFateMessages().BLESSED,
       delay: 200,
     });
   }
 
   // ── P1: NOTABLE — NPC ilişki değişimi (büyük sıçrama) ──────────────────
   if (outcome.npcRelationChange !== undefined && Math.abs(outcome.npcRelationChange) >= 15) {
-    const direction = outcome.npcRelationChange > 0 ? 'güçlendi' : 'zayıfladı';
-    const npc = outcome.npcName ?? 'Biriyle ilişkin';
+    const direction = outcome.npcRelationChange > 0
+      ? tRuntime('feedback.prioritizer.relationShiftPositive')
+      : tRuntime('feedback.prioritizer.relationShiftNegative');
+    const npc = outcome.npcName ?? tRuntime('feedback.prioritizer.relationShiftFallbackNpc');
     items.push({
       type: 'npc',
       priority: 'NOTABLE',
-      message: `${npc} ile bağın ${direction}.`,
+      message: tRuntime('feedback.prioritizer.relationShift', { npcName: npc, direction }),
       delay: 400,
     });
   }

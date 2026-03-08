@@ -22,24 +22,13 @@ interface NPCDetailModalProps {
   };
 }
 
-const PERSONALITY_KEY_MAP: Record<string, string> = {
-  FRIENDLY: 'npc.personality.FRIENDLY',
-  SHY: 'npc.personality.SHY',
-  AGGRESSIVE: 'npc.personality.AGGRESSIVE',
-  POPULAR: 'npc.personality.POPULAR',
-  NERDY: 'npc.personality.NERDY',
-  ARTISTIC: 'npc.personality.ARTISTIC',
-  ATHLETIC: 'npc.personality.ATHLETIC',
-};
+const getPersonalityLabel = (personality: string): string => (
+  tRuntime(`social.personalityLabels.${personality}`, undefined, personality)
+);
 
-const PERSONALITY_FALLBACK: Record<string, string> = {
-  FRIENDLY: 'Arkadas Canlisi',
-  SHY: 'Utangac',
-  AGGRESSIVE: 'Agresif',
-  POPULAR: 'Populer',
-  NERDY: 'Entellektuel',
-  ARTISTIC: 'Sanatci',
-  ATHLETIC: 'Atletik',
+const getPersonalityHint = (actionType: string, personality: string): string | null => {
+  const hint = tRuntime(`social.personalityHints.${actionType}.${personality}`, undefined, '');
+  return hint || null;
 };
 
 const INTERACTION_OPTIONS: Array<{
@@ -77,11 +66,7 @@ export const NPCDetailModal: React.FC<NPCDetailModalProps> = ({
     currentEnergy >= energy && currentMoney >= money
   );
 
-  const personalityLabel = tRuntime(
-    PERSONALITY_KEY_MAP[npc.personality] || 'npc.personality.default',
-    undefined,
-    PERSONALITY_FALLBACK[npc.personality] || npc.personality
-  );
+  const personalityLabel = getPersonalityLabel(npc.personality);
 
   return (
     <Modal
@@ -96,7 +81,7 @@ export const NPCDetailModal: React.FC<NPCDetailModalProps> = ({
             <View>
               <Text style={[styles.name, { color: theme.textPrimary }]}>{npc.name}</Text>
               <Text style={[styles.age, { color: theme.textSecondary }]}>
-                {npc.gender === 'MALE' ? '\u{1F466}' : '\u{1F467}'} {npc.age} {tRuntime('common.ageSuffix', undefined, 'yas')} {'\u2022'} {personalityLabel}
+                {npc.gender === 'MALE' ? '\u{1F466}' : '\u{1F467}'} {tRuntime('social.npcCard.ageLabel', { age: npc.age })} {'\u2022'} {personalityLabel}
               </Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -107,12 +92,12 @@ export const NPCDetailModal: React.FC<NPCDetailModalProps> = ({
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             <View style={[styles.section, { borderColor: theme.border }]}>
               <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
-                {tRuntime('npc.detail.relationshipStatus', undefined, 'Iliski Durumu')}
+                {tRuntime('social.npcDetail.relationshipStatus')}
               </Text>
 
               <View style={styles.statRow}>
                 <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
-                  {tRuntime('social.screen.relationship', undefined, 'Iliski')}
+                  {tRuntime('social.screen.relationship')}
                 </Text>
                 <Text style={[styles.statValue, { color: getRelationshipColor(npc.relationship) }]}>
                   {npc.relationship > 0 ? '+' : ''}{npc.relationship}
@@ -134,7 +119,7 @@ export const NPCDetailModal: React.FC<NPCDetailModalProps> = ({
                 <>
                   <View style={[styles.statRow, { marginTop: 12 }]}>
                     <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
-                      {'\u{1F495}'} {tRuntime('npc.detail.romance', undefined, 'Romantik')}
+                      {'\u{1F495}'} {tRuntime('social.npcDetail.romance')}
                     </Text>
                     <Text style={[styles.statValue, { color: '#f472b6' }]}>{npc.romance}</Text>
                   </View>
@@ -153,7 +138,7 @@ export const NPCDetailModal: React.FC<NPCDetailModalProps> = ({
             {npc.traits && npc.traits.length > 0 ? (
               <View style={[styles.section, { borderColor: theme.border }]}>
                 <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}> 
-                  {tRuntime('character.screen.sections.traits', undefined, 'Ozellikler')}
+                  {tRuntime('character.screen.sections.traits')}
                 </Text>
                 <View style={styles.traitContainer}>
                   {npc.traits.map((trait, index) => (
@@ -170,21 +155,22 @@ export const NPCDetailModal: React.FC<NPCDetailModalProps> = ({
 
             <View style={[styles.section, { borderColor: theme.border }]}>
               <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
-                {tRuntime('npc.detail.met', undefined, 'Tanisma')}
+                {tRuntime('social.npcDetail.met')}
               </Text>
               <Text style={[styles.infoText, { color: theme.textSecondary }]}>
-                {tRuntime('npc.detail.metAtAge', { age: npc.metAge }, '{age} yasinda tanistin')}
+                {tRuntime('social.npcDetail.metAtAge', { age: npc.metAge })}
               </Text>
             </View>
 
             <View style={styles.section}>
               <Text style={[styles.sectionTitle, { color: theme.textPrimary, marginBottom: 12 }]}>
-                {tRuntime('social.screen.selectInteraction', undefined, 'Etkilesim')}
+                {tRuntime('social.screen.selectInteraction')}
               </Text>
               {INTERACTION_OPTIONS.map((option) => {
                 const localized = getLocalizedInteractionRestriction(option.type);
                 const affordable = canAfford(option.energy, option.money);
 
+                const personalityHint = getPersonalityHint(option.type, npc.personality);
                 return (
                   <TouchableOpacity
                     key={option.type}
@@ -212,6 +198,11 @@ export const NPCDetailModal: React.FC<NPCDetailModalProps> = ({
                         <Text style={[styles.actionDesc, { color: theme.textSecondary }]}>
                           {localized.description}
                         </Text>
+                        {personalityHint ? (
+                          <Text style={[styles.personalityHint, { color: theme.accent }]}>
+                            {personalityHint}
+                          </Text>
+                        ) : null}
                       </View>
                     </View>
                     <View style={styles.actionCost}>
@@ -346,6 +337,11 @@ const styles = StyleSheet.create({
   actionDesc: {
     fontSize: 12,
     marginTop: 2,
+  },
+  personalityHint: {
+    fontSize: 11,
+    marginTop: 3,
+    fontStyle: 'italic',
   },
   actionCost: {
     alignItems: 'flex-end',

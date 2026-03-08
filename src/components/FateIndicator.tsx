@@ -24,30 +24,6 @@ interface FateIndicatorProps {
   };
 }
 
-const ZODIAC_LABELS: Record<string, string> = {
-  KOC: 'Koc',
-  BOGA: 'Boga',
-  IKIZLER: 'Ikizler',
-  YENGEC: 'Yengec',
-  ASLAN: 'Aslan',
-  BASAK: 'Basak',
-  TERAZI: 'Terazi',
-  AKREP: 'Akrep',
-  YAY: 'Yay',
-  OGLAK: 'Oglak',
-  KOVA: 'Kova',
-  BALIK: 'Balik',
-};
-
-const CATEGORY_LABELS: Record<string, string> = {
-  SOCIAL: 'Sosyal',
-  RISK: 'Risk',
-  MORAL: 'Ahlak',
-  CONFLICT: 'Catisma',
-  GROWTH: 'Gelisim',
-  BREAKDOWN: 'Bunalim',
-};
-
 type LuckLevel = 'good' | 'normal' | 'bad';
 
 function classifyLuck(fateState: FateState, personalityCategory?: string): LuckLevel {
@@ -67,18 +43,20 @@ const LUCK_META: Record<LuckLevel, { color: string; icon: string; labelKey: stri
 };
 
 function getZodiacEffectDescription(fateState: FateState, personalityCategory?: string): string {
-  const zodiacLabel = ZODIAC_LABELS[fateState.zodiacSign] ?? fateState.zodiacSign;
+  const zodiacLabel = tRuntime(`fate.indicator.zodiacSigns.${fateState.zodiacSign}`);
   if (!personalityCategory) {
-    return `${zodiacLabel} burcu`;
+    return tRuntime('fate.indicator.zodiacOnly', { zodiacLabel });
   }
   const modifier = getZodiacModifier(fateState.zodiacSign, personalityCategory);
-  const catLabel = CATEGORY_LABELS[personalityCategory] ?? personalityCategory;
+  const categoryLabel = tRuntime(`fate.indicator.categories.${personalityCategory}`);
+  const pct = Math.abs(Math.round(modifier * 100));
   if (modifier > 0) {
-    return `${zodiacLabel}: ${catLabel} olaylarinda +${Math.round(modifier * 100)}% sans`;
-  } else if (modifier < 0) {
-    return `${zodiacLabel}: ${catLabel} olaylarinda ${Math.round(modifier * 100)}% sans`;
+    return tRuntime('fate.indicator.zodiacBuff', { zodiacLabel, categoryLabel, pct });
   }
-  return `${zodiacLabel}: Bu olay turkune etkisiz`;
+  if (modifier < 0) {
+    return tRuntime('fate.indicator.zodiacNerf', { zodiacLabel, categoryLabel, pct });
+  }
+  return tRuntime('fate.indicator.zodiacNeutral', { zodiacLabel });
 }
 
 export const FateIndicator: React.FC<FateIndicatorProps> = React.memo(({
@@ -94,9 +72,7 @@ export const FateIndicator: React.FC<FateIndicatorProps> = React.memo(({
   );
 
   const meta = LUCK_META[luck];
-  const luckLabel = tRuntime(meta.labelKey, undefined,
-    luck === 'good' ? 'Iyi' : luck === 'bad' ? 'Kotu' : 'Normal'
-  );
+  const luckLabel = tRuntime(meta.labelKey);
 
   const pityPct = Math.round(getPityModifier(fateState.consecutiveBadOutcomes) * 100);
   const zodiacDesc = useMemo(
@@ -114,11 +90,11 @@ export const FateIndicator: React.FC<FateIndicatorProps> = React.memo(({
         onPress={() => setDetailVisible(true)}
         style={[styles.chip, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}
         accessibilityRole="button"
-        accessibilityLabel={`${tRuntime('fate.indicator.prefix', undefined, 'Sansin')}: ${luckLabel}`}
+        accessibilityLabel={`${tRuntime('fate.indicator.prefix')}: ${luckLabel}`}
       >
         <Feather name={meta.icon as any} size={12} color={meta.color} />
         <Text style={[styles.chipText, { color: meta.color }]}>
-          {tRuntime('fate.indicator.prefix', undefined, 'Sansin')}: {luckLabel}
+          {tRuntime('fate.indicator.prefix')}: {luckLabel}
         </Text>
         <Feather name="info" size={10} color={theme.textSecondary} />
       </Pressable>
@@ -133,21 +109,21 @@ export const FateIndicator: React.FC<FateIndicatorProps> = React.memo(({
           <Pressable style={styles.modalBackdrop} onPress={() => setDetailVisible(false)} />
           <View style={[styles.modalCard, { backgroundColor: theme.surfaceBase, borderColor: theme.border }]}>
             <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>
-              {tRuntime('fate.indicator.detailTitle', undefined, 'Sans Detayi')}
+              {tRuntime('fate.indicator.detailTitle')}
             </Text>
 
             {/* Luck summary */}
             <View style={[styles.summaryRow, { borderBottomColor: theme.border }]}>
               <Feather name={meta.icon as any} size={16} color={meta.color} />
               <Text style={[styles.summaryText, { color: meta.color }]}>
-                {tRuntime('fate.indicator.prefix', undefined, 'Sansin')}: {luckLabel}
+                {tRuntime('fate.indicator.prefix')}: {luckLabel}
               </Text>
             </View>
 
             {/* Tokens */}
             <View style={styles.detailRow}>
               <Text style={[styles.detailLabel, { color: theme.textSecondary }]}>
-                {tRuntime('fate.indicator.tokens', undefined, 'Kader Jetonu')}
+                {tRuntime('fate.indicator.tokens')}
               </Text>
               <View style={styles.tokenBadge}>
                 <Feather name="compass" size={12} color="#eab308" />
@@ -160,7 +136,7 @@ export const FateIndicator: React.FC<FateIndicatorProps> = React.memo(({
             {/* Pity bonus */}
             <View style={styles.detailRow}>
               <Text style={[styles.detailLabel, { color: theme.textSecondary }]}>
-                {tRuntime('fate.indicator.pity', undefined, 'Telafi Bonusu')}
+                {tRuntime('fate.indicator.pity')}
               </Text>
               <Text style={[styles.detailValue, { color: pityPct > 0 ? '#22c55e' : theme.textPrimary }]}>
                 {pityPct > 0 ? `+${pityPct}%` : '%0'}
@@ -170,7 +146,7 @@ export const FateIndicator: React.FC<FateIndicatorProps> = React.memo(({
             {/* Zodiac */}
             <View style={styles.detailRow}>
               <Text style={[styles.detailLabel, { color: theme.textSecondary }]}>
-                {tRuntime('fate.indicator.zodiac', undefined, 'Burc Etkisi')}
+                {tRuntime('fate.indicator.zodiac')}
               </Text>
               <Text style={[styles.detailValue, { color: theme.textPrimary, flex: 1, textAlign: 'right' }]} numberOfLines={2}>
                 {zodiacDesc}
@@ -180,7 +156,7 @@ export const FateIndicator: React.FC<FateIndicatorProps> = React.memo(({
             {/* Odds preview (without token) */}
             <View style={[styles.oddsSection, { borderTopColor: theme.border }]}>
               <Text style={[styles.oddsTitle, { color: theme.textSecondary }]}>
-                {tRuntime('fate.indicator.currentOdds', undefined, 'Mevcut Olasiliklar')}
+                {tRuntime('fate.indicator.currentOdds')}
               </Text>
               {oddsPreview.withoutToken.map((entry) => (
                 <View key={entry.outcome} style={styles.oddsRow}>
@@ -195,7 +171,7 @@ export const FateIndicator: React.FC<FateIndicatorProps> = React.memo(({
               style={[styles.closeButton, { borderColor: theme.border, backgroundColor: theme.surfaceRaised }]}
             >
               <Text style={[styles.closeText, { color: theme.textPrimary }]}>
-                {tRuntime('common.close', undefined, 'Kapat')}
+                {tRuntime('common.close')}
               </Text>
             </Pressable>
           </View>

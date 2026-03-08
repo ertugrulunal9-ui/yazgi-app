@@ -16,6 +16,12 @@ export interface SaveSlotMetadata {
   slotId: string;
   characterName: string;
   age: number;
+  /** Aktif bölüm numarası (1-6) — Faz 1A */
+  chapter?: number;
+  /** Bölüm adı ('Bebeklik', 'İlkokul' vb.) — Faz 1A */
+  chapterName?: string;
+  /** Seçili hedef adı — Faz 1D */
+  goalName?: string;
   playtime: number;
   lastPlayed: number;
   version: number;

@@ -54,7 +54,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     text: "The darkness at night is very scary. Looks like there's something under the bed...",
     choices: {
       korku_anne: {
-        text: "Anneee! Babaaaa!",
+        text: "Mommy! Daddy!",
         feedback: "The mother came, hugged and sang. You relaxed, you slept.",
       },
       korku_cesur: {
@@ -107,7 +107,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     choices: {
       el_op_zorla: {
         text: "Kiss (reluctantly)",
-        feedback: "You kissed him forcefully. I still think 'Thank God he's grown up!' he said, squeezing his cheek. It's boring for you, but your family is happy.",
+        feedback: "You kissed reluctantly. 'Thank God, you've grown up!' she said, squeezing your cheek. It's boring for you, but your family is happy.",
       },
       el_opme_reddet: {
         text: "NO, I DON'T WANT IT!",
@@ -137,11 +137,11 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     choices: {
       market_agla: {
         text: "Lie down and cry!",
-        feedback: "CRYAAAA! Everyone looked and your mother felt ashamed. You couldn't buy the chocolate, but the entire market's attention was on you.",
+        feedback: "WAAAH! Everyone looked and your mother felt ashamed. You couldn't buy the chocolate, but the entire market's attention was on you.",
       },
       market_sabret: {
         text: "Be sad but accept it",
-        feedback: "It was difficult, but you were patient! Your mother was very surprised and proud. 'You've grown up,' he said.",
+        feedback: "It was difficult, but you were patient! Your mother was very surprised and proud. 'You've grown up,' she said.",
       },
       market_pazarlik: {
         text: "Say 'please', open your eyes",
@@ -175,7 +175,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
       },
       abi_pazarlik: {
         text: "Cry and say 'Please'",
-        feedback: "He couldn't stand his tears. He said, 'Okay, okay, take it.' You gained emotional intelligence!",
+        feedback: "She couldn't stand your tears. She said, 'Okay, okay, take it.' You gained emotional intelligence!",
       },
     },
   },
@@ -201,16 +201,16 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
       },
       hopla_devam: {
         text: "Continue!",
-        feedback: "ZIIIP ZIIP! The neighbor came and went crazy, your mother was very angry. But you had so much fun!",
+        feedback: "THUMP THUMP! The neighbor came and went crazy, your mother was very angry. But you had so much fun!",
       },
     },
   },
   tr_komsu_bonbon: {
-    text: "Neighbor aunt gave you candy. But you don't like him, he always kisses you. You have to take it...",
+    text: "Neighbor aunt gave you candy. But you don't like her, she always kisses you. You have to take it...",
     choices: {
       bonbon_al_tesekkur: {
         text: "Take it and say 'Thank you'",
-        feedback: "Auntie was very happy! He kissed you, 'What a sweet boy!' he said. Your mother would be proud.",
+        feedback: "Auntie was very happy! She kissed you, 'What a sweet child!' she said. Your mother would be proud.",
       },
       bonbon_red: {
         text: "Don't take it and run away",
@@ -223,7 +223,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     choices: {
       kaybol_agla: {
         text: "Cry and stand your ground",
-        feedback: "Terrible panic! You cried, but finally your mother found you. He hugged, cried and scolded.",
+        feedback: "Terrible panic! You cried, but finally your mother found you. She hugged you, cried, and scolded you.",
       },
       kaybol_ara: {
         text: "Stay calm, look around",
@@ -239,7 +239,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     text: "Your mother says you should brush your teeth. But you are STUBBORN! No one can force you!",
     choices: {
       inat_direne: {
-        text: "BE STUBID! NO!",
+        text: "NO! I WON'T!",
         feedback: "NOOOOO! You cried, you screamed, you lay on the ground! You finally gave up, but everyone was tired.",
       },
       inat_kabul: {
@@ -270,7 +270,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     choices: {
       tuvalet_agac: {
         text: "Hide behind the tree",
-        feedback: "You got it done behind the tree! You were relieved, but your mother said, 'Shame!' he said.",
+        feedback: "You got it done behind the tree! You were relieved, but your mother said, 'Shame!'",
       },
       tuvalet_tutma: {
         text: "Hold on, hold on all the way home!",
@@ -279,7 +279,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     },
   },
   tr_tablet_sure: {
-    text: "You are watching cartoons. Your mom says, 'Okay, time's up!' he says. But he was at his most exciting point!",
+    text: "You are watching cartoons. Your mom says, 'Okay, time's up!' she says. But it was at its most exciting point!",
     choices: {
       tablet_devam: {
         text: "'A little more!' beg",
@@ -296,11 +296,11 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     choices: {
       dis_fircala: {
         text: "Brush (Reluctantly)",
-        feedback: "You brushed! Your mouth is sweet. Your mother said, 'Good boy' and gave him a kiss.",
+        feedback: "You brushed! Your mouth is sweet. Your mother said, 'Good job!' and gave you a kiss.",
       },
       dis_atla: {
         text: "Jump in, go straight to bed!",
-        feedback: "You went to bed without brushing! Your mother caught it and scolded you. 'Your teeth will rot!' he said.",
+        feedback: "You went to bed without brushing! Your mother caught it and scolded you. 'Your teeth will rot!' she said.",
       },
     },
   },
@@ -313,7 +313,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
       },
       kavga_agla: {
         text: "Cry, run to mother",
-        feedback: "You ran to your mother crying. He hugged and consoled. He got angry at the boy.",
+        feedback: "You ran to your mother crying. She hugged and consoled you. She got angry at the boy.",
       },
       kavga_affet: {
         text: "It hurts but forgive me, move on",
@@ -356,16 +356,16 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     choices: {
       bebek_yardim_et: {
         text: "Help!",
-        feedback: "You brought a bottle! Your mother was very happy. 'You've become a big brother!' he said and hugged me.",
+        feedback: "You brought a bottle! Your mother was very happy. 'You've become a big brother/sister!' she said and hugged you.",
       },
       bebek_red: {
         text: "'I'm playing!' say, reject",
-        feedback: "Your mother was upset. 'Selfish boy,' he said. You continued your game, but your heart was bitter.",
+        feedback: "Your mother was upset. 'Selfish child,' she said. You continued your game, but your heart was bitter.",
       },
     },
   },
   tr_top_cama_vurma: {
-    text: "You are playing ball. The ball slides and THE NEIGHBOR'S WINDOW! CAAAAAAM! The ball exploded, but the glass did not break...",
+    text: "You are playing ball. The ball slides and THE NEIGHBOR'S WINDOW! CRASH! The ball bounced hard, but the glass did not break...",
     choices: {
       cam_kac: {
         text: "Run and hide!",
@@ -373,20 +373,20 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
       },
       cam_ozur: {
         text: "Go to the neighbor and apologize",
-        feedback: "You were so scared, but you went and apologized! The neighbor forgave him - he said, 'Honest boy'!",
+        feedback: "You were so scared, but you went and apologized! The neighbor forgave you - they said, 'Honest kid'!",
       },
     },
   },
   tr_ev_yardimi: {
-    text: "Your mother is cleaning up the house. He looks very tired. Will you collect your toys?",
+    text: "Your mother is cleaning up the house. She looks very tired. Will you collect your toys?",
     choices: {
       ev_yardim: {
         text: "Help me collect the toys",
-        feedback: "You collected it! Your mother hugged you - 'You are my greatest helper!' he said.",
+        feedback: "You collected it! Your mother hugged you - 'You're my greatest helper!' she said.",
       },
       ev_oyna: {
         text: "Keep playing",
-        feedback: "Your mother collected it all by herself. He looks sad. You heard his voice saying 'selfish'.",
+        feedback: "Your mother collected it all by herself. She looks sad. You heard her voice saying 'selfish'.",
       },
     },
   },
@@ -699,7 +699,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
       },
       bike_brave: {
         text: "Try it directly! (Difficult)",
-        feedback: "You fell a few times, your knees were scraped... BUT YOU RUNNED! Your father is applauding!",
+        feedback: "You fell a few times, your knees were scraped... BUT YOU RAN! Your father is applauding!",
       },
     },
   },
@@ -789,7 +789,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     },
   },
   tr_bakkal: {
-    text: "Your mother sent you to the grocery store. He has a shopping list, but he gave too much money...",
+    text: "Your mother sent you to the grocery store. She has a shopping list, but she gave too much money...",
     choices: {
       bakkal_honest: {
         text: "Just buy what's on the list",
@@ -907,7 +907,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
       },
       sinav_kopya: {
         text: "Cheat",
-        feedback: "You didn't get caught...this time. But the voice inside him did not remain silent.",
+        feedback: "You didn't get caught...this time. But the voice inside you did not remain silent.",
       },
     },
   },
@@ -941,7 +941,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
       },
       kayip_agla: {
         text: "Cry and give up",
-        feedback: "You were upset, but your mother consoled you. Maybe he'll buy a new one...",
+        feedback: "You were upset, but your mother consoled you. Maybe she'll buy a new one...",
       },
       kayip_sucla: {
         text: "Blame someone else",
@@ -1090,7 +1090,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     choices: {
       obey_family: {
         text: "Obey the family (Give up your dreams)",
-        feedback: "Your father looked on with pride. But at night in bed, your guitar is hanging on the wall - you never play it anymore. Something went out inside him.",
+        feedback: "Your father looked on with pride. But at night in bed, your guitar is hanging on the wall - you never play it anymore. Something went out inside you.",
       },
       follow_dreams: {
         text: "Follow your dreams (Conflict with family)",
@@ -1128,12 +1128,12 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
       },
       choice_2: {
         text: "Send gifts but don't go",
-        feedback: "Your mother took the gift and cried. Your father said, 'I wish he had come himself.' Half step.",
+        feedback: "Your mother took the gift and cried. Your father said, 'I wish you had come yourself.' Half step.",
       },
     },
   },
   dilemma_kardes_hirsizlik: {
-    text: "The neighbor's lost phone fell out of his little brother's bag. Your brother cries and says, 'Don't tell.' The neighbor asks door to door.",
+    text: "The neighbor's lost phone fell out of your little brother's bag. Your brother cries and says, 'Don't tell.' The neighbor asks door to door.",
     choices: {
       choice_0: {
         text: "Protect your brother, stay silent",
@@ -1167,11 +1167,11 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     choices: {
       choice_0: {
         text: "Steal the file and win",
-        feedback: "You won the contest! The cup is in his hand, everyone is applauding. But your friend is crying and you know why.",
+        feedback: "You won the contest! The cup is in their hand, everyone is applauding. But your friend is crying and you know why.",
       },
       choice_1: {
         text: "Fair race, no matter what",
-        feedback: "You came second. The cup is his. But when you shook hands, you were able to look into his eyes.",
+        feedback: "You came second. The cup is theirs. But when you shook hands, you were able to look into their eyes.",
       },
       choice_2: {
         text: "Withdraw from the competition",
@@ -1184,7 +1184,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     choices: {
       choice_0: {
         text: "Confess and return the cup",
-        feedback: "You told the truth in front of everyone. The cup is gone, your reputation is damaged. But the burden inside him was lifted. Your friend is shocked, but... maybe one day he'll forgive you.",
+        feedback: "You told the truth in front of everyone. The cup is gone, your reputation is damaged. But the burden inside you was lifted. Your friend is shocked, but... maybe one day they'll forgive you.",
       },
       choice_1: {
         text: "Stay silent, let it be in the past",
@@ -1321,7 +1321,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     choices: {
       choice_0: {
         text: "Leave, protect yourself",
-        feedback: "The separation was painful. You cried for weeks. But over time, the storm inside him calmed down. You have found a peace of your own.",
+        feedback: "The separation was painful. You cried for weeks. But over time, the storm inside you calmed down. You have found a peace of your own.",
       },
       choice_1: {
         text: "Give it another chance",
@@ -1347,20 +1347,20 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     },
   },
   dilemma_kardes_firsati: {
-    text: "You've been accepted to your dream summer camp! But his little brother has surgery the same week. Your family says 'You go', but your brother wants you with him.",
+    text: "You've been accepted to your dream summer camp! But your little brother has surgery the same week. Your family says 'You go', but your brother wants you with him.",
     choices: {
       choice_0: {
         text: "Go camping (Your own life)",
-        feedback: "The camp was amazing, you learned a lot. But after his brother's surgery, he asked, 'Where were you?' The question still rings in his ears.",
+        feedback: "The camp was amazing, you learned a lot. But after your brother's surgery, he asked, 'Where were you?' The question still rings in your ears.",
       },
       choice_1: {
         text: "Stay with your brother (Sacrifice)",
-        feedback: "His eyes filled with tears as he held his brother's hand. \"Thank you brother/sister,\" he said. You missed your opportunity, but your family is deeply grateful.",
+        feedback: "His eyes filled with tears as you held your brother's hand. \"Thank you,\" he said. You missed your opportunity, but your family is deeply grateful.",
       },
     },
   },
   dilemma_arkadas_vs_basari: {
-    text: "You are in the project group. Your friend never worked, but you worked hard. The teacher said 'he will evaluate individual contributions'. Your friend asks you to save him.",
+    text: "You are in the project group. Your friend never worked, but you worked hard. The teacher said 'they will evaluate individual contributions'. Your friend asks you to save them.",
     choices: {
       choice_0: {
         text: "Tell the truth (Justice)",
@@ -1423,7 +1423,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
       },
       vazo_gizle: {
         text: "Hide the pieces so no one knows",
-        feedback: "You threw away the parts. Your mother asks 'where is the vase?' he asked but couldn't find it. The secret is with you...",
+        feedback: "You threw away the parts. Your mother asked, 'Where is the vase?' but couldn't find it. The secret is with you...",
       },
     },
   },
@@ -1458,7 +1458,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     choices: {
       choice_0: {
         text: "Give it back and apologize",
-        feedback: "Everyone was shocked. You were punished. But the burden inside him was lifted.",
+        feedback: "Everyone was shocked. You were punished. But the burden inside you was lifted.",
       },
       choice_1: {
         text: "Throw away the toy so no one knows",
@@ -1467,11 +1467,11 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     },
   },
   dilemma_arkadaslik_sirri: {
-    text: "Your friend told you a secret: she's planning to run away from home. Should you tell his parents?",
+    text: "Your friend told you a secret: she's planning to run away from home. Should you tell her parents?",
     choices: {
       sir_anlat: {
         text: "Tell your family, your safety is important",
-        feedback: "Your friend is very angry with you. 'Traitor!' he said. But it's safe. Maybe one day he will understand.",
+        feedback: "Your friend is very angry with you. 'Traitor!' she said. But it's safe. Maybe one day she will understand.",
       },
       sir_sakla: {
         text: "Keep the secret, keep the trust",
@@ -1479,7 +1479,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
       },
       sir_ikna: {
         text: "Try to dissuade your friend",
-        feedback: "You talked for hours. Finally he gave up. Nobody knows, but you saved a life.",
+        feedback: "You talked for hours. Finally she gave up. Nobody knows, but you saved a life.",
       },
     },
   },
@@ -1587,7 +1587,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     choices: {
       kedi_veteriner: {
         text: "Empty your piggy bank, take it to the vet",
-        feedback: "I ran out of money, the family was angry. But the cat recovered and someone adopted it. You saved a life.",
+        feedback: "You ran out of money, the family was angry. But the cat recovered and someone adopted it. You saved a life.",
       },
       kedi_birak: {
         text: "I'm sorry but there's nothing to do",
@@ -1613,11 +1613,11 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     },
   },
   dilemma_romantic_jealousy_test: {
-    text: "Your girlfriend has been spending a lot of time with someone in your class lately. \"We're just friends,\" he says, but he has a doubt... How will you handle this situation?",
+    text: "Your girlfriend has been spending a lot of time with someone in your class lately. \"We're just friends,\" she says, but you have a doubt... How will you handle this situation?",
     choices: {
       jealousy_confront: {
         text: "\ud83d\ude24 Confront and hold accountable",
-        feedback: "You argued. \"If you don't trust, this relationship won't work,\" he said. Maybe he's right...",
+        feedback: "You argued. \"If you don't trust, this relationship won't work,\" she said. Maybe she's right...",
       },
       jealousy_trust: {
         text: "\ud83e\udd1d Trust: \"I believe in you\"",
@@ -1660,11 +1660,11 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     },
   },
   dilemma_partner_finds_out: {
-    text: "Your boyfriend heard you flirting with someone else. His eyes are filled with tears, his voice is shaking: \"Is this true? Did you cheat on me?\"",
+    text: "Your partner heard you flirting with someone else. Their eyes are filled with tears, their voice is shaking: \"Is this true? Did you cheat on me?\"",
     choices: {
       found_out_lie: {
         text: "\ud83d\ude48 Lie: \"No, slander!\"",
-        feedback: "'I look into your eyes... I want to believe,' he said. But doubt remained.",
+        feedback: "'I look into your eyes... I want to believe,' they said. But doubt remained.",
       },
       found_out_confess: {
         text: "\ud83d\ude14 Admit: \"Yes, I made a mistake\"",
@@ -1719,7 +1719,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
       },
       stay_home_introvert: {
         text: "Stay at home (Comfortable choice)",
-        feedback: "You made excuses and stayed at home. You had a comfortable night. But when he saw the photos of the party, something inside him ached.",
+        feedback: "You made excuses and stayed at home. You had a comfortable night. But when you saw the photos of the party, something inside you ached.",
       },
       go_party_extrovert: {
         text: "Of course go!",
@@ -1757,7 +1757,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     choices: {
       risk_take_cautious: {
         text: "Go, overcome your fear (Hard choice)",
-        feedback: "With every step you thought 'go back'. But when he got to the roof... the city was at his feet. Scary but amazing.",
+        feedback: "With every step you thought 'go back'. But when you got to the roof... the city was at your feet. Scary but amazing.",
       },
       risk_refuse_cautious: {
         text: "Say no, be reasonable (Comfortable choice)",
@@ -1854,7 +1854,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
       },
       study_impulsive: {
         text: "No, the exam is important (Hard choice)",
-        feedback: "You turned off your phone and studied. When he saw the concert photos, something inside him broke. But the score came high.",
+        feedback: "You turned off your phone and studied. When you saw the concert photos, something inside you broke. But the score came high.",
       },
       study_patient: {
         text: "Before exam",
@@ -2322,7 +2322,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     },
   },
   npc_first_crush: {
-    text: "You start to notice someone in class. Ay\u015fe... When she laughs, you feel your heart accelerate. I wonder if he is aware of it too?",
+    text: "You start to notice someone in class. Ay\u015fe... When she laughs, you feel your heart accelerate. You wonder if she is aware of it too?",
     choices: {
       choice_0: {
         text: "\ud83d\udc95 Try to get closer",
@@ -2556,7 +2556,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     },
   },
   npc_checkin_friend_study_02: {
-    text: "Your friend says, \"There is an exam tomorrow, should we do it again together?\" he asked.",
+    text: "Your friend asked, \"There is an exam tomorrow, should we study together?\"",
     choices: {
       choice_0: {
         text: "Let's work together",
@@ -2892,7 +2892,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     },
   },
   milestone_best_friend_celebration: {
-    text: "You are now best friends with your best friend! The bond you have formed over the years is very special. \"You are my brother, one of the most important people in my life!\" he says, his eyes shining.",
+    text: "You are now best friends! The bond you have formed over the years is very special. \"You are like family, one of the most important people in my life!\" they say, their eyes shining.",
     choices: {
       choice_0: {
         text: "\ud83e\udd17 Hug tightly: \"You are the same for me!\"",
@@ -2982,7 +2982,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     },
   },
   milestone_rivalry_begins: {
-    text: "A rivalry has begun between you and that person. You try to outdo each other at every opportunity. \"I will beat you,\" he says with fire in his eyes.",
+    text: "A rivalry has begun between you and that person. You try to outdo each other at every opportunity. \"I will beat you,\" they say with fire in their eyes.",
     choices: {
       choice_0: {
         text: "\ud83d\udd25 \"I'm better!\"",
@@ -3925,7 +3925,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     },
   },
   fam_evo_strict_softening: {
-    text: "Your father didn't give orders this time. I sat next to him quietly and asked, 'Shall we watch?' he said.",
+    text: "Your father didn't give orders this time. He sat next to you quietly and said, 'Shall we watch?'",
     choices: {
       strict_softening_warm: {
         text: "Seize the day",
@@ -3994,7 +3994,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     choices: {
       guilt_apologize: {
         text: "Apologize",
-        feedback: "You apologized. The other person smiled. The burden inside him became lighter.",
+        feedback: "You apologized. The other person smiled. The burden inside you became lighter.",
       },
       guilt_avoid: {
         text: "Ignore",
@@ -4331,7 +4331,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
       },
       bayram_cocuk_baklava: {
         text: "Run straight to the baklava!",
-        feedback: "Your mouth is full of baklava! Your mother says 'Kiss hands first!' he shouted, but it was too late...",
+        feedback: "Your mouth is full of baklava! Your mother says, 'Kiss hands first!' she shouted, but it was too late...",
       },
     },
   },
@@ -4348,7 +4348,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
       },
       yemek_cocuk_yardim: {
         text: "Help clear the table",
-        feedback: "You carried the plates! Your mother says, 'Good for you!' he said. He was filled with pride.",
+        feedback: "You carried the plates! Your mother said, 'Good for you!' She was filled with pride.",
       },
     },
   },
@@ -4404,7 +4404,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     },
   },
   tr_sabah_uyanis_cocuk: {
-    text: "It's morning! Your mother says, 'Get up, you'll be late for school!' he calls out. Your bed is so warm...",
+    text: "It's morning! Your mother says, 'Get up, you'll be late for school!' she calls out. Your bed is so warm...",
     choices: {
       sabah_cocuk_kalk: {
         text: "Get up now!",
@@ -4455,7 +4455,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     },
   },
   tr_komsu_ziyaret_cocuk: {
-    text: "The neighbors have arrived! There is also a child your age with them. Your mother says 'Go play!' he says.",
+    text: "The neighbors have arrived! There is also a child your age with them. Your mother says, 'Go play!' she says.",
     choices: {
       komsu_cocuk_oyna: {
         text: "Play together in your room",
@@ -4463,7 +4463,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
       },
       komsu_cocuk_gosterme: {
         text: "Hide your toys, you don't want to show them",
-        feedback: "Your mother is angry, 'You will learn to share!' he said. But they are your toys!",
+        feedback: "Your mother is angry, 'You will learn to share!' she said. But they are your toys!",
       },
       komsu_cocuk_cay: {
         text: "Bring tea to guests",
@@ -4574,11 +4574,11 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     choices: {
       asi_cesur: {
         text: "Be brave, don't cry",
-        feedback: "The needle pricked you, your eyes filled with tears, but you didn't cry! Doctor 'Well done, brave boy!' he said.",
+        feedback: "The needle pricked you, your eyes filled with tears, but you didn't cry! The doctor said, 'Well done, brave kid!'",
       },
       asi_agla: {
         text: "Cry (normal response)",
-        feedback: "You cried and your mother held you. Then he got ice cream. It wasn't that bad.",
+        feedback: "You cried and your mother held you. Then she got you ice cream. It wasn't that bad.",
       },
       asi_kac: {
         text: "Try to escape!",
@@ -4595,7 +4595,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
       },
       hayali_anlat: {
         text: "Introduce your friend to the mother",
-        feedback: "Your mother smiled and offered tea to her friend. 'Welcome!' he said.",
+        feedback: "Your mother smiled and offered tea to her friend. 'Welcome!' she said.",
       },
     },
   },
@@ -4608,7 +4608,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
       },
       yalan_kedi: {
         text: "The cat did it!",
-        feedback: "Your mother looked... she didn't believe it but didn't say anything. Guilt remained inside him.",
+        feedback: "Your mother looked... she didn't believe it but didn't say anything. Guilt remained inside you.",
       },
       yalan_sus: {
         text: "I don't know...",
@@ -4779,7 +4779,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
       },
       kardes_anne: {
         text: "Complain to mother",
-        feedback: "Your mother said, 'Solve it among yourselves!' he said. Trusting elders doesn't always work.",
+        feedback: "Your mother said, 'Solve it among yourselves!' Trusting elders doesn't always work.",
       },
     },
   },
@@ -4954,7 +4954,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
       },
       telefon_pazarlik: {
         text: "If the report card is good, make a deal",
-        feedback: "Your father thought... 'Bring a certificate of appreciation, let's think about it.' I found motivation!",
+        feedback: "Your father thought... 'Bring a certificate of appreciation, let's think about it.' You found motivation!",
       },
     },
   },
@@ -5320,7 +5320,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     },
   },
   npcq_romance_jealousy_jealous: {
-    text: "Your friend is angry because you talked to someone else. \"Who is he? Why do you keep talking?\" His voice is harsh, his eyes are broken.",
+    text: "Your friend is angry because you talked to someone else. \"Who is that? Why do you keep talking?\" Their voice is harsh, their eyes are hurt.",
     choices: {
       choice_0: {
         text: "\ud83e\udd17 \"I'm just a friend. I trust you, you trust me too\"",
@@ -5602,11 +5602,11 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     choices: {
       choice_0: {
         text: "\ud83e\udd14 \"Okay, I was curious!\"",
-        feedback: "You were left wondering. I wonder what he will say tomorrow?",
+        feedback: "You were left wondering. What will they say tomorrow?",
       },
       choice_1: {
         text: "\ud83d\ude24 \"Tell me now, I can't wait\"",
-        feedback: "Your impatience was noticed. \"Tomorrow\" he said and left.",
+        feedback: "Your impatience was noticed. \"Tomorrow,\" they said and left.",
       },
     },
   },
@@ -5685,7 +5685,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     choices: {
       choice_0: {
         text: "\ud83c\udf1f \"I'm ready for change\"",
-        feedback: "The voice inside him grew stronger. You don't know what tomorrow will bring, but you have no fear.",
+        feedback: "The voice inside you grew stronger. You don't know what tomorrow will bring, but you have no fear.",
       },
       choice_1: {
         text: "\ud83d\ude1f \"I hope it's not something bad\"",
@@ -5798,7 +5798,7 @@ export const enEventTranslationsGenerated: EventTranslationCatalog = {
     choices: {
       crisis_failure_talk: {
         text: "Open up to someone - maybe a teacher, maybe a friend",
-        feedback: "\"Everyone feels that way sometimes,\" he said. It sounds clich\u00e9 but... the sincerity in his eyes was real. You relaxed a little.",
+        feedback: "\"Everyone feels that way sometimes,\" they said. It sounds cliché but... the sincerity in their eyes was real. You relaxed a little.",
       },
       crisis_failure_bottle: {
         text: "Don't tell anyone anything - you'll handle it yourself",

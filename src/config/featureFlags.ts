@@ -22,6 +22,7 @@ export const FEATURE_FLAGS = {
   CAREER_PATH_ACTIONS: false,
   LEGACY_PERKS: false,
   MILESTONE_SUMMARY: true,
+  CHAPTER_SYSTEM: true,
   PERMANENT_FLAGS: false,
   FATE_TRANSPARENCY: true,
   ECONOMY_DEPTH: true,

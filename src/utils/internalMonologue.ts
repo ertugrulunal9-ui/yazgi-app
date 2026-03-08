@@ -142,35 +142,26 @@ export const getStrategicMonologue = (input: StrategicMonologueInput): Strategic
     turnsSinceMemory,
   } = input;
 
+  // --- CRITICAL (P0-P1): cliffhanger + crisis ---
+
   if (pendingCliffhanger && turn % 3 === 0) {
     const hints = getNarrativeBank('narrative.monologue.banks.cliffhanger')
       .map(line => applyTemplate(line, { title: pendingCliffhanger.title }));
     if (hints.length > 0) {
-      return {
-        text: pickByTurn(hints, turn),
-        type: 'CLIFFHANGER',
-      };
+      return { text: pickByTurn(hints, turn), type: 'CLIFFHANGER' };
     }
   }
 
-  if (burdenRisk > 80) {
-    const lines = getNarrativeBank('narrative.monologue.banks.crisis.critical');
-    if (lines.length > 0) {
-      return { text: pickByTurn(lines, turn), type: 'CRISIS' };
-    }
-  }
   if (burdenRisk > 70) {
-    const lines = getNarrativeBank('narrative.monologue.banks.crisis.severe');
-    if (lines.length > 0) {
-      return { text: pickByTurn(lines, turn), type: 'CRISIS' };
-    }
+    const lines = getNarrativeBank('narrative.monologue.banks.crisis.critical');
+    if (lines.length > 0) return { text: pickByTurn(lines, turn), type: 'CRISIS' };
   }
   if (burdenRisk > 60) {
     const lines = getNarrativeBank('narrative.monologue.banks.crisis.warning');
-    if (lines.length > 0) {
-      return { text: pickByTurn(lines, turn), type: 'CRISIS' };
-    }
+    if (lines.length > 0) return { text: pickByTurn(lines, turn), type: 'CRISIS' };
   }
+
+  // --- IMPORTANT (P2-P4): mismatch + age transition + fate + memory ---
 
   if (
     selectedGoal &&
@@ -181,12 +172,7 @@ export const getStrategicMonologue = (input: StrategicMonologueInput): Strategic
     (goalMismatch.selectedScore <= 45 || goalMismatch.gap >= 12)
   ) {
     const lines = getNarrativeBank(`narrative.monologue.banks.mismatch.${selectedGoal}`);
-    if (lines.length > 0) {
-      return {
-        text: pickByTurn(lines, turn),
-        type: 'MISMATCH',
-      };
-    }
+    if (lines.length > 0) return { text: pickByTurn(lines, turn), type: 'MISMATCH' };
   }
 
   const computedTurnsUntilNextAge = turnsUntilNextAge ?? getTurnsUntilNextAge(age, turn);
@@ -199,117 +185,75 @@ export const getStrategicMonologue = (input: StrategicMonologueInput): Strategic
         .slice()
         .sort((a, b) => normalizedState[b].streak - normalizedState[a].streak)[0] ?? null;
       const identityLine = buildCharacterIdentityThought(nextAge, input.personality, dominantTendency, turn);
-      if (identityLine) {
-        return { text: identityLine, type: 'IDLE' };
-      }
+      if (identityLine) return { text: identityLine, type: 'IDLE' };
     }
 
     const lines = getNarrativeBank(`narrative.monologue.banks.milestone.age${nextAge}`);
     if (lines.length > 0 && turn % 2 === 0) {
-      return {
-        text: applyTemplate(pickByTurn(lines, turn), { age: nextAge }),
-        type: 'IDLE',
-      };
+      return { text: applyTemplate(pickByTurn(lines, turn), { age: nextAge }), type: 'IDLE' };
     }
   }
 
-  if (lastFateOutcome && (lastFateOutcome === 'CURSED' || lastFateOutcome === 'BLESSED')) {
+  if (lastFateOutcome && (lastFateOutcome === 'CURSED' || lastFateOutcome === 'BLESSED') && turn % 4 === 0) {
     const fateLines = getNarrativeBank(`narrative.monologue.banks.fate.${lastFateOutcome}`);
-    if (fateLines.length > 0 && turn % 4 === 0) {
-      return {
-        text: pickByTurn(fateLines, turn),
-        type: 'MOMENTUM',
-      };
-    }
+    if (fateLines.length > 0) return { text: pickByTurn(fateLines, turn), type: 'MOMENTUM' };
   }
 
-  if (
-    recentHighWeightMemory &&
-    turnsSinceMemory !== undefined &&
-    turnsSinceMemory >= 5 &&
-    turnsSinceMemory <= 10 &&
-    turn % 5 === 0
-  ) {
+  if (recentHighWeightMemory && turnsSinceMemory !== undefined && turnsSinceMemory >= 5 && turnsSinceMemory <= 10 && turn % 5 === 0) {
     const lines = getNarrativeBank(`narrative.monologue.banks.memoryRecall.${recentHighWeightMemory.emotion}`);
-    if (lines.length > 0) {
-      return {
-        text: pickByTurn(lines, turn),
-        type: 'IDLE',
-      };
-    }
+    if (lines.length > 0) return { text: pickByTurn(lines, turn), type: 'IDLE' };
   }
+
+  // --- GENERAL (P4.5-P5): trait progress + momentum + NPC ---
 
   if (traitProgress) {
     const progressTemplates = getNarrativeBank('narrative.monologue.banks.trait.progress');
     const strongTemplates = getNarrativeBank('narrative.monologue.banks.trait.strong');
 
-    const progressEntries = Object.entries(traitProgress);
-    for (const [traitId, progress] of progressEntries) {
-      if (
-        progress &&
-        !progress.isLocked &&
-        progress.required > 0 &&
-        progress.points / progress.required >= 0.5
-      ) {
-        const rawName = getTraitName(traitId);
-        const traitName = stripEmoji(rawName);
+    for (const [traitId, progress] of Object.entries(traitProgress)) {
+      if (progress && !progress.isLocked && progress.required > 0 && progress.points / progress.required >= 0.5) {
+        const traitName = stripEmoji(getTraitName(traitId));
         const ratio = progress.points / progress.required;
         const templates = ratio >= 0.7 ? strongTemplates : progressTemplates;
         if (templates.length === 0) continue;
-
-        const template = pickByTurn(templates, turn, traitId.length);
-        return {
-          text: applyTemplate(template, { traitName }),
-          type: 'TRAIT',
-        };
+        return { text: applyTemplate(pickByTurn(templates, turn, traitId.length), { traitName }), type: 'TRAIT' };
       }
     }
   }
 
+  const normalized = normalizePersonalityState(personalityState);
   const visibility = getMomentumVisibilityFromPersonalityState(personalityState);
-  if (visibility.streakLevel === 'ACTIVE') {
+  const dominant = TENDENCIES
+    .slice()
+    .sort((a, b) => normalized[b].streak !== normalized[a].streak
+      ? normalized[b].streak - normalized[a].streak
+      : normalized[b].multiplier - normalized[a].multiplier
+    )[0];
+
+  if (visibility.streakLevel === 'POWERFUL' && dominant && normalized[dominant].streak >= 5) {
+    const entry = normalized[dominant];
+    const lines = getNarrativeBank(`narrative.monologue.banks.momentum.${dominant}`);
+    if (lines.length > 0) {
+      return { text: lines[Math.abs(turn + entry.streak + entry.count) % lines.length], type: 'MOMENTUM' };
+    }
+  }
+  if (visibility.streakLevel === 'ACTIVE' && visibility.hint) {
     return { text: visibility.hint, type: 'MOMENTUM' };
   }
   if (visibility.streakLevel === 'BUILDING' && turn % 3 === 0 && visibility.hint) {
     return { text: visibility.hint, type: 'MOMENTUM' };
   }
 
-  const normalized = normalizePersonalityState(personalityState);
-  const dominant = TENDENCIES
-    .slice()
-    .sort((a, b) => {
-      if (normalized[b].streak !== normalized[a].streak) {
-        return normalized[b].streak - normalized[a].streak;
-      }
-      return normalized[b].multiplier - normalized[a].multiplier;
-    })[0];
-
-  if (dominant && visibility.streakLevel === 'POWERFUL' && normalized[dominant].streak >= 5) {
-    const entry = normalized[dominant];
-    const lines = getNarrativeBank(`narrative.monologue.banks.momentum.${dominant}`);
-    if (lines.length > 0) {
-      const index = Math.abs(turn + entry.streak + entry.count) % lines.length;
-      return {
-        text: lines[index],
-        type: 'MOMENTUM',
-      };
-    }
-  }
-
   if (input.personality && input.lastEventNpcId && input.npcs && input.npcs.length > 0) {
     const npc = input.npcs.find(n => n.id === input.lastEventNpcId);
     if (npc) {
-      const normalizedForNPC = normalizePersonalityState(personalityState);
       const dominantTendencyForNPC = TENDENCIES
         .slice()
-        .sort((a, b) => normalizedForNPC[b].streak - normalizedForNPC[a].streak)[0] ?? null;
+        .sort((a, b) => normalized[b].streak - normalized[a].streak)[0] ?? null;
       const reaction = buildNPCPersonalityReaction(npc, input.personality, dominantTendencyForNPC, age, turn);
       if (reaction) {
         return {
-          text: localizeNarrativeLine('narrative.monologue.npcQuote', {
-            npcName: reaction.npcName,
-            line: reaction.line,
-          }),
+          text: localizeNarrativeLine('narrative.monologue.npcQuote', { npcName: reaction.npcName, line: reaction.line }),
           type: 'MOMENTUM',
         };
       }
@@ -317,34 +261,6 @@ export const getStrategicMonologue = (input: StrategicMonologueInput): Strategic
   }
 
   return null;
-};
-
-export const getMomentumInternalMonologue = (
-  personalityState: Partial<PersonalityState> | undefined,
-  turn: number,
-  threshold: number = 1.25
-): string | null => {
-  const normalized = normalizePersonalityState(personalityState);
-  const dominant = TENDENCIES
-    .slice()
-    .sort((a, b) => {
-      if (normalized[b].multiplier !== normalized[a].multiplier) {
-        return normalized[b].multiplier - normalized[a].multiplier;
-      }
-      if (normalized[b].streak !== normalized[a].streak) {
-        return normalized[b].streak - normalized[a].streak;
-      }
-      return normalized[b].count - normalized[a].count;
-    })[0];
-
-  if (!dominant) return null;
-  const entry = normalized[dominant];
-  if (entry.multiplier < threshold) return null;
-
-  const lines = getNarrativeBank(`narrative.monologue.banks.momentum.${dominant}`);
-  if (lines.length === 0) return null;
-  const index = Math.abs(turn + entry.streak + entry.count) % lines.length;
-  return lines[index];
 };
 
 export const composeInnerThought = (

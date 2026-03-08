@@ -78,6 +78,7 @@ const NPCCardComponent: React.FC<NPCCardProps> = ({ npc, onPress, compact = fals
     const roleColor = ROLE_COLOR[npc.role] || '#9ca3af';
     const roleName = getRoleName(npc.role);
     const personalityEmoji = PERSONALITY_EMOJI[npc.personality] || '😊';
+    const personalityLabel = tRuntime(`social.personalityLabels.${npc.personality}`, undefined, npc.personality);
 
     // Stable callback - her render'da yeni fonksiyon oluşturmasın
     const handlePress = useCallback(() => {
@@ -114,7 +115,10 @@ const NPCCardComponent: React.FC<NPCCardProps> = ({ npc, onPress, compact = fals
                         <Text style={[styles.role, { color: roleColor }]}>{roleName}</Text>
                     </View>
                 </View>
-                <Text style={styles.personalityEmoji}>{personalityEmoji}</Text>
+                <View style={[styles.personalityBadge, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                    <Text style={styles.personalityEmoji}>{personalityEmoji}</Text>
+                    <Text style={[styles.personalityLabel, { color: theme.textSecondary }]}>{personalityLabel}</Text>
+                </View>
             </View>
 
             {/* İlişki Barı */}
@@ -221,8 +225,21 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '600',
     },
+    personalityBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 3,
+        borderWidth: 1,
+        borderRadius: 10,
+        paddingHorizontal: 7,
+        paddingVertical: 3,
+    },
     personalityEmoji: {
-        fontSize: 20,
+        fontSize: 13,
+    },
+    personalityLabel: {
+        fontSize: 10,
+        fontWeight: '600',
     },
     relationContainer: {
         marginBottom: 8,

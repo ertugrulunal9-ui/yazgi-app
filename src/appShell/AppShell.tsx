@@ -63,8 +63,17 @@ interface AppContentProps {
 }
 
 const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
-  const { gameState, stats, playerName, isLoading, resetGame, loadSavedGame, updateGameState } = useGame();
-  const { metaProgression } = useMetaProgression();
+  const {
+    gameState,
+    stats,
+    playerName,
+    isLoading,
+    startNewGame,
+    resetGame,
+    loadSavedGame,
+    updateGameState,
+  } = useGame();
+  const { metaProgression, metaProgressionLoaded, updateMetaProgression } = useMetaProgression();
   const isTestEnv = process.env.NODE_ENV === 'test'
     || typeof (globalThis as { jest?: unknown }).jest !== 'undefined';
   const [appState, setAppState] = useState<AppNavigationState>({
@@ -649,6 +658,10 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
         }}
         onTabChange={(tab) => setAppState(prev => ({ ...prev, currentTab: tab }))}
         onToggleSettings={() => setAppState(prev => ({ ...prev, settingsOpen: !prev.settingsOpen }))}
+        startNewGame={startNewGame}
+        metaProgression={metaProgression}
+        metaProgressionLoaded={metaProgressionLoaded}
+        updateMetaProgression={updateMetaProgression}
       />
 
       <ErrorBoundary>

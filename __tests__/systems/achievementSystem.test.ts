@@ -271,7 +271,7 @@ describe('achievementSystem', () => {
     expect(getAchievementProgress(invalidProgressAchievement, makeStats(), state, skills, grades)).toBe(0);
   });
 
-  it('applies rewards with money/stat changes and clamps non-money stats', () => {
+  it('applies only non-money stat rewards and clamps non-money stats', () => {
     const base = makeStats({ health: 95, discipline: 5, money: 10 });
     const unchanged = applyAchievementReward(base, undefined);
     expect(unchanged).toBe(base);
@@ -285,7 +285,7 @@ describe('achievementSystem', () => {
         charisma: 'skip' as unknown as number,
       },
     });
-    expect(rewarded.money).toBe(160);
+    expect(rewarded.money).toBe(10);
     expect(rewarded.health).toBe(100);
     expect(rewarded.discipline).toBe(0);
     expect(rewarded.charisma).toBe(base.charisma);

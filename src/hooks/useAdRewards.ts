@@ -53,7 +53,7 @@ export const useAdRewards = ({
     const remainingAfter = getRemainingRewardedAds();
 
     if (!adResult.success) {
-      enqueueToast(adResult.error || t('messages.adNotShown', undefined, 'Reklam gosterilemedi'), 'error');
+      enqueueToast(adResult.error || t('messages.adNotShown'), 'error');
       void logRewardedAdResult({
         placement: 'energy_depleted',
         rewardType: 'energy',
@@ -70,9 +70,9 @@ export const useAdRewards = ({
 
     if (delta > 0) {
       updateStats({ energy: delta });
-      enqueueToast(t('messages.energyGained', { amount: delta }, '+{amount} enerji kazandin'), 'success');
+      enqueueToast(t('messages.energyGained', { amount: delta }), 'success');
     } else {
-      enqueueToast(t('messages.energyFull', undefined, 'Enerjin zaten dolu'), 'info');
+      enqueueToast(t('messages.energyFull'), 'info');
     }
 
     void logRewardedAdResult({
@@ -96,7 +96,7 @@ export const useAdRewards = ({
     const remainingAfter = getRemainingRewardedAds();
 
     if (!adResult.success) {
-      enqueueToast(adResult.error || t('messages.adNotShown', undefined, 'Reklam gosterilemedi'), 'error');
+      enqueueToast(adResult.error || t('messages.adNotShown'), 'error');
       void logRewardedAdResult({
         placement: 'exam_prep',
         rewardType: 'intelligence',
@@ -114,13 +114,13 @@ export const useAdRewards = ({
       updateStats({ intelligence: appliedBoost });
       setExamPrepBoostApplied(appliedBoost);
       enqueueToast(
-        t('messages.examFocusActive', { boost: appliedBoost }, 'Sinav odagi aktif: +{boost} zeka'),
+        t('messages.examFocusActive', { boost: appliedBoost }),
         'success'
       );
     } else {
       setExamPrepBoostApplied(0);
       enqueueToast(
-        t('messages.focusBonusLimitReached', undefined, 'Zeka zaten maksimum, odak bonusu sinirda kaldi'),
+        t('messages.focusBonusLimitReached'),
         'info'
       );
     }
@@ -148,7 +148,7 @@ export const useAdRewards = ({
     const remainingAfter = getRemainingRewardedAds();
 
     if (!adResult.success) {
-      enqueueToast(adResult.error || t('messages.adNotShown', undefined, 'Reklam gosterilemedi'), 'error');
+      enqueueToast(adResult.error || t('messages.adNotShown'), 'error');
       void logRewardedAdResult({
         placement: 'undo_choice',
         rewardType: 'utility',

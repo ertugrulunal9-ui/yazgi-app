@@ -35,8 +35,10 @@
     "design:audit": "node scripts/design-audit.cjs",
     "design:audit:ci": "node scripts/design-audit.cjs --ci",
     "events:extract": "npx tsx scripts/localization/export-event-strings.ts",
+    "events:catalog:tr": "node scripts/localization/emit-event-catalog.cjs scripts/localization/event-source-catalog.json src/i18n/events/tr.generated.ts trEventTranslationsGenerated",
     "events:translate": "python scripts/localization/translate-event-catalog.py --input scripts/localization/event-source-catalog.json --output src/i18n/events/en.generated.ts",
     "i18n:check": "jest --runInBand __tests__/i18n/Phase7I18nValidation.test.ts",
+    "i18n:audit": "node scripts/localization/audit-localization-quality.cjs",
     "i18n:extract": "npm run events:extract",
     "cloudsync:server": "node backend/server.cjs"
   },
@@ -67,6 +69,7 @@
     "expo-linear-gradient": "~15.0.8",
     "expo-linking": "~8.0.11",
     "expo-localization": "~17.0.8",
+    "expo-notifications": "~0.32.16",
     "expo-router": "~6.0.23",
     "expo-secure-store": "~15.0.8",
     "expo-sharing": "~14.0.8",

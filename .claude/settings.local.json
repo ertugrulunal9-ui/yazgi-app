@@ -38,7 +38,16 @@
       "Bash(SIMULATION_RUNS=500 node scripts/run-simulate-game.cjs --ci)",
       "Bash(SIMULATION_RUNS=1000 node scripts/run-simulate-game.cjs)",
       "Bash(xargs -I {} sh -c 'echo \"\"=== {} ===\"\" && find /c/Yazgi/src/{} -maxdepth 1 -type f | wc -l')",
-      "Bash(git -C C:/Yazgi log --oneline)"
+      "Bash(git -C C:/Yazgi log --oneline)",
+      "Bash(npx expo install expo-notifications)",
+      "Bash(for f in crisisEvents moralDilemmaEvents familyArcEvents cliffhangerEvents butterflyEffectEvents itemUnlockEvents npcCheckInEvents)",
+      "Bash(do)",
+      "Bash(echo \"=== $f.ts ===\")",
+      "Read(//c/Yazgi/src/data/**)",
+      "Bash(__NEW_LINE_2c4d6d0ec9a928a4__ echo \"=== VERIFICATION ROUND ===\")",
+      "Bash(sed -n '650,654p' c:/Yazgi/src/data/moralDilemmaEvents.ts)",
+      "Bash(sed -n '207,211p' c:/Yazgi/src/data/familyArcEvents.ts)",
+      "Bash(sed -n '40,42p; 60,62p; 68,70p; 153,155p; 175,177p; 182,184p; 202,204p; 236,238p; 258,260p' c:/Yazgi/src/data/cliffhangerEvents.ts)"
     ]
   }
 }

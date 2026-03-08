@@ -49,6 +49,16 @@ export type Talent = 'NONE' | 'CODING' | 'MUSIC' | 'SPORTS';
 export type LifeGoal = 'ACADEMIC' | 'ATHLETIC' | 'CREATIVE' | 'WEALTH' | 'SOCIAL';
 export type PlayerGender = 'MALE' | 'FEMALE';
 
+/** Minimalist avatar yapılandırması — Faz 6A */
+export interface AvatarConfig {
+  /** Saç rengi / stili: 0=siyah 1=kahve 2=sarı 3=kızıl */
+  hairStyle: 0 | 1 | 2 | 3;
+  /** Ten tonu: 0=açık 1=orta 2=esmer 3=koyu */
+  skinTone: 0 | 1 | 2 | 3;
+  /** Aksesuar: 0=yok 1=gözlük 2=şapka */
+  accessory: 0 | 1 | 2;
+}
+
 export type ZodiacSign =
   | 'KOC' | 'BOGA' | 'IKIZLER' | 'YENGEC' | 'ASLAN' | 'BASAK'
   | 'TERAZI' | 'AKREP' | 'YAY' | 'OGLAK' | 'KOVA' | 'BALIK';

@@ -67,10 +67,9 @@ export const createRomanceShareText = (): ShareMilestone => ({
 });
 
 export const createFateShareText = (isPositive: boolean): ShareMilestone => {
-  const fallbackOutcome = isPositive ? 'gulumsedi' : 'sirtini dondu';
   const outcome = isPositive
-    ? tRuntime('social.share.fatePositiveOutcome', undefined, fallbackOutcome)
-    : tRuntime('social.share.fateNegativeOutcome', undefined, fallbackOutcome);
+    ? tRuntime('social.share.fatePositiveOutcome')
+    : tRuntime('social.share.fateNegativeOutcome');
 
   return {
     type: 'FATE_MOMENT',

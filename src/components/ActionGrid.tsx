@@ -57,7 +57,7 @@ export const ActionGrid: React.FC<ActionGridProps> = ({
     return (
         <View style={styles.container}>
             <Text style={[styles.sectionTitle, sectionTitleTypography, { color: theme.textPrimary }]}>
-                {t('game.whatDoYouWant', undefined, 'Ne yapmak istersin?')}
+                {t('game.whatDoYouWant')}
             </Text>
 
             <View style={styles.grid}>
@@ -85,7 +85,7 @@ export const ActionGrid: React.FC<ActionGridProps> = ({
                                     activeOpacity={0.84}
                                     accessibilityRole="button"
                                     accessibilityLabel={category.title}
-                                    accessibilityHint={`${category.subActions.length} farkli aksiyon icerir`}
+                                    accessibilityHint={t('actions.grid.categoryActionCount', { count: category.subActions.length })}
                                 >
                                     <View style={styles.cardContent}>
                                         <View style={[styles.iconShell, { backgroundColor: iconBg }]}>

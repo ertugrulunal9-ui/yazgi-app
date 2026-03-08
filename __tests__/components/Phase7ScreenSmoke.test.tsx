@@ -352,7 +352,9 @@ describe('Phase 7 screen smoke', () => {
 
     mockedUseMetaProgression.mockReturnValue({
       metaProgression: null as any,
+      metaProgressionLoaded: true,
       refreshMetaProgression: jest.fn(async () => {}),
+      updateMetaProgression: jest.fn(),
     });
 
     mockedUseStats.mockReturnValue({ stats: initialStats } as any);
@@ -415,6 +417,10 @@ describe('Phase 7 screen smoke', () => {
         metrics={metrics as any}
         locale="en"
         onGameStart={jest.fn()}
+        startNewGame={jest.fn()}
+        metaProgression={null}
+        metaProgressionLoaded
+        updateMetaProgression={jest.fn()}
       />
     );
 

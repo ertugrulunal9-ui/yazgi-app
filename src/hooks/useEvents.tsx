@@ -1,10 +1,11 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useGame } from '../context/GameContext';
 import { useUI } from '../context/UIContext';
 import { Choice, EventContext, GameEvent, ExamSubject, ALL_EXAM_SUBJECTS, GameState, Stats } from '../types';
 import { earnToken, getEarnedTokenCount, spendToken } from '../systems/FateEngine';
 import { ageTransitionHaptic } from '../animations/HapticFeedback';
 import { EVENTS, FALLBACK_EVENT } from '../data/events';
+import { useEventHelpers } from './useEventHelpers';
 import { selectCrisisEvent } from '../data/crisisEvents';
 import {
   applyTurnBuffEffects,
@@ -17,7 +18,7 @@ import {
   tickConsumableCooldowns,
 } from '../utils/gameUtils';
 import { CONSUMABLE_CONFIG } from '../config/gameBalance';
-import { analyzeGoalMismatch, calculateEndingErrorDebt, resolveEnding } from '../utils/endingResolver';
+import { analyzeGoalMismatch, resolveEnding } from '../utils/endingResolver';
 import { calculateSchoolReport } from '../utils/schoolLogic';
 import { TurnMediator, TurnResult } from '../systems/TurnMediator';
 import { getDueScheduledEvents, isForcedScheduledEvent, pickScheduledEvent, tickScheduledEvents } from '../utils/scheduledEvents';
@@ -25,12 +26,10 @@ import {
   handleEventChoice as logEventChoice,
   logBurdenTrigger,
   logGameEnding,
-  logGoalAlignmentScore,
-  logMilestoneReached,
   logTraitFormed,
   logTurnProgress
 } from '../utils/analyticsEvents';
-import { calculateGoalAlignmentScore, selectEventWithAdaptivePacing, getRecencyWindowSize } from '../utils/eventSelection';
+import { selectEventWithAdaptivePacing, getRecencyWindowSize } from '../utils/eventSelection';
 import { getEventChoiceSet } from '../utils/gameStateAdapter';
 import { naturalStressRecovery } from '../utils/personalitySystem';
 import {
@@ -43,7 +42,6 @@ import { selectStoryArcEvent, syncActiveArcsWithSelectedEvent } from '../utils/s
 import { buildMemoryAwareEventText } from '../utils/memoryLogic';
 import { selectMomentumGateEvent } from '../data/momentumEvents';
 import { composeInnerThought, getStrategicMonologue } from '../utils/internalMonologue';
-import { getEligibleEventsWithAgeCache } from '../utils/eventEligibilityCache';
 import {
   buildInitialLifeGoalEvent,
   buildPivotLifeGoalEvent,
@@ -51,12 +49,12 @@ import {
   shouldTriggerInitialLifeGoalEvent,
   shouldTriggerPivotLifeGoalEvent,
 } from '../utils/lifeGoalSystem';
-import { getGoalChainStage } from '../data/goalChainEvents';
 import { tRuntime } from '../i18n/strings';
 import { buildChoiceFeedbackKey, buildChoiceTextKey, buildEventTextKey } from '../i18n/events/keyUtils';
 import { detectCausalLink } from '../utils/causalChain';
-import { buildAgeMilestone } from '../utils/milestoneBuilder';
+import { buildAgeMilestone, buildChapterSummary } from '../utils/milestoneBuilder';
 import { isFeatureEnabled } from '../config/featureFlags';
+import { getCurrentChapter, isChapterTransition } from '../utils/gameUtils';
 import { calculateTurnAllowance, checkSavingGoalCompletion, getDefaultSavingGoals } from '../utils/economySystem';
 import {
   generateMicroGoal,
@@ -66,6 +64,7 @@ import {
   cleanupExpiredMicroGoals,
 } from '../utils/goalTracking';
 import { isPremium as isPremiumUser } from '../services/subscriptionManager';
+import { scheduleReengagement, scheduleNPCReminder } from '../services/notificationService';
 
 const getEventById = (eventId: string): GameEvent | undefined =>
   EVENTS.find(evt => evt.id === eventId);
@@ -193,89 +192,14 @@ export const useEvents = () => {
   const { gameState, stats, advanceTurnInContext, updateGameState, updateStats, setStats } = useGame();
   const { showFloatingText } = useUI();
   const turnMediatorRef = useRef(new TurnMediator());
-  const eligibilityCache = useRef<{ age: number; eligible: GameEvent[] }>({ age: -1, eligible: [] });
 
-  const getCachedEligibleEvents = useCallback((
-    context: EventContext,
-  ): GameEvent[] => {
-    eligibilityCache.current = getEligibleEventsWithAgeCache(
-      eligibilityCache.current,
-      EVENTS,
-      context.age
-    );
-    return eligibilityCache.current.eligible;
-  }, []);
-
-  const buildEventContext = useCallback((): EventContext => ({
-    age: gameState.age,
-    stats,
-    gameState,
-    traits: gameState.traits,
-    family: gameState.family,
-    npcs: gameState.npcs,
-    inventory: gameState.inventory,
-    memories: gameState.memories,
-    personality: gameState.personality,
-    stress: gameState.stress,
-    grades: gameState.schoolGrades,
-    skills: gameState.skills,
-  }), [gameState, stats]);
-
-  const getBurdenRisk = useCallback((
-    state: GameState = gameState,
-    currentStats: Stats = stats
-  ): number => calculateEndingErrorDebt(state, currentStats).total, [gameState, stats]);
-
-  const buildScheduledConditionContext = useCallback((
-    state: GameState,
-    currentStats: Stats,
-    options?: {
-      age?: number;
-      turn?: number;
-      stress?: number;
-      seenEventIds?: Set<string>;
-    }
-  ) => {
-    const seenEventIds = options?.seenEventIds ?? getEventChoiceSet(state);
-    return {
-      age: options?.age ?? state.age,
-      turn: options?.turn ?? state.turn,
-      stress: options?.stress ?? state.stress.current,
-      selectedGoal: state.selectedGoal ?? null,
-      traits: state.traits ?? [],
-      inventory: state.inventory ?? [],
-      seenEventIds,
-      stats: currentStats,
-      skills: state.skills ?? {},
-    };
-  }, []);
-
-  const logSelectedEventAnalytics = useCallback((
-    event: GameEvent,
-    age: number,
-    turn: number
-  ) => {
-    const selectedGoal = gameState.selectedGoal ?? null;
-    const alignmentScore = calculateGoalAlignmentScore(event, selectedGoal);
-    void logGoalAlignmentScore({
-      eventId: event.id,
-      selectedGoal,
-      alignmentScore,
-      age,
-      turn,
-    });
-
-    const stage = getGoalChainStage(event.id);
-    if (stage && selectedGoal) {
-      void logMilestoneReached({
-        arcId: 'arc_goal_path_chain',
-        stage,
-        selectedGoal,
-        age,
-        turn,
-      });
-    }
-  }, [gameState.selectedGoal]);
+  const {
+    getCachedEligibleEvents,
+    buildEventContext,
+    getBurdenRisk,
+    buildScheduledConditionContext,
+    logSelectedEventAnalytics,
+  } = useEventHelpers();
 
   const resolveEventText = useCallback((evt: GameEvent): string => {
     const ctx = buildEventContext();
@@ -329,7 +253,7 @@ export const useEvents = () => {
         console.error('Error resolving dynamic choice:', err);
         // Return a safe fallback if execution fails
         return {
-          text: tRuntime('events.fallback.continueChoice', undefined, 'Devam Et'),
+          text: tRuntime('events.fallback.continueChoice'),
           effect: {},
           feedback: tRuntime(
             'events.fallback.continueFeedback',
@@ -779,6 +703,26 @@ export const useEvents = () => {
       nextAgeStartStats = { ...statsAfterBuffTick };
     }
 
+    // --- Chapter (Bölüm) Sistemi — Faz 1A ---
+    let chapterUpdates: Partial<import('../types/game').GameState> = {};
+    if (didAgeUp && isFeatureEnabled('CHAPTER_SYSTEM') && isChapterTransition(gameState.age, newAge)) {
+      const completedChapter = getCurrentChapter(gameState.age);
+      // Tamamlanan bölüme ait tüm yaş milestone'larını topla
+      const chapterMilestones = (
+        pendingMilestone
+          ? [...(gameState.ageMilestoneSummaries ?? []), pendingMilestone]
+          : (gameState.ageMilestoneSummaries ?? [])
+      ).filter(m => m.age >= completedChapter.ageStart && m.age <= completedChapter.ageEnd);
+
+      const chapterSummary = buildChapterSummary(completedChapter, chapterMilestones);
+      chapterUpdates = {
+        chapterSummaries: [...(gameState.chapterSummaries ?? []), chapterSummary],
+        chapter: getCurrentChapter(newAge).id,
+      };
+    } else if (didAgeUp) {
+      chapterUpdates = { chapter: getCurrentChapter(newAge).id };
+    }
+
     // Milestone state updates to spread into every advanceTurnInContext call
     const milestoneUpdates = {
       ...(pendingMilestone ? {
@@ -792,7 +736,13 @@ export const useEvents = () => {
         _ageStartNpcs: [...updatedNPCs],
         _ageStartGrades: { ...gameState.schoolGrades },
         undosUsedThisAge: 0, // reset undo counter on age up
+        // Faz 6B: stat snapshot — her yaş geçişinde kaydedilir
+        statSnapshots: [
+          ...(gameState.statSnapshots ?? []),
+          { age: gameState.age, stats: { ...statsAfterBuffTick } },
+        ],
       } : {}),
+      ...chapterUpdates,
     };
 
     // Paket 8: Biriktirme hedefi kontrolu
@@ -1515,6 +1465,19 @@ export const useEvents = () => {
       },
     };
     logSelectedEventAnalytics(evt, newAge, newTurn);
+
+    const nextEventTeaser: string = (() => {
+      if ((evt.difficulty ?? 0) >= 4) return tRuntime('narrative.eventTeaser.criticalDecision');
+      if (evt.personalityCategory === 'BREAKDOWN') return tRuntime('narrative.eventTeaser.breakdown');
+      if (evt.personalityCategory === 'MORAL') return tRuntime('narrative.eventTeaser.moral');
+      if (evt.personalityCategory === 'RISK') return tRuntime('narrative.eventTeaser.risk');
+      if (typeof evt.text === 'string') {
+        const firstSentence = evt.text.split(/[.!?]/)[0]?.trim() ?? '';
+        if (firstSentence.length > 0 && firstSentence.length <= 80) return firstSentence + '...';
+      }
+      return tRuntime('narrative.eventTeaser.agePage', { age: newAge });
+    })();
+
     advanceTurnInContext({
       newStats: turnAdvanceStats,
       newGameState: {
@@ -1524,6 +1487,7 @@ export const useEvents = () => {
         totalTurns: newTotalTurns,
         phase: 'EVENT',
         currentEvent: evt,
+        nextEventTeaser,
         recentEvents: [...gameState.recentEvents, evt.id].slice(-advWindowSize),
         schoolGrades: newGrades,
         pendingReportCard,
@@ -1576,7 +1540,7 @@ export const useEvents = () => {
       }
       : turnResult.gameStateUpdates;
 
-    updateGameState(nextGameStateUpdates);
+    updateGameState({ ...nextGameStateUpdates, lastSessionEndedAt: Date.now() });
   }, [gameState, stats, setStats, updateGameState]);
 
   // S\u0131nav tamamland\u0131\u011F\u0131nda \u00E7a\u011Fr\u0131l\u0131r
@@ -1626,6 +1590,20 @@ export const useEvents = () => {
     });
     return true;
   }, [gameState, setStats, updateGameState]);
+
+  // Schedule re-engagement notifications after each turn so the countdown resets
+  useEffect(() => {
+    if (!gameState.totalTurns || gameState.totalTurns < 1) return;
+
+    void scheduleReengagement(24);
+
+    // If player has a meaningful NPC relationship, add a 48h NPC reminder
+    const activeNPC = gameState.npcs?.find(npc => npc.relationship >= 40);
+    if (activeNPC) {
+      void scheduleNPCReminder(activeNPC.name, 48);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState.totalTurns]);
 
   return {
     currentEvent: gameState.currentEvent,

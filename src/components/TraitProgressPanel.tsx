@@ -57,7 +57,7 @@ export const TraitProgressPanel: React.FC<TraitProgressPanelProps> = ({
   if (entries.length === 0) {
     return (
       <Text style={{ color: theme.textSecondary, fontSize: 12, fontStyle: 'italic' }}>
-        {tRuntime('traits.progress.empty', undefined, 'Henuz takip edilen bir ozellik formasyonu yok.')}
+        {tRuntime('traits.progress.empty')}
       </Text>
     );
   }
@@ -116,14 +116,14 @@ export const TraitProgressPanel: React.FC<TraitProgressPanelProps> = ({
                   testID={`trait-progress-status-${entry.traitId}`}
                   style={{ color: theme.textSecondary, fontSize: 11, fontWeight: '700' }}
                 >
-                  {tRuntime('traits.progress.locked', undefined, 'Kilitli')}
+                  {tRuntime('traits.progress.locked')}
                 </Text>
               ) : isNearComplete ? (
                 <Text
                   testID={`trait-progress-status-${entry.traitId}`}
                   style={{ color: barColor, fontSize: 11, fontWeight: '700' }}
                 >
-                  {tRuntime('traits.progress.nearComplete', undefined, 'Tamamlanmaya yakin')}
+                  {tRuntime('traits.progress.nearComplete')}
                 </Text>
               ) : (
                 <Text style={{ color: theme.textSecondary, fontSize: 11 }}>

@@ -4,7 +4,7 @@ export const narrativeStrings: DomainStrings = {
   tr: {
     narrative: {
       choiceFallback: {
-        text: 'Su an bu durumda acik bir secenek yok. Durumu kabul edip devam et.',
+        text: 'Şu an bu durumda açık bir seçenek yok. Durumu kabul edip devam et.',
         feedback: 'Kosullar netlesene kadar beklemeyi sectin. Hikaye bir sonraki adima akiyor.',
       },
       memory: {
@@ -14,12 +14,12 @@ export const narrativeStrings: DomainStrings = {
         },
         agePrefix: {
           current: 'Az once',
-          atAge: '{age} yasinda',
+          atAge: '{age} yaşında',
         },
         random: {
           foundWallet: {
             negative: 'Buldugun o cuzdan sahnesi yeniden zihninde canlaniyor; vicdanin sizliyor.',
-            positive: 'Cuzdani sahibine teslim ettigin an aklina geliyor; dogru olanin agirligi hafifletiyor.',
+            positive: 'Cuzdani sahibine teslim ettigin an aklina geliyor; doğru olanin agirligi hafifletiyor.',
           },
           generic: '{timing} verdigin bir karar yine aklina dusuyor.',
         },
@@ -27,25 +27,25 @@ export const narrativeStrings: DomainStrings = {
           regret: '{agePrefix} yaptigin bir secimin golgesi icini hafifce yokluyor.',
           guilt: '{agePrefix} yasadigin bir sucluluk hissi sessizce geri donuyor.',
           pride: '{agePrefix} gosterdigin cesaret bugun yine omurgani diklestiriyor.',
-          satisfaction: '{agePrefix} aldigin dogru karar icini yeniden sakinlestiriyor.',
+          satisfaction: '{agePrefix} aldigin doğru karar icini yeniden sakinlestiriyor.',
           neutral: '{agePrefix} bir ani zihninde kisa bir iz birakiyor.',
         },
         decisionNarrative: {
-          pride: '{age} yasinda gurur duydun.',
-          regret: '{age} yasinda pisman oldun.',
-          guilt: '{age} yasinda sucluluk hissettin.',
-          satisfaction: '{age} yasinda huzur buldun.',
-          neutral: '{age} yasinda bir karar verdin.',
+          pride: '{age} yaşında gurur duydun.',
+          regret: '{age} yaşında pişman oldun.',
+          guilt: '{age} yaşında sucluluk hissettin.',
+          satisfaction: '{age} yaşında huzur buldun.',
+          neutral: '{age} yaşında bir karar verdin.',
         },
         themeSummary: {
           pridePath: {
             brave: 'Cesaretle dolu bir hayat yasadin. Korkularini yendin ve iz biraktin.',
             empath: 'Insanlara dokunarak hayatini anlamli kildin.',
-            open: 'Yeni deneyimlere acik bir hayat surdun ve cok sey ogrendin.',
+            open: 'Yeni deneyimlere açık bir hayat surdun ve çok sey ogrendin.',
             default: 'Basarilarla dolu bir yolculuk gecirdin. Her adim seni guclendirdi.',
           },
           regretPath: {
-            brave: 'Hatalar yaptin ama her seferinde ayaga kalktin. Bu cesaret seni tanimliyor.',
+            brave: 'Hatalar yaptin ama her seferinde ayaga kalktin. Bu cesaret seni tanımlıyor.',
             empath: 'Pismanliklarin seni daha anlayisli bir insan yapti.',
             default: 'Dususler ve dersler dolu bir yolculuk. Her hata seni olgunlastirdi.',
           },
@@ -55,7 +55,7 @@ export const narrativeStrings: DomainStrings = {
           supportive: '{name} destekci bir ailede buyudu. Evin sicakligi, ona cesaret ve guven asiladi.',
           strict: '{name} kurallarla dolu bir evde buyudu. Disiplin, hayatinin ilk dersi oldu.',
           chaotic: '{name} kaotik bir evde buyudu. Duzensizlik icinde kendi yolunu bulmak zorunda kaldi.',
-          default: '{name} bir cocuk olarak hayata basladi. Her gun yeni bir maceraydi.',
+          default: '{name} bir çocuk olarak hayata başladı. Her gün yeni bir maceraydi.',
         },
         tendency: {
           helpful: 'yardimsever',
@@ -73,9 +73,9 @@ export const narrativeStrings: DomainStrings = {
         npcQuote: '{npcName}: "{line}"',
         identity: {
           tendency: {
-            HELPFUL: 'Icindeki yardimsever ruh guclu.',
-            PRAGMATIC: 'Icindeki pragmatik yan her gecen gun netlesiyor.',
-            AGGRESSIVE: 'Icindeki savasci ruh hala canli.',
+            HELPFUL: 'İçindeki yardimsever ruh güçlü.',
+            PRAGMATIC: 'İçindeki pragmatik yan her gecen gün netlesiyor.',
+            AGGRESSIVE: 'İçindeki savasci ruh hâlâ canli.',
           },
         },
         banks: {
@@ -84,7 +84,7 @@ export const narrativeStrings: DomainStrings = {
           ],
           crisis: {
             warning: [
-              'Son gunlerde her sey daha agir geliyor. Biraz nefes almam lazim.',
+              'Son gunlerde her sey daha ağır geliyor. Biraz nefes almam lazim.',
             ],
             severe: [
               'Her sey ust uste biniyor. Bir adim geri atmazsam cokebilirim.',
@@ -112,27 +112,27 @@ export const narrativeStrings: DomainStrings = {
           },
           identity: {
             age7: [
-              '{age} yasina girdin. {highLabel} yanin belirgin, {lowLabel} yanin ise seni zorluyor.',
+              '{age} yaşına girdin. {highLabel} yanin belirgin, {lowLabel} yanin ise seni zorluyor.',
             ],
             age10: [
-              '{age} yasinda kimligin netlesiyor: {highLabel}, ama ayni zamanda {lowLabel}.',
+              '{age} yaşında kimligin netlesiyor: {highLabel}, ama ayni zamanda {lowLabel}.',
             ],
             age13: [
-              '{age} yasinda secimlerin agirlasti. {highLabel} tarafin guclu, {lowLabel} tarafin sinavda.',
+              '{age} yaşında secimlerin agirlasti. {highLabel} tarafin güçlü, {lowLabel} tarafin sinavda.',
             ],
             age15: [
-              '{age} yasinda kendini daha iyi taniyorsun: {highLabel}, ama hala {lowLabel}.',
+              '{age} yaşında kendini daha iyi taniyorsun: {highLabel}, ama hâlâ {lowLabel}.',
             ],
             age17: [
-              '{age} yasinda son viraja girdin. {highLabel} seni ileri tasiyor, {lowLabel} iz birakiyor.',
+              '{age} yaşında son viraja girdin. {highLabel} seni ileri taşıyor, {lowLabel} iz birakiyor.',
             ],
             age18: [
-              '{age} yasinda hikayen olgunlasti. {highLabel} ve {lowLabel} birlikte seni tanimliyor.',
+              '{age} yaşında hikayen olgunlasti. {highLabel} ve {lowLabel} birlikte seni tanımlıyor.',
             ],
           },
           milestone: {
             age7: [
-              'Artik daha buyuksun. Yeni bir donem basliyor.',
+              'Artik daha buyuksun. Yeni bir dönem başlıyor.',
             ],
             age10: [
               'Tek haneli yaslar geride kaldi. Icinde bir seyler degisiyor.',
@@ -158,21 +158,21 @@ export const narrativeStrings: DomainStrings = {
               'Kader bu turde yaninda gibi duruyor.',
             ],
             CURSED: [
-              'Kader bu turde sert bir sinav aciyor.',
+              'Kader bu turde sert bir sınav aciyor.',
             ],
           },
           memoryRecall: {
             REGRET: [
-              'O karar hala aklindan tam cikmiyor.',
+              'O karar hâlâ aklindan tam cikmiyor.',
             ],
             GUILT: [
               'O andaki sucluluk hissi geri geliyor.',
             ],
             PRIDE: [
-              'O anki dogru durusun icini tekrar isitiyor.',
+              'O anki doğru durusun icini tekrar isitiyor.',
             ],
             SATISFACTION: [
-              'O kararin verdigi huzur hala sende.',
+              'O kararin verdigi huzur hâlâ sende.',
             ],
             NEUTRAL: [
               'Gecmisten bir an kisa bir iz birakiyor.',
@@ -180,7 +180,7 @@ export const narrativeStrings: DomainStrings = {
           },
           trait: {
             progress: [
-              '{traitName} tarafin adim adim gucleniyor.',
+              '{traitName} tarafin adim adim güçleniyor.',
             ],
             strong: [
               '{traitName} artik kimliginin merkezine yerlesti.',
@@ -188,13 +188,13 @@ export const narrativeStrings: DomainStrings = {
           },
           momentum: {
             HELPFUL: [
-              'Yardimsever ritmin gucleniyor.',
+              'Yardimsever ritmin güçleniyor.',
             ],
             PRAGMATIC: [
-              'Pragmatik ritmin gucleniyor.',
+              'Pragmatik ritmin güçleniyor.',
             ],
             AGGRESSIVE: [
-              'Agresif ritmin gucleniyor.',
+              'Agresif ritmin güçleniyor.',
             ],
           },
         },
@@ -203,51 +203,125 @@ export const narrativeStrings: DomainStrings = {
         pride: 'Gecmisteki cesur karar bugunku kapiyi acti.',
         satisfaction: 'Gecmisteki bilincli adim bugun meyve verdi.',
         regret: 'Gecmisteki secimin golgesi bugune uzandi.',
-        guilt: 'Vicdani agirlik tasiyan an bugun yeniden karsina cikti.',
-        neutral: 'Gecmisteki secim bugune bir bag kurdu.',
+        guilt: 'Vicdani agirlik tasiyan an bugun yeniden karsina çıktı.',
+        neutral: 'Gecmisteki seçim bugune bir bag kurdu.',
+      },
+      causalTemplates: {
+        pride: [
+          'Gecmiste verdigin cesur karar bu kapiyi acti.',
+          'O an doğru olani yaptin; ?imdi o an sana geri donuyor.',
+          'Gururla verdigin karar bugunu getirdi.',
+          'Yillar once gogsunu kabartan o an, bugun burada yankilaniyor.',
+          'Korkuna ragmen verdigin karar, ?imdi onunde yeni bir yol aciyor.',
+          'O gunki cesaretinin meyvesini ?imdi topluyorsun.',
+        ],
+        satisfaction: [
+          'Gecmiste aldigin doğru karar bugun meyvesini veriyor.',
+          'O seçim bosa gitmemisti. ?imdi anliyorsun neden.',
+          'Bilincli bir adim atmistin; sonucu bu.',
+          'Icin rahat sekilde verdigin karar seni bugun bu noktaya tasidi.',
+          'O gün doğru olani secmistin. Bugun bunu anliyorsun.',
+          'Huzurla aldigin karar sessizce koklendi; ?imdi filizleniyor.',
+        ],
+        regret: [
+          'Gecmiste verdigin bir karar bugunu sekillendiriyor.',
+          'O an yaptigin secimin golgesi hâlâ uzerinde.',
+          'Pismanligini tasidigin o karar, bugun karsina çıkıyor.',
+          'Farkli secseydin ne olurdu diye dusundugun an, bugun seni buluyor.',
+          'Geride biraktigini sandigin karar hiç gitmemisti aslinda.',
+          'O yolun seni nereye goturecegini artik goruyorsun.',
+        ],
+        guilt: [
+          'Sucluluk duydugun o anin agirligi bugun geri döndü.',
+          'Gecmiste yapamadigin ya da yanlis yaptigin bir sey seni burada buluyor.',
+          'O an vicdanini sizlatan seçim bugun karsina çıktı.',
+          'Yuzlesmekten kactigin an ?imdi seni bekliyor.',
+          'Vicdanin hiç unutmamisti; ?imdi o anin hesabi soruluyor.',
+          'O gün verdigin karar icinde bir yuk birakmisti. ?imdi o yuk konusuyor.',
+        ],
+        neutral: [
+          'Gecmiste yasananlar bugunu buraya getirdi.',
+          'O zamanki karar bugun bir kapi araladi.',
+          'Hayatinin ilerleyen bir noktasinda bu ani hatirlayacaksin.',
+          'Gecmisin bugunle sessizce konustugu anlardan birindesin.',
+          'O gün attigin adim, bugunku yolu dosedi.',
+        ],
+      },
+      family: {
+        thoughts: {
+          strictLowRelation: 'Babam yine kizacak. Her seyi doğru yapmam lazim.',
+          chaoticTeen: 'Keske evde biraz daha duzen olsa.',
+          supportiveHighRelation: 'Evde hata yapsam bile beni dinleyen biri var.',
+          poor: 'Arkadaslarimin yeni telefonu var... Bizim neden yok?',
+          rich: 'Herkes benden bir sey bekliyor gibi.',
+          strictWarmth: 'Evdeki ton değişti. Artik sadece emir degil, sohbet de var.',
+          crisis: 'Evdeki sessizlik bazen bagirmaktan daha ağır.',
+          fallback: {
+            strict: 'Evde kurallar net. Hata yaparsam hemen fark edilir.',
+            chaotic: 'Evde herkes kendi ritminde. Plan yapmak zor.',
+            supportive: 'Ailem yanimda oldugunu hissettiriyor.',
+          },
+        },
+        atmosphere: {
+          unknown: 'Belirsiz',
+          crisis: 'Gerilimli Sessizlik',
+          softening: 'Yumusayan Otorite',
+          secure: 'Guvenli',
+          fragile: 'Kirilgan',
+          strict: 'Disiplinli',
+          chaotic: 'Daginik',
+          supportive: 'Destekleyici',
+        },
+      },
+      eventTeaser: {
+        criticalDecision: 'Kritik bir karar yaklasiyor. Hazir misin?',
+        breakdown: 'Bunaltici bir dönem başlıyor...',
+        moral: 'Ahlaki bir ikilem seni bekliyor...',
+        risk: 'Riskli bir firsat kapida...',
+        agePage: '{age} yaşında yeni bir sayfa açılıyor...',
       },
       npcReaction: {
         formatted: '{line}',
         friend: {
-          openness: ['Yeni seylere acik yanin dikkat cekiyor, ama dengeyi koru.'],
+          openness: ['Yeni seylere açık yanin dikkat cekiyor, ama dengeyi koru.'],
           courage: ['Cesaretin etkileyici, ama riskin bedelini de dusun.'],
-          empathy: ['Empatin cok guclu, kendine de alan acmayi unutma.'],
-          patience: ['Sabrin seni tasiyor, ama bazen hizlanmak da gerekir.'],
+          empathy: ['Empatin çok güçlü, kendine de alan acmayi unutma.'],
+          patience: ['Sabrin seni taşıyor, ama bazen hizlanmak da gerekir.'],
           conformity: ['Duzenli tarafin guven veriyor, ama bazen sinirlari test et.'],
         },
         best_friend: {
-          openness: ['Seni en iyi ben bilirim: acik fikirlisin ve bu seni buyutuyor.'],
+          openness: ['Seni en iyi ben bilirim: açık fikirlisin ve bu seni buyutuyor.'],
           courage: ['Cesaretin hayranlik uyandiriyor, yine de kendini koru.'],
-          empathy: ['Insanlari derinden anliyorsun; bu cok nadir bir guc.'],
+          empathy: ['Insanlari derinden anliyorsun; bu çok nadir bir güç.'],
           patience: ['Sabirli tarafin krizlerde seni ayakta tutuyor.'],
           conformity: ['Kuralli tarafin istikrar sagliyor; bazen esneklik de iyi gelir.'],
         },
         crush: {
-          openness: ['Acik fikirliligin beni sana daha cok cekiyor.'],
+          openness: ['Açık fikirliligin beni sana daha çok cekiyor.'],
           courage: ['Cesaretin etkileyici, yaninda ben de gucleniyorum.'],
           empathy: ['Empatin seni daha da cekici kiliyor.'],
           patience: ['Sakinligin yaninda kendimi guvende hissediyorum.'],
           conformity: ['Dengeyi koruyan tarafin bana huzur veriyor.'],
         },
         rival: {
-          openness: ['Cok yonlu olman guc gibi gorunuyor, ama kararsizlik da yaratabilir.'],
+          openness: ['Çok yonlu olman güç gibi görünüyor, ama kararsizlik da yaratabilir.'],
           courage: ['Cesaretin var, ama bazen hesapsiz risk aliyorsun.'],
           empathy: ['Duygusallik sahada zayiflik yaratabilir.'],
-          patience: ['Cok beklemek firsat kacirmana neden olabilir.'],
+          patience: ['Çok beklemek firsat kacirmana neden olabilir.'],
           conformity: ['Kurallara fazla baglilik seni yavaslatabilir.'],
         },
         enemy: {
           openness: ['Dalda dalga gezmen seni kirilgan yapabilir.'],
-          courage: ['Risklerin buyuk; bedeli de buyuk olabilir.'],
+          courage: ['Risklerin büyük; bedeli de büyük olabilir.'],
           empathy: ['Bu dunyada asiri empati seni asindirir.'],
           patience: ['Beklemek her zaman kazandirmez.'],
           conformity: ['Kurallara fazla baglilik seni sinirlar icinde tutar.'],
         },
         partner: {
-          openness: ['Yeniye acik olman iliskimizi canli tutuyor.'],
-          courage: ['Cesaretin bana da guc veriyor.'],
+          openness: ['Yeniye açık olman iliskimizi canli tutuyor.'],
+          courage: ['Cesaretin bana da güç veriyor.'],
           empathy: ['Empatin iliskimizi daha derin yapiyor.'],
-          patience: ['Sabrin zor anlarda en buyuk dayanak oluyor.'],
+          patience: ['Sabrin zor anlarda en büyük dayanak oluyor.'],
           conformity: ['Dengeyi koruyan tarafin bize guven veriyor.'],
         },
       },
@@ -457,6 +531,80 @@ export const narrativeStrings: DomainStrings = {
         regret: 'The shadow of an old choice stretches into today.',
         guilt: 'A heavy moment of conscience returns to face you now.',
         neutral: 'A past choice ties directly into this moment.',
+      },
+      causalTemplates: {
+        pride: [
+          'A brave decision from your past opened this door.',
+          'You did the right thing then, and now it returns to you.',
+          'The choice you made with pride led you here.',
+          'That moment that once filled your chest with pride echoes here today.',
+          'The choice you made despite your fear opens a new path now.',
+          'You are finally harvesting the courage you showed that day.',
+        ],
+        satisfaction: [
+          'A right decision from the past is paying off today.',
+          'That choice was not wasted. Now you see why.',
+          'You took a conscious step, and this is the result.',
+          'The calm decision you made then brought you to this point today.',
+          'You chose what was right that day. Now you understand it.',
+          'A peaceful decision quietly took root, and now it is blooming.',
+        ],
+        regret: [
+          'A decision from your past is shaping today.',
+          'The shadow of that choice still lingers over you.',
+          'The decision you regret stands before you again.',
+          'That moment you kept revisiting returns to find you today.',
+          'The decision you thought you left behind never truly left.',
+          'You can finally see where that road was taking you.',
+        ],
+        guilt: [
+          'The weight of that guilty moment returned today.',
+          'Something you failed to do, or did wrong, finds you here.',
+          'The choice that hurt your conscience then stands before you now.',
+          'The moment you avoided facing is waiting for you now.',
+          'Your conscience never forgot, and now it asks for an answer.',
+          'The choice you made that day left a burden inside you. Now it speaks.',
+        ],
+        neutral: [
+          'What happened in the past brought today here.',
+          'The decision you made then opened a door now.',
+          'At some point later in life, you will remember this moment.',
+          'This is one of those moments when the past quietly speaks to the present.',
+          'The step you took then laid the road you walk today.',
+        ],
+      },
+      family: {
+        thoughts: {
+          strictLowRelation: 'Dad is going to get angry again. I have to do everything right.',
+          chaoticTeen: 'I wish things were a little more orderly at home.',
+          supportiveHighRelation: 'Even when I make mistakes, there is someone at home who listens to me.',
+          poor: 'My friends have new phones... why do we not?',
+          rich: 'It feels like everyone expects something from me.',
+          strictWarmth: 'The tone at home changed. It is not only orders anymore; there is conversation too.',
+          crisis: 'The silence at home can feel heavier than shouting.',
+          fallback: {
+            strict: 'The rules at home are clear. If I slip, it is noticed immediately.',
+            chaotic: 'Everyone at home moves at their own rhythm. Planning is hard.',
+            supportive: 'My family makes me feel they are with me.',
+          },
+        },
+        atmosphere: {
+          unknown: 'Unclear',
+          crisis: 'Tense Silence',
+          softening: 'Softening Authority',
+          secure: 'Secure',
+          fragile: 'Fragile',
+          strict: 'Disciplined',
+          chaotic: 'Messy',
+          supportive: 'Supportive',
+        },
+      },
+      eventTeaser: {
+        criticalDecision: 'A critical decision is approaching. Are you ready?',
+        breakdown: 'An overwhelming period is beginning...',
+        moral: 'A moral dilemma is waiting for you...',
+        risk: 'A risky opportunity is at the door...',
+        agePage: 'A new page is opening at age {age}...',
       },
       npcReaction: {
         formatted: '{line}',

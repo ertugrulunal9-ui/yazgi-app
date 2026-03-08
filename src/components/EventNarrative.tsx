@@ -5,6 +5,7 @@ import { FadeInUpView } from '../animations';
 import { Card, TypewriterText } from './ui';
 import { ensureTextContrast } from '../utils/colorContrast';
 import { GameEvent } from '../types';
+import { tRuntime } from '../i18n/strings';
 
 type EventVisual = {
   color: string;
@@ -51,6 +52,11 @@ export const EventNarrative: React.FC<EventNarrativeProps> = React.memo(({
     label: 'event',
   };
   const eventColor = ensureTextContrast(eventVisual.color, theme.surfaceBase, 4.5);
+  const eventLabel = tRuntime(
+    `ui.event.types.${eventVisual.label}`,
+    undefined,
+    tRuntime('ui.event.types.event')
+  );
 
   const cardStyle = useMemo(() => ({
     backgroundColor: theme.surfaceBase,
@@ -106,7 +112,7 @@ export const EventNarrative: React.FC<EventNarrativeProps> = React.memo(({
                 letterSpacing: 0.5,
               }}
             >
-              {eventVisual.label}
+              {eventLabel}
             </Text>
           </View>
 
@@ -131,31 +137,9 @@ export const EventNarrative: React.FC<EventNarrativeProps> = React.memo(({
                 textTransform: 'uppercase',
                 letterSpacing: 1,
               }}>
-                {(event.tags ?? []).includes('turning_point') ? 'D\u00F6n\u00FCm Noktas\u0131' : 'Kritik Karar'}
-              </Text>
-            </View>
-          )}
-
-          {causalLink && (
-            <View style={{
-              backgroundColor: 'rgba(168, 85, 247, 0.10)',
-              borderRadius: 8,
-              paddingVertical: 6,
-              paddingHorizontal: 10,
-              marginBottom: 10,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 6,
-            }}>
-              <Feather name="link" size={12} color="#a78bfa" />
-              <Text style={{
-                color: '#a78bfa',
-                fontSize: 12,
-                fontStyle: 'italic',
-                flex: 1,
-                lineHeight: 17,
-              }}>
-                {causalLink.narrativeLine}
+                {(event.tags ?? []).includes('turning_point')
+                ? tRuntime('ui.event.turningPoint')
+                : tRuntime('ui.event.criticalDecision')}
               </Text>
             </View>
           )}
@@ -179,15 +163,26 @@ export const EventNarrative: React.FC<EventNarrativeProps> = React.memo(({
                 flex: 1,
                 lineHeight: 16,
               }}>
-                {'Bu seçim bazı kapıları kapattı. Farklı bir yolda ne olurdu?'}
+                {tRuntime('ui.event.blockedPaths')}
               </Text>
             </View>
           )}
 
+          {causalLink && (
+            <Text style={{
+              color: theme.textSecondary,
+              fontSize: 13,
+              fontStyle: 'italic',
+              lineHeight: 18,
+              marginBottom: 8,
+            }}>
+              {causalLink.narrativeLine}
+            </Text>
+          )}
           <TypewriterText
             text={eventText}
             speed={28}
-            accessibilityLabel="Event metni"
+            accessibilityLabel={tRuntime('ui.event.accessibilityText')}
             style={eventTextStyle}
           />
         </Card>

@@ -67,14 +67,14 @@ interface SocialNPCCardProps {
   onInteract: (type: InteractionType) => void;
 }
 
-const ROLE_META: Record<string, { emoji: string; color: string; key: string; fallback: string }> = {
-  ACQUAINTANCE: { emoji: '\u{1F464}', color: '#64748b', key: 'social.roles.ACQUAINTANCE', fallback: 'Tanidik' },
-  FRIEND: { emoji: '\u{1F91D}', color: '#047857', key: 'social.roles.FRIEND', fallback: 'Arkadas' },
-  BEST_FRIEND: { emoji: '\u{1F48E}', color: '#2563eb', key: 'social.roles.BEST_FRIEND', fallback: 'En Iyi Arkadas' },
-  CRUSH: { emoji: '\u{1F495}', color: '#be185d', key: 'social.roles.CRUSH', fallback: 'Hoslandigin' },
-  PARTNER: { emoji: '\u2764\uFE0F', color: '#dc2626', key: 'social.roles.PARTNER', fallback: 'Sevgili' },
-  RIVAL: { emoji: '\u2694\uFE0F', color: '#b45309', key: 'social.roles.RIVAL', fallback: 'Rakip' },
-  ENEMY: { emoji: '\u{1F621}', color: '#b91c1c', key: 'social.roles.ENEMY', fallback: 'Dusman' },
+const ROLE_META: Record<string, { emoji: string; color: string; key: string }> = {
+  ACQUAINTANCE: { emoji: '\u{1F464}', color: '#64748b', key: 'social.roles.ACQUAINTANCE' },
+  FRIEND: { emoji: '\u{1F91D}', color: '#047857', key: 'social.roles.FRIEND' },
+  BEST_FRIEND: { emoji: '\u{1F48E}', color: '#2563eb', key: 'social.roles.BEST_FRIEND' },
+  CRUSH: { emoji: '\u{1F495}', color: '#be185d', key: 'social.roles.CRUSH' },
+  PARTNER: { emoji: '\u2764\uFE0F', color: '#dc2626', key: 'social.roles.PARTNER' },
+  RIVAL: { emoji: '\u2694\uFE0F', color: '#b45309', key: 'social.roles.RIVAL' },
+  ENEMY: { emoji: '\u{1F621}', color: '#b91c1c', key: 'social.roles.ENEMY' },
 };
 
 const PERSONALITY_EMOJI: Record<string, string> = {
@@ -108,7 +108,7 @@ const resolveRoleConfig = (role: string): { emoji: string; color: string; name: 
   return {
     emoji: meta.emoji,
     color: meta.color,
-    name: tRuntime(meta.key, undefined, meta.fallback),
+    name: tRuntime(meta.key),
   };
 };
 
@@ -388,9 +388,7 @@ const SocialScreenRoot: React.FC<SocialScreenProps> = ({
             },
             {
               text: tRuntime(
-                'app.ads.relationshipBoostCta',
-                undefined,
-                'Reklam Izle (+5 iliski)'
+                'ads.relationshipBoostCta'
               ),
               onPress: () => {
                 void onOfferRelationshipBoostAd(selectedNPC.id, selectedNPC.name);

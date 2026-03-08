@@ -1,4 +1,5 @@
 import { SchoolGrades, Family, Stats } from '../types';
+import { tRuntime } from '../i18n/strings';
 
 export const getLetterGrade = (score: number): string => {
   if (score >= 90) return 'A';
@@ -128,59 +129,62 @@ export interface FamilyReaction {
 export const getFamilyReactionToGrades = (grades: SchoolGrades, family: Family): FamilyReaction => {
   const average = calculateGradeAverage(grades);
 
-  // Base reaction by family wealth
   const wealthMultiplier = family.wealth === 'RICH' ? 1.2 : family.wealth === 'POOR' ? 0.8 : 1;
   const adjustedAverage = average * wealthMultiplier;
 
-  // Family dynamic reactions
   if (family.dynamic === 'SUPPORTIVE') {
     if (adjustedAverage >= 80) {
       return {
-        message: "Ailenin seni gördüğü andan itibaren gözlerinde mutluluk çiçeğendi. 'Çok gurur duyuyoruz!' dediler.",
+        message: tRuntime('storyText.school.gradeReactions.supportive.high'),
         effect: { charisma: 10, familyRelation: 15 }
       };
-    } else if (adjustedAverage >= 60) {
+    }
+
+    if (adjustedAverage >= 60) {
       return {
-        message: "Annen seni kucaklamaya gitti. 'İyi çalıştığını biliyoruz, devam et,' dedi.",
+        message: tRuntime('storyText.school.gradeReactions.supportive.mid'),
         effect: { familyRelation: 10 }
       };
-    } else {
-      return {
-        message: "Ailen biraz hayal kırıklığına uğradı ama destek sunmaya devam etti. 'Geçen sene daha iyiydin,'",
-        effect: { familyRelation: 5 }
-      };
     }
-  } else if (family.dynamic === 'STRICT') {
+
+    return {
+      message: tRuntime('storyText.school.gradeReactions.supportive.low'),
+      effect: { familyRelation: 5 }
+    };
+  }
+
+  if (family.dynamic === 'STRICT') {
     if (adjustedAverage >= 85) {
       return {
-        message: "Baban gözlüğünü çıkararak seni inceledi. 'Beklediğim tam bu. Devam et.'",
+        message: tRuntime('storyText.school.gradeReactions.strict.high'),
         effect: { discipline: 15, money: 50 }
       };
-    } else if (adjustedAverage >= 70) {
-      return {
-        message: "Baban notlara baktı. 'Daha iyisi olabilir. Matematik'e daha çok çalış.'",
-        effect: { discipline: 5 }
-      };
-    } else {
-      return {
-        message: "Baban masaya yumruk vurdu. 'Bu notlar beni hüsrana uğratıyor! Derhal çalışmalısın!'",
-        effect: { discipline: -10, familyRelation: -10 }
-      };
     }
-  } else {
-    // CHAOTIC
+
     if (adjustedAverage >= 70) {
       return {
-        message: "Ailen notlara ilgilenmedi bile. Senin başarın senin işin.",
-        effect: {}
-      };
-    } else {
-      return {
-        message: "Ailen havaya girdi. 'Ne yapıyorsun sen? Hiç umrumda değil ama yine de başarısızsın.'",
-        effect: { familyRelation: -5, money: -20 }
+        message: tRuntime('storyText.school.gradeReactions.strict.mid'),
+        effect: { discipline: 5 }
       };
     }
+
+    return {
+      message: tRuntime('storyText.school.gradeReactions.strict.low'),
+      effect: { discipline: -10, familyRelation: -10 }
+    };
   }
+
+  if (adjustedAverage >= 70) {
+    return {
+      message: tRuntime('storyText.school.gradeReactions.chaotic.high'),
+      effect: {}
+    };
+  }
+
+  return {
+    message: tRuntime('storyText.school.gradeReactions.chaotic.low'),
+    effect: { familyRelation: -5, money: -20 }
+  };
 };
 
 // =================================================================
@@ -212,7 +216,6 @@ export const getYearEndConsequences = (
 ): YearEndConsequence => {
   const average = calculateGradeAverage(grades);
 
-  // Mükemmel notlar (85+)
   if (average >= 85) {
     const rewards: RewardType[] = ['ALLOWANCE_INCREASE'];
     let message = '';
@@ -220,15 +223,15 @@ export const getYearEndConsequences = (
     const statEffects: Partial<Stats> = { charisma: 5, familyRelation: 15 };
 
     if (family.dynamic === 'STRICT') {
-      message = '🎉 Baban sana yeni bir telefon aldı! "Bu başarının ödülü," dedi.';
+      message = tRuntime('storyText.school.yearEnd.excellent.strict');
       rewards.push('NEW_PHONE');
       statEffects.money = family.wealth === 'RICH' ? 500 : 200;
     } else if (family.dynamic === 'SUPPORTIVE') {
-      message = '🎊 Ailen seninle gurur duyuyor! Yaz tatilinde istediğin yere gidebilirsin.';
+      message = tRuntime('storyText.school.yearEnd.excellent.supportive');
       rewards.push('VACATION', 'FREEDOM');
       statEffects.money = family.wealth === 'RICH' ? 300 : 100;
     } else {
-      message = '👍 Notların iyi. Ailen pek umursamadı ama en azından özgürsün.';
+      message = tRuntime('storyText.school.yearEnd.excellent.chaotic');
       rewards.push('FREEDOM');
       allowanceMultiplier = 1.2;
     }
@@ -243,12 +246,11 @@ export const getYearEndConsequences = (
     };
   }
 
-  // İyi notlar (70-84)
   if (average >= 70) {
     return {
       message: family.dynamic === 'STRICT'
-        ? '📚 Baban: "Fena değil ama daha iyisini bekliyordum. Yaz boyunca biraz daha çalış."'
-        : '👍 Ailen notlarından memnun. Normal bir yaz tatili geçireceksin.',
+        ? tRuntime('storyText.school.yearEnd.good.strict')
+        : tRuntime('storyText.school.yearEnd.good.default'),
       restrictions: [],
       rewards: family.dynamic === 'SUPPORTIVE' ? ['FREEDOM'] : [],
       statEffects: { familyRelation: 5 },
@@ -257,7 +259,6 @@ export const getYearEndConsequences = (
     };
   }
 
-  // Orta notlar (50-69)
   if (average >= 50) {
     const restrictions: RestrictionType[] = family.dynamic === 'STRICT'
       ? ['GAMES', 'TV']
@@ -265,10 +266,10 @@ export const getYearEndConsequences = (
 
     return {
       message: family.dynamic === 'STRICT'
-        ? '😤 Baban: "Bu notlar kabul edilemez! Yaz boyunca oyun ve televizyon yasak."'
+        ? tRuntime('storyText.school.yearEnd.average.strict')
         : family.dynamic === 'SUPPORTIVE'
-          ? '😟 Annen: "Seneye daha iyi olacak, değil mi? Biraz daha çalışmalısın."'
-          : '🙄 Ailen notlara aldırmadı bile.',
+          ? tRuntime('storyText.school.yearEnd.average.supportive')
+          : tRuntime('storyText.school.yearEnd.average.chaotic'),
       restrictions,
       rewards: [],
       statEffects: family.dynamic === 'STRICT' ? { familyRelation: -5, discipline: 5 } : {},
@@ -277,13 +278,11 @@ export const getYearEndConsequences = (
     };
   }
 
-  // Kötü notlar (50 altı) - Ciddi kısıtlamalar
   const restrictions: RestrictionType[] = ['COMPUTER', 'PHONE', 'PARTY', 'FRIENDS', 'GAMES', 'TV'];
 
   if (family.dynamic === 'CHAOTIC') {
-    // Kaotik aile: Kısıtlama yok ama duygusal zarar
     return {
-      message: '😒 Ailen notlara baktı bile değil. "Senin hayatın, senin sorunun" dediler.',
+      message: tRuntime('storyText.school.yearEnd.poor.chaotic'),
       restrictions: [],
       rewards: [],
       statEffects: { familyRelation: -10 },
@@ -294,8 +293,8 @@ export const getYearEndConsequences = (
 
   return {
     message: family.dynamic === 'STRICT'
-      ? '😡 Baban masaya yumruk vurdu: "BU NOTLAR NE?! Telefon, bilgisayar, arkadaşlar... Hepsi yasak! Harçlığın da yarıya düşüyor!"'
-      : '😢 Annen üzgün bir şekilde: "Seni çok seviyoruz ama bu notlarla bir şeyler değişmeli. Bu yaz biraz kısıtlama olacak."',
+      ? tRuntime('storyText.school.yearEnd.poor.strict')
+      : tRuntime('storyText.school.yearEnd.poor.supportive'),
     restrictions: family.dynamic === 'STRICT' ? restrictions : ['COMPUTER', 'GAMES'],
     rewards: [],
     statEffects: {

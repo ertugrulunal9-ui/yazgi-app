@@ -6,15 +6,15 @@ export const onboardingDomainStrings: DomainStrings = {
       slides: {
         dreamTitle: 'Bu Hayatta Hayalin',
         requirementTitle: 'Bunun icin gereken:',
-        requirementFallback: 'Temel statlarini gelistir',
+        requirementFallback: 'Temel statlarini geliştir',
         continue: 'Devam Et',
         back: 'Geri Don',
         skip: 'Atla',
         next: 'Devam',
-        startLife: 'Hayatina Basla',
+        startLife: 'Hayatina Başla',
         introLine: 'Bir hayat baslayacak...',
         introBody: 'Dogumdan mezuniyete, her ani senin secimlerin belirleyecek.',
-        choiceHeader: 'Her secim seni degistirir',
+        choiceHeader: 'Her seçim seni degistirir',
         choicePrompt: 'Arkadasin seni disari cagiriyor. Ne yaparsin?',
         choiceStudy: 'Ders calisirim',
         choiceSocial: 'Arkadaslarla bulusurum',
@@ -25,7 +25,7 @@ export const onboardingDomainStrings: DomainStrings = {
       cohorts: {
         SOCIALIZER: {
           label: 'Sosyal Kelebek',
-          message: 'Sosyal yonun cok guclu! Arkadasliklar kurarak ilerle.',
+          message: 'Sosyal yönün çok güçlü! Arkadasliklar kurarak ilerle.',
         },
         SCHOLAR: {
           label: 'Akademisyen',
@@ -33,7 +33,7 @@ export const onboardingDomainStrings: DomainStrings = {
         },
         STRIVER: {
           label: 'Girisimci Ruh',
-          message: 'Is dunyasina yatkinsin! Calisarak kendini gelistir.',
+          message: 'Is dunyasina yatkinsin! Calisarak kendini geliştir.',
         },
         GENERALIST: {
           label: 'Kesifci',
@@ -46,16 +46,16 @@ export const onboardingDomainStrings: DomainStrings = {
             title: 'Hayalin',
             message: 'Bu hayatta {goalName} olmayi hedefliyorsun. Bunun icin {keyStats} gelistirmen gerekiyor.',
             returningTitle: 'Yeni Bir Hayat',
-            returningMessage: 'Yeni bir yasam, ayni hayal: {goalName}. Hazir misin?',
+            returningMessage: 'Yeni bir yaşam, ayni hayal: {goalName}. Hazir misin?',
           },
           WELCOME_HUB: {
-            title: 'Hayatina Hos Geldin!',
-            message: 'Bu senin yasam alanin. Aktiviteler secerek gununu gecirebilirsin. Her aktivite statlarini etkiler.',
+            title: 'Hayatina Hoş Geldin!',
+            message: 'Bu senin yaşam alanin. Aktiviteler secerek gununu gecirebilirsin. Her aktivite statlarini etkiler.',
             returningTitle: 'Tekrar Merhaba!',
             returningMessage: 'Tekrar hayata dondun. Bu sefer kaderini nasil yazacaksin?',
           },
           FIRST_ACTION: {
-            title: 'Ilk Aktiviteni Sec',
+            title: 'İlk Aktiviteni Seç',
             message: 'Bir aktiviteye dokun! Ders calisma zekani, spor sagligini, sosyal etkinlikler karizmayi artirir.',
           },
           STAT_CHANGE: {
@@ -68,19 +68,19 @@ export const onboardingDomainStrings: DomainStrings = {
           },
           ENERGY_EXPLAIN: {
             title: 'Enerji Sistemi',
-            message: 'Her aktivite enerji harcar. Enerji bittiginde gunu bitirmen gerekir. Ayrica stres, zorlayici secimlerle artar; gunu bitirmek ve daha dengeli secimler yapmak stresi azaltir.',
+            message: 'Her aktivite enerji harcar. Enerji bittiginde günü bitirmen gerekir. Ayrica stres, zorlayici secimlerle artar; günü bitirmek ve daha dengeli secimler yapmak stresi azaltir.',
           },
           FATE_TOKEN_TUTORIAL: {
             title: 'Kader Tokeni',
-            message: 'Ilk kader tokenini kazandin! Zor anlarda secimlerini tekrar yazmak icin bunu kullanabilirsin.',
+            message: 'İlk kader tokenini kazandin! Zor anlarda secimlerini tekrar yazmak icin bunu kullanabilirsin.',
           },
           PERSONALITY_MOMENTUM: {
             title: 'Kisilik Ivmesi',
-            message: 'Ayni tarz secimler birikince momentum olusur. Seri yakaladiginda etkiler daha belirgin olur.',
+            message: 'Aynı tarz seçimler birikince ivme oluşur. Seri yakaladığında etkiler daha belirgin olur.',
           },
           NPC_INTRODUCTION: {
             title: 'NPC Rolleri',
-            message: 'Iliskiler degistikce NPC rol degisimi olur. Kimin dost, kimin rakip oldugunu takip et.',
+            message: 'Iliskiler degistikce NPC rol değişimi olur. Kimin dost, kimin rakip oldugunu takip et.',
           },
         },
       },

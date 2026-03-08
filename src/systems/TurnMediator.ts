@@ -85,20 +85,6 @@ const MOMENTUM_TENDENCIES: PersonalityTendency[] = ['HELPFUL', 'PRAGMATIC', 'AGG
 const MOMENTUM_FLAVOR_STREAK_THRESHOLD = 10;
 const MOMENTUM_FLAVOR_REPEAT_INTERVAL = 5;
 
-const MOMENTUM_FLAVOR_TEXTS: Record<PersonalityTendency, string> = {
-  HELPFUL: 'Yardimsever ruhun gucleniyor!',
-  PRAGMATIC: 'Pragmatik ruhun gucleniyor!',
-  AGGRESSIVE: 'Agresif ruhun gucleniyor!',
-};
-
-const FATE_OUTCOME_LABELS: Record<FateOutcome, string> = {
-  CURSED: 'Lanetli',
-  UNLUCKY: 'Sanssiz',
-  NEUTRAL: 'Notr',
-  FORTUNATE: 'Sansli',
-  BLESSED: 'Kutsanmis',
-};
-
 const FATE_OUTCOME_STRENGTH: Record<FateOutcome, number> = {
   CURSED: 0,
   UNLUCKY: 1,
@@ -116,15 +102,11 @@ const getMomentumTendencyLabel = (tendency: PersonalityTendency): string => (
 );
 
 const getMomentumFlavorText = (tendency: PersonalityTendency): string => (
-  tRuntime(
-    `feedback.momentum.flavor.${tendency}`,
-    undefined,
-    MOMENTUM_FLAVOR_TEXTS[tendency]
-  )
+  tRuntime(`feedback.momentum.flavor.${tendency}`)
 );
 
 const getFateOutcomeLabel = (outcome: FateOutcome): string => (
-  tRuntime(`feedback.fateLabels.${outcome}`, undefined, FATE_OUTCOME_LABELS[outcome])
+  tRuntime(`feedback.fateLabels.${outcome}`)
 );
 
 const isTendencySignal = (
@@ -216,18 +198,15 @@ const buildMomentumFeedback = (
     const multiplierDelta = roundTo2(nextEntry.multiplier - prevEntry.multiplier);
     const bonusPercent = Math.max(0, Math.round((nextEntry.multiplier - 1) * 100));
     const shouldShowFlavor = shouldShowMomentumFlavorFeedback(prevEntry.streak, nextEntry.streak);
+    const bonusText = tRuntime(
+      'feedback.momentum.highMomentum',
+      { percent: bonusPercent },
+      '+{percent}% İvme Bonusu!'
+    );
     const feedbackText = shouldShowFlavor
-      ? `${getMomentumFlavorText(signal)} ${tRuntime(
-        'feedback.momentum.highMomentum',
-        { percent: bonusPercent },
-        '+{percent}% Momentum Bonusu!'
-      )}`
+      ? [getMomentumFlavorText(signal), bonusText].join(' ')
       : (bonusPercent > 0
-        ? tRuntime(
-          'feedback.momentum.highMomentum',
-          { percent: bonusPercent },
-          '+{percent}% Momentum Bonusu!'
-        )
+        ? bonusText
         : tRuntime(
           'feedback.momentum.strengthening',
           { tendency: tendencyLabel },

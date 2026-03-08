@@ -18,7 +18,7 @@ const getQuestNPC = (ctx: EventContext, roles: NPCRole[]): NPC | null => {
   return null;
 };
 
-const n = (npc: NPC | null): string => npc?.name || 'Arkadasin';
+const n = (npc: NPC | null): string => npc?.name || 'Arkadaşın';
 
 // =================================================================
 // ARC 1: DERİN DOSTLUK (6 event)
@@ -30,7 +30,7 @@ const friendshipEvents: GameEvent[] = [
     tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'BEST_FRIEND']);
-      return `${n(npc)} seni kenara cekiyor. Gozleri ciddi. "Sana bir sey soyleyecegim ama kimseye anlatmayacagina soz ver..." Ailesiyle ilgili zor bir durumu anlatmaya basliyor.`;
+      return `${n(npc)} seni kenara çekiyor. Gözleri ciddi. "Sana bir şey söyleyeceğim ama kimseye anlatmayacağına söz ver..." Ailesiyle ilgili zor bir durumu anlatmaya başlıyor.`;
     },
     minAge: 8, maxAge: 18,
     rarity: 'UNCOMMON',
@@ -38,26 +38,26 @@ const friendshipEvents: GameEvent[] = [
     reqNPCRole: 'FRIEND',
     choices: [
       {
-        text: '🤫 "Soz veriyorum, guvenebilirsin bana"',
+        text: '🤫 "Söz veriyorum, güvenebilirsin bana"',
         effect: { charisma: 5 },
         npcRelationChange: 15,
         personalityEffects: [{ axis: 'empathy', change: 3 }],
-        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Arkadasinin sirri' },
-        feedback: 'Arkadasin rahatlamis gorunuyor. Aranizda derin bir guven baglandi.',
+        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Arkadaşının sırrı' },
+        feedback: 'Arkadaşın rahatlamış görünüyor. Aranızda derin bir güven bağlandı.',
       },
       {
-        text: '😬 "Bu cok agir... baska birine de soylemeli misin?"',
+        text: '😬 "Bu çok ağır... başka birine de söylemeli misin?"',
         effect: { charisma: 0 },
         npcRelationChange: -5,
         personalityEffects: [{ axis: 'conformity', change: 2 }],
-        feedback: 'Arkadasin biraz hayal kirikligina ugramis gibi. Ama samimiyetini takdir ediyor.',
+        feedback: 'Arkadaşın biraz hayal kırıklığına uğramış gibi. Ama samimiyetini takdir ediyor.',
       },
       {
-        text: '🙄 "Herkesin derdi var, cok buyutme"',
+        text: '🙄 "Herkesin derdi var, çok büyütme"',
         effect: { charisma: -2 },
         npcRelationChange: -15,
         personalityEffects: [{ axis: 'empathy', change: -3 }],
-        feedback: 'Arkadasinin yuzu dusturdu. Belki de bu kadar guvendigi icin pismandir.',
+        feedback: 'Arkadaşının yüzü düştü. Belki de bu kadar güvendiği için pişmandır.',
       },
     ],
   },
@@ -66,7 +66,7 @@ const friendshipEvents: GameEvent[] = [
     tags: ['social', 'friend', 'npc', 'family'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'BEST_FRIEND']);
-      return `${n(npc)} seni evine davet etti. Ailesiyle tanisacaksin. Kapidan girer girmez sicak yemek kokusu ve kahkaha sesleri duyuyorsun.`;
+      return `${n(npc)} seni evine davet etti. Ailesiyle tanışacaksın. Kapıdan girer girmez sıcak yemek kokusu ve kahkaha sesleri duyuyorsun.`;
     },
     minAge: 8, maxAge: 18,
     rarity: 'UNCOMMON',
@@ -74,15 +74,15 @@ const friendshipEvents: GameEvent[] = [
     reqNPCRole: 'FRIEND',
     choices: [
       {
-        text: '😊 Ailesiyle sicak bir sohbet kur',
+        text: '😊 Ailesiyle sıcak bir sohbet kur',
         effect: { charisma: 9 },
         npcRelationChange: 12,
         personalityEffects: [{ axis: 'openness', change: 3 }],
-        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Arkadasinin evinde aksamyemegi' },
-        feedback: 'Harika bir aksam gecirdin. Arkadasinin ailesi seni cok sevdi.',
+        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Arkadaşının evinde akşamyemeği' },
+        feedback: 'Harika bir akşam geçirdin. Arkadaşının ailesi seni çok sevdi.',
       },
       {
-        text: '📱 Utaniyorum, telefonuma bakayim',
+        text: '📱 Utanıyorum, telefonuma bakayım',
         effect: { charisma: 0 },
         npcRelationChange: 0,
         personalityEffects: [{ axis: 'openness', change: -2 }],
@@ -95,7 +95,7 @@ const friendshipEvents: GameEvent[] = [
     tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND']);
-      return `${n(npc)} ile okuldan sonra parka gittiniz. "Bugun sadece takilalim, hic bir sey dusunmeden" diyor.`;
+      return `${n(npc)} ile okuldan sonra parka gittiniz. "Bugün sadece takılalım, hiç bir şey düşünmeden" diyor.`;
     },
     minAge: 8, maxAge: 18,
     rarity: 'COMMON',
@@ -106,13 +106,13 @@ const friendshipEvents: GameEvent[] = [
         text: '🎉 "Harika fikir! Ne yapalim?"',
         effect: { charisma: 4 },
         npcRelationChange: 8,
-        feedback: 'Gulerek vakit gecirdiniz. Bazen en guzel anlar plansiz olanlar.',
+        feedback: 'Gülerek vakit geçirdiniz. Bazen en güzel anlar plansız olanlar.',
       },
       {
-        text: '📚 "Aslinda ders calismaliyim..."',
+        text: '📚 "Aslında ders çalışmalıyım..."',
         effect: { intelligence: 2, charisma: -1 },
         npcRelationChange: -3,
-        feedback: 'Arkadasin biraz uzuldu ama anladigindan emin.',
+        feedback: 'Arkadaşın biraz üzüldü ama anladığından emin.',
       },
     ],
   },
@@ -121,7 +121,7 @@ const friendshipEvents: GameEvent[] = [
     tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'BEST_FRIEND']);
-      return `Okulda buyuk bir kavga cikti. Birisi ${n(npc)}'a iftira atiyor — ogretmenler de inaniyor. ${n(npc)} yardim istiyor gibi sana bakiyor.`;
+      return `Okulda büyük bir kavga çıktı. Birisi ${n(npc)}'a iftira atıyor — öğretmenler de inanıyor. ${n(npc)} yardım istiyor gibi sana bakıyor.`;
     },
     minAge: 8, maxAge: 18,
     rarity: 'UNCOMMON',
@@ -129,27 +129,27 @@ const friendshipEvents: GameEvent[] = [
     reqNPCRole: 'FRIEND',
     choices: [
       {
-        text: '🛡️ "Ben sahit oldum, yanlis anliyorsunuz!"',
+        text: '🛡️ "Ben şahit oldum, yanlış anlıyorsunuz!"',
         effect: { charisma: 1 },
         npcRelationChange: 20,
         personalityEffects: [{ axis: 'openness', change: 4 }, { axis: 'empathy', change: 2 }],
-        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Arkadasini savundu' },
-        feedback: 'Arkadasin icin risk aldin. Bu bagliligi asla unutmayacak.',
+        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Arkadaşını savundu' },
+        feedback: 'Arkadaşın için risk aldın. Bu bağlılığı asla unutmayacak.',
       },
       {
-        text: '😰 Karisma, uzak dur',
+        text: '😰 Karışma, uzak dur',
         effect: { charisma: -3 },
         npcRelationChange: -10,
         personalityEffects: [{ axis: 'openness', change: -2 }],
-        feedback: 'Kenara cekildin. Arkadasin yalniz kaldi ve bunu hissetti.',
+        feedback: 'Kenara çekildin. Arkadaşın yalnız kaldı ve bunu hissetti.',
       },
       {
-        text: '🕵️ Gizlice gercegi arastir',
+        text: '🕵️ Gizlice gerçeği araştır',
         effect: { intelligence: 2, charisma: 1 },
         npcRelationChange: 10,
         personalityEffects: [{ axis: 'openness', change: 1 }],
         futureEvents: [{ trigger: 'TURNS', eventId: 'npcq_friend_adventure', turnsLater: 2 }],
-        feedback: 'Kanitlari topluyorsun. Bu cesaretini arkadasin fark etti.',
+        feedback: 'Kanıtları topluyorsun. Bu cesaretini arkadaşın fark etti.',
       },
     ],
   },
@@ -158,7 +158,7 @@ const friendshipEvents: GameEvent[] = [
     tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'BEST_FRIEND']);
-      return `${n(npc)} ile birlikte "yasak bolge"ye — mahallenin terk edilmis deposuna — girmeye karar verdiniz. Soylentilere gore icerde eski bir hazine var.`;
+      return `${n(npc)} ile birlikte "yasak bölge"ye — mahallenin terk edilmiş deposuna — girmeye karar verdiniz. Söylentilere göre içerde eski bir hazine var.`;
     },
     minAge: 10, maxAge: 18,
     rarity: 'UNCOMMON',
@@ -170,15 +170,15 @@ const friendshipEvents: GameEvent[] = [
         effect: { charisma: 5, health: -2 },
         npcRelationChange: 15,
         personalityEffects: [{ axis: 'openness', change: 4 }, { axis: 'openness', change: 2 }],
-        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Depo macerasi' },
-        feedback: 'Icerde hazine yoktu ama birlikte yasadiginiz heyecan paha bicilmezdi.',
+        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Depo macerası' },
+        feedback: 'İçerde hazine yoktu ama birlikte yaşadığınız heyecan paha biçilmezdi.',
       },
       {
-        text: '🤔 "Fikir degistirdim, tehlikeli olabilir"',
+        text: '🤔 "Fikir değiştirdim, tehlikeli olabilir"',
         effect: { charisma: -1 },
         npcRelationChange: -5,
         personalityEffects: [{ axis: 'conformity', change: 2 }],
-        feedback: 'Arkadasin biraz hayal kirikligina ugradi. Ama guvenliginizi korudunuz.',
+        feedback: 'Arkadaşın biraz hayal kırıklığına uğradı. Ama güvenliğinizi korudunuz.',
       },
     ],
   },
@@ -187,7 +187,7 @@ const friendshipEvents: GameEvent[] = [
     tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'BEST_FRIEND']);
-      return `Okuldaki populer grubun lideri sana yaklasti: "Bizimle takilmak istersen ${n(npc)}'i birak. O seni asagi cekiyor." Populer grup seni kabul edecek ama...`;
+      return `Okuldaki popüler grubun lideri sana yaklaştı: "Bizimle takılmak istersen ${n(npc)}'i bırak. O seni aşağı çekiyor." Popüler grup seni kabul edecek ama...`;
     },
     minAge: 10, maxAge: 18,
     rarity: 'RARE',
@@ -195,27 +195,27 @@ const friendshipEvents: GameEvent[] = [
     reqNPCRole: 'FRIEND',
     choices: [
       {
-        text: '💎 "${n} benim arkadasim, tesekkurler ama hayir"',
+        text: '💎 "O benim arkadaşım, teşekkürler ama hayır"',
         effect: { charisma: 5 },
         npcRelationChange: 25,
         personalityEffects: [{ axis: 'openness', change: 3 }, { axis: 'conformity', change: -3 }],
-        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Arkadasini secti' },
-        feedback: 'Populer grubun teklifini reddettin. Arkadasin bunun ne kadar zor oldugunu biliyor.',
+        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Arkadaşını seçti' },
+        feedback: 'Popüler grubun teklifini reddetti. Arkadaşın bunun ne kadar zor olduğunu biliyor.',
       },
       {
-        text: '🤷 "Dusuneyim..." — iki tarafla da iyi gecin',
+        text: '🤷 "Düşüneyim..." — iki tarafla da iyi geçin',
         effect: { charisma: 1 },
         npcRelationChange: -8,
         personalityEffects: [{ axis: 'conformity', change: 3 }],
-        feedback: 'Iki ayak uzerinde duruyorsun ama hicbir tarafa tam baglanmadin.',
+        feedback: 'İki ayak üzerinde duruyorsun ama hiçbir tarafa tam bağlanmadın.',
       },
       {
-        text: '⭐ Populer gruba katil',
+        text: '⭐ Popüler gruba katıl',
         effect: { charisma: 6 },
         npcRelationChange: -30,
         personalityEffects: [{ axis: 'conformity', change: 5 }, { axis: 'empathy', change: -3 }],
-        memory: { emotion: 'REGRET', weight: 'MEDIUM', customNote: 'Arkadasini birakti' },
-        feedback: 'Populer gruba katildin ama arkadasinin bakislari... bir sey kirildi.',
+        memory: { emotion: 'REGRET', weight: 'MEDIUM', customNote: 'Arkadaşını bıraktı' },
+        feedback: 'Popüler gruba katıldın ama arkadaşının bakışları... bir şey kırıldı.',
       },
     ],
   },
@@ -224,7 +224,7 @@ const friendshipEvents: GameEvent[] = [
     tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'BEST_FRIEND']);
-      return `${n(npc)} ile yillarin biriktigi bir aksam. Damlarin ustunde oturmus sehri izliyorsunuz. "Sen benim en yakin arkadasimsin" diyor sessizce.`;
+      return `${n(npc)} ile yılların biriktiği bir akşam. Damların üstünde oturmuş şehri izliyorsunuz. "Sen benim en yakın arkadaşımsın" diyor sessizce.`;
     },
     minAge: 10, maxAge: 18,
     rarity: 'RARE',
@@ -236,9 +236,9 @@ const friendshipEvents: GameEvent[] = [
         effect: { charisma: 11 },
         npcRelationChange: 20,
         personalityEffects: [{ axis: 'empathy', change: 3 }],
-        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'En yakin arkadas sozlesti' },
+        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'En yakın arkadaş sözleşti' },
         grantTraits: ['LOYAL_FRIEND'],
-        feedback: 'Bu gece asla unutulmayacak. Gercek bir dostluk muyhurlendi.',
+        feedback: 'Bu gece asla unutulmayacak. Gerçek bir dostluk mühürlendi.',
       },
     ],
   },
@@ -247,7 +247,7 @@ const friendshipEvents: GameEvent[] = [
     tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'ACQUAINTANCE']);
-      return `${n(npc)} ile artik eskisi gibi konusamiyorsunuz. Mesajlarina gec cevap veriyor, planlari surekli iptal ediyor. Bir seyler degisti.`;
+      return `${n(npc)} ile artık eskisi gibi konuşamıyorsunuz. Mesajlarına geç cevap veriyor, planları sürekli iptal ediyor. Bir şeyler değişti.`;
     },
     minAge: 10, maxAge: 18,
     rarity: 'UNCOMMON',
@@ -258,7 +258,7 @@ const friendshipEvents: GameEvent[] = [
         effect: { charisma: 0 },
         npcRelationChange: 5,
         personalityEffects: [{ axis: 'empathy', change: 2 }, { axis: 'openness', change: 2 }],
-        feedback: 'Acik konustunuz. Belki her sey eskisi gibi olmayacak ama saygi kaldi.',
+        feedback: 'Açık konuştunuz. Belki her şey eskisi gibi olmayacak ama saygı kaldı.',
       },
       {
         text: '🚶 Kabullen ve yoluna devam et',
@@ -266,7 +266,7 @@ const friendshipEvents: GameEvent[] = [
         npcRelationChange: -10,
         personalityEffects: [{ axis: 'openness', change: 1 }],
         memory: { emotion: 'NEUTRAL', weight: 'MEDIUM', customNote: 'Bir dostluk sona erdi' },
-        feedback: 'Bazi insanlar hayatinin bir doneminde kalir. Ve bu da tamam.',
+        feedback: 'Bazı insanlar hayatının bir döneminde kalır. Ve bu da tamam.',
       },
     ],
   },
@@ -282,7 +282,7 @@ const romanceEvents: GameEvent[] = [
     tags: ['social', 'love', 'relationship', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['CRUSH']);
-      return `${n(npc)} ile gorusleriniz kesisti — bir an icin hic kimse yokmus gibi hissettin. Kalbin hizlandi. Bu his... yeni bir sey.`;
+      return `${n(npc)} ile görüşleriniz kesişti — bir an için hiç kimse yokmuş gibi hissettin. Kalbin hızlandı. Bu his... yeni bir şey.`;
     },
     minAge: 13, maxAge: 18,
     rarity: 'UNCOMMON',
@@ -290,18 +290,18 @@ const romanceEvents: GameEvent[] = [
     reqNPCRole: 'CRUSH',
     choices: [
       {
-        text: '😊 Gulu ve bak — belki o da hissediyordur',
+        text: '😊 Gül ve bak — belki o da hissediyordur',
         effect: { charisma: 5 },
         npcRelationChange: 8,
         personalityEffects: [{ axis: 'openness', change: 3 }],
-        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Ilk kivilcim' },
-        feedback: 'Gulumsedin. O da gulumsedi. Kalbindeki carpinti sessizce buyuyor.',
+        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'İlk kıvılcım' },
+        feedback: 'Gülümsedin. O da gülümsedi. Kalbindeki çarpıntı sessizce büyüyor.',
       },
       {
-        text: '😳 Kafani cevir — bu konuda hazirligi deilsin',
+        text: '😳 Kafanı çevir — bu konuda hazır değilsin',
         effect: { charisma: -1 },
         personalityEffects: [{ axis: 'openness', change: -2 }],
-        feedback: 'Gozlerini kacirdin. Ama o his bir yere gitmiyor...',
+        feedback: 'Gözlerini kaçırdın. Ama o his bir yere gitmiyor...',
       },
     ],
   },
@@ -310,7 +310,7 @@ const romanceEvents: GameEvent[] = [
     tags: ['social', 'love', 'relationship', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['CRUSH']);
-      return `Okuldan sonra ${n(npc)} ile bas basasiniz. Icinden bir ses "soyle" diyor. Diger ses "dur, ya reddederse?"`;
+      return `Okuldan sonra ${n(npc)} ile baş başasınız. İçinden bir ses "söyle" diyor. Diğer ses "dur, ya reddederse?"`;
     },
     minAge: 13, maxAge: 18,
     rarity: 'UNCOMMON',
@@ -318,25 +318,25 @@ const romanceEvents: GameEvent[] = [
     reqNPCRole: 'CRUSH',
     choices: [
       {
-        text: '💕 "Senden hoslaniyorum..."',
+        text: '💕 "Senden hoşlanıyorum..."',
         effect: { charisma: 7 },
         npcRelationChange: 15,
         personalityEffects: [{ axis: 'openness', change: 5 }, { axis: 'openness', change: 3 }],
-        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Itiraf ani' },
-        feedback: 'Soyledin. Kalbin patlayacak gibi. Ama bir yukten kurtulmus gibi de hissediyorsun.',
+        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'İtiraf anı' },
+        feedback: 'Söyledin. Kalbin patlayacak gibi. Ama bir yükten kurtulmuş gibi de hissediyorsun.',
       },
       {
-        text: '📝 Mektup yaz — yuzyuze soyleyemezsin',
+        text: '📝 Mektup yaz — yüz yüze söyleyemezsin',
         effect: { intelligence: 1, charisma: 2 },
         npcRelationChange: 10,
         personalityEffects: [{ axis: 'openness', change: 2 }],
-        feedback: 'Kelimelerin kagittan daha guclu akmis. Simdi bekleme zamani.',
+        feedback: 'Kelimelerin kâğıttan daha güçlü akmış. Şimdi bekleme zamanı.',
       },
       {
-        text: '🙊 Yutkundun ama soyleyemedin',
+        text: '🙊 Yutkundun ama söyleyemedin',
         effect: { charisma: -4 },
         personalityEffects: [{ axis: 'openness', change: -2 }],
-        feedback: 'An gecti. Belki baska bir gun... ama bugun degil.',
+        feedback: 'An geçti. Belki başka bir gün... ama bugün değil.',
       },
     ],
   },
@@ -345,7 +345,7 @@ const romanceEvents: GameEvent[] = [
     tags: ['social', 'love', 'relationship', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['CRUSH', 'PARTNER']);
-      return `${n(npc)} ile ilk kez bas basa disari cikiyorsunuz. "Nereye gidelim?" diye soruyor.`;
+      return `${n(npc)} ile ilk kez baş başa dışarı çıkıyorsunuz. "Nereye gidelim?" diye soruyor.`;
     },
     minAge: 13, maxAge: 18,
     rarity: 'UNCOMMON',
@@ -357,21 +357,21 @@ const romanceEvents: GameEvent[] = [
         effect: { charisma: 8 },
         npcRelationChange: 12,
         personalityEffects: [{ axis: 'empathy', change: 2 }],
-        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Ilk bulusma — kafe' },
-        feedback: 'Saatlerin nasil gectigini anlamadin. Konusmak hic bu kadar kolay olmamisti.',
+        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'İlk buluşma — kafe' },
+        feedback: 'Saatlerin nasıl geçtiğini anlamadın. Konuşmak hiç bu kadar kolay olmamıştı.',
       },
       {
-        text: '🎬 Sinemaya git — klasik secim',
+        text: '🎬 Sinemaya git — klasik seçim',
         effect: { charisma: 4 },
         npcRelationChange: 8,
-        feedback: 'Film guzeldi ama en guzel kismi yan yana oturmakti.',
+        feedback: 'Film güzeldi ama en güzel kısmı yan yana oturmaktı.',
       },
       {
-        text: '🌳 Parka yuru — dogada vakit gecir',
+        text: '🌳 Parka yürü — doğada vakit geçir',
         effect: { health: 2, charisma: 5 },
         npcRelationChange: 10,
         personalityEffects: [{ axis: 'openness', change: 2 }],
-        feedback: 'Gun batiminda yuruyus. Sessizlik bile rahatti.',
+        feedback: 'Gün batımında yürüyüş. Sessizlik bile rahattı.',
       },
     ],
   },
@@ -380,25 +380,25 @@ const romanceEvents: GameEvent[] = [
     tags: ['social', 'love', 'relationship', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['CRUSH', 'PARTNER']);
-      return `${n(npc)} baskasiyala komustugun icin sinirli. "O kim? Neden surekli konusuyorsunuz?" Sesi sert, gozleri kirgin.`;
+      return `${n(npc)} başkasıyla konuştuğun için sinirli. "O kim? Neden sürekli konuşuyorsunuz?" Sesi sert, gözleri kırgın.`;
     },
     minAge: 13, maxAge: 18,
     rarity: 'UNCOMMON',
     personalityCategory: 'CONFLICT',
     choices: [
       {
-        text: '🤗 "Sadece arkadasim. Sana guveniyorum, sen de bana guven"',
+        text: '🤗 "Sadece arkadaşım. Sana güveniyorum, sen de bana güven"',
         effect: { charisma: 2 },
         npcRelationChange: 10,
         personalityEffects: [{ axis: 'empathy', change: 3 }],
-        feedback: 'Sakince acikladin. Bir sure sonra yumusamaya basladi.',
+        feedback: 'Sakince açıkladın. Bir süre sonra yumuşamaya başladı.',
       },
       {
-        text: '😠 "Bu kadar kiskanc olma, boguyorsun beni!"',
+        text: '😠 "Bu kadar kıskanç olma, boğuyorsun beni!"',
         effect: { charisma: -4 },
         npcRelationChange: -15,
         personalityEffects: [{ axis: 'openness', change: 2 }],
-        feedback: 'Sert konustun. Belki haklisin ama zamanlama kotu.',
+        feedback: 'Sert konuştun. Belki haklısın ama zamanlama kötü.',
       },
       {
         text: '😞 "Haklisin, bir daha olmaz"',
@@ -414,7 +414,7 @@ const romanceEvents: GameEvent[] = [
     tags: ['social', 'love', 'relationship', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['CRUSH', 'PARTNER']);
-      return `${n(npc)} fark ettin ki son zamanlarda biraz mesafeli. Bir gun sonunda soruyorsun: "Bir sorun mu var?"`;
+      return `${n(npc)}'nin son zamanlarda biraz mesafeli olduğunu fark ettin. Bir gün sonunda soruyorsun: "Bir sorun mu var?"`;
     },
     minAge: 13, maxAge: 18,
     rarity: 'UNCOMMON',
@@ -425,13 +425,13 @@ const romanceEvents: GameEvent[] = [
         effect: { charisma: 4 },
         npcRelationChange: 12,
         personalityEffects: [{ axis: 'empathy', change: 3 }],
-        feedback: '"Bazen korkuyorum kaybetmekten" dedi. Durust bir konusma oldu.',
+        feedback: '"Bazen korkuyorum kaybetmekten" dedi. Dürüst bir konuşma oldu.',
       },
       {
-        text: '🎁 Surpriz bir sey yap — hediye veya mektup',
+        text: '🎁 Sürpriz bir şey yap — hediye veya mektup',
         effect: { charisma: 4 },
         npcRelationChange: 15,
-        feedback: 'Gozleri parladi. Bazen kucuk jestler en buyuk seyleri soyler.',
+        feedback: 'Gözleri parladı. Bazen küçük jestler en büyük şeyleri söyler.',
       },
     ],
   },
@@ -440,30 +440,30 @@ const romanceEvents: GameEvent[] = [
     tags: ['social', 'love', 'relationship', 'family', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['CRUSH', 'PARTNER']);
-      return `Ailen ${n(npc)}'i duydu. ${ctx.gameState?.family?.dynamic === 'STRICT' ? 'Baban sert bir sesle sordu: "Kim bu? Derslerin ne olacak?"' : 'Annen merakla sordu: "Anlat bakalim, nasil biri?"'}`;
+      return `Ailen ${n(npc)}'i duydu. ${ctx.gameState?.family?.dynamic === 'STRICT' ? 'Baban sert bir sesle sordu: "Kim bu? Derslerin ne olacak?"' : 'Annen merakla sordu: "Anlat bakalım, nasıl biri?"'}`;
     },
     minAge: 13, maxAge: 18,
     rarity: 'UNCOMMON',
     personalityCategory: 'SOCIAL',
     choices: [
       {
-        text: '😊 Acikca anlat — gizlemenin anlami yok',
+        text: '😊 Açıkça anlat — gizlemenin anlamı yok',
         effect: { charisma: 2 },
         npcRelationChange: 5,
         personalityEffects: [{ axis: 'openness', change: 3 }, { axis: 'openness', change: 2 }],
-        feedback: 'Ailen sasirdi ama durst oldun. Bu onemli.',
+        feedback: 'Ailen şaşırdı ama dürüst oldun. Bu önemli.',
       },
       {
-        text: '🤫 "Sadece arkadas" de — henuz hazir degil',
+        text: '🤫 "Sadece arkadaş" de — henüz hazır değil',
         effect: {},
         personalityEffects: [{ axis: 'conformity', change: 2 }],
-        feedback: 'Gercegi sakladin. Simdilik rahat ama sonra zor olabilir.',
+        feedback: 'Gerçeği sakladın. Şimdilik rahat ama sonra zor olabilir.',
       },
       {
-        text: '😤 "Bu benim ozel hayatim!"',
+        text: '😤 "Bu benim özel hayatım!"',
         effect: { charisma: -2 },
         personalityEffects: [{ axis: 'openness', change: 3 }, { axis: 'conformity', change: -3 }],
-        feedback: 'Sinirlarini koydun. Ailen sasirdi ama mesaji aldi.',
+        feedback: 'Sınırlarını koydun. Ailen şaşırdı ama mesajı aldı.',
       },
     ],
   },
@@ -472,7 +472,7 @@ const romanceEvents: GameEvent[] = [
     tags: ['social', 'love', 'relationship', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['PARTNER', 'CRUSH']);
-      return `${n(npc)} ile ozel bir aksam. "Biz... resmi miyiz?" diye soruyor yumusak bir sesle.`;
+      return `${n(npc)} ile özel bir akşam. "Biz... resmî miyiz?" diye soruyor yumuşak bir sesle.`;
     },
     minAge: 14, maxAge: 18,
     rarity: 'RARE',
@@ -483,9 +483,9 @@ const romanceEvents: GameEvent[] = [
         effect: { charisma: 13 },
         npcRelationChange: 25,
         personalityEffects: [{ axis: 'openness', change: 3 }, { axis: 'empathy', change: 2 }],
-        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Ilk ciddi iliski' },
+        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'İlk ciddi ilişki' },
         grantTraits: ['FIRST_LOVE'],
-        feedback: 'Kalbiniz ayni ritimde atiyor. Bu ozel.',
+        feedback: 'Kalbiniz aynı ritimde atıyor. Bu özel.',
       },
     ],
   },
@@ -494,27 +494,27 @@ const romanceEvents: GameEvent[] = [
     tags: ['social', 'love', 'relationship', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['CRUSH', 'PARTNER']);
-      return `${n(npc)} ile bir seyler degisti. Ikiniz de biliyorsunuz ama kimse soyleyemiyor. Sonunda bir aksam konusuyorsunuz.`;
+      return `${n(npc)} ile bir şeyler değişti. İkiniz de biliyorsunuz ama kimse söyleyemiyor. Sonunda bir akşam konuşuyorsunuz.`;
     },
     minAge: 14, maxAge: 18,
     rarity: 'UNCOMMON',
     personalityCategory: 'SOCIAL',
     choices: [
       {
-        text: '🤝 "Guzel bir donenemdi. Tesekkur ederim."',
+        text: '🤝 "Güzel bir dönemdi. Teşekkür ederim."',
         effect: { charisma: -3 },
         npcRelationChange: -20,
         personalityEffects: [{ axis: 'empathy', change: 3 }, { axis: 'openness', change: 2 }],
-        memory: { emotion: 'NEUTRAL', weight: 'HIGH', customNote: 'Olgun bir ayrilik' },
-        feedback: 'Aciti ama dogru olani yaptiniz. Bazi seyler bitmeli ki baskasi baslayabilsin.',
+        memory: { emotion: 'NEUTRAL', weight: 'HIGH', customNote: 'Olgun bir ayrılık' },
+        feedback: 'Acıttı ama doğru olanı yaptınız. Bazı şeyler bitmeli ki başkası başlayabilsin.',
       },
       {
-        text: '😢 "Gitme... lutfen"',
+        text: '😢 "Gitme... lütfen"',
         effect: { charisma: -8 },
         npcRelationChange: -10,
         personalityEffects: [{ axis: 'openness', change: -2 }],
-        memory: { emotion: 'REGRET', weight: 'MEDIUM', customNote: 'Tutamadigi ask' },
-        feedback: 'Kalbin kirik. Ama zaman en iyi ilac derler...',
+        memory: { emotion: 'REGRET', weight: 'MEDIUM', customNote: 'Tutamadığı aşk' },
+        feedback: 'Kalbin kırık. Ama zaman en iyi ilaç derler...',
       },
     ],
   },
@@ -530,7 +530,7 @@ const rivalryEvents: GameEvent[] = [
     tags: ['social', 'npc', 'group'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['RIVAL']);
-      return `${n(npc)} sinifin ortasinda sana meydan okudu: "Bahse girerim bu sinavi benden iyi yapamazsin." Herkes size bakiyor.`;
+      return `${n(npc)} sınıfın ortasında sana meydan okudu: "Bahse girerim bu sınavı benden iyi yapamazsın." Herkes size bakıyor.`;
     },
     minAge: 8, maxAge: 18,
     rarity: 'UNCOMMON',
@@ -538,19 +538,19 @@ const rivalryEvents: GameEvent[] = [
     reqNPCRole: 'RIVAL',
     choices: [
       {
-        text: '🔥 "Kabul! Goruruz."',
+        text: '🔥 "Kabul! Görürüz."',
         effect: { intelligence: 1, charisma: 2 },
         npcRelationChange: -5,
         personalityEffects: [{ axis: 'openness', change: 4 }],
         memory: { emotion: 'SATISFACTION', weight: 'MEDIUM', customNote: 'Meydan okuma kabul edildi' },
-        feedback: 'Meydan okuma kabul edildi. Sinifta heyecan dalga dalga yayiliyor.',
+        feedback: 'Meydan okuma kabul edildi. Sınıfta heyecan dalga dalga yayılıyor.',
       },
       {
-        text: '😏 "Benim kanitlamam gereken bir sey yok"',
+        text: '😏 "Benim kanıtlamam gereken bir şey yok"',
         effect: { charisma: 3 },
         npcRelationChange: 5,
         personalityEffects: [{ axis: 'openness', change: 2 }, { axis: 'conformity', change: -2 }],
-        feedback: 'Sogukkanli cevap. Rakibin sasirdi ama saygisi artti.',
+        feedback: 'Soğukkanlı cevap. Rakibin şaşırdı ama saygısı arttı.',
       },
     ],
   },
@@ -559,25 +559,25 @@ const rivalryEvents: GameEvent[] = [
     tags: ['social', 'npc', 'group'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['RIVAL']);
-      return `Arkadaslarin ikiye bolundu. Bazilari senin tarafinda, bazilari ${n(npc)} tarafinda. Okul koridorunda gerilim hissediliyor.`;
+      return `Arkadaşların ikiye bölündü. Bazıları senin tarafında, bazıları ${n(npc)} tarafında. Okul koridorunda gerilim hissediliyor.`;
     },
     minAge: 8, maxAge: 18,
     rarity: 'UNCOMMON',
     personalityCategory: 'CONFLICT',
     choices: [
       {
-        text: '🤝 "Bu sacmalik, taraf falan yok"',
+        text: '🤝 "Bu saçmalık, taraf falan yok"',
         effect: { charisma: 4 },
         npcRelationChange: 8,
         personalityEffects: [{ axis: 'empathy', change: 3 }],
         feedback: 'Olgunlugun herkesi sasirtti. Gerilim biraz azaldi.',
       },
       {
-        text: '💪 Kendi grubunu guclendirmek icin ugras',
+        text: '💪 Kendi grubunu güçlendirmek için uğraş',
         effect: { charisma: 2 },
         npcRelationChange: -10,
         personalityEffects: [{ axis: 'openness', change: 2 }],
-        feedback: 'Saflar netlesti. Bu savas buyuyor.',
+        feedback: 'Saflar netlesti. Bu savaş büyüyor.',
       },
     ],
   },
@@ -586,7 +586,7 @@ const rivalryEvents: GameEvent[] = [
     tags: ['social', 'npc', 'group'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['RIVAL']);
-      return `Gun geldi. ${n(npc)} ile son karsilasma: spor turnuvasi, sinav sonucu veya sahne performansi — kim daha iyi?`;
+      return `Gün geldi. ${n(npc)} ile son karşılaşma: spor turnuvası, sınav sonucu veya sahne performansı — kim daha iyi?`;
     },
     minAge: 8, maxAge: 18,
     rarity: 'RARE',
@@ -594,19 +594,19 @@ const rivalryEvents: GameEvent[] = [
     reqNPCRole: 'RIVAL',
     choices: [
       {
-        text: '🏆 Her seyini ver — kazanmak icin',
+        text: '🏆 Her şeyini ver — kazanmak için',
         effect: { charisma: 3, health: -3 },
         npcRelationChange: -5,
         personalityEffects: [{ axis: 'openness', change: 4 }],
-        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Buyuk kapima' },
-        feedback: 'Elinden gelenin en iyisini yaptin. Sonuc ne olursa olsun, kendini ashtin.',
+        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Büyük kapışma' },
+        feedback: 'Elinden gelenin en iyisini yaptın. Sonuç ne olursa olsun, kendini aştın.',
       },
       {
-        text: '🤝 Fair play — iyi bir yarisma olsun',
+        text: '🤝 Fair play — iyi bir yarışma olsun',
         effect: { charisma: 5 },
         npcRelationChange: 10,
         personalityEffects: [{ axis: 'empathy', change: 2 }],
-        feedback: 'Sportmen tavrin herkesin takdirini kazandi. Rakibin bile saygi duydu.',
+        feedback: 'Sportmen tavrın herkesin takdirini kazandı. Rakibin bile saygı duydu.',
       },
     ],
   },
@@ -615,24 +615,24 @@ const rivalryEvents: GameEvent[] = [
     tags: ['social', 'npc', 'group'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['RIVAL']);
-      return `Yarisma bitti. ${n(npc)} ile koridorda karsilastiniz. Ikiniznin de yuzunde yorgunluk var. Bir an sessizlik.`;
+      return `Yarışma bitti. ${n(npc)} ile koridorda karşılaştınız. İkiniznin de yüzünde yorgunluk var. Bir an sessizlik.`;
     },
     minAge: 8, maxAge: 18,
     rarity: 'UNCOMMON',
     personalityCategory: 'SOCIAL',
     choices: [
       {
-        text: '🤝 Elini uzat: "Iyi yarismaydaki"',
+        text: '🤝 Elini uzat: "İyi yarışmaydı ki"',
         effect: { charisma: 6 },
         npcRelationChange: 15,
         personalityEffects: [{ axis: 'empathy', change: 3 }],
-        feedback: 'Elini sikti. Belki dost olamazsiniz ama artik sayginiz var.',
+        feedback: 'Elini sıktı. Belki dost olamazsınız ama artık saygınız var.',
       },
       {
-        text: '😤 Yandangecer gibi yap — hicbir sey soyleme',
+        text: '😤 Yandan geçer gibi yap — hiçbir şey söyleme',
         effect: { charisma: -1 },
         npcRelationChange: -5,
-        feedback: 'Sessizlik devam ediyor. Rekabet henuz bitmedi.',
+        feedback: 'Sessizlik devam ediyor. Rekabet henüz bitmedi.',
       },
     ],
   },
@@ -641,7 +641,7 @@ const rivalryEvents: GameEvent[] = [
     tags: ['social', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['RIVAL']);
-      return `${n(npc)} sana yaklasti. "Belki... surekli kavga etmek yerine birlikte calisabiliriz?" Samimi gorunuyor.`;
+      return `${n(npc)} sana yaklaştı. "Belki... sürekli kavga etmek yerine birlikte çalışabiliriz?" Samimi görünüyor.`;
     },
     minAge: 10, maxAge: 18,
     rarity: 'RARE',
@@ -653,13 +653,13 @@ const rivalryEvents: GameEvent[] = [
         npcRelationChange: 25,
         personalityEffects: [{ axis: 'empathy', change: 4 }, { axis: 'openness', change: 2 }],
         memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Rakiple baris' },
-        feedback: 'Baris saglamak kazanmaktan zor ama daha degerli.',
+        feedback: 'Barış sağlamak kazanmaktan zor ama daha değerli.',
       },
       {
-        text: '🤔 "Guvenmem zor ama firsati veririm"',
+        text: '🤔 "Güvenmem zor ama fırsatı veririm"',
         effect: { charisma: 2 },
         npcRelationChange: 10,
-        feedback: 'Temkinli ama acik kapisin. Zaman gosterecek.',
+        feedback: 'Temkinli ama açık kapısın. Zaman gösterecek.',
       },
     ],
   },
@@ -668,25 +668,25 @@ const rivalryEvents: GameEvent[] = [
     tags: ['social', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['RIVAL']);
-      return `${n(npc)} arkadaslarindan birine seni kotulemis. Herkes duydu. Bu artik yarisma degil — kisisel.`;
+      return `${n(npc)} arkadaşlarından birine seni kötülemiş. Herkes duydu. Bu artık yarışma değil — kişisel.`;
     },
     minAge: 10, maxAge: 18,
     rarity: 'UNCOMMON',
     personalityCategory: 'CONFLICT',
     choices: [
       {
-        text: '😡 Karsilik ver — daha sert sekilde',
+        text: '😡 Karşılık ver — daha sert şekilde',
         effect: { charisma: -5 },
         npcRelationChange: -20,
         personalityEffects: [{ axis: 'openness', change: 2 }, { axis: 'empathy', change: -3 }],
-        feedback: 'Kavga buyudu. Simdi ikiniznin de itibarı zedelendi.',
+        feedback: 'Kavga büyüdü. Şimdi ikiniznin de itibarı zedelendi.',
       },
       {
-        text: '🧘 Sessiz kal — zamanla herkes gercegi gorur',
+        text: '🧘 Sessiz kal — zamanla herkes gerçeği görür',
         effect: { charisma: 0 },
         npcRelationChange: 5,
         personalityEffects: [{ axis: 'openness', change: 3 }, { axis: 'conformity', change: -1 }],
-        feedback: 'Sessizligin guclu bir cevap oldu. Insanlar senin tarafina gecmeye basladi.',
+        feedback: 'Sessizliğin güçlü bir cevap oldu. İnsanlar senin tarafına geçmeye başladı.',
       },
     ],
   },
@@ -695,7 +695,7 @@ const rivalryEvents: GameEvent[] = [
     tags: ['social', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['RIVAL']);
-      return `Yillar sonra ${n(npc)} ile karsilastiniz. "Seni hep saygiyla hatirlayacagim" diyor. Gercekten oyle gorunuyor.`;
+      return `Yıllar sonra ${n(npc)} ile karşılaştınız. "Seni hep saygıyla hatırlayacağım" diyor. Gerçekten öyle görünüyor.`;
     },
     minAge: 12, maxAge: 18,
     rarity: 'RARE',
@@ -706,7 +706,7 @@ const rivalryEvents: GameEvent[] = [
         effect: { charisma: 8 },
         npcRelationChange: 15,
         personalityEffects: [{ axis: 'empathy', change: 2 }],
-        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Saygili rakiplik' },
+        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Saygılı rakiplik' },
         grantTraits: ['WORTHY_RIVAL'],
         feedback: 'Bazen en iyi dersler rakiplerden gelir.',
       },
@@ -717,25 +717,25 @@ const rivalryEvents: GameEvent[] = [
     tags: ['social', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['RIVAL', 'ENEMY']);
-      return `${n(npc)} ile araniz tamamen bozuldu. Ayni ortamda bile nefes almak zor. Bu nefret seni icten icte yiyor.`;
+      return `${n(npc)} ile aranız tamamen bozuldu. Aynı ortamda bile nefes almak zor. Bu nefret seni içten içe yiyor.`;
     },
     minAge: 10, maxAge: 18,
     rarity: 'UNCOMMON',
     personalityCategory: 'CONFLICT',
     choices: [
       {
-        text: '🧘 Burakit — nefret seni tuketiyor',
+        text: '🧘 Bırak — nefret seni tüketiyor',
         effect: { charisma: 3, health: 2 },
         npcRelationChange: 5,
         personalityEffects: [{ axis: 'empathy', change: 2 }],
-        feedback: 'Icindeki ofkeyi biraktin. Rahatladiniz.',
+        feedback: 'İçindeki öfkeyi bıraktın. Rahatladınız.',
       },
       {
         text: '💀 "Bu bitmedi..."',
         effect: { charisma: -5 },
         npcRelationChange: -15,
         personalityEffects: [{ axis: 'openness', change: 1 }, { axis: 'empathy', change: -3 }],
-        memory: { emotion: 'REGRET', weight: 'MEDIUM', customNote: 'Bitmeyen dusmancalik' },
+        memory: { emotion: 'REGRET', weight: 'MEDIUM', customNote: 'Bitmeyen düşmancalık' },
         feedback: 'Nefret seni ele geciriyor. Bu yol karanlik.',
       },
     ],
@@ -752,7 +752,7 @@ const betrayalEvents: GameEvent[] = [
     tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'BEST_FRIEND']);
-      return `${n(npc)}'in soyledikleriyle yaptiklari tutmuyor. Bir gun plana gel dedi, gelmedi. Sonra baska biriyile goruldugu soyleniyor.`;
+      return `${n(npc)}'in söyledikleriyle yaptıkları tutmuyor. Bir gün plana gel dedi, gelmedi. Sonra başka biriyle görüldüğü söyleniyor.`;
     },
     minAge: 12, maxAge: 18,
     rarity: 'UNCOMMON',
@@ -763,13 +763,13 @@ const betrayalEvents: GameEvent[] = [
         text: '🤔 "Herkesin kotu gunu olabilir, gormezden gel"',
         effect: {},
         personalityEffects: [{ axis: 'empathy', change: 2 }],
-        feedback: 'Hos gorus. Ama icinde kucuk bir suphe kaldi.',
+        feedback: 'Hoş gör. Ama içinde küçük bir şüphe kaldı.',
       },
       {
         text: '🕵️ Dikkatli ol ve izle',
         effect: { intelligence: 1 },
         personalityEffects: [{ axis: 'openness', change: 1 }],
-        feedback: 'Gozlerini actin. Bir sonraki sefer daha dikkatli olacaksin.',
+        feedback: 'Gözlerini açtın. Bir sonraki sefer daha dikkatli olacaksın.',
       },
     ],
   },
@@ -778,7 +778,7 @@ const betrayalEvents: GameEvent[] = [
     tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'BEST_FRIEND']);
-      return `Biri sana yaklasti: "${n(npc)} herkese senin sirrini anlatti. Hem de guluyordu." Midena bir sey oturdu.`;
+      return `Biri sana yaklaştı: "${n(npc)} herkese senin sırrını anlattı. Hem de gülüyordu." Miden'e bir şey oturdu.`;
     },
     minAge: 12, maxAge: 18,
     rarity: 'UNCOMMON',
@@ -789,19 +789,19 @@ const betrayalEvents: GameEvent[] = [
         effect: { charisma: -4 },
         npcRelationChange: -10,
         personalityEffects: [{ axis: 'openness', change: 3 }],
-        feedback: 'Sinirlisin ve haklisin. Ama once sakince dusunmek belki daha iyi olurdu.',
+        feedback: 'Sinirlisin ve haklısın. Ama önce sakince düşünmek belki daha iyi olurdu.',
       },
       {
-        text: '🤔 "Emin misin? Once dogrulayayim"',
+        text: '🤔 "Emin misin? Önce doğrulayayım"',
         effect: { intelligence: 2 },
         personalityEffects: [{ axis: 'openness', change: 1 }, { axis: 'empathy', change: 1 }],
-        feedback: 'Sogukkanli kaldin. Kanitlari toplamak icin zaman kazandin.',
+        feedback: 'Soğukkanlı kaldın. Kanıtları toplamak için zaman kazandın.',
       },
       {
-        text: '😢 Ici cok aci ama gormezden gel',
+        text: '😢 İçi çok acı ama görmezden gel',
         effect: { charisma: -6 },
         personalityEffects: [{ axis: 'openness', change: -2 }],
-        feedback: 'Yaralar icine akiyor. Bu dayanilmaz ama sesini cikaramiyorsun.',
+        feedback: 'Yaralar içine akıyor. Bu dayanılmaz ama sesini çıkaramıyorsun.',
       },
     ],
   },
@@ -810,17 +810,17 @@ const betrayalEvents: GameEvent[] = [
     tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'BEST_FRIEND']);
-      return `${n(npc)}'in mesajlarini, davranislarini, ortak arkadaslarin soylediklerini birlestiriyorsun. Resim netlesiyor. Ya gercekten ihanet ettiyse?`;
+      return `${n(npc)}'in mesajlarını, davranışlarını, ortak arkadaşların söylediklerini birleştiriyorsun. Resim netleşiyor. Ya gerçekten ihanet ettiyse?`;
     },
     minAge: 12, maxAge: 18,
     rarity: 'UNCOMMON',
     personalityCategory: 'SOCIAL',
     choices: [
       {
-        text: '📱 Ortak arkadaslarindan bilgi topla',
+        text: '📱 Ortak arkadaşlarından bilgi topla',
         effect: { intelligence: 2, charisma: 1 },
         personalityEffects: [{ axis: 'openness', change: 2 }],
-        feedback: 'Parca parca gercek ortaya cikiyor. Simdi ne yapacaksin?',
+        feedback: 'Parça parça gerçek ortaya çıkıyor. Şimdi ne yapacaksın?',
       },
       {
         text: '💔 Yeter, dogrudan konusacagim',
@@ -835,18 +835,18 @@ const betrayalEvents: GameEvent[] = [
     tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'BEST_FRIEND']);
-      return `${n(npc)} ile yuz yuzesin. "Sirrimi neden anlattín?" Sessizlik. Sonra gozlerini kaciriyor.`;
+      return `${n(npc)} ile yüz yüzesin. "Sırrımı neden anlattın?" Sessizlik. Sonra gözlerini kaçırıyor.`;
     },
     minAge: 12, maxAge: 18,
     rarity: 'RARE',
     personalityCategory: 'CONFLICT',
     choices: [
       {
-        text: '😤 "Acikla. Simdi."',
+        text: '😤 "Açıkla. Şimdi."',
         effect: { charisma: -1 },
         npcRelationChange: -10,
         personalityEffects: [{ axis: 'openness', change: 4 }],
-        feedback: 'Sesi titriyordu. Belki pismandir, belki korkmustur. Ama gercek ortada.',
+        feedback: 'Sesi titriyordu. Belki pişmandır, belki korkmuştur. Ama gerçek ortada.',
       },
       {
         text: '😢 "Sana guveniyordum..."',
@@ -863,7 +863,7 @@ const betrayalEvents: GameEvent[] = [
     tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'BEST_FRIEND', 'ACQUAINTANCE']);
-      return `${n(npc)} inkar ediyor: "Ben oyle bir sey soylemedim, sana yalan soyluyorlar. Belki de gercek arkadaslarin onlar degil!" Masumiyetini savunuyor.`;
+      return `${n(npc)} inkâr ediyor: "Ben öyle bir şey söylemedim, sana yalan söylüyorlar. Belki de gerçek arkadaşların onlar değil!" Masumiyetini savunuyor.`;
     },
     minAge: 12, maxAge: 18,
     rarity: 'UNCOMMON',
@@ -874,14 +874,14 @@ const betrayalEvents: GameEvent[] = [
         effect: { intelligence: 2, charisma: 2 },
         npcRelationChange: -20,
         personalityEffects: [{ axis: 'openness', change: 4 }],
-        feedback: 'Maskesi dustu. Sonunda gercek yuzu gordurun.',
+        feedback: 'Maskesi düştü. Sonunda gerçek yüzü gördün.',
       },
       {
         text: '😰 Belki haklidir... kafam karisti',
         effect: { charisma: -4 },
         npcRelationChange: 5,
         personalityEffects: [{ axis: 'conformity', change: 3 }, { axis: 'openness', change: -3 }],
-        feedback: 'Manipulasyona yenildín. Kendi gerceginden suphe ediyorsun.',
+        feedback: 'Manipülasyona yenildin. Kendi gerçeğinden şüphe ediyorsun.',
       },
     ],
   },
@@ -890,7 +890,7 @@ const betrayalEvents: GameEvent[] = [
     tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'BEST_FRIEND', 'ACQUAINTANCE']);
-      return `${n(npc)}'in gozleri dolu: "Yanliş yaptım. Neden yaptigimi bile bilmiyorum. Lutfen..." Samimi gorunuyor.`;
+      return `${n(npc)}'in gözleri dolu: "Yanlış yaptım. Neden yaptığımı bile bilmiyorum. Lütfen..." Samimi görünüyor.`;
     },
     minAge: 12, maxAge: 18,
     rarity: 'UNCOMMON',
@@ -901,14 +901,14 @@ const betrayalEvents: GameEvent[] = [
         effect: { charisma: 2 },
         npcRelationChange: 5,
         personalityEffects: [{ axis: 'empathy', change: 3 }],
-        feedback: 'Af hemen gelmez. Ama kapi tamamen kapanmadi.',
+        feedback: 'Af hemen gelmez. Ama kapı tamamen kapanmadı.',
       },
       {
-        text: '😤 "Sozler yetmez. Ispat et."',
+        text: '😤 "Sözler yetmez. İspat et."',
         effect: {},
         npcRelationChange: -5,
         personalityEffects: [{ axis: 'openness', change: 2 }],
-        feedback: 'Hakli bir talep. Ama afin bedeli agir.',
+        feedback: 'Haklı bir talep. Ama affın bedeli ağır.',
       },
     ],
   },
@@ -917,7 +917,7 @@ const betrayalEvents: GameEvent[] = [
     tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'ACQUAINTANCE']);
-      return `Haftalar gecti. ${n(npc)} surekli uzaktan bakiyor, mesaj atiyor, kucuk jestler yapiyor. Belki gercekten degismistir.`;
+      return `Haftalar geçti. ${n(npc)} sürekli uzaktan bakıyor, mesaj atıyor, küçük jestler yapıyor. Belki gerçekten değişmiştir.`;
     },
     minAge: 12, maxAge: 18,
     rarity: 'RARE',
@@ -930,7 +930,7 @@ const betrayalEvents: GameEvent[] = [
         personalityEffects: [{ axis: 'empathy', change: 4 }],
         memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Affetmeyi secti' },
         grantTraits: ['FORGIVING_HEART'],
-        feedback: 'Affetmek gucluler icindir. Yeni bir sayfa acildi.',
+        feedback: 'Affetmek güçlüler içindir. Yeni bir sayfa açıldı.',
       },
     ],
   },
@@ -939,7 +939,7 @@ const betrayalEvents: GameEvent[] = [
     tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'ACQUAINTANCE']);
-      return `${n(npc)} ile artik arkadas degilsiniz. Ama duysman da degil. Koridorda kibar bir selam, o kadar.`;
+      return `${n(npc)} ile artık arkadaş değilsiniz. Ama düşman da değil. Koridorda kibar bir selam, o kadar.`;
     },
     minAge: 12, maxAge: 18,
     rarity: 'UNCOMMON',
@@ -949,7 +949,7 @@ const betrayalEvents: GameEvent[] = [
         text: '🤝 "Selam. Nasilsin?"',
         effect: { charisma: 2 },
         npcRelationChange: 0,
-        feedback: 'Mesafeli ama medeni. Olgunlasmak bazen boyle olur.',
+        feedback: 'Mesafeli ama medenî. Olgunlaşmak bazen böyle olur.',
       },
     ],
   },
@@ -958,19 +958,19 @@ const betrayalEvents: GameEvent[] = [
     tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const npc = getQuestNPC(ctx, ['FRIEND', 'ACQUAINTANCE']);
-      return `${n(npc)} ile butun ipleri kopardín. Numarasini sildin, ortak gruplari biraktin. Temiz bir kesim.`;
+      return `${n(npc)} ile bütün ipleri kopardın. Numarasını sildin, ortak grupları bıraktın. Temiz bir kesim.`;
     },
     minAge: 12, maxAge: 18,
     rarity: 'UNCOMMON',
     personalityCategory: 'CONFLICT',
     choices: [
       {
-        text: '🚪 "Ihanet affedilmez. Bitti."',
+        text: '🚪 "İhanet affedilmez. Bitti."',
         effect: { charisma: -1 },
         npcRelationChange: -30,
         personalityEffects: [{ axis: 'openness', change: 3 }, { axis: 'empathy', change: -2 }],
         memory: { emotion: 'REGRET', weight: 'MEDIUM', customNote: 'Bir dostluk tamamen bitti' },
-        feedback: 'Sinirlarini korudun. Aciti ama daha guvenli hissediyorsun.',
+        feedback: 'Sınırlarını korudun. Acıttı ama daha güvenli hissediyorsun.',
       },
     ],
   },

@@ -579,13 +579,27 @@ export const AGE_PROGRESSION = {
   /** 0-6: Her 2 tur yaş artar */
   youngAgeTurnPeriod: 2,
   youngAgeMax: 6,
-  
+
   /** 7-18: Her 5 tur yaş artar */
   normalAgeTurnPeriod: 5,
-  
+
   /** Maksimum oyun yaşı */
   maxGameAge: 18,
 } as const;
+
+// ============================================================================
+// SECTION 19B: BÖLÜM (CHAPTER) SİSTEMİ
+// ============================================================================
+export const CHAPTERS = [
+  { id: 1, name: 'Bebeklik',  emoji: '🍼', ageStart: 0,  ageEnd: 3  },
+  { id: 2, name: 'Çocukluk', emoji: '🧸', ageStart: 4,  ageEnd: 6  },
+  { id: 3, name: 'İlkokul',  emoji: '📚', ageStart: 7,  ageEnd: 10 },
+  { id: 4, name: 'Ortaokul', emoji: '🎒', ageStart: 11, ageEnd: 13 },
+  { id: 5, name: 'Lise',     emoji: '🎓', ageStart: 14, ageEnd: 16 },
+  { id: 6, name: 'Son Yıl',  emoji: '🌟', ageStart: 17, ageEnd: 18 },
+] as const;
+
+export type ChapterData = typeof CHAPTERS[number];
 
 // ============================================================================
 // SECTION 20: SAKARLIQ ÖZELLİĞİ
@@ -719,35 +733,6 @@ export const POWER_BUDGET = {
   diminishingFactor: 0.50,
 } as const;
 
-// ============================================================================
-// SECTION 30: AD FATIGUE POLICY (Phase 3)
-// ============================================================================
-export const AD_FATIGUE_POLICY = {
-  /** Session basina toplam ad cap */
-  globalDailyCap: 8,
-  /** Placement basina session cap */
-  perPlacementSessionCap: 2,
-  /** Iki ad teklifi arasinda minimum tur */
-  minTurnsBetweenOffers: 2,
-  /** 2 ard arda decline sonrasi snooze suresi (tur) */
-  declineSnoozeTurns: 3,
-  /** Ard arda iki turda ad teklifi verilmez */
-  noOfferOnBackToBackTurns: true,
-} as const;
-
-// ============================================================================
-// SECTION 31: EVENT MIX GUARDRAILS (Phase 5)
-// ============================================================================
-export const EVENT_MIX_GUARDRAILS = {
-  /** Genel eventlerin minimum orani */
-  minGeneralEventShare: 0.40,
-  /** Goal eventlerinin maksimum orani */
-  maxGoalEventShare: 0.45,
-  /** Iliski eventlerinin minimum orani */
-  minRelationshipEventShare: 0.15,
-  /** Ayni eventin tekrar secilmesi icin minimum tur bekleme */
-  duplicateEventCooldownTurns: 6,
-} as const;
 
 // ============================================================================
 // HELPER FUNCTIONS (Formula Generator'lar)
@@ -909,8 +894,6 @@ export const GAME_BALANCE_CONFIG = {
   CONSUMABLE_CONFIG,
   BUFF_RULES,
   POWER_BUDGET,
-  AD_FATIGUE_POLICY,
-  EVENT_MIX_GUARDRAILS,
 } as const;
 
 export default GAME_BALANCE_CONFIG;

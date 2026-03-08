@@ -79,16 +79,20 @@ export const useExamFlow = ({
       const accuracy = Math.round((result.correctAnswers / result.totalQuestions) * 100);
       const gradeEmoji = accuracy >= 85 ? '\uD83C\uDFC6' : accuracy >= 70 ? '\uD83C\uDF89' : accuracy >= 50 ? '\u2705' : '\uD83D\uDE30';
       const correctCount = `${result.correctAnswers}/${result.totalQuestions} (%${accuracy})`;
+      const lines = [
+        `${gradeEmoji} ${t('messages.examFinished')}`,
+        '',
+        t('messages.examCorrect', { count: correctCount }),
+        t('messages.examGradeBonus', { bonus: result.gradeBonus }),
+        t('messages.examScore', { score: result.finalScore }),
+      ];
       enqueueToast(
-        `${gradeEmoji} ${t('messages.examFinished', undefined, 'Sinav Bitti!')}\n\n` +
-        `${t('messages.examCorrect', { count: correctCount }, 'Dogru: {count}')}\n` +
-        `${t('messages.examGradeBonus', { bonus: result.gradeBonus }, 'Not Bonusu: +{bonus}')}\n` +
-        `${t('messages.examScore', { score: result.finalScore }, 'Puan: {score}')}`,
+        lines.join('\n'),
         accuracy >= 50 ? 'success' : 'warning'
       );
       if (examPrepBoostApplied > 0) {
         clearExamPrepBoost();
-        enqueueToast(t('messages.examFocusEnded', undefined, 'Sinav odak takviyesi sona erdi'), 'info');
+        enqueueToast(t('messages.examFocusEnded'), 'info');
       }
     },
   });
@@ -105,15 +109,15 @@ export const useExamFlow = ({
     };
 
     Alert.alert(
-      t('dialogs.examPrep.title', undefined, 'Sinav Hazirligi'),
-      t('dialogs.examPrep.description', undefined, 'Sinav oncesi reklam izleyip gecici +15 zeka odagi almak ister misin?'),
+      t('dialogs.examPrep.title'),
+      t('dialogs.examPrep.description'),
       [
         {
-          text: t('buttons.startDirect', undefined, 'Direkt Basla'),
+          text: t('buttons.startDirect'),
           onPress: startExam,
         },
         {
-          text: t('buttons.watchAd', undefined, 'Reklam Izle'),
+          text: t('buttons.watchAd'),
           onPress: () => {
             void (async () => {
               clearExamPrepBoost();

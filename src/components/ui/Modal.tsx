@@ -28,7 +28,7 @@ export const Modal: React.FC<ModalProps> = ({
   footer,
   contentStyle,
 }) => {
-  const { theme } = useUI();
+  const { theme, t } = useUI();
 
   return (
     <RNModal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -36,7 +36,7 @@ export const Modal: React.FC<ModalProps> = ({
         style={[styles.overlay, { backgroundColor: 'rgba(0, 0, 0, 0.7)' }]}
         onPress={onClose}
         accessibilityRole="button"
-        accessibilityLabel="Close modal"
+        accessibilityLabel={t('common.close')}
       >
         <TouchableWithoutFeedback onPress={() => {}}>
           <Card

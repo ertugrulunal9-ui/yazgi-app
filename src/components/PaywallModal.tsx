@@ -41,11 +41,11 @@ interface PaywallModalProps {
 
 const PREMIUM_COLOR = '#d97706'; // amber/gold brand accent
 
-const FEATURES: Array<{ icon: React.ComponentProps<typeof Feather>['name']; key: string; fallback: string }> = [
-  { icon: 'slash', key: 'premium.featureNoAds', fallback: 'Reklamsiz deneyim' },
-  { icon: 'rotate-ccw', key: 'premium.featureUnlimitedUndo', fallback: 'Sinirsiz geri al' },
-  { icon: 'save', key: 'premium.featureExtraSlots', fallback: '+3 ek kayit slotu' },
-  { icon: 'star', key: 'premium.featurePremiumEvents', fallback: 'Ozel premium eventler' },
+const FEATURES: Array<{ icon: React.ComponentProps<typeof Feather>['name']; key: string }> = [
+  { icon: 'slash', key: 'premium.featureNoAds' },
+  { icon: 'rotate-ccw', key: 'premium.featureUnlimitedUndo' },
+  { icon: 'save', key: 'premium.featureExtraSlots' },
+  { icon: 'star', key: 'premium.featurePremiumEvents' },
 ];
 
 type TranslateFn = (
@@ -72,33 +72,33 @@ const resolvePremiumError = (
   switch (result.code) {
     case 'premium_disabled':
     case 'premium_kill_switch':
-      baseMessage = t('premium.temporarilyUnavailable', undefined, 'Premium su anda gecici olarak kullanilamiyor.');
+      baseMessage = t('premium.temporarilyUnavailable');
       break;
     case 'purchases_disabled':
-      baseMessage = t('premium.purchaseDisabled', undefined, 'Satin alma su anda gecici olarak kapali.');
+      baseMessage = t('premium.purchaseDisabled');
       break;
     case 'restore_disabled':
-      baseMessage = t('premium.restoreDisabled', undefined, 'Geri yukleme su anda gecici olarak kapali.');
+      baseMessage = t('premium.restoreDisabled');
       break;
     case 'revenuecat_unavailable':
     case 'missing_config':
     case 'not_initialized':
-      baseMessage = t('premium.storeUnavailable', undefined, 'Magaza baglantisi su anda kullanilamiyor.');
+      baseMessage = t('premium.storeUnavailable');
       break;
     case 'offerings_unavailable':
-      baseMessage = t('premium.offeringsUnavailable', undefined, 'Su anda satin alma paketleri yuklenemedi.');
+      baseMessage = t('premium.offeringsUnavailable');
       break;
     case 'product_not_found':
-      baseMessage = t('premium.productNotFound', undefined, 'Secilen paket bulunamadi.');
+      baseMessage = t('premium.productNotFound');
       break;
     case 'entitlement_not_granted':
-      baseMessage = t('premium.entitlementNotGranted', undefined, 'Odeme tamamlandi ama Premium etkinlesmedi.');
+      baseMessage = t('premium.entitlementNotGranted');
       break;
     case 'no_active_subscription':
-      baseMessage = t('premium.noActiveSubscription', undefined, 'Aktif bir Premium abonelik bulunamadi.');
+      baseMessage = t('premium.noActiveSubscription');
       break;
     case 'network_error':
-      baseMessage = t('premium.networkError', undefined, 'Ag baglantisi hatasi. Lutfen tekrar dene.');
+      baseMessage = t('premium.networkError');
       break;
     default:
       if (result.error && result.error !== 'cancelled') {
@@ -106,8 +106,8 @@ const resolvePremiumError = (
         break;
       }
       baseMessage = mode === 'purchase'
-        ? t('premium.purchaseFailed', undefined, 'Satin alma basarisiz')
-        : t('premium.restoreFailed', undefined, 'Geri yukleme basarisiz');
+        ? t('premium.purchaseFailed')
+        : t('premium.restoreFailed');
       break;
   }
 
@@ -120,18 +120,18 @@ const resolvePremiumError = (
 
 const getRuntimeBlockedMessage = (runtimeStatus: PremiumRuntimeStatus, t: TranslateFn): string => {
   if (!runtimeStatus.featureEnabled || runtimeStatus.killSwitchActive) {
-    return t('premium.temporarilyUnavailable', undefined, 'Premium su anda gecici olarak kullanilamiyor.');
+    return t('premium.temporarilyUnavailable');
   }
 
   if (!runtimeStatus.hasApiKey || !runtimeStatus.revenueCatAvailable) {
-    return t('premium.storeUnavailable', undefined, 'Magaza baglantisi su anda kullanilamiyor.');
+    return t('premium.storeUnavailable');
   }
 
   if (!runtimeStatus.purchasesEnabled && !runtimeStatus.restoreEnabled) {
-    return t('premium.temporarilyUnavailable', undefined, 'Premium su anda gecici olarak kullanilamiyor.');
+    return t('premium.temporarilyUnavailable');
   }
 
-  return t('premium.temporarilyUnavailable', undefined, 'Premium su anda gecici olarak kullanilamiyor.');
+  return t('premium.temporarilyUnavailable');
 };
 
 export const PaywallModal: React.FC<PaywallModalProps> = ({ visible, onClose }) => {
@@ -183,7 +183,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ visible, onClose }) 
           return offerings[0].id;
         });
         if (offerings.length === 0) {
-          setError(t('premium.offeringsUnavailable', undefined, 'Su anda satin alma paketleri yuklenemedi.'));
+          setError(t('premium.offeringsUnavailable'));
         }
         setLoadingOfferings(false);
       }
@@ -291,14 +291,14 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ visible, onClose }) 
 
   if (isPremium()) {
     return (
-      <Modal visible={visible} title={t('premium.title', undefined, 'Yazgi Premium')} onClose={onClose}>
+      <Modal visible={visible} title={t('premium.title')} onClose={onClose}>
         <View style={{ alignItems: 'center', paddingVertical: 20 }}>
           <Feather name="check-circle" color="#16a34a" size={48} />
           <Text style={{ color: theme.textPrimary, fontSize: 18, fontWeight: '700', marginTop: 12 }}>
-            {t('premium.alreadyActive', undefined, 'Premium aktif!')}
+            {t('premium.alreadyActive')}
           </Text>
           <Text style={{ color: theme.textSecondary, fontSize: 14, marginTop: 6, textAlign: 'center' }}>
-            {t('premium.enjoyBenefits', undefined, 'Tum premium avantajlardan yararlaniyorsun.')}
+            {t('premium.enjoyBenefits')}
           </Text>
         </View>
       </Modal>
@@ -308,7 +308,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ visible, onClose }) 
   return (
     <Modal
       visible={visible}
-      title={t('premium.title', undefined, 'Yazgi Premium')}
+      title={t('premium.title')}
       onClose={onClose}
       contentStyle={{ maxHeight: '85%' }}
     >
@@ -338,7 +338,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ visible, onClose }) 
                 <Feather name={feat.icon} color={PREMIUM_COLOR} size={18} />
               </View>
               <Text style={{ color: theme.textPrimary, fontSize: Math.max(14, metrics.font), fontWeight: '500', flex: 1 }}>
-                {t(feat.key, undefined, feat.fallback)}
+                {t(feat.key)}
               </Text>
             </View>
           ))}
@@ -385,7 +385,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ visible, onClose }) 
                         borderRadius: 6,
                       }}>
                         <Text style={{ color: '#fff', fontSize: 10, fontWeight: '800' }}>
-                          {t('premium.savePercent', { percent: 44 }, '%44 TASARRUF')}
+                          {t('premium.savePercent', { percent: 44 })}
                         </Text>
                       </View>
                     )}
@@ -426,7 +426,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ visible, onClose }) 
             <ActivityIndicator color="#fff" />
           ) : (
             <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800' }}>
-              {t('premium.subscribe', undefined, 'Premium\'a Gec')}
+              {t('premium.subscribe')}
             </Text>
           )}
         </TouchableOpacity>
@@ -442,7 +442,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ visible, onClose }) 
             <ActivityIndicator color={theme.textSecondary} size="small" />
           ) : (
             <Text style={{ color: theme.textSecondary, fontSize: 13, fontWeight: '600' }}>
-              {t('premium.restore', undefined, 'Satinalimi Geri Yukle')}
+              {t('premium.restore')}
             </Text>
           )}
         </TouchableOpacity>

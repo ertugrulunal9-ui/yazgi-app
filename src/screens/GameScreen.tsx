@@ -13,7 +13,7 @@ import { useSocialInteractions } from '../hooks/useSocialInteractions';
 import { useExamFlow } from '../hooks/useExamFlow';
 import { useModalOrchestration } from '../hooks/useModalOrchestration';
 import { useFloatingTexts, useGameActions } from '../hooks/useGameSelectors';
-import { AppTab, TraitChangeFeedback } from '../types';
+import type { AppTab, TraitChangeFeedback } from '../types';
 import {
   FadeInUpView,
   achievementUnlock,
@@ -31,8 +31,8 @@ import { TabBar } from '../components/TabBar';
 import {
   getLocalizedActionCategories,
   filterActionCategoriesForContext,
-  ActionCategory,
 } from '../data/actions';
+import type { ActionCategory } from '../data/actions';
 import { FloatingText } from '../components/FloatingText';
 import { SkillTree } from '../components/SkillTree';
 import { SocialScreen } from '../components/SocialScreen';
@@ -44,7 +44,6 @@ import { AchievementToast } from '../components/AchievementToast';
 import * as Sharing from 'expo-sharing';
 import { useAchievements } from '../hooks/useAchievements';
 import {
-  logAchievementUnlocked,
   logInterstitialOpportunity,
   logInterstitialResult,
 } from '../utils/analyticsEvents';
@@ -68,9 +67,13 @@ import ReportCard from '../components/ReportCard';
 import { ExamPeriodModal } from '../components/ExamPeriodModal';
 import { DaySummaryModal } from '../components/DaySummaryModal';
 import { AgeMilestoneModal } from '../components/AgeMilestoneModal';
+import { ChapterTransitionModal } from '../components/ChapterTransitionModal';
+import { SessionRecapModal } from '../components/SessionRecapModal';
 import { GoalTracker } from '../components/GoalTracker';
 import { isFeatureEnabled } from '../config/featureFlags';
-import type { AgeMilestoneSummary } from '../types/game';
+import type { AgeMilestoneSummary, ChapterSummary } from '../types/game';
+import { getCurrentChapter, getLocalizedChapterName } from '../utils/gameUtils';
+import { CHAPTERS } from '../config/gameBalance';
 
 interface GameScreenProps {
   onPhaseChange: (tab: AppTab) => void;
@@ -78,7 +81,7 @@ interface GameScreenProps {
 }
 
 const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, currentTab }) => {
-  const { theme, metrics, t } = useUI();
+  const { theme, metrics, locale, t } = useUI();
   const { gameState, playerName } = useGame();
   const { updateGameState, updateStats, setStats } = useGameActions();
   const { floatingTexts, removeFloatingText } = useFloatingTexts();
@@ -113,13 +116,10 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
       setAchievementToastIds(achievementIds);
       setAchievementToastVisible(true);
       achievementUnlock();
-      achievementIds.forEach(id => {
-        void logAchievementUnlocked(id);
-      });
     }
   );
 
-  const [selectedCategory, setSelectedCategory] = useState<ActionCategory | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
 
   // Toast state for instant feedback
@@ -136,6 +136,10 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
   const [achievementsOpen, setAchievementsOpen] = useState(false);
   const [currentMilestoneToShow, setCurrentMilestoneToShow] = useState<AgeMilestoneSummary | null>(null);
   const shownMilestoneAgesRef = useRef<Set<number>>(new Set());
+  const [currentChapterToShow, setCurrentChapterToShow] = useState<ChapterSummary | null>(null);
+  const shownChaptersRef = useRef<Set<number>>(new Set());
+  const [sessionRecapVisible, setSessionRecapVisible] = useState(false);
+  const sessionRecapShownRef = useRef(false);
   // shopOpen state removed — IAP disabled
   const unlockedAchievementIds = useMemo(
     () => unlockedAchievements.map(a => a.achievementId),
@@ -253,6 +257,16 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     previousHealthCriticalRef.current = isCritical;
   }, [stats.health]);
 
+  // Faz 1C: Auto-save toast — tur ilerledikten sonra "Kaydedildi" bildirimi
+  const previousTotalTurnsRef = useRef(gameState.totalTurns ?? 0);
+  useEffect(() => {
+    const current = gameState.totalTurns ?? 0;
+    if (current > previousTotalTurnsRef.current) {
+      previousTotalTurnsRef.current = current;
+      enqueueToast(t('ui.autosave.saved', undefined, 'Kaydedildi'), 'info');
+    }
+  }, [gameState.totalTurns, enqueueToast, t]);
+
   useEffect(() => {
     if (!isFeatureEnabled('MILESTONE_SUMMARY')) return;
     const summaries = gameState.ageMilestoneSummaries;
@@ -270,6 +284,38 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     }
     setCurrentMilestoneToShow(null);
   }, [currentMilestoneToShow]);
+
+  useEffect(() => {
+    if (!isFeatureEnabled('CHAPTER_SYSTEM')) return;
+    const summaries = gameState.chapterSummaries;
+    if (!summaries?.length) return;
+
+    const lastSummary = summaries[summaries.length - 1];
+    if (!shownChaptersRef.current.has(lastSummary.chapterId)) {
+      setCurrentChapterToShow(lastSummary);
+    }
+  }, [gameState.chapterSummaries]);
+
+  const handleChapterClose = useCallback(() => {
+    if (currentChapterToShow) {
+      shownChaptersRef.current.add(currentChapterToShow.chapterId);
+    }
+    setCurrentChapterToShow(null);
+  }, [currentChapterToShow]);
+
+  // Session Recap — Faz 1B: mount'ta son oturum 5+ dakika önceyse göster
+  useEffect(() => {
+    if (sessionRecapShownRef.current) return;
+    const last = gameState.lastSessionEndedAt;
+    if (!last) return;
+    const fiveMinutes = 5 * 60 * 1000;
+    if (Date.now() - last >= fiveMinutes) {
+      sessionRecapShownRef.current = true;
+      setSessionRecapVisible(true);
+    }
+  // Yalnızca mount'ta tetiklenmeli
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const {
     examGameVisible,
@@ -351,25 +397,37 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
 
   // Calculate available categories based on age
   const availableCategories = useMemo(() => {
-    const localizedCategories = getLocalizedActionCategories();
+    const localizedCategories = getLocalizedActionCategories(locale);
     return filterActionCategoriesForContext(
       localizedCategories,
       gameState.age,
       gameState.selectedGoal ?? null,
       { careerPathActionsEnabled }
     );
-  }, [careerPathActionsEnabled, gameState.age, gameState.selectedGoal, t]);
+  }, [careerPathActionsEnabled, gameState.age, gameState.selectedGoal, locale]);
+
+  const selectedCategory = useMemo(
+    () => availableCategories.find(category => category.id === selectedCategoryId) ?? null,
+    [availableCategories, selectedCategoryId]
+  );
 
   const handleCategoryPress = useCallback((category: ActionCategory) => {
     selectionHaptic();
-    setSelectedCategory(category);
+    setSelectedCategoryId(category.id);
     setBottomSheetVisible(true);
   }, []);
 
   const handleCloseBottomSheet = useCallback(() => {
     setBottomSheetVisible(false);
-    setSelectedCategory(null);
+    setSelectedCategoryId(null);
   }, []);
+
+  useEffect(() => {
+    if (bottomSheetVisible && !selectedCategory) {
+      setBottomSheetVisible(false);
+      setSelectedCategoryId(null);
+    }
+  }, [bottomSheetVisible, selectedCategory]);
 
   const { handleActionSelect } = useHubActions({
     gameState,
@@ -476,6 +534,17 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
   }), [isInteractionLocked, theme.surfaceBase, theme.accentEvent, theme.border]);
 
   const toastOffsetStep = 68;
+  const currentChapter = useMemo(() => getCurrentChapter(gameState.age), [gameState.age]);
+  const currentChapterName = useMemo(
+    () => getLocalizedChapterName(currentChapter.id, locale),
+    [currentChapter.id, locale]
+  );
+  const nextChapter = useMemo(
+    () => currentChapterToShow
+      ? CHAPTERS.find(chapter => chapter.id === currentChapterToShow.chapterId + 1)
+      : undefined,
+    [currentChapterToShow]
+  );
 
   const examOverlayStyle = useMemo(() => ({
     position: 'absolute' as const,
@@ -512,6 +581,10 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
             <StatusHeader
               playerName={playerName}
               age={gameState.age}
+              chapter={currentChapter.id}
+              chapterName={currentChapterName}
+              chapterEmoji={currentChapter.emoji}
+              avatar={gameState.avatar}
               innerThought={gameState.innerThought}
               innerThoughtType={gameState.innerThoughtType}
               stats={stats}
@@ -564,6 +637,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
                   cardStyle={cardStyle}
                   achievementSummary={achievementSummary}
                   onOpenAchievements={() => setAchievementsOpen(true)}
+                  statSnapshots={gameState.statSnapshots}
                 />
               </ScrollView>
             </TabContent.Screen>
@@ -768,6 +842,24 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
           onClose={handleMilestoneClose}
         />
       )}
+
+      {isFeatureEnabled('CHAPTER_SYSTEM') && currentChapterToShow && (
+        <ChapterTransitionModal
+          visible
+          summary={currentChapterToShow}
+          nextChapterId={nextChapter?.id}
+          nextChapterEmoji={nextChapter?.emoji}
+          onClose={handleChapterClose}
+        />
+      )}
+
+      <SessionRecapModal
+        visible={sessionRecapVisible}
+        gameState={gameState}
+        stats={stats}
+        playerName={playerName}
+        onClose={() => setSessionRecapVisible(false)}
+      />
     </View>
   );
 };

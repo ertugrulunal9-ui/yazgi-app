@@ -12,6 +12,10 @@ import { examsStrings } from './domains/exams';
 import { socialStrings } from './domains/social';
 import { characterStrings } from './domains/character';
 import { narrativeStrings } from './domains/narrative';
+import { itemsStrings } from './domains/items';
+import { premiumStrings } from './domains/premium';
+import { skillTreeStrings } from './domains/skillTree';
+import { storyTextStrings } from './domains/storyText';
 import type { DomainStrings, NestedRecord, Primitive, PrimitiveArray } from './domains/types';
 
 export type { AppLocale };
@@ -29,6 +33,10 @@ const DOMAIN_BUNDLES: DomainStrings[] = [
   socialStrings,
   characterStrings,
   narrativeStrings,
+  itemsStrings,
+  premiumStrings,
+  skillTreeStrings,
+  storyTextStrings,
 ];
 
 const isRecord = (value: unknown): value is NestedRecord => (

@@ -1,3 +1,5 @@
+import { tRuntime } from '../i18n/strings';
+
 export const formatPlaytime = (minutes: number): string => {
   if (minutes < 60) {
     return `${minutes}dk`;
@@ -20,13 +22,13 @@ export const formatLastPlayed = (timestamp: number): string => {
     const date = new Date(timestamp);
     return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
   } else if (days > 0) {
-    return `${days} gün önce`;
+    return tRuntime('save.relativeTime.daysAgo', { count: days });
   } else if (hours > 0) {
-    return `${hours} saat önce`;
+    return tRuntime('save.relativeTime.hoursAgo', { count: hours });
   } else if (minutes > 0) {
-    return `${minutes} dk önce`;
+    return tRuntime('save.relativeTime.minutesAgo', { count: minutes });
   } else {
-    return 'Az önce';
+    return tRuntime('save.relativeTime.justNow');
   }
 };
 

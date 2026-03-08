@@ -1,5 +1,6 @@
 import { Choice, PersonalityState, PersonalityTendency } from '../types';
 import { HIGH_MOMENTUM_THRESHOLD, normalizePersonalityState, resolveMomentumFromChoice } from '../systems/PersonalityMomentumEngine';
+import { tRuntime } from '../i18n/strings';
 
 export interface MomentumDialogueTag {
   tendency: PersonalityTendency;
@@ -18,9 +19,9 @@ const TENDENCY_LABELS: Record<PersonalityTendency, string> = {
 };
 
 const TENDENCY_SUBTITLES: Record<PersonalityTendency, string> = {
-  HELPFUL: 'Bu secenek senin sahici tarafini guclendirir.',
-  PRAGMATIC: 'Durumu hizli okuyup dogru aciyi goruyorsun.',
-  AGGRESSIVE: 'Baskiya karsi sert refleksin daha da netlesiyor.',
+  HELPFUL: tRuntime('feedback.momentum.dialogueSubtitles.HELPFUL'),
+  PRAGMATIC: tRuntime('feedback.momentum.dialogueSubtitles.PRAGMATIC'),
+  AGGRESSIVE: tRuntime('feedback.momentum.dialogueSubtitles.AGGRESSIVE'),
 };
 
 const TENDENCY_COLORS: Record<PersonalityTendency, { text: string; border: string; glow: string }> = {

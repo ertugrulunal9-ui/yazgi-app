@@ -5,7 +5,7 @@
  * setPermanentFlags ile bayrak set eder, reqPermanentFlags ile kontrol edilir.
  */
 
-import { GameEvent } from '../types';
+import type { GameEvent } from '../types';
 
 export const BUTTERFLY_EFFECT_EVENTS: GameEvent[] = [
   // ─────────────────────────────────────────────
@@ -19,6 +19,7 @@ export const BUTTERFLY_EFFECT_EVENTS: GameEvent[] = [
     rarity: 'UNCOMMON',
     personalityCategory: 'SOCIAL',
     reqNPCRole: 'FRIEND',
+    tags: ['butterfly', 'friendship', 'loss'],
     choices: [
       {
         text: 'Sarıl ve ağla, her şeyi söyle',
@@ -50,6 +51,7 @@ export const BUTTERFLY_EFFECT_EVENTS: GameEvent[] = [
     maxAge: 10,
     rarity: 'RARE',
     personalityCategory: 'GROWTH',
+    tags: ['butterfly', 'school', 'change'],
     choices: [
       {
         text: 'Heyecanlan — yeni başlangıçlar güzeldir',
@@ -82,6 +84,7 @@ export const BUTTERFLY_EFFECT_EVENTS: GameEvent[] = [
     rarity: 'RARE',
     personalityCategory: 'CONFLICT',
     reqFamily: { dynamic: ['CHAOTIC'] },
+    tags: ['butterfly', 'family', 'divorce'],
     choices: [
       {
         text: 'Anne tarafında kal',
@@ -135,6 +138,7 @@ export const BUTTERFLY_EFFECT_EVENTS: GameEvent[] = [
     rarity: 'UNCOMMON',
     personalityCategory: 'CONFLICT',
     reqNPCRole: 'BEST_FRIEND',
+    tags: ['butterfly', 'friendship', 'betrayal'],
     choices: [
       {
         text: 'Affet — herkes hata yapar',
@@ -186,6 +190,7 @@ export const BUTTERFLY_EFFECT_EVENTS: GameEvent[] = [
     personalityCategory: 'GROWTH',
     isMilestoneEvent: true,
     milestoneLevel: 'MAJOR',
+    tags: ['butterfly', 'career', 'future'],
     choices: [
       {
         text: 'Üniversiteye hazırlan',
@@ -217,6 +222,7 @@ export const BUTTERFLY_EFFECT_EVENTS: GameEvent[] = [
     rarity: 'UNCOMMON',
     personalityCategory: 'GROWTH',
     reqPermanentFlags: { family_divorced: true },
+    tags: ['butterfly', 'family', 'adaptation'],
     choices: [
       {
         text: 'İki ev arasında denge kur',

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -12,23 +12,23 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LegacyPanel } from '../components/LegacyPanel';
 import { EndingGallery } from '../components/EndingGallery';
-import { useGame } from '../context/GameContext';
-import { useMetaProgression } from '../context/MetaProgressionContext';
-import { useLegacyBonuses } from '../hooks/useGameSelectors';
-import { CharacterInfo, LifeGoal, PlayerGender } from '../types';
+import { AvatarConfig, CharacterInfo, LifeGoal, MetaProgression, PlayerGender } from '../types';
+import { Avatar } from '../components/Avatar';
 import { getEndingHints } from '../utils/endingResolver';
 import { AppLocale, t as translateStatic } from '../i18n/strings';
 import { isFeatureEnabled } from '../config/featureFlags';
-import { getUnlockedLegacyPerks, hasLegacyPerk } from '../data/legacyPerks';
+import { getUnlockedLegacyPerks, hasLegacyPerk, getLegacyPerkTitle, getLegacyPerkDescription } from '../data/legacyPerks';
 import {
   calculateZodiacSign,
   generateRandomCharacter,
   getLocalizedMonths,
   getLocalizedZodiacInfo,
   getMaxDaysInMonth,
+  NewGameBootstrapOptions,
   turkishCities,
 } from '../utils/gameUtils';
 import { getDensityMetrics, getThemeTokens } from '../utils/themeUtils';
+import { checkDailyLogin, getLegacyBonusBreakdown } from '../utils/metaProgression';
 import {
   FadeInDownView,
   FadeInUpView,
@@ -41,6 +41,10 @@ interface MainMenuScreenProps {
   metrics: ReturnType<typeof getDensityMetrics>;
   locale?: AppLocale;
   onGameStart: () => void;
+  startNewGame: (name: string, characterInfo?: CharacterInfo, options?: NewGameBootstrapOptions) => void;
+  metaProgression: MetaProgression | null;
+  metaProgressionLoaded: boolean;
+  updateMetaProgression: (next: MetaProgression) => void;
 }
 
 interface DropdownPickerProps {
@@ -140,10 +144,70 @@ const DropdownPicker: React.FC<DropdownPickerProps> = ({
   );
 };
 
-export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme, metrics, locale = 'tr', onGameStart }) => {
-  const { startNewGame } = useGame();
-  const { metaProgression } = useMetaProgression();
-  const legacyBonuses = useLegacyBonuses();
+export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({
+  theme,
+  metrics,
+  locale = 'tr',
+  onGameStart,
+  startNewGame,
+  metaProgression,
+  metaProgressionLoaded,
+  updateMetaProgression,
+}) => {
+  const legacyBonuses = useMemo(() => {
+    if (!metaProgression) {
+      return {
+        visible: false,
+        level: 0,
+        health: 0,
+        intelligence: 0,
+        charisma: 0,
+        discipline: 0,
+        familyRelation: 0,
+        money: 0,
+      };
+    }
+
+    const bonus = getLegacyBonusBreakdown(metaProgression);
+    return {
+      visible: bonus.level > 0,
+      level: bonus.level,
+      health: bonus.statBonus,
+      intelligence: bonus.statBonus,
+      charisma: bonus.statBonus,
+      discipline: bonus.statBonus,
+      familyRelation: bonus.relationBonus,
+      money: bonus.moneyBonus,
+    };
+  }, [metaProgression]);
+
+  const tStatic = useCallback(
+    (key: string, params?: Record<string, string | number | boolean>, fallback?: string) =>
+      translateStatic(locale, key, params, fallback),
+    [locale]
+  );
+  const [dailyRewardMessage, setDailyRewardMessage] = useState<string | null>(null);
+  const dailyRewardCheckedRef = useRef(false);
+
+  useEffect(() => {
+    if (!metaProgressionLoaded || !metaProgression || dailyRewardCheckedRef.current) return;
+
+    dailyRewardCheckedRef.current = true;
+    const result = checkDailyLogin(metaProgression);
+    if (!result.isNewDay) return;
+
+    updateMetaProgression(result.updatedMeta);
+    setDailyRewardMessage(
+      result.streak > 1
+        ? tStatic('app.dailyRewardMessageStreak', {
+          points: result.legacyPointsBonus,
+          streak: result.streak,
+        }, `Welcome back! +${result.legacyPointsBonus} Legacy Points (${result.streak}-day streak!)`)
+        : tStatic('app.dailyRewardMessage', {
+          points: result.legacyPointsBonus,
+        }, `Welcome back! +${result.legacyPointsBonus} Legacy Points`)
+    );
+  }, [metaProgression, metaProgressionLoaded, tStatic, updateMetaProgression]);
   const legacyLevel = metaProgression?.legacyLevel ?? 0;
   const endingHints = useMemo(() => {
     if (!metaProgression) return [];
@@ -171,16 +235,11 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [gender, setGender] = useState<PlayerGender>('MALE');
+  const [avatar, setAvatar] = useState<AvatarConfig>({ hairStyle: 0, skinTone: 0, accessory: 0 });
   const [birthMonth, setBirthMonth] = useState(1);
   const [birthDay, setBirthDay] = useState(1);
   const [birthCity, setBirthCity] = useState('');
   const [useFastStart, setUseFastStart] = useState(false);
-
-  const tStatic = useCallback(
-    (key: string, params?: Record<string, string | number | boolean>, fallback?: string) =>
-      translateStatic(locale, key, params, fallback),
-    [locale]
-  );
 
   const maxDays = useMemo(() => getMaxDaysInMonth(birthMonth), [birthMonth]);
   const dayOptions = useMemo(
@@ -191,6 +250,11 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
   const zodiacInfo = useMemo(() => getLocalizedZodiacInfo(locale), [locale]);
   const zodiacSign = useMemo(() => calculateZodiacSign(birthMonth, birthDay), [birthMonth, birthDay]);
   const zodiac = zodiacInfo[zodiacSign];
+  const accessoryOptions = useMemo(() => ([
+    tStatic('app.accessoryNone', undefined, 'Yok'),
+    tStatic('app.accessoryGlasses', undefined, 'Gozluk'),
+    tStatic('app.accessoryHat', undefined, 'Sapka'),
+  ]), [tStatic]);
   useEffect(() => {
     if (birthDay > maxDays) {
       setBirthDay(maxDays);
@@ -232,10 +296,10 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
     startNewGame(
       `${characterInfo.firstName} ${characterInfo.lastName}`,
       characterInfo,
-      { fastStart: useFastStart }
+      { fastStart: useFastStart, avatar }
     );
     onGameStart();
-  }, [buildCharacterInfo, onGameStart, startNewGame, useFastStart]);
+  }, [avatar, buildCharacterInfo, onGameStart, startNewGame, useFastStart]);
 
   const handleStartGame = useCallback(() => {
     if (!isFormReady) {
@@ -254,6 +318,25 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
     buttonPress();
     startGame();
   }, [isFormReady, startGame, tStatic]);
+
+  const handleQuickPlay = useCallback(() => {
+    if (!isFormReady) {
+      buttonPress();
+      Alert.alert(
+        tStatic('app.missingInfoTitle', undefined, 'Eksik Bilgi'),
+        tStatic('app.completeRequiredFields', undefined, 'Baslamak icin ad, soyad ve sehir gerekli.')
+      );
+      return;
+    }
+    const characterInfo = buildCharacterInfo();
+    successHaptic();
+    startNewGame(
+      `${characterInfo.firstName} ${characterInfo.lastName}`,
+      characterInfo,
+      { quickPlay: true, avatar }
+    );
+    onGameStart();
+  }, [avatar, buildCharacterInfo, isFormReady, onGameStart, startNewGame, tStatic]);
 
   const containerStyle = useMemo(() => ({
     flex: 1,
@@ -334,6 +417,35 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
             {tStatic('app.tagline', undefined, 'Kaderini sen yaz.')}
           </Text>
         </FadeInUpView>
+
+        {dailyRewardMessage && (
+          <FadeInUpView delay={120}>
+            <View style={{
+              marginTop: 10,
+              paddingVertical: 8,
+              paddingHorizontal: 14,
+              backgroundColor: 'rgba(34,197,94,0.10)',
+              borderRadius: 10,
+              borderWidth: 1,
+              borderColor: '#22c55e50',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}>
+              <Text style={{ color: '#22c55e', fontWeight: '700', fontSize: 12, flex: 1 }}>
+                {dailyRewardMessage}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setDailyRewardMessage(null)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel={tStatic('app.dismissDailyReward', undefined, 'Miras puani bildirimini kapat')}
+              >
+                <Text style={{ color: '#22c55e', fontSize: 14, fontWeight: '800' }}>x</Text>
+              </TouchableOpacity>
+            </View>
+          </FadeInUpView>
+        )}
       </View>
 
       <View style={contentStyle}>
@@ -449,6 +561,67 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
                     {tStatic('app.genderFemale', undefined, 'Kadin')}
                   </Text>
                 </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Avatar Seçici — Faz 6A */}
+            <View style={sectionStyle}>
+              <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
+                {tStatic('app.appearanceTitle', undefined, 'Gorunum')}
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+                {/* Avatar önizleme */}
+                <Avatar config={avatar} age={10} size={52} />
+
+                <View style={{ flex: 1, gap: 8 }}>
+                  {/* Saç */}
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    {([0, 1, 2, 3] as const).map(i => (
+                      <TouchableOpacity
+                        key={`hair_${i}`}
+                        onPress={() => setAvatar(prev => ({ ...prev, hairStyle: i }))}
+                        style={{
+                          width: 28, height: 28, borderRadius: 14,
+                          backgroundColor: ['#1a1a1a', '#6B3A2A', '#C8A951', '#A0522D'][i],
+                          borderWidth: avatar.hairStyle === i ? 2 : 1,
+                          borderColor: avatar.hairStyle === i ? theme.accentBrand ?? theme.textPrimary : theme.border,
+                        }}
+                      />
+                    ))}
+                  </View>
+                  {/* Ten tonu */}
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    {([0, 1, 2, 3] as const).map(i => (
+                      <TouchableOpacity
+                        key={`skin_${i}`}
+                        onPress={() => setAvatar(prev => ({ ...prev, skinTone: i }))}
+                        style={{
+                          width: 28, height: 28, borderRadius: 14,
+                          backgroundColor: ['#FDDBB4', '#F0C27F', '#C68642', '#8D5524'][i],
+                          borderWidth: avatar.skinTone === i ? 2 : 1,
+                          borderColor: avatar.skinTone === i ? theme.accentBrand ?? theme.textPrimary : theme.border,
+                        }}
+                      />
+                    ))}
+                  </View>
+                  {/* Aksesuar */}
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    {accessoryOptions.map((label, i) => (
+                      <TouchableOpacity
+                        key={`acc_${i}`}
+                        onPress={() => setAvatar(prev => ({ ...prev, accessory: i as 0 | 1 | 2 }))}
+                        style={{
+                          paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8,
+                          borderWidth: 1,
+                          borderColor: avatar.accessory === i ? theme.accentBrand ?? theme.textPrimary : theme.border,
+                          backgroundColor: avatar.accessory === i ? `${theme.accentBrand ?? '#3b82f6'}22` : 'transparent',
+                        }}
+                      >
+                        <Text style={{ color: theme.textPrimary, fontSize: 11 }}>{label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
               </View>
             </View>
 
@@ -577,10 +750,10 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
                       }}
                     >
                       <Text style={{ color: theme.textPrimary, fontWeight: '700', fontSize: 12 }}>
-                        {perk.icon} Lv.{perk.levelRequired} - {perk.title}
+                        {perk.icon} Lv.{perk.levelRequired} - {getLegacyPerkTitle(perk.id)}
                       </Text>
                       <Text style={{ color: theme.textSecondary, fontSize: 11, marginTop: 2 }}>
-                        {perk.description}
+                        {getLegacyPerkDescription(perk.id)}
                       </Text>
                     </View>
                   ))}
@@ -642,6 +815,31 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({ theme
                 {tStatic('app.startLife', undefined, 'Hayata Basla')}
               </Text>
             </TouchableOpacity>
+
+            {(metaProgression?.recentRuns?.length ?? 0) > 0 && (
+              <TouchableOpacity
+                onPress={handleQuickPlay}
+                disabled={!isFormReady}
+                style={{
+                  marginTop: 8,
+                  borderRadius: 12,
+                  minHeight: 44,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                  backgroundColor: theme.surfaceOverlay,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  opacity: isFormReady ? 1 : 0.55,
+                }}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={tStatic('app.quickPlay', undefined, 'Hizli Oyun - 13 Yastan Basla')}
+              >
+                <Text style={{ color: theme.textSecondary, fontWeight: '700', fontSize: metrics.font - 1 }}>
+                  {tStatic('app.quickPlay', undefined, 'Hizli Oyun — 13 Yastan Basla')}
+                </Text>
+              </TouchableOpacity>
+            )}
           </ScrollView>
         ) : (
           <ScrollView

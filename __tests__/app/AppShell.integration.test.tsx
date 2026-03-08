@@ -212,7 +212,9 @@ describe('AppShell integration', () => {
     mockUseGame.mockReturnValue(createGameContext());
     mockUseMetaProgression.mockReturnValue({
       metaProgression: null,
+      metaProgressionLoaded: true,
       refreshMetaProgression: jest.fn(async () => {}),
+      updateMetaProgression: jest.fn(),
     });
   });
 

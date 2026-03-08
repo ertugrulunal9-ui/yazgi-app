@@ -39,6 +39,12 @@ export interface UseAutoSaveConfig {
   prepareState: (state: GameState) => GameState;
 }
 
+const SAVE_CONTEXT = {
+  AUTO_SAVE: 'AUTO_SAVE',
+  PENDING_SAVE: 'PENDING_SAVE',
+  BACKGROUND_SAVE: 'BACKGROUND_SAVE',
+} as const;
+
 export function useAutoSave(config: UseAutoSaveConfig): void {
   const {
     gameStateRef,
@@ -120,11 +126,11 @@ export function useAutoSave(config: UseAutoSaveConfig): void {
       }
 
       isSavingRef.current = true;
-      await saveWithRetry(buildPayload, 'Auto-save');
+      await saveWithRetry(buildPayload, SAVE_CONTEXT.AUTO_SAVE);
 
       if (pendingSaveRef.current) {
         pendingSaveRef.current = false;
-        await saveWithRetry(buildPayload, 'Pending save');
+        await saveWithRetry(buildPayload, SAVE_CONTEXT.PENDING_SAVE);
       }
 
       isSavingRef.current = false;
@@ -142,7 +148,7 @@ export function useAutoSave(config: UseAutoSaveConfig): void {
   useEffect(() => {
     const handleAppState = (nextState: string) => {
       if (nextState === 'background' && hasLoadedOnceRef.current && playerNameRef.current) {
-        void saveWithRetry(buildPayload, 'Background save');
+        void saveWithRetry(buildPayload, SAVE_CONTEXT.BACKGROUND_SAVE);
       }
     };
 

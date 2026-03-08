@@ -52,33 +52,33 @@ export const DaySummaryModal: React.FC<DaySummaryModalProps> = ({
   const energyState = useMemo(() => getEnergyState(energy, maxEnergy), [energy, maxEnergy]);
   const energyColor = useMemo(() => getEnergyColor(energy, maxEnergy), [energy, maxEnergy]);
   const energyLabel = tRuntime(`app.energyState.${energyState}`, undefined, energyState);
-  const summaryTitle = tRuntime('app.summaryTitle', undefined, 'Gun Sonu Ozeti');
-  const dayCompleted = tRuntime('app.dayCompleted', { age }, `${age} yasinda - gun tamamlandi`);
-  const summaryContinue = tRuntime('app.summaryContinue', undefined, 'Devam Et');
+  const summaryTitle = tRuntime('app.summaryTitle');
+  const dayCompleted = tRuntime('app.dayCompleted', { age });
+  const summaryContinue = tRuntime('app.summaryContinue');
 
   const summaryItems = useMemo(() => {
     const items: { icon: string; label: string; value: string; color: string }[] = [
       {
         icon: 'checkbox-marked-circle-outline',
-        label: tRuntime('app.summaryDecisions', undefined, 'Kararlar'),
+        label: tRuntime('app.summaryDecisions'),
         value: tRuntime('app.summaryDecisionsCount', { count: dailyDecisionCount }, `${dailyDecisionCount} karar`),
         color: dailyDecisionCount >= 3 ? '#22c55e' : '#eab308',
       },
       {
         icon: 'lightning-bolt',
-        label: tRuntime('app.summaryEnergy', undefined, 'Enerji'),
+        label: tRuntime('app.summaryEnergy'),
         value: `${Math.round(energy)}/${maxEnergy} (${energyLabel})`,
         color: energyColor,
       },
       {
         icon: 'heart-pulse',
-        label: tRuntime('app.summaryHealth', undefined, 'Saglik'),
+        label: tRuntime('app.summaryHealth'),
         value: `%${Math.round(stats.health)}`,
         color: stats.health >= 50 ? '#22c55e' : '#ef4444',
       },
       {
         icon: 'brain',
-        label: tRuntime('app.summaryIntelligence', undefined, 'Zeka'),
+        label: tRuntime('app.summaryIntelligence'),
         value: `%${Math.round(stats.intelligence)}`,
         color: '#3b82f6',
       },
@@ -86,7 +86,7 @@ export const DaySummaryModal: React.FC<DaySummaryModalProps> = ({
     if (varietyBonus > 0) {
       items.push({
         icon: 'shape-plus',
-        label: tRuntime('app.summaryVarietyBonus', undefined, 'Cesitlilik Bonusu'),
+        label: tRuntime('app.summaryVarietyBonus'),
         value: tRuntime('app.summaryVarietyBonusValue', { bonus: varietyBonus }, `+${varietyBonus}`),
         color: '#22c55e',
       });

@@ -4,7 +4,8 @@ import {
   getActionEffectiveMinAge,
   resolveActionEffectForFamily,
 } from '../data/actions';
-import { getEffectiveOwnedItems, getItem } from '../data/items';
+import { getEffectiveOwnedItems, getItem, getItemName } from '../data/items';
+import { tRuntime } from '../i18n/strings';
 import { applyMomentumSignal, resolveMomentumSignal } from '../systems/PersonalityMomentumEngine';
 import { StatEngine } from '../systems/StatEngine';
 import { FamilyWealth, GameState, PersonalityShift, SchoolGrades, Skills, Stats, TraitChangeFeedback } from '../types';
@@ -44,6 +45,29 @@ const POOR_RECOVERY_EVENT_IDS = [
   'econ_poor_community_aid',
 ] as const;
 type PoorRecoveryEventId = typeof POOR_RECOVERY_EVENT_IDS[number];
+
+const formatSignedAmount = (value: number): string => (
+  value > 0 ? `+${value}` : `${value}`
+);
+
+const getStatLabel = (key: string): string => {
+  const knownStats = new Set([
+    'health',
+    'energy',
+    'intelligence',
+    'charisma',
+    'discipline',
+    'money',
+    'familyRelation',
+  ]);
+
+  if (!knownStats.has(key)) return key;
+  return tRuntime(`labels.stats.${key}`, undefined, key);
+};
+
+const getGradeLabel = (subject: keyof SchoolGrades): string => (
+  tRuntime(`exams.reportCard.subjects.${subject}`, undefined, String(subject))
+);
 
 type ActionResultStatus = 'success' | 'blocked' | 'open_exam';
 type ActionErrorType =
@@ -94,7 +118,7 @@ export class HubActionCommand implements ActionCommand {
       if (alreadyUsedThisTurn) {
         return this.createBlockedResult(
           currentStats,
-          'Bu turda bu aktiviteyi zaten kullandin.',
+          tRuntime('actions.runtime.blocked.alreadyUsedThisTurn'),
           'ALREADY_USED_THIS_TURN'
         );
       }
@@ -106,17 +130,17 @@ export class HubActionCommand implements ActionCommand {
     if (requiredAge !== undefined && gameState.age < requiredAge) {
       return this.createBlockedResult(
         currentStats,
-        `Bu aksiyon ${requiredAge} yasindan sonra acilir.`,
+        tRuntime('actions.runtime.blocked.ageLocked', { age: requiredAge }),
         'AGE_LOCKED'
       );
     }
 
     const missingRequiredItem = (action.requiredItemIds || []).find(itemId => !ownedItems.includes(itemId));
     if (missingRequiredItem) {
-      const missingItemName = getItem(missingRequiredItem)?.name || missingRequiredItem;
+      const missingItemName = getItemName(missingRequiredItem);
       return this.createBlockedResult(
         currentStats,
-        `${missingItemName} olmadan bu aksiyonu yapamazsin.`,
+        tRuntime('actions.runtime.blocked.missingRequiredItem', { itemName: missingItemName }),
         'MISSING_REQUIRED_ITEM'
       );
     }
@@ -128,7 +152,7 @@ export class HubActionCommand implements ActionCommand {
     if (isConsumablePurchase && !consumableFeatureEnabled) {
       return this.createBlockedResult(
         currentStats,
-        'Bu ozellik su anda kapali.',
+        tRuntime('actions.runtime.blocked.featureLocked'),
         'FEATURE_LOCKED'
       );
     }
@@ -138,10 +162,10 @@ export class HubActionCommand implements ActionCommand {
       purchasedItem?.type !== 'CONSUMABLE' &&
       ownedItems.includes(action.purchaseItemId)
     ) {
-      const itemName = purchasedItem?.name || 'Bu esya';
+      const itemName = action.purchaseItemId ? getItemName(action.purchaseItemId) : tRuntime('actions.sheet.requiredItemFallback');
       return this.createBlockedResult(
         currentStats,
-        `${itemName} zaten sende var.`,
+        tRuntime('actions.runtime.blocked.alreadyOwnedItem', { itemName }),
         'ALREADY_OWNED_ITEM'
       );
     }
@@ -172,9 +196,13 @@ export class HubActionCommand implements ActionCommand {
       const consumableConfig = getConsumableConfigByItemId(action.purchaseItemId);
       const cooldownRemaining = nextCooldowns[action.purchaseItemId] || 0;
       if (cooldownRemaining > 0) {
+        const itemName = getItemName(action.purchaseItemId);
         return this.createBlockedResult(
           currentStats,
-          `${purchasedItem?.name || 'Bu tuketilebilir'} icin ${cooldownRemaining} tur beklemelisin.`,
+          tRuntime('actions.runtime.blocked.consumableCooldown', {
+            itemName,
+            turns: cooldownRemaining,
+          }),
           'CONSUMABLE_COOLDOWN'
         );
       }
@@ -182,9 +210,10 @@ export class HubActionCommand implements ActionCommand {
       if ('maxPerTurn' in consumableConfig) {
         const usedThisTurn = nextUsage[action.purchaseItemId] || 0;
         if (usedThisTurn >= consumableConfig.maxPerTurn) {
+          const itemName = getItemName(action.purchaseItemId);
           return this.createBlockedResult(
             currentStats,
-            `${purchasedItem?.name || 'Bu tuketilebilir'} bu tur daha fazla kullanilamaz.`,
+            tRuntime('actions.runtime.blocked.consumableLimitReached', { itemName }),
             'CONSUMABLE_LIMIT_REACHED'
           );
         }
@@ -195,7 +224,7 @@ export class HubActionCommand implements ActionCommand {
         if (activeInvestmentCount >= BUFF_RULES.investmentMaxActive) {
           return this.createBlockedResult(
             currentStats,
-            'Ayni anda sadece bir mini yatirim acik olabilir.',
+            tRuntime('actions.runtime.blocked.investmentLimitReached'),
             'CONSUMABLE_LIMIT_REACHED'
           );
         }
@@ -207,7 +236,7 @@ export class HubActionCommand implements ActionCommand {
         if (!slotResult.accepted) {
           return this.createBlockedResult(
             currentStats,
-            `Ayni anda en fazla ${BUFF_RULES.maxActiveBuffs} buff aktif olabilir.`,
+            tRuntime('actions.runtime.blocked.buffCapReached', { count: BUFF_RULES.maxActiveBuffs }),
             'BUFF_CAP_REACHED'
           );
         }
@@ -227,22 +256,33 @@ export class HubActionCommand implements ActionCommand {
       };
 
       if (action.purchaseItemId === 'item_energy_drink') {
-        consumableFeedback = `Enerji icecegi etkisi: +${CONSUMABLE_CONFIG.energyDrink.effect} enerji.`;
+        consumableFeedback = tRuntime('actions.runtime.consumables.energyDrink', {
+          amount: CONSUMABLE_CONFIG.energyDrink.effect,
+        });
       } else if (action.purchaseItemId === 'item_tutor_session') {
-        consumableFeedback = `Ozel ders etkisi: rastgele bir not +${CONSUMABLE_CONFIG.tutorSession.gradeBoost}.`;
+        consumableFeedback = tRuntime('actions.runtime.consumables.tutorSession', {
+          amount: CONSUMABLE_CONFIG.tutorSession.gradeBoost,
+        });
       } else if (action.purchaseItemId === 'item_gym_pass') {
-        consumableFeedback = `${CONSUMABLE_CONFIG.gymPass.duration} turluk saglik buff'i aktif edildi.`;
+        consumableFeedback = tRuntime('actions.runtime.consumables.gymPass', {
+          duration: CONSUMABLE_CONFIG.gymPass.duration,
+        });
       } else if (action.purchaseItemId === 'item_fashion_outfit') {
-        consumableFeedback = `${CONSUMABLE_CONFIG.fashionOutfit.duration} turluk karizma buff'i aktif edildi.`;
+        consumableFeedback = tRuntime('actions.runtime.consumables.fashionOutfit', {
+          duration: CONSUMABLE_CONFIG.fashionOutfit.duration,
+        });
       } else if (action.purchaseItemId === 'item_investment') {
-        consumableFeedback = `Yatirim acildi: ${CONSUMABLE_CONFIG.investment.duration} tur sonra ${CONSUMABLE_CONFIG.investment.returnAmount} geri donus bekleniyor.`;
+        consumableFeedback = tRuntime('actions.runtime.consumables.investment', {
+          duration: CONSUMABLE_CONFIG.investment.duration,
+          amount: CONSUMABLE_CONFIG.investment.returnAmount,
+        });
       }
     }
 
     if (currentStats.energy < adjustedEnergyCost) {
       return this.createBlockedResult(
         currentStats,
-        'Yeterli enerjin yok! Gunu bitirip dinlenmelisin.',
+        tRuntime('actions.runtime.blocked.notEnoughEnergy'),
         'NOT_ENOUGH_ENERGY',
         adjustedEnergyCost
       );
@@ -254,7 +294,7 @@ export class HubActionCommand implements ActionCommand {
     if (requiredMoney > currentStats.money) {
       return this.createBlockedResult(
         currentStats,
-        `Bu aksiyon icin en az ${requiredMoney} para gerekli.`,
+        tRuntime('actions.runtime.blocked.notEnoughMoney', { amount: requiredMoney }),
         'NOT_ENOUGH_MONEY',
         adjustedEnergyCost
       );
@@ -334,7 +374,7 @@ export class HubActionCommand implements ActionCommand {
     const nextSkills = skillResult.newSkills;
 
     const nextStress = action.stressEffect !== undefined
-      ? updateStress(gameState.stress, action.stressEffect, `Hub Action: ${action.id}`, gameState.turn)
+      ? updateStress(gameState.stress, action.stressEffect, tRuntime('ui.statusHeader.stressSourceAction'), gameState.turn)
       : gameState.stress;
     let nextPersonality = gameState.personality;
     let personalityShifts: PersonalityShift[] = [];
@@ -407,37 +447,25 @@ export class HubActionCommand implements ActionCommand {
       { actionId: action.id, age: gameState.age, turn: gameState.turn },
     ];
 
-    const statNameMap: Record<string, string> = {
-      health: 'Saglik',
-      energy: 'Enerji',
-      intelligence: 'Zeka',
-      charisma: 'Karizma',
-      discipline: 'Disiplin',
-      money: 'Para',
-      familyRelation: 'Aile',
-    };
-
     const statChanges: string[] = [];
     if (Object.keys(effectiveEffect).length > 0) {
       Object.entries(effectiveEffect).forEach(([key, value]) => {
         if (typeof value !== 'number' || value === 0) return;
-        const displayValue = value > 0 ? `+${value}` : `${value}`;
-        const statName = statNameMap[key] || key;
-        statChanges.push(`${statName} ${displayValue}`);
+        statChanges.push(`${getStatLabel(key)} ${formatSignedAmount(value)}`);
       });
     }
     if (action.stressEffect !== undefined && action.stressEffect !== 0) {
-      const stressText = action.stressEffect > 0
-        ? `+${action.stressEffect}`
-        : `${action.stressEffect}`;
-      statChanges.push(`Stres ${stressText}`);
+      statChanges.push(
+        tRuntime('actions.runtime.stressChange', { amount: formatSignedAmount(action.stressEffect) })
+      );
     }
     if (personalityShifts.length > 0) {
       personalityShifts.forEach(shift => {
         const delta = shift.newValue - shift.oldValue;
         if (delta === 0) return;
-        const sign = delta > 0 ? `+${delta}` : `${delta}`;
-        statChanges.push(`${getPersonalityAxisName(shift.axis)} ${sign}`);
+        statChanges.push(
+          `${tRuntime(`labels.personality.${shift.axis}`, undefined, getPersonalityAxisName(shift.axis))} ${formatSignedAmount(delta)}`
+        );
       });
     }
 
@@ -452,7 +480,10 @@ export class HubActionCommand implements ActionCommand {
       finalFeedbackMessage = `${finalFeedbackMessage}\n\n${consumableFeedback}`;
     }
     if (tutorBoostedSubject) {
-      finalFeedbackMessage = `${finalFeedbackMessage}\nNot artisi: ${String(tutorBoostedSubject)} +${CONSUMABLE_CONFIG.tutorSession.gradeBoost}`;
+      finalFeedbackMessage = `${finalFeedbackMessage}\n${tRuntime('actions.runtime.consumables.tutorBoost', {
+        subject: getGradeLabel(tutorBoostedSubject),
+        amount: CONSUMABLE_CONFIG.tutorSession.gradeBoost,
+      })}`;
     }
 
     const totalSkillGain = effectiveSkillUpdates
@@ -569,7 +600,7 @@ export class HubActionCommand implements ActionCommand {
       return {
         money: 0,
         familyRelationDelta: 0,
-        feedback: 'Harclik isteyecek bir aile ortami yok.',
+        feedback: tRuntime('actions.runtime.allowance.noFamily'),
       };
     }
 
@@ -590,7 +621,7 @@ export class HubActionCommand implements ActionCommand {
       return {
         money: 0,
         familyRelationDelta: -1,
-        feedback: 'Evde butce sikisti, ailen bu tur harclik veremedi.',
+        feedback: tRuntime('actions.runtime.allowance.poorBlocked'),
       };
     }
 
@@ -599,14 +630,14 @@ export class HubActionCommand implements ActionCommand {
         return {
           money: 0,
           familyRelationDelta: -1,
-          feedback: 'Ailen bu kez harcligi reddetti: once sorumluluklarini tamamla.',
+          feedback: tRuntime('actions.runtime.allowance.strictRejected'),
         };
       }
 
       return {
         money: Math.max(0, Math.round(baseAllowance * 0.8 * relationPenalty)),
         familyRelationDelta: 0,
-        feedback: 'Ailen bu kez kontrollu bir harclik verdi.',
+        feedback: tRuntime('actions.runtime.allowance.strictGranted'),
       };
     }
 
@@ -615,14 +646,14 @@ export class HubActionCommand implements ActionCommand {
         return {
           money: Math.max(0, Math.round(baseAllowance * charismaBonus * relationPenalty)),
           familyRelationDelta: 1,
-          feedback: 'Ailen destek oldu: biriktirmeyi de unutma dediler.',
+          feedback: tRuntime('actions.runtime.allowance.supportiveGranted'),
         };
       }
 
       return {
         money: 0,
         familyRelationDelta: 0,
-        feedback: 'Ailen bu tur para veremedi ama seni cesaretlendirdi.',
+        feedback: tRuntime('actions.runtime.allowance.supportiveNoMoney'),
       };
     }
 
@@ -630,7 +661,7 @@ export class HubActionCommand implements ActionCommand {
       return {
         money: Math.max(0, Math.round(baseAllowance * 1.5 * relationPenalty)),
         familyRelationDelta: 0,
-        feedback: 'Kaotik bir anda beklediginden fazla harclik geldi.',
+        feedback: tRuntime('actions.runtime.allowance.chaoticHigh'),
       };
     }
 
@@ -638,14 +669,14 @@ export class HubActionCommand implements ActionCommand {
       return {
         money: Math.max(0, Math.round(baseAllowance * 0.5 * relationPenalty)),
         familyRelationDelta: 0,
-        feedback: 'Ailen umursamaz bir sekilde az miktar para verdi.',
+        feedback: tRuntime('actions.runtime.allowance.chaoticLow'),
       };
     }
 
     return {
       money: 0,
       familyRelationDelta: -1,
-      feedback: 'Ailen harclik istemeni unuttu.',
+      feedback: tRuntime('actions.runtime.allowance.chaoticForgot'),
     };
   }
 
@@ -750,7 +781,7 @@ export class HubActionCommand implements ActionCommand {
           sourceEventId: actionId,
         },
       ],
-      feedback: 'Mahallede bir destek kapisi acildi. Gunu bitirince yeni bir firsat cikabilir.',
+      feedback: tRuntime('actions.runtime.poorRecoveryOpened'),
     };
   }
 

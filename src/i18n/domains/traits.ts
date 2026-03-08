@@ -5,10 +5,10 @@ export const traitsStrings: DomainStrings = {
     traits: {
       progressChip: 'Özellik ilerledi: {label}',
       progress: {
-        title: 'Ozellik Formasyonu',
+        title: 'Özellik Formasyonu',
         nearComplete: 'Tamamlanmaya yakin',
         locked: 'Kilitli',
-        empty: 'Henuz takip edilen bir ozellik formasyonu yok.',
+        empty: 'Henüz takip edilen bir özellik formasyonu yok.',
       },
       // Genetic Traits
       GENIUS: { name: '🧠 Deha', description: 'Doğuştan zekisin. Matematik, fizik ve kompleks problemler sana kolay geliyor.' },
@@ -17,7 +17,7 @@ export const traitsStrings: DomainStrings = {
       SICKLY: { name: '🤒 Hastalıklı', description: 'Bağışıklık sistemi zayıf. Sık hastalanıyorsun, iyileşmek uzun sürüyor.' },
       CLUMSY: { name: '🪶 Beceriksiz', description: 'Hareket koordinasyonunda problem yaşıyorsun. Sık sık şeyler düşürüyor ve çarpıyorsun.' },
       // Acquired Positive Traits
-      EMPATHETIC: { name: '❤️ Empatik', description: 'İnsanların duygularını anlayabiliyorsun. Başkasının acısını kendi acın gibi hissediyorsun.' },
+      EMPATHETIC: { name: '❤️ Empatik', description: 'İnsanların duygularını anlayabiliyorsun. Başkasının açısını kendi açın gibi hissediyorsun.' },
       ORGANIZED: { name: '📋 Organize', description: 'Hayatın düzenli, her şey yerine konuyor. Planlama yapabiliyorsun ve disiplinlisin.' },
       BRAVE: { name: '🦁 Cesur', description: 'Korkun çok az. Riskli durumları seversin ve zorluktan kaçmazsın.' },
       DISCIPLINED: { name: '💪 Disiplinli', description: 'Kendine katı kurallar koymuşsun. Hedeflerine ulaşmak için gerekirse ne yapman gerekiyorsa yapıyorsun.' },

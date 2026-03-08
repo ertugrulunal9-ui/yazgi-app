@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet } from 'react-native';
+import { useUI } from '../context/UIContext';
 import { getThemeTokens } from '../utils/themeUtils';
 import { MetaProgression } from '../types';
 
@@ -30,7 +31,8 @@ export const SessionStartRecap: React.FC<SessionStartRecapProps> = ({
   cohortLabel,
   cohortMessage,
 }) => {
-  const theme = themeOverride || getThemeTokens('dark');
+  const { theme: runtimeTheme, t } = useUI();
+  const theme = themeOverride || runtimeTheme || getThemeTokens('dark');
 
   if (!visible) return null;
 
@@ -39,11 +41,11 @@ export const SessionStartRecap: React.FC<SessionStartRecapProps> = ({
       <View style={styles.overlay}>
         <View style={[styles.card, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}>
           <Text style={[styles.greeting, { color: theme.textPrimary }]}>
-            Hos Geldin, {playerName}!
+            {t('sessionStart.greeting', { playerName })}
           </Text>
 
           <Text style={[styles.ageInfo, { color: theme.textSecondary }]}>
-            {age} yasinda kaldin.
+            {t('sessionStart.pausedAge', { age })}
           </Text>
 
           {cohortLabel && (
@@ -58,17 +60,20 @@ export const SessionStartRecap: React.FC<SessionStartRecapProps> = ({
           {metaProgression && metaProgression.totalRunsCompleted > 0 && (
             <View style={[styles.metaBox, { borderColor: theme.border, backgroundColor: theme.surfaceBase }]}>
               <Text style={[styles.metaTitle, { color: theme.textPrimary }]}>
-                Legacy Ozeti
+                {t('sessionStart.legacySummary')}
               </Text>
               <Text style={[styles.metaLine, { color: theme.textSecondary }]}>
-                Toplam kosu: {metaProgression.totalRunsCompleted} | Seviye: {metaProgression.legacyLevel}
+                {t('sessionStart.totalRunsLevel', {
+                  runs: metaProgression.totalRunsCompleted,
+                  level: metaProgression.legacyLevel,
+                })}
               </Text>
               <Text style={[styles.metaLine, { color: theme.textSecondary }]}>
-                Legacy puani: {metaProgression.totalLegacyPoints}
+                {t('sessionStart.legacyPoints', { points: metaProgression.totalLegacyPoints })}
               </Text>
               {metaProgression.recentRuns[0] && (
                 <Text style={[styles.metaLine, { color: theme.textSecondary }]}>
-                  Son sonuc: {metaProgression.recentRuns[0].endingTitle}
+                  {t('sessionStart.lastResult', { endingTitle: metaProgression.recentRuns[0].endingTitle })}
                 </Text>
               )}
             </View>
@@ -77,7 +82,7 @@ export const SessionStartRecap: React.FC<SessionStartRecapProps> = ({
           {pendingCliffhanger && (
             <View style={[styles.recapBox, { backgroundColor: `${theme.accentEvent}15`, borderColor: theme.accentEvent }]}>
               <Text style={[styles.recapLabel, { color: theme.accentEvent }]}>
-                Kaldigin Yer:
+                {t('sessionStart.whereLeftOff')}
               </Text>
               <Text style={[styles.recapTitle, { color: theme.textPrimary }]}>
                 {pendingCliffhanger.title}
@@ -92,9 +97,9 @@ export const SessionStartRecap: React.FC<SessionStartRecapProps> = ({
             style={[styles.button, { backgroundColor: theme.accentEvent }]}
             onPress={onContinue}
             accessibilityRole="button"
-            accessibilityLabel="Devam et"
+            accessibilityLabel={t('recap.continueButton')}
           >
-            <Text style={styles.buttonText}>Devam Et</Text>
+            <Text style={styles.buttonText}>{t('recap.continueButton')}</Text>
           </TouchableOpacity>
         </View>
       </View>

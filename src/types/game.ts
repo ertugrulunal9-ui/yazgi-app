@@ -8,7 +8,7 @@ import type {
   Talent, LifeGoal, GamePhase, InnerThoughtType,
   LogEntry, FloatingText, ActionHistoryItem,
   ExamSubject, TraitProgressData,
-  CharacterInfo,
+  CharacterInfo, AvatarConfig,
 } from './core';
 import type { MemoryEmotion } from './events';
 import type {
@@ -64,6 +64,22 @@ export interface UnlockedAchievement {
   achievementId: string;
   unlockedAt: number;
   timestamp: string;
+}
+
+// =================================================================
+// CHAPTER (BÖLÜM) SUMMARY — Faz 1A
+// =================================================================
+
+export interface ChapterSummary {
+  chapterId: number;
+  chapterName: string;
+  chapterEmoji: string;
+  ageRange: string;
+  totalStatDeltas: Partial<Stats>;
+  allTraitsGained: string[];
+  allTraitsLost: string[];
+  keyMemories: Array<{ eventId: string; emotion: MemoryEmotion; summary: string }>;
+  topNpcChanges: Array<{ npcId: string; name: string; oldRole: string; newRole: string }>;
 }
 
 // =================================================================
@@ -192,6 +208,9 @@ export interface MetaProgression {
   unlockedEventIds: string[];
   /** Sonraki run'larda geçerli olacak modifier flag'leri ('poor_underdog_bonus' vb.). */
   unlockedRunModifiers: string[];
+  /** Daily login tracking — YYYY-MM-DD string */
+  lastLoginDate?: string;
+  loginStreak?: number;
 }
 
 // =================================================================
@@ -371,6 +390,24 @@ export interface GameState {
 
   /** Yaş geçişi özet kayıtları (Paket 4) */
   ageMilestoneSummaries?: AgeMilestoneSummary[];
+
+  /** Bölüm (chapter) özet kayıtları — Faz 1A */
+  chapterSummaries?: ChapterSummary[];
+
+  /** Aktif bölüm numarası (1-6) — Faz 1A */
+  chapter?: number;
+
+  /** Her yaş geçişinde kaydedilen stat snapshot'ları — stat history chart için Faz 6B */
+  statSnapshots?: Array<{ age: number; stats: Stats }>;
+
+  /** Minimalist avatar yapılandırması — Faz 6A */
+  avatar?: AvatarConfig;
+
+  /** Son oturumun kapanma zamanı (ms) — session recap için Faz 1B */
+  lastSessionEndedAt?: number;
+
+  /** Bir sonraki event için kısa merak uyandırıcı metin — session recap teaser */
+  nextEventTeaser?: string;
 
   /** Yaş başında stat snapshot'ı — milestone delta hesabı için (Paket 4) */
   _ageStartStats?: Stats;

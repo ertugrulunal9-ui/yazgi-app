@@ -15,6 +15,7 @@ import {
 import { MILESTONE_EVENT_MAP } from '../data/relationshipMilestoneEvents';
 import { NPC_QUESTLINE_ARCS } from '../data/npcQuestlineArcs';
 import { ActiveStoryArc } from '../types';
+import { tRuntime } from '../i18n/strings';
 
 // =================================================================
 // NPC SOSYAL SİSTEM HOOK'U
@@ -512,7 +513,13 @@ export const useNPCs = () => {
       skills?: Skills
     ) => {
       const npc = activeNpcs.find(n => n.id === npcId);
-      if (!npc) return { success: false, message: 'NPC bulunamadı', cost: { energy: 0, money: 0 } };
+      if (!npc) {
+        return {
+          success: false,
+          message: tRuntime('social.errors.npcNotFound'),
+          cost: { energy: 0, money: 0 },
+        };
+      }
 
       // Yaş kontrolü - etkileşim yaşa uygun mu?
       if (!isInteractionAvailable(actionType as InteractionType, gameState.age)) {
@@ -530,7 +537,7 @@ export const useNPCs = () => {
         if (!playerGender) {
           return {
             success: false,
-            message: 'Karakter cinsiyet bilgisi eksik. Flört aksiyonu kullanılamaz.',
+            message: tRuntime('social.errors.missingPlayerGender'),
             cost: { energy: 0, money: 0 }
           };
         }
@@ -538,7 +545,7 @@ export const useNPCs = () => {
         if (playerGender === npc.gender) {
           return {
             success: false,
-            message: `${npc.name} ile bu şekilde ilişki kuramazsın.`,
+            message: tRuntime('social.errors.sameGenderFlirt', { npcName: npc.name }),
             cost: { energy: 0, money: 0 }
           };
         }
@@ -561,10 +568,10 @@ export const useNPCs = () => {
 
       // Yeterli kaynak kontrolü (eğer değerler verilmişse)
       if (currentEnergy !== undefined && currentEnergy < adjustedCost.energy) {
-        return { success: false, message: 'Yeterli enerjin yok!', cost: adjustedCost };
+        return { success: false, message: tRuntime('social.errors.notEnoughEnergy'), cost: adjustedCost };
       }
       if (currentMoney !== undefined && currentMoney < adjustedCost.money) {
-        return { success: false, message: 'Yeterli paran yok!', cost: adjustedCost };
+        return { success: false, message: tRuntime('social.errors.notEnoughMoney'), cost: adjustedCost };
       }
 
       // Kişilik uyumluluğunu hesapla (top-level import kullanılıyor)
@@ -596,25 +603,41 @@ export const useNPCs = () => {
 
       // Geri bildirim mesajı
       const actionNames: Record<typeof actionType, string> = {
-        CHAT: 'sohbet ettin',
-        HANGOUT: 'takıldın',
-        GIFT: 'hediye verdin',
-        STUDY: 'ders çalıştın',
-        FLIRT: 'flört ettin',
-        HELP: 'yardım ettin',
-        COMPETE: 'yarıştın',
-        GOSSIP: 'dedikodu yaptın',
+        CHAT: tRuntime('social.manual.actionNames.CHAT'),
+        HANGOUT: tRuntime('social.manual.actionNames.HANGOUT'),
+        GIFT: tRuntime('social.manual.actionNames.GIFT'),
+        STUDY: tRuntime('social.manual.actionNames.STUDY'),
+        FLIRT: tRuntime('social.manual.actionNames.FLIRT'),
+        HELP: tRuntime('social.manual.actionNames.HELP'),
+        COMPETE: tRuntime('social.manual.actionNames.COMPETE'),
+        GOSSIP: tRuntime('social.manual.actionNames.GOSSIP'),
       };
 
       let message = '';
       if (compatibility > 0.5) {
-        message = `${npc.name} ile ${actionNames[actionType]}! Harika vakit! (İlişki +${actualIncrease})`;
+        message = tRuntime('social.manual.results.excellent', {
+          npcName: npc.name,
+          action: actionNames[actionType],
+          amount: actualIncrease,
+        });
       } else if (compatibility > 0) {
-        message = `${npc.name} ile ${actionNames[actionType]}. Güzeldi! (İlişki +${actualIncrease})`;
+        message = tRuntime('social.manual.results.good', {
+          npcName: npc.name,
+          action: actionNames[actionType],
+          amount: actualIncrease,
+        });
       } else if (compatibility > -0.5) {
-        message = `${npc.name} ile ${actionNames[actionType]}. (İlişki +${actualIncrease})`;
+        message = tRuntime('social.manual.results.neutral', {
+          npcName: npc.name,
+          action: actionNames[actionType],
+          amount: actualIncrease,
+        });
       } else {
-        message = `${npc.name} ile ${actionNames[actionType]}... Pek iyi gitmedi. (İlişki +${actualIncrease})`;
+        message = tRuntime('social.manual.results.bad', {
+          npcName: npc.name,
+          action: actionNames[actionType],
+          amount: actualIncrease,
+        });
       }
 
       return { success: true, message, relationChange: actualIncrease, cost: adjustedCost };

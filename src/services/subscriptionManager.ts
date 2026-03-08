@@ -194,6 +194,19 @@ const getRevenueCatApiKey = (platform: 'ios' | 'android'): string => {
 
 const getPlatformForKey = (): 'ios' | 'android' => (Platform.OS === 'ios' ? 'ios' : 'android');
 
+const isExpoGoRuntime = (): boolean => {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const constantsModule = require('expo-constants');
+    const constants = constantsModule?.default ?? constantsModule;
+    const appOwnership = normalizeKey(constants?.appOwnership).toLowerCase();
+    const executionEnvironment = normalizeKey(constants?.executionEnvironment).toLowerCase();
+    return appOwnership === 'expo' || executionEnvironment === 'storeclient';
+  } catch {
+    return false;
+  }
+};
+
 const buildFailure = (
   code: PremiumErrorCode,
   error: string,
@@ -245,6 +258,7 @@ let revenueCatInitialized = false;
 let cachedPremiumState = false;
 let customerInfoUnsubscribe: (() => void) | null = null;
 let lastInitIssue: InitIssue | null = null;
+let initInFlight: Promise<void> | null = null;
 
 const listeners = new Set<(isPremium: boolean) => void>();
 
@@ -348,7 +362,7 @@ const mapPurchaseFailure = (
 export function getPremiumRuntimeStatus(): PremiumRuntimeStatus {
   const rollout = getPremiumRolloutPolicy();
   const hasApiKey = Boolean(getRevenueCatApiKey(getPlatformForKey()));
-  const revenueCatAvailable = revenueCatModule !== false;
+  const revenueCatAvailable = revenueCatModule !== false && !isExpoGoRuntime();
 
   return {
     featureEnabled: isPremiumFeatureEnabled(),
@@ -374,42 +388,59 @@ export function canOpenPremiumPaywall(): boolean {
 
 export async function initializeSubscriptions(): Promise<void> {
   if (revenueCatInitialized) return;
+  if (initInFlight) return initInFlight;
 
-  const Purchases = await getRevenueCat();
-  if (!Purchases) {
-    setInitIssue('revenuecat_unavailable', 'RevenueCat SDK is unavailable in this build');
-    return;
-  }
-
-  const apiKey = getRevenueCatApiKey(getPlatformForKey());
-  if (!apiKey) {
-    setInitIssue('missing_config', 'RevenueCat API key is missing');
-    return;
-  }
-
-  try {
-    await Purchases.configure({ apiKey });
-    revenueCatInitialized = true;
-    clearInitIssue();
-
-    await refreshPremiumStatus();
-
-    if (!customerInfoUnsubscribe && typeof Purchases.addCustomerInfoUpdateListener === 'function') {
-      const unsubscribe = Purchases.addCustomerInfoUpdateListener((info: any) => {
-        const isPremium = Boolean(info?.entitlements?.active?.[ENTITLEMENT_ID]);
-        emit(isPremium);
-      });
-
-      if (typeof unsubscribe === 'function') {
-        customerInfoUnsubscribe = unsubscribe;
-      }
+  initInFlight = (async () => {
+    if (!isPremiumFeatureEnabled()) {
+      setInitIssue('premium_disabled', 'Premium feature is disabled');
+      return;
     }
-  } catch (error) {
-    revenueCatInitialized = false;
-    const message = formatErrorMessage(error, 'RevenueCat initialization failed');
-    setInitIssue('not_initialized', message);
-    console.warn('[SubscriptionManager] Init failed:', message);
-  }
+
+    if (isExpoGoRuntime()) {
+      setInitIssue('revenuecat_unavailable', 'RevenueCat native purchases are unavailable in Expo Go');
+      return;
+    }
+
+    const Purchases = await getRevenueCat();
+    if (!Purchases) {
+      setInitIssue('revenuecat_unavailable', 'RevenueCat SDK is unavailable in this build');
+      return;
+    }
+
+    const apiKey = getRevenueCatApiKey(getPlatformForKey());
+    if (!apiKey) {
+      setInitIssue('missing_config', 'RevenueCat API key is missing');
+      return;
+    }
+
+    try {
+      await Purchases.configure({ apiKey });
+      revenueCatInitialized = true;
+      clearInitIssue();
+
+      await refreshPremiumStatus();
+
+      if (!customerInfoUnsubscribe && typeof Purchases.addCustomerInfoUpdateListener === 'function') {
+        const unsubscribe = Purchases.addCustomerInfoUpdateListener((info: any) => {
+          const isPremium = Boolean(info?.entitlements?.active?.[ENTITLEMENT_ID]);
+          emit(isPremium);
+        });
+
+        if (typeof unsubscribe === 'function') {
+          customerInfoUnsubscribe = unsubscribe;
+        }
+      }
+    } catch (error) {
+      revenueCatInitialized = false;
+      const message = formatErrorMessage(error, 'RevenueCat initialization failed');
+      setInitIssue('not_initialized', message);
+      console.warn('[SubscriptionManager] Init failed:', message);
+    }
+  })().finally(() => {
+    initInFlight = null;
+  });
+
+  return initInFlight;
 }
 
 export async function refreshPremiumStatus(): Promise<boolean> {

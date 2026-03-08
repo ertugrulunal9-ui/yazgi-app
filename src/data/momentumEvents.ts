@@ -11,7 +11,7 @@ const MOMENTUM_EVENTS: Record<PersonalityTendency, GameEvent[]> = {
   HELPFUL: [
     {
       id: 'evt_momentum_helpful_street_thanks',
-      text: 'Sokakta daha once destek oldugun biri seni gorup durduruyor: "Iyi ki yardim etmistin, simdi ben ayaktayim."',
+      text: 'Sokakta daha önce destek olduğun biri seni görüp durduruyor: "İyi ki yardım etmiştin, şimdi ben ayaktayım."',
       minAge: 7,
       maxAge: 100,
       rarity: 'UNCOMMON',
@@ -21,17 +21,17 @@ const MOMENTUM_EVENTS: Record<PersonalityTendency, GameEvent[]> = {
       choices: [
         {
           id: 'helpful_street_thanks_accept',
-          text: 'Gulumseyip tesekkuru kabul et',
+          text: 'Gülümseyip teşekkürü kabul et',
           effect: { charisma: 2, familyRelation: 2, energy: -2 },
-          feedback: 'Insanlarin guveni etrafinda sessiz bir guce donustu.',
+          feedback: 'İnsanların güveni etrafında sessiz bir güce dönüştü.',
           momentumTag: 'HELPFUL',
           choiceType: 'PASSIVE',
         },
         {
           id: 'helpful_street_thanks_redirect',
-          text: 'Destege ihtiyaci olan baska birini yonlendir',
+          text: 'Desteğe ihtiyacı olan başka birini yönlendir',
           effect: { charisma: 1, discipline: 1, familyRelation: 3, energy: -3 },
-          feedback: 'Iyilik zinciri seninle buyumeye devam etti.',
+          feedback: 'İyilik zinciri seninle büyümeye devam etti.',
           momentumTag: 'HELPFUL',
           choiceType: 'CHALLENGE',
         },
@@ -39,7 +39,7 @@ const MOMENTUM_EVENTS: Record<PersonalityTendency, GameEvent[]> = {
     },
     {
       id: 'evt_momentum_helpful_unexpected_support',
-      text: 'Gecmiste yardim ettigin bir tanidik, dar bir anda sana beklenmedik bir destek sunuyor.',
+      text: 'Geçmişte yardım ettiğin bir tanıdık, dar bir anda sana beklenmedik bir destek sunuyor.',
       minAge: 8,
       maxAge: 100,
       rarity: 'UNCOMMON',
@@ -49,17 +49,17 @@ const MOMENTUM_EVENTS: Record<PersonalityTendency, GameEvent[]> = {
       choices: [
         {
           id: 'helpful_support_accept',
-          text: 'Destegi kabul edip tesekkur et',
+          text: 'Desteği kabul edip teşekkür et',
           effect: { money: 45, charisma: 2, familyRelation: 1 },
-          feedback: 'Dunya bazen verdigin seyin fazlasiyla geri dondugu bir yer.',
+          feedback: 'Dünya bazen verdiğin şeyin fazlasıyla geri döndüğü bir yer.',
           momentumTag: 'HELPFUL',
           choiceType: 'PASSIVE',
         },
         {
           id: 'helpful_support_share',
-          text: 'Destegin bir kismini baska birine aktar',
+          text: 'Desteğin bir kısmını başka birine aktar',
           effect: { money: 20, charisma: 3, familyRelation: 3 },
-          feedback: 'Paylastikca agin buyudu ve ismin guvenle anildi.',
+          feedback: 'Paylaştıkça ağın büyüdü ve ismin güvenle anıldı.',
           momentumTag: 'HELPFUL',
           choiceType: 'CHALLENGE',
         },
@@ -69,7 +69,7 @@ const MOMENTUM_EVENTS: Record<PersonalityTendency, GameEvent[]> = {
   PRAGMATIC: [
     {
       id: 'evt_momentum_pragmatic_short_offer',
-      text: 'Planli ve tutarli tavrin dikkat cekmis. Mahalleden biri sana kisa sureli ama iyi odemeli bir is teklif ediyor.',
+      text: 'Planlı ve tutarlı tavrın dikkat çekmiş. Mahalleden biri sana kısa süreli ama iyi ödemeli bir iş teklif ediyor.',
       minAge: 10,
       maxAge: 100,
       rarity: 'UNCOMMON',
@@ -79,17 +79,17 @@ const MOMENTUM_EVENTS: Record<PersonalityTendency, GameEvent[]> = {
       choices: [
         {
           id: 'pragmatic_offer_accept',
-          text: 'Teklifi kabul et ve net bir plan cikar',
+          text: 'Teklifi kabul et ve net bir plan çıkar',
           effect: { money: 70, discipline: 2, intelligence: 1, energy: -8 },
-          feedback: 'Hizli hesap yaptin, riski yonettin ve kazancin artti.',
+          feedback: 'Hızlı hesap yaptın, riski yönettin ve kazancın arttı.',
           momentumTag: 'PRAGMATIC',
           choiceType: 'PASSIVE',
         },
         {
           id: 'pragmatic_offer_negotiate',
-          text: 'Sartlari pazarlikla iyilestir',
+          text: 'Şartları pazarlıkla iyileştir',
           effect: { money: 95, discipline: 1, charisma: 1, energy: -12 },
-          feedback: 'Detaylari okuyup avantaji lehine cevirdin.',
+          feedback: 'Detayları okuyup avantajı lehine çevirdin.',
           momentumTag: 'PRAGMATIC',
           choiceType: 'CHALLENGE',
         },
@@ -97,7 +97,7 @@ const MOMENTUM_EVENTS: Record<PersonalityTendency, GameEvent[]> = {
     },
     {
       id: 'evt_momentum_pragmatic_information_edge',
-      text: 'Onceden yaptigin sistemli notlar sayesinde herkesten once kritik bir firsati fark ettin.',
+      text: 'Önceden yaptığın sistemli notlar sayesinde herkesten önce kritik bir fırsatı fark ettin.',
       minAge: 11,
       maxAge: 100,
       rarity: 'UNCOMMON',
@@ -107,17 +107,17 @@ const MOMENTUM_EVENTS: Record<PersonalityTendency, GameEvent[]> = {
       choices: [
         {
           id: 'pragmatic_info_calm',
-          text: 'Sogukkanli davran ve kontrollu ilerle',
+          text: 'Soğukkanlı davran ve kontrollü ilerle',
           effect: { intelligence: 3, discipline: 2, money: 35, energy: -6 },
-          feedback: 'Dogru bilgi, dogru zamanda seni bir adim one tasidi.',
+          feedback: 'Doğru bilgi, doğru zamanda seni bir adım öne taşıdı.',
           momentumTag: 'PRAGMATIC',
           choiceType: 'PASSIVE',
         },
         {
           id: 'pragmatic_info_press',
-          text: 'Agresif bir zamanlama ile hamleyi hizlandir',
+          text: 'Agresif bir zamanlama ile hamleyi hızlandır',
           effect: { money: 60, intelligence: 1, energy: -10, familyRelation: -1 },
-          feedback: 'Dakik karar kar getirdi ama tempoyu sertlestirdi.',
+          feedback: 'Dakik karar kâr getirdi ama tempoyu sertleştirdi.',
           momentumTag: 'PRAGMATIC',
           choiceType: 'CHALLENGE',
         },
@@ -127,7 +127,7 @@ const MOMENTUM_EVENTS: Record<PersonalityTendency, GameEvent[]> = {
   AGGRESSIVE: [
     {
       id: 'evt_momentum_aggressive_reputation',
-      text: 'Mahallede sert ve net durusun dilden dile yayilmis. Bazi insanlar geri adim atiyor, bazi kapilar ise aniden aciliyor.',
+      text: 'Mahallede sert ve net duruşun dilden dile yayılmış. Bazı insanlar geri adım atıyor, bazı kapılar ise aniden açılıyor.',
       minAge: 10,
       maxAge: 100,
       rarity: 'UNCOMMON',
@@ -137,17 +137,17 @@ const MOMENTUM_EVENTS: Record<PersonalityTendency, GameEvent[]> = {
       choices: [
         {
           id: 'aggressive_reputation_control',
-          text: 'Gucu kontrol edip sinirlarini net ciz',
+          text: 'Gücü kontrol edip sınırlarını net çiz',
           effect: { discipline: 2, health: 2, charisma: 1, energy: -7 },
-          feedback: 'Korku degil saygi uyandiran bir cizgi yakaladin.',
+          feedback: 'Korku değil saygı uyandıran bir çizgi yakaladın.',
           momentumTag: 'AGGRESSIVE',
           choiceType: 'PASSIVE',
         },
         {
           id: 'aggressive_reputation_push',
-          text: 'Baskiyi artirip daha sert bir tavir al',
+          text: 'Baskıyı artırıp daha sert bir tavır al',
           effect: { health: 3, discipline: 1, familyRelation: -3, energy: -10 },
-          feedback: 'Etkin artti ama iliskilerde catlaklar buyudu.',
+          feedback: 'Etkin arttı ama ilişkilerde çatlaklar büyüdü.',
           momentumTag: 'AGGRESSIVE',
           choiceType: 'CHALLENGE',
         },

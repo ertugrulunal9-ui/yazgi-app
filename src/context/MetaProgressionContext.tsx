@@ -6,6 +6,7 @@ import React, {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from 'react';
 import SaveManager from '../save/SaveManager';
 import { MetaProgression } from '../types';
@@ -16,7 +17,9 @@ import { useGame } from './GameContext';
 
 interface MetaProgressionContextType {
   metaProgression: MetaProgression;
+  metaProgressionLoaded: boolean;
   refreshMetaProgression: () => Promise<void>;
+  updateMetaProgression: (next: MetaProgression) => void;
 }
 
 const MetaProgressionContext = createContext<MetaProgressionContextType | undefined>(undefined);
@@ -38,6 +41,7 @@ export const MetaProgressionProvider: React.FC<MetaProgressionProviderProps> = (
   const metaProgression = useMemo<MetaProgression>(() => (
     gameState.metaProgression ?? createInitialMetaProgression()
   ), [gameState.metaProgression]);
+  const [metaProgressionLoaded, setMetaProgressionLoaded] = useState(false);
 
   const metaProgressionRef = useRef(metaProgression);
   const gameStateRef = useRef(gameState);
@@ -59,6 +63,8 @@ export const MetaProgressionProvider: React.FC<MetaProgressionProviderProps> = (
       setMetaProgression(nextMeta);
     } catch (error) {
       console.error('Failed to refresh meta progression:', error);
+    } finally {
+      setMetaProgressionLoaded(true);
     }
   }, [setMetaProgression]);
 
@@ -84,8 +90,10 @@ export const MetaProgressionProvider: React.FC<MetaProgressionProviderProps> = (
 
   const value = useMemo<MetaProgressionContextType>(() => ({
     metaProgression,
+    metaProgressionLoaded,
     refreshMetaProgression,
-  }), [metaProgression, refreshMetaProgression]);
+    updateMetaProgression: setMetaProgression,
+  }), [metaProgression, metaProgressionLoaded, refreshMetaProgression, setMetaProgression]);
 
   return (
     <MetaProgressionContext.Provider value={value}>

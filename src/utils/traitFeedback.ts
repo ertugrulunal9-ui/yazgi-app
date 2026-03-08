@@ -1,16 +1,17 @@
 import { getTrait, getTraitName } from '../data/traits';
+import { tRuntime } from '../i18n/strings';
 import { TraitChangeFeedback } from '../types';
 
-const NEGATIVE_GAIN_GUIDANCE: Record<string, string> = {
-  LAZY: 'Disiplini yuksek tut ve ders/spor rutinini bozma.',
-  PROCRASTINATOR: 'Kisa hedefler belirleyip ertelenen gorevleri hemen tamamla.',
-  BURNOUT_PRONE: 'Dusuk enerjiyle yogun aksiyon yapma, once dinlen.',
-  LONE_WOLF: 'Sosyal aksiyonlari artirip iletisim statini toparla.',
-  COWARD: 'Zor anlarda pasif kalmak yerine kontrollu risk al.',
-  CHEATER: 'Kisa yol yerine uzun vadeli guvenilir secimler yap.',
-  REBELLIOUS: 'Aile ile catisma anlarinda uzlasmaci secenekleri dene.',
-  SICKLY: 'Saglik odakli rutin kurup enerji dususlerini erken toparla.',
-  CLUMSY: 'Fiziksel aktiviteleri kademeli artirip tekrar et.',
+const NEGATIVE_GAIN_GUIDANCE_KEYS: Record<string, string> = {
+  LAZY: 'storyText.traits.negativeGuidance.LAZY',
+  PROCRASTINATOR: 'storyText.traits.negativeGuidance.PROCRASTINATOR',
+  BURNOUT_PRONE: 'storyText.traits.negativeGuidance.BURNOUT_PRONE',
+  LONE_WOLF: 'storyText.traits.negativeGuidance.LONE_WOLF',
+  COWARD: 'storyText.traits.negativeGuidance.COWARD',
+  CHEATER: 'storyText.traits.negativeGuidance.CHEATER',
+  REBELLIOUS: 'storyText.traits.negativeGuidance.REBELLIOUS',
+  SICKLY: 'storyText.traits.negativeGuidance.SICKLY',
+  CLUMSY: 'storyText.traits.negativeGuidance.CLUMSY',
 };
 
 const stripLeadingEmoji = (name: string): string => name.replace(/^[^A-Za-z0-9]+/u, '').trim();
@@ -21,7 +22,10 @@ const buildGainGuidance = (traitId: string): string | undefined => {
   const trait = getTrait(traitId);
   if (!trait) return undefined;
   if (trait.type === 'NEGATIVE') {
-    return NEGATIVE_GAIN_GUIDANCE[traitId] || 'Bu ozelligi azaltmak icin ters davranis kalibini surdur.';
+    const guidanceKey = NEGATIVE_GAIN_GUIDANCE_KEYS[traitId];
+    return guidanceKey
+      ? tRuntime(guidanceKey)
+      : tRuntime('storyText.traits.negativeGuidance.default');
   }
   return undefined;
 };
@@ -30,9 +34,12 @@ const buildRemovalSummary = (traitId: string, gainedTraits: string[]): string =>
   const resolverId = gainedTraits.find(gainedId => getTrait(gainedId)?.conflicts?.includes(traitId));
   const traitName = getDisplayName(traitId);
   if (!resolverId) {
-    return `- ${traitName} kaldirildi.`;
+    return tRuntime('storyText.traits.removalSummary', { traitName });
   }
-  return `- ${traitName} kaldirildi (cakisma: ${getDisplayName(resolverId)}).`;
+  return tRuntime('storyText.traits.removalResolvedSummary', {
+    traitName,
+    resolverName: getDisplayName(resolverId),
+  });
 };
 
 const dedupe = (items: string[]): string[] => Array.from(new Set(items.filter(Boolean)));
@@ -47,7 +54,7 @@ export const buildTraitChangeFeedback = (
   const gainEntries = uniqueGained.map(traitId => ({
     traitId,
     changeType: 'GAINED' as const,
-    summary: `+ ${getDisplayName(traitId)} kazanildi.`,
+    summary: tRuntime('storyText.traits.gainSummary', { traitName: getDisplayName(traitId) }),
     guidance: buildGainGuidance(traitId),
   }));
 
@@ -60,4 +67,3 @@ export const buildTraitChangeFeedback = (
 
   return [...gainEntries, ...removalEntries];
 };
-

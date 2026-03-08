@@ -1,5 +1,5 @@
 /**
- * AgeMilestoneModal — Yaş geçişi özet modalı (Paket 4)
+ * AgeMilestoneModal â€” Yaş geçişi özet modalı (Paket 4)
  *
  * Oyuncuya son yaşta neler olduğunu özetler:
  * kazanımlar, kayıplar, anılar, ilişki değişimleri, akademik öne çıkanlar.
@@ -20,14 +20,6 @@ interface Props {
   onClose: () => void;
 }
 
-const STAT_LABEL: Record<string, string> = {
-  health: 'Sağlık',
-  intelligence: 'Zeka',
-  charisma: 'Karizma',
-  discipline: 'Disiplin',
-  familyRelation: 'Aile',
-};
-
 const EMOTION_ICON: Record<string, string> = {
   PRIDE: '★',
   REGRET: '✦',
@@ -37,7 +29,7 @@ const EMOTION_ICON: Record<string, string> = {
 };
 
 export const AgeMilestoneModal: React.FC<Props> = ({ visible, milestone, onClose }) => {
-  const { theme } = useUI();
+  const { theme, t } = useUI();
 
   if (!milestone) return null;
 
@@ -53,22 +45,21 @@ export const AgeMilestoneModal: React.FC<Props> = ({ visible, milestone, onClose
   return (
     <Modal
       visible={visible}
-      title={`Yaş ${milestone.age} Özeti`}
+      title={t('milestone.title', { age: milestone.age })}
       onClose={onClose}
-      footer={<Button variant="primary" onPress={onClose}>Devam Et</Button>}
+      footer={<Button variant="primary" onPress={onClose}>{t('chapter.continueButton')}</Button>}
     >
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         {!hasContent && (
           <Typography variant="body" tone="secondary" style={styles.emptyText}>
-            Bu yaş sakin geçti.
+            {t('milestone.quiet')}
           </Typography>
         )}
 
-        {/* Stat Changes */}
         {statEntries.length > 0 && (
           <View style={styles.section}>
             <Typography variant="caption" tone="secondary" style={styles.sectionTitle}>
-              Değişimler
+              {t('milestone.statChanges')}
             </Typography>
             <View style={styles.statRow}>
               {statEntries.map(([key, val]) => (
@@ -83,7 +74,7 @@ export const AgeMilestoneModal: React.FC<Props> = ({ visible, milestone, onClose
                     variant="caption"
                     style={{ color: val > 0 ? '#2E7D32' : '#C62828' }}
                   >
-                    {STAT_LABEL[key] ?? key} {val > 0 ? '+' : ''}{val}
+                    {t(`labels.stats.${key}`, undefined, key)} {val > 0 ? '+' : ''}{val}
                   </Typography>
                 </View>
               ))}
@@ -91,67 +82,64 @@ export const AgeMilestoneModal: React.FC<Props> = ({ visible, milestone, onClose
           </View>
         )}
 
-        {/* Traits Gained */}
         {milestone.traitsGained.length > 0 && (
           <View style={styles.section}>
             <Typography variant="caption" tone="secondary" style={styles.sectionTitle}>
-              Kazanılan Özellikler
+              {t('milestone.traitsGained')}
             </Typography>
-            {milestone.traitsGained.map(t => (
-              <Typography key={t} variant="body" style={[styles.traitLine, { color: '#2E7D32' }]}>
-                + {t}
+            {milestone.traitsGained.map(trait => (
+              <Typography key={trait} variant="body" style={[styles.traitLine, { color: '#2E7D32' }]}>
+                + {trait}
               </Typography>
             ))}
           </View>
         )}
 
-        {/* Traits Lost */}
         {milestone.traitsLost.length > 0 && (
           <View style={styles.section}>
             <Typography variant="caption" tone="secondary" style={styles.sectionTitle}>
-              Kaybedilen Özellikler
+              {t('milestone.traitsLost')}
             </Typography>
-            {milestone.traitsLost.map(t => (
-              <Typography key={t} variant="body" style={[styles.traitLine, { color: '#C62828' }]}>
-                - {t}
+            {milestone.traitsLost.map(trait => (
+              <Typography key={trait} variant="body" style={[styles.traitLine, { color: '#C62828' }]}>
+                - {trait}
               </Typography>
             ))}
           </View>
         )}
 
-        {/* Key Memories */}
         {milestone.keyMemories.length > 0 && (
           <View style={styles.section}>
             <Typography variant="caption" tone="secondary" style={styles.sectionTitle}>
-              Öne Çıkan Anılar
+              {t('milestone.keyMemories')}
             </Typography>
-            {milestone.keyMemories.map((m, i) => (
-              <Typography key={i} variant="body" style={{ color: '#6A1B9A' }}>
-                {EMOTION_ICON[m.emotion] ?? '○'} {m.summary}
+            {milestone.keyMemories.map((memory, index) => (
+              <Typography key={index} variant="body" style={{ color: '#6A1B9A' }}>
+                {EMOTION_ICON[memory.emotion] ?? '○'} {memory.summary}
               </Typography>
             ))}
           </View>
         )}
 
-        {/* NPC Changes */}
         {milestone.npcChanges.length > 0 && (
           <View style={styles.section}>
             <Typography variant="caption" tone="secondary" style={styles.sectionTitle}>
-              İlişki Değişimleri
+              {t('milestone.npcChanges')}
             </Typography>
-            {milestone.npcChanges.map((nc, i) => (
-              <Typography key={i} variant="body" style={{ color: theme.textSecondary }}>
-                {nc.name}: {nc.oldRole} → {nc.newRole}
+            {milestone.npcChanges.map((npcChange, index) => (
+              <Typography key={index} variant="body" style={{ color: theme.textSecondary }}>
+                {npcChange.name}: {t(`labels.npcRoles.${npcChange.oldRole}`, undefined, npcChange.oldRole)} →
+                {' '}
+                {t(`labels.npcRoles.${npcChange.newRole}`, undefined, npcChange.newRole)}
               </Typography>
             ))}
           </View>
         )}
 
-        {/* Academic */}
         {milestone.academicHighlight && (
           <View style={styles.section}>
             <Typography variant="caption" tone="secondary" style={styles.sectionTitle}>
-              Akademik
+              {t('milestone.academic')}
             </Typography>
             <Typography variant="body" style={{ color: '#E65100' }}>
               {milestone.academicHighlight}

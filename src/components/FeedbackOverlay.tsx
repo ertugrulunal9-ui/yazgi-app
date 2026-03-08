@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { FadeInUpView } from '../animations';
 import { AnimatedButton } from '../animations/ButtonAnimations';
@@ -209,7 +209,18 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
     return drivers.slice(0, 4);
   }, [currentEvent?.challengesAxis, currentEvent?.personalityCategory, lastResult, personality, selectedChoice, skills, stats]);
 
-  const rawFeedback = lastResult?.feedback || t('event.defaultFeedback', undefined, 'Devam ediyorsun...');
+  const [showAllStatChanges, setShowAllStatChanges] = useState(false);
+
+  const { topStatChanges, restStatChanges } = useMemo(() => {
+    const entries = (Object.entries(lastResult?.changes ?? {}) as [string, number][])
+      .filter(([, v]) => v !== 0)
+      .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+    return { topStatChanges: entries.slice(0, 3), restStatChanges: entries.slice(3) };
+  }, [lastResult?.changes]);
+
+  const hasCriticalStats = stats.health < 30 || stats.discipline < 25;
+
+  const rawFeedback = lastResult?.feedback || t('event.defaultFeedback');
   const wasDramatic = (currentEvent?.difficulty ?? 0) >= 4;
   const feedbackText = wasDramatic ? `${t('ui.feedbackOverlay.dramaticDecision')} ${rawFeedback}` : rawFeedback;
 
@@ -227,7 +238,7 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
           <TypewriterText
             text={feedbackText}
             speed={26}
-            accessibilityLabel="Event sonucu"
+            accessibilityLabel={t('ui.feedbackOverlay.eventResultLabel')}
             style={{
               color: theme.textPrimary,
               fontSize: 17,
@@ -245,10 +256,10 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
           const multiplierMap: Record<string, number> = { BLESSED: 35, FORTUNATE: 15, NEUTRAL: 0, UNLUCKY: 20, CURSED: 50 };
           const pct = multiplierMap[fr.outcome] ?? 0;
           const desc = isGood
-            ? `${t('fate.indicator.prefix', undefined, 'Sans')}: ${outcomeLabel}! ${t('fate.indicator.effectsBuffed', { pct: String(pct) }, `Etkiler %${pct} guclendi`)}`
+            ? `${t('fate.indicator.prefix')}: ${outcomeLabel}! ${t('fate.indicator.effectsBuffed', { pct: String(pct) })}`
             : isBad
-              ? `${t('fate.indicator.prefix', undefined, 'Sans')}: ${outcomeLabel}. ${t('fate.indicator.effectsNerfed', { pct: String(pct) }, `Negatif etkiler %${pct} artti`)}`
-              : `${t('fate.indicator.prefix', undefined, 'Sans')}: ${outcomeLabel}`;
+              ? `${t('fate.indicator.prefix')}: ${outcomeLabel}. ${t('fate.indicator.effectsNerfed', { pct: String(pct) })}`
+              : `${t('fate.indicator.prefix')}: ${outcomeLabel}`;
           const color = isGood ? '#22c55e' : isBad ? '#f97316' : '#94a3b8';
           return (
             <View style={{
@@ -273,12 +284,12 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
             marginBottom: 12,
             paddingVertical: 10,
             paddingHorizontal: 14,
-            backgroundColor: stats.health < 15 || stats.energy < 10
+            backgroundColor: hasCriticalStats || stats.energy < 10
               ? 'rgba(239, 68, 68, 0.12)'
               : theme.surfaceRaised,
             borderRadius: 10,
             borderLeftWidth: 3,
-            borderLeftColor: stats.health < 15 || stats.energy < 10
+            borderLeftColor: hasCriticalStats || stats.energy < 10
               ? '#ef4444'
               : theme.accentBrand,
           }}>
@@ -323,7 +334,7 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
               flex: 1,
               lineHeight: 16,
             }}>
-              {'Bu seçim bazı kapıları kapattı. Farklı bir yolda ne olurdu?'}
+              {t('event.blockedPaths')}
             </Text>
           </View>
         )}
@@ -398,12 +409,12 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
               opacity: undoLoading ? 0.75 : 1,
             }}
             accessibilityRole="button"
-            accessibilityLabel={t('ui.feedbackOverlay.undoChoice', undefined, 'Secimi Geri Al')}
+            accessibilityLabel={t('ui.feedbackOverlay.undoChoice')}
           >
             <Text style={{ ...buttonTextStyle, color: '#f59e0b' }}>
               {undoLoading
-                ? t('ui.feedbackOverlay.undoLoading', undefined, 'Geri aliniyor...')
-                : t('ui.feedbackOverlay.undoChoice', undefined, 'Secimi Geri Al')}
+                ? t('ui.feedbackOverlay.undoLoading')
+                : t('ui.feedbackOverlay.undoChoice')}
             </Text>
           </AnimatedButton>
         )}
@@ -414,13 +425,13 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
           animationType="pressScale"
           style={{ ...buttonStyle, opacity: buttonEnabled ? 1 : 0.7 }}
           accessibilityRole="button"
-          accessibilityLabel={t('common.continue', undefined, 'Devam Et')}
-          accessibilityHint="Sonraki tura gecer"
+          accessibilityLabel={t('common.continue')}
+          accessibilityHint={t('ui.feedbackOverlay.continueHint')}
         >
           <Text style={buttonTextStyle}>
             {buttonEnabled
-              ? t('common.continue', undefined, 'Devam Et')
-              : t('common.reading', undefined, 'Okunuyor...')}
+              ? t('common.continue')
+              : t('common.reading')}
           </Text>
         </AnimatedButton>
 
@@ -447,19 +458,53 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
             </View>
           )}
 
-          {lastResult?.changes && Object.keys(lastResult.changes).length > 0 && (
+          {topStatChanges.length > 0 && (
             <View style={{ marginTop: 16 }}>
-              <Text style={{ color: theme.accentStat, fontSize: 13, marginBottom: 8, fontWeight: '700' }}>
-                [Stat] {t('event.statChanges', undefined, 'Istatistikler')}
+              <Text style={{ color: theme.accentStat, fontSize: 11, marginBottom: 8, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase' }}>
+                {t('event.statChanges')}
               </Text>
-              <StatChange icon="S" changes={lastResult.changes} labels={STAT_LABELS} />
+              {hasCriticalStats && (
+                <View style={{ marginBottom: 8, paddingVertical: 7, paddingHorizontal: 10, backgroundColor: 'rgba(239,68,68,0.10)', borderRadius: 8, borderWidth: 1, borderColor: '#ef444450' }}>
+                  <Text style={{ color: '#ef4444', fontSize: 13, fontWeight: '600' }}>
+                    {stats.health < 30
+                      ? t('ui.feedbackOverlay.healthCritical', { value: Math.round(stats.health) })
+                      : t('ui.feedbackOverlay.disciplineLow', { value: Math.round(stats.discipline) })}
+                  </Text>
+                </View>
+              )}
+              {topStatChanges.map(([key, val]) => (
+                <View key={key} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                  <Text style={{ color: theme.textSecondary, fontSize: 14 }}>{STAT_LABELS[key] ?? key}</Text>
+                  <Text style={{ color: val > 0 ? '#22c55e' : '#ef4444', fontSize: 17, fontWeight: '800' }}>
+                    {val > 0 ? '+' : ''}{Math.round(val)}
+                  </Text>
+                </View>
+              ))}
+              {restStatChanges.length > 0 && (
+                <View>
+                  <AnimatedButton
+                    onPress={() => setShowAllStatChanges(v => !v)}
+                    animationType="pressScale"
+                    style={{ paddingVertical: 4, marginTop: 2 }}
+                  >
+                    <Text style={{ color: theme.textSecondary, fontSize: 12, textDecorationLine: 'underline' }}>
+                      {showAllStatChanges
+                        ? t('ui.feedbackOverlay.hideChanges')
+                        : t('ui.feedbackOverlay.showAllChanges', { count: restStatChanges.length })}
+                    </Text>
+                  </AnimatedButton>
+                  {showAllStatChanges && (
+                    <StatChange icon="S" changes={Object.fromEntries(restStatChanges)} labels={STAT_LABELS} />
+                  )}
+                </View>
+              )}
             </View>
           )}
 
           {lastResult?.skillChanges && Object.keys(lastResult.skillChanges).length > 0 && (
             <View style={{ marginTop: 12 }}>
               <Text style={{ color: theme.accentSkill, fontSize: 13, marginBottom: 8, fontWeight: '700' }}>
-                [Skill] {t('event.skillChanges', undefined, 'Beceriler')}
+                {t('event.skillChanges')}
               </Text>
               <StatChange
                 icon="K"
@@ -472,7 +517,7 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
           {lastResult?.gradeChanges && Object.keys(lastResult.gradeChanges).length > 0 && (
             <View style={{ marginTop: 12 }}>
               <Text style={{ color: theme.accentSkill, fontSize: 13, marginBottom: 8, fontWeight: '700' }}>
-                [Grade] {t('event.gradeChanges', undefined, 'Okul Notlari')}
+                {t('event.gradeChanges')}
               </Text>
               <StatChange
                 icon="N"

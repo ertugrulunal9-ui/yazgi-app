@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { devLog } from '../utils/devLogger';
 import { isPremium as hasPremiumSubscription } from '../services/subscriptionManager';
+import { getCurrentChapter } from '../utils/gameUtils';
 import { GameState, MetaProgression, Stats } from '../types';
 import { createInitialMetaProgression } from '../utils/metaProgression';
 import {
@@ -1231,6 +1232,8 @@ class SaveManager {
           slotId,
           characterName: playerName,
           age: gameState.age,
+          chapter: getCurrentChapter(gameState.age).id,
+          goalName: gameState.selectedGoal ?? undefined,
           playtime,
           lastPlayed: now,
           version: SAVE_VERSION,

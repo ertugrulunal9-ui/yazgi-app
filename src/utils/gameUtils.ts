@@ -2,7 +2,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { devLog } from './devLogger';
 import { Stats, StatKey, Family, GameState, CareerResult, NPC, NPCRole, FamilyWealth, FamilyDynamic, NPCPersonality, NPCTrait, ZodiacSign, PlayerGender, CharacterInfo, Skills, SchoolGrades, EventMemory, Personality, TraitTrigger } from '../types';
-import { TRAIT_DEFINITIONS } from '../data/traits';
+import { getTraitName, TRAIT_DEFINITIONS } from '../data/traits';
 import { BALANCE_CONTRACT, calculateInitialEnergy } from '../config/balanceContract';
 import {
   BUFF_RULES,
@@ -16,7 +16,7 @@ import { DEFAULT_FAMILY_EVOLUTION_STATE } from './familyNarrative';
 import { getPersonalityArchetype, getArchetypeDescription, PersonalityArchetype } from './personalitySystem';
 import { createInitialPersonalityState } from '../systems/PersonalityMomentumEngine';
 import { resolveEnding } from './endingResolver';
-import { AppLocale, getRuntimeLocale, tRuntime } from '../i18n/strings';
+import { AppLocale, getRuntimeLocale, t, tRuntime } from '../i18n/strings';
 
 export const clamp = (value: number, min: number, max: number): number => {
   return Math.min(Math.max(value, min), max);
@@ -31,6 +31,38 @@ export const shouldAgeUp = (currentAge: number, turnCount: number): boolean => {
     return turnCount % 5 === 0;
   }
   return false; // 18 yaşından sonra yaşlanma durur (oyun biter)
+};
+
+// --- BÖLÜM (CHAPTER) SİSTEMİ — Faz 1A ---
+import { CHAPTERS, type ChapterData } from '../config/gameBalance';
+
+/** Verilen yaşa göre aktif bölümü döner. */
+export const getCurrentChapter = (age: number): ChapterData => {
+  for (const chapter of CHAPTERS) {
+    if (age >= chapter.ageStart && age <= chapter.ageEnd) return chapter;
+  }
+  return CHAPTERS[CHAPTERS.length - 1];
+};
+
+export const getChapterNameKey = (chapterId: number): string => `recap.chapterNames.${chapterId}`;
+
+export const getLocalizedChapterName = (
+  chapterId: number,
+  locale: AppLocale = getRuntimeLocale()
+): string => {
+  const fallback = CHAPTERS.find(chapter => chapter.id === chapterId)?.name ?? '';
+  return t(locale, getChapterNameKey(chapterId), undefined, fallback);
+};
+
+export const getCurrentChapterName = (
+  age: number,
+  locale: AppLocale = getRuntimeLocale()
+): string => getLocalizedChapterName(getCurrentChapter(age).id, locale);
+
+/** İki yaş arasında bölüm geçişi olup olmadığını döner. */
+export const isChapterTransition = (prevAge: number, newAge: number): boolean => {
+  if (prevAge === newAge) return false;
+  return getCurrentChapter(prevAge).id !== getCurrentChapter(newAge).id;
 };
 
 // --- AİLE SİSTEMİ BAŞLATMA (KRİTİK) ---
@@ -125,10 +157,13 @@ export const SAVE_KEY = 'lifesim_save_data_v2';
 
 export interface NewGameBootstrapOptions {
   fastStart?: boolean;
+  quickPlay?: boolean;
   legacyLevel?: number;
   legacyPerksEnabled?: boolean;
   selectedGeneticTraitId?: string;
   starterItemId?: string;
+  /** Minimalist avatar yapılandırması — Faz 6A */
+  avatar?: import('../types/core').AvatarConfig;
 }
 
 const FAST_START_BASELINE = {
@@ -137,6 +172,17 @@ const FAST_START_BASELINE = {
   charisma: 8,
   discipline: 5,
 } as const;
+
+const QUICK_PLAY_BASELINE = {
+  health: 45,
+  intelligence: 35,
+  charisma: 28,
+  discipline: 22,
+  energy: 70,
+  money: 20,
+} as const;
+
+export const QUICK_PLAY_START_AGE = 13;
 
 const canUseFastStart = (options?: NewGameBootstrapOptions): boolean => {
   const legacyPerksEnabled = options?.legacyPerksEnabled ?? isFeatureEnabled('LEGACY_PERKS');
@@ -147,6 +193,17 @@ const canUseFastStart = (options?: NewGameBootstrapOptions): boolean => {
 // Not: 0 yaş için cap'ler düşük olduğundan başlangıç değerleri buna uygun ayarlanmalı
 // age=0 için: health cap=30, intelligence/charisma/discipline cap=30
 export const getInitialStats = (options?: NewGameBootstrapOptions): Stats => {
+  if (options?.quickPlay) {
+    return {
+      health: QUICK_PLAY_BASELINE.health,
+      intelligence: QUICK_PLAY_BASELINE.intelligence,
+      charisma: QUICK_PLAY_BASELINE.charisma,
+      discipline: QUICK_PLAY_BASELINE.discipline,
+      money: QUICK_PLAY_BASELINE.money,
+      energy: QUICK_PLAY_BASELINE.energy,
+      familyRelation: BALANCE_CONTRACT.initialStats.familyRelation,
+    };
+  }
   const useFastStart = canUseFastStart(options);
   const health = useFastStart
     ? FAST_START_BASELINE.health
@@ -443,8 +500,9 @@ export const applyBuffSlotPolicy = (
 export const getInitialGameState = (options?: NewGameBootstrapOptions): GameState => {
   const legacyPerksEnabled = options?.legacyPerksEnabled ?? isFeatureEnabled('LEGACY_PERKS');
   const legacyLevel = Math.max(0, options?.legacyLevel ?? 0);
-  const fastStart = canUseFastStart(options);
-  const startAge = fastStart ? 7 : 0;
+  const isQuickPlay = Boolean(options?.quickPlay);
+  const fastStart = !isQuickPlay && canUseFastStart(options);
+  const startAge = isQuickPlay ? QUICK_PLAY_START_AGE : fastStart ? 7 : 0;
 
   // Aile sistemi baslatma (KRITIK)
   const family = createRandomFamily();
@@ -475,7 +533,7 @@ export const getInitialGameState = (options?: NewGameBootstrapOptions): GameStat
   return {
     age: startAge,
     turn: 1,
-    phase: fastStart ? 'HUB' : 'SETUP',
+    phase: (fastStart || isQuickPlay) ? 'HUB' : 'SETUP',
     currentEvent: null,
     pendingReportCard: false,
     characterInfo: null,
@@ -552,7 +610,7 @@ export const getInitialGameState = (options?: NewGameBootstrapOptions): GameStat
     socialGroups: [],
     socialReputation: 50,
     childhood: {
-      completed: fastStart,
+      completed: fastStart || isQuickPlay,
       sceneIndex: 0,
       memories: [],
       selectedMemoryId: null,
@@ -561,6 +619,7 @@ export const getInitialGameState = (options?: NewGameBootstrapOptions): GameStat
     isExamPeriod: false,
     lastBurdenRisk: 0,
     fate: undefined,
+    avatar: options?.avatar ?? { hairStyle: 0, skinTone: 0, accessory: 0 },
   };
 };
 
@@ -1299,16 +1358,25 @@ export const getSocialEndResult = (npcs: NPC[]): string => {
   const friends = npcs.filter(n => n.role === 'FRIEND');
   const rivals = npcs.filter(n => n.role === 'RIVAL' || n.role === 'ENEMY');
 
-  let result = "";
-  if (partners.length > 0) result += `❤️ ${partners[0].name} ile evlendin ve mutlu bir yuva kurdun. `;
-  else result += "💔 Gerçek aşkı bulamadan yılları devirdin. ";
+  const lines: string[] = [];
 
-  if (bestFriends.length > 0) result += `🤝 ${bestFriends[0].name} ile kardeşten öte oldunuz. `;
-  else if (friends.length > 0) result += `👥 Arkadaş çevren genişti ama kimseyle çok derinleşmedin. `;
+  if (partners.length > 0) {
+    lines.push(`\u2764\uFE0F ${tRuntime('social.endSummary.partner', { npcName: partners[0].name })}`);
+  } else {
+    lines.push(`\u{1F494} ${tRuntime('social.endSummary.noPartner')}`);
+  }
 
-  if (rivals.length > 0) result += `⚔️ ${rivals[0].name} ile hala kanlı bıçaklısınız. `;
+  if (bestFriends.length > 0) {
+    lines.push(`\u{1F91D} ${tRuntime('social.endSummary.bestFriend', { npcName: bestFriends[0].name })}`);
+  } else if (friends.length > 0) {
+    lines.push(`\u{1F465} ${tRuntime('social.endSummary.friends')}`);
+  }
 
-  return result;
+  if (rivals.length > 0) {
+    lines.push(`\u2694\uFE0F ${tRuntime('social.endSummary.rivals', { npcName: rivals[0].name })}`);
+  }
+
+  return lines.join(' ');
 };
 
 // --- SOSYAL ÖZET SİSTEMİ ---
@@ -1418,53 +1486,53 @@ export const buildSocialSummary = (npcs: NPC[]): NPCSummary[] => {
 
 // --- KARİYER SONUÇ SİSTEMİ (Kişilik + Hafıza Zenginleştirilmiş) ---
 
-const CAREER_PERSONALITY_NARRATIVES: Record<string, Partial<Record<PersonalityArchetype, string>>> = {
-  'Milli Sporcu': {
-    EXTROVERT_BRAVE: 'Cesaretinle sınırlarını zorlayarak zirveye ulaştın.',
-    INTROVERT_BRAVE: 'Sessiz ama kararlı antrenmanlarınla herkesin takdirini kazandın.',
-    CONFORMIST: 'Disiplinin seni diğerlerinden ayırdı. Her gün, her antrenman mükemmeldi.',
-    BALANCED: 'Dengeli yaklaşımın seni uzun vadeli başarıya taşıdı.',
+const CAREER_PERSONALITY_NARRATIVE_KEYS: Record<string, Partial<Record<PersonalityArchetype, string>>> = {
+  nationalAthlete: {
+    EXTROVERT_BRAVE: 'storyText.endings.careerNarratives.nationalAthlete.EXTROVERT_BRAVE',
+    INTROVERT_BRAVE: 'storyText.endings.careerNarratives.nationalAthlete.INTROVERT_BRAVE',
+    CONFORMIST: 'storyText.endings.careerNarratives.nationalAthlete.CONFORMIST',
+    BALANCED: 'storyText.endings.careerNarratives.nationalAthlete.BALANCED',
   },
-  'Rockstar / Virtüöz': {
-    REBEL: 'Kurallara meydan okuyarak müzikte kendi yolunu çizdin.',
-    EMPATH: 'Müziğinle insanların duygularına dokunuyorsun.',
-    EXTROVERT_BRAVE: 'Sahne senin evin. Binlerce kişiye enerji veriyorsun.',
-    BALANCED: 'Müzik yeteneğin seni konservatuar yoluna taşıdı.',
+  rockstarVirtuoso: {
+    REBEL: 'storyText.endings.careerNarratives.rockstarVirtuoso.REBEL',
+    EMPATH: 'storyText.endings.careerNarratives.rockstarVirtuoso.EMPATH',
+    EXTROVERT_BRAVE: 'storyText.endings.careerNarratives.rockstarVirtuoso.EXTROVERT_BRAVE',
+    BALANCED: 'storyText.endings.careerNarratives.rockstarVirtuoso.BALANCED',
   },
-  'Ünlü Yazar': {
-    INTROVERT_CAUTIOUS: 'İç dünyanın zenginliği sayfalarına yansıdı.',
-    EMPATH: 'İnsanları anlamak, onların hikayelerini yazmana olanak tanıdı.',
-    REBEL: 'Cesur kalemin toplumun gerçeklerini gözler önüne serdi.',
-    BALANCED: 'Yazma yeteneğin seni edebiyat dünyasına taşıdı.',
+  famousWriter: {
+    INTROVERT_CAUTIOUS: 'storyText.endings.careerNarratives.famousWriter.INTROVERT_CAUTIOUS',
+    EMPATH: 'storyText.endings.careerNarratives.famousWriter.EMPATH',
+    REBEL: 'storyText.endings.careerNarratives.famousWriter.REBEL',
+    BALANCED: 'storyText.endings.careerNarratives.famousWriter.BALANCED',
   },
-  'Tıp Fakültesi': {
-    EMPATH: 'Empatin hastalarını iyileştirmenin en büyük gücü oldu.',
-    CONFORMIST: 'Disiplinli çalışman tıp eğitiminin zorluklarını aşmanı sağladı.',
-    INTROVERT_CAUTIOUS: 'Dikkatli ve titiz yaklaşımın seni mükemmel bir hekim yapacak.',
-    BALANCED: 'Çalışkanlığın ve zekan seni tıp yoluna taşıdı.',
+  medSchool: {
+    EMPATH: 'storyText.endings.careerNarratives.medSchool.EMPATH',
+    CONFORMIST: 'storyText.endings.careerNarratives.medSchool.CONFORMIST',
+    INTROVERT_CAUTIOUS: 'storyText.endings.careerNarratives.medSchool.INTROVERT_CAUTIOUS',
+    BALANCED: 'storyText.endings.careerNarratives.medSchool.BALANCED',
   },
-  'Yazılım Mühendisliği': {
-    REBEL: 'Kurallara isyan ederek kendi startup\'ını kurmaya hazırlanıyorsun.',
-    INTROVERT_CAUTIOUS: 'Sessiz oturarak büyük sistemler tasarladın.',
-    CONFORMIST: 'Sistemli çalışmanla büyük şirketlerin en güvenilir mühendisi olacaksın.',
-    EMPATH: 'İnsanlara yardım eden yazılımlar geliştirme hayalin var.',
-    BALANCED: 'Kodlama yeteneğin seni teknoloji dünyasına taşıdı.',
+  softwareEngineering: {
+    REBEL: 'storyText.endings.careerNarratives.softwareEngineering.REBEL',
+    INTROVERT_CAUTIOUS: 'storyText.endings.careerNarratives.softwareEngineering.INTROVERT_CAUTIOUS',
+    CONFORMIST: 'storyText.endings.careerNarratives.softwareEngineering.CONFORMIST',
+    EMPATH: 'storyText.endings.careerNarratives.softwareEngineering.EMPATH',
+    BALANCED: 'storyText.endings.careerNarratives.softwareEngineering.BALANCED',
   },
-  'Girişimci': {
-    REBEL: 'Kimsenin cesaret edemediği işlere girişerek fark yarattın.',
-    EXTROVERT_BRAVE: 'Liderliğin ve cesaretinle ekip kurup büyüttün.',
-    BALANCED: 'Ticari zekanla kendi yolunu çizdin.',
+  entrepreneur: {
+    REBEL: 'storyText.endings.careerNarratives.entrepreneur.REBEL',
+    EXTROVERT_BRAVE: 'storyText.endings.careerNarratives.entrepreneur.EXTROVERT_BRAVE',
+    BALANCED: 'storyText.endings.careerNarratives.entrepreneur.BALANCED',
   },
-  'Hukuk Fakültesi': {
-    REBEL: 'Adaletsizliğe karşı savaşmak için hukuk silahını seçtin.',
-    EMPATH: 'Ezilenlerin sesi olmak istiyorsun.',
-    CONFORMIST: 'Kurallara ve yasalara olan saygın seni hukuk yoluna çekti.',
-    BALANCED: 'Keskin zekan ve hitabetin seni hukuk yoluna taşıdı.',
+  lawSchool: {
+    REBEL: 'storyText.endings.careerNarratives.lawSchool.REBEL',
+    EMPATH: 'storyText.endings.careerNarratives.lawSchool.EMPATH',
+    CONFORMIST: 'storyText.endings.careerNarratives.lawSchool.CONFORMIST',
+    BALANCED: 'storyText.endings.careerNarratives.lawSchool.BALANCED',
   },
-  'Mezuna Kaldın / İşsiz': {
-    REBEL: 'Sistem seni yıktı ama isyan ateşin sönmedi.',
-    INTROVERT_CAUTIOUS: 'Fırsatları kaçırdın. Ama yeni kapılar açılabilir.',
-    BALANCED: 'Hayat her zaman planladığın gibi gitmiyor. Ama hikaye burada bitmez.',
+  failureUnemployed: {
+    REBEL: 'storyText.endings.careerNarratives.failureUnemployed.REBEL',
+    INTROVERT_CAUTIOUS: 'storyText.endings.careerNarratives.failureUnemployed.INTROVERT_CAUTIOUS',
+    BALANCED: 'storyText.endings.careerNarratives.failureUnemployed.BALANCED',
   },
 };
 
@@ -1475,26 +1543,28 @@ const getMemoryInfluence = (memories: EventMemory[]): string | undefined => {
   const regretCount = memories.filter(m => m.emotion === 'REGRET').length;
   const guiltCount = memories.filter(m => m.emotion === 'GUILT').length;
 
-  if (prideCount >= 5) return 'Başarılarla dolu bir geçmişin sana güç verdi.';
-  if (regretCount >= 4) return 'Geçmiş pişmanlıkların seni daha dikkatli ve kararlı yaptı.';
-  if (guiltCount >= 3) return 'Vicdanının sesi seni doğru yola yönlendirdi.';
-  if (prideCount >= 3 && regretCount >= 2) return 'Hem zaferler hem yenilgiler seni olgunlaştırdı.';
-  if (prideCount >= 3) return 'Başarılarının verdiği özgüvenle ilerliyorsun.';
-  if (regretCount >= 2) return 'Geçmişten aldığın dersler seni şekillendirdi.';
+  if (prideCount >= 5) return tRuntime('storyText.endings.memoryInfluence.prideMajor');
+  if (regretCount >= 4) return tRuntime('storyText.endings.memoryInfluence.regretMajor');
+  if (guiltCount >= 3) return tRuntime('storyText.endings.memoryInfluence.guiltMajor');
+  if (prideCount >= 3 && regretCount >= 2) return tRuntime('storyText.endings.memoryInfluence.mixedMajor');
+  if (prideCount >= 3) return tRuntime('storyText.endings.memoryInfluence.pride');
+  if (regretCount >= 2) return tRuntime('storyText.endings.memoryInfluence.regret');
   return undefined;
 };
 
 const enrichCareerResult = (
   base: CareerResult,
+  endingId: string,
   personality: Personality | undefined,
   memories: EventMemory[] | undefined
 ): CareerResult => {
   if (!personality) return base;
   const archetype = getPersonalityArchetype(personality);
-  const narratives = CAREER_PERSONALITY_NARRATIVES[base.title];
-  const personalityNarrative = narratives?.[archetype]
-    ?? narratives?.BALANCED
-    ?? getArchetypeDescription(archetype);
+  const narratives = CAREER_PERSONALITY_NARRATIVE_KEYS[endingId];
+  const personalityNarrativeKey = narratives?.[archetype] ?? narratives?.BALANCED;
+  const personalityNarrative = personalityNarrativeKey
+    ? tRuntime(personalityNarrativeKey)
+    : getArchetypeDescription(archetype);
   const memoryInfluence = getMemoryInfluence(memories ?? []);
 
   return {
@@ -1515,7 +1585,7 @@ export const calculateCareerResult = (gameState: GameState, stats: Stats): Caree
     achievements: gameState.unlockedAchievements,
   });
 
-  return enrichCareerResult(endingResolution.result, personality, mems);
+  return enrichCareerResult(endingResolution.result, endingResolution.id, personality, mems);
 };
 // --- TRAIT LOGIC ---
 const ACTION_TRIGGER_ALIASES: Record<string, string[]> = {
@@ -1759,7 +1829,7 @@ export const checkTraitFormation = (
       // 4. Check Unlock
       if (updatedProgress[trait.id].points >= updatedProgress[trait.id].required) {
         newTraits.push(trait.id);
-        unlockMessage = trait.name; // Keep mainly for single message logic if needed
+        unlockMessage = getTraitName(trait.id);
         updatedProgress[trait.id].isLocked = true;
 
         // 5. Handle Conflicts

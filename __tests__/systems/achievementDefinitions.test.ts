@@ -118,12 +118,20 @@ const mustGetAchievement = (id: string): Achievement => {
 };
 
 describe('achievementDefinitions targeted coverage', () => {
-  it('applies reward scaling and caps money rewards', () => {
-    expect(mustGetAchievement('first_income').reward?.money).toBe(40);
-    expect(mustGetAchievement('onboarding_chain_routine_builder').reward?.money).toBe(800);
-    expect(mustGetAchievement('millionaire').reward?.money).toBe(2000);
-    expect(mustGetAchievement('lucky_seven').reward?.money).toBe(2000);
-    expect(mustGetAchievement('survivor').reward?.money).toBeUndefined();
+  it('removes monetary rewards while keeping non-money rewards intact', () => {
+    expect(mustGetAchievement('first_income').reward).toBeUndefined();
+    expect(mustGetAchievement('millionaire').reward).toBeUndefined();
+    expect(mustGetAchievement('lucky_seven').reward).toBeUndefined();
+    expect(mustGetAchievement('onboarding_chain_cohort_path').reward).toEqual({
+      stats: { discipline: 2 },
+    });
+    expect(mustGetAchievement('onboarding_chain_routine_builder').reward).toEqual({
+      stats: { energy: 10, intelligence: 2 },
+    });
+    expect(mustGetAchievement('survivor').reward).toEqual({
+      stats: { health: 20 },
+    });
+    expect(ACHIEVEMENTS.every((achievement) => achievement.reward?.money === undefined)).toBe(true);
   });
 
   it('returns achievements via helper selectors', () => {

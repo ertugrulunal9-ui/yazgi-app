@@ -225,6 +225,18 @@ export interface ResolveEndingParams {
   errorDebt?: EndingErrorDebtInput;
 }
 
+export interface ScoreBreakdown {
+  rawScore: number;
+  achievementBonus: number;
+  difficultyModifier: number;
+  memoryBonus: number;
+  scarPenalty: number;
+  debtPenalty: number;
+  mismatchPenalty: number;
+  versatilityPenalty: number;
+  finalScore: number;
+}
+
 export interface EndingResolution {
   id: string;
   goal: EndingGoal;
@@ -241,6 +253,7 @@ export interface EndingResolution {
   achievementFlavor: string[];
   result: CareerResult;
   socialSummary?: NPCSummary[];
+  scoreBreakdown?: ScoreBreakdown;
 }
 
 export interface GoalMismatchAnalysis {
@@ -1793,6 +1806,17 @@ export const resolveEnding = ({
     achievementFlavor,
     result: finalResult,
     socialSummary: buildSocialSummary(gameState.npcs),
+    scoreBreakdown: {
+      rawScore: round1(rawScore),
+      achievementBonus: round1(achievementBonus),
+      difficultyModifier: round1(difficultyModifier),
+      memoryBonus: round1(Math.max(0, memoryWeight)),
+      scarPenalty: round1(Math.abs(Math.min(0, scarWeight))),
+      debtPenalty: round1(debtPenalty),
+      mismatchPenalty: round1(mismatchPenalty),
+      versatilityPenalty: round1(actionVersatility.penalty),
+      finalScore: round1(finalScore),
+    },
   };
 };
 

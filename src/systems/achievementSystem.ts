@@ -191,20 +191,16 @@ export const applyAchievementReward = (
 
   const newStats = { ...stats };
 
-  if (reward.money) {
-    newStats.money += reward.money;
-  }
-
   if (reward.stats) {
     Object.keys(reward.stats).forEach(key => {
       const statKey = key as keyof Stats;
       const value = reward.stats![statKey];
+      if (statKey === 'money') {
+        return;
+      }
       if (typeof value === 'number') {
         newStats[statKey] = (newStats[statKey] as number) + value;
-        // Clamp stats
-        if (statKey !== 'money') {
-          newStats[statKey] = Math.min(100, Math.max(0, newStats[statKey] as number));
-        }
+        newStats[statKey] = Math.min(100, Math.max(0, newStats[statKey] as number));
       }
     });
   }

@@ -9,7 +9,10 @@
 import type { Stats, SchoolGrades, StatKey } from '../types/core';
 import type { EventMemory, MemoryEmotion } from '../types/events';
 import type { NPC, NPCRole } from '../types/npc';
-import type { AgeMilestoneSummary } from '../types/game';
+import type { AgeMilestoneSummary, ChapterSummary } from '../types/game';
+import { type ChapterData } from '../config/gameBalance';
+import { getRuntimeLocale, tRuntime } from '../i18n/strings';
+import { getLocalizedChapterName } from './gameUtils';
 
 // -------------------------------------------------------------------
 // Helpers
@@ -25,7 +28,7 @@ export const STAT_LABELS: Record<StatKey, { tr: string; en: string }> = {
   familyRelation: { tr: 'Aile İlişkisi', en: 'Family' },
 };
 
-const EMOTION_LABELS: Record<MemoryEmotion, string> = {
+const EMOTION_LABELS_TR: Record<MemoryEmotion, string> = {
   PRIDE: 'gurur',
   REGRET: 'pişmanlık',
   GUILT: 'suçluluk',
@@ -33,7 +36,15 @@ const EMOTION_LABELS: Record<MemoryEmotion, string> = {
   NEUTRAL: 'anı',
 };
 
-const GRADE_LABELS: Record<keyof SchoolGrades, string> = {
+const EMOTION_LABELS_EN: Record<MemoryEmotion, string> = {
+  PRIDE: 'pride',
+  REGRET: 'regret',
+  GUILT: 'guilt',
+  SATISFACTION: 'peace',
+  NEUTRAL: 'memory',
+};
+
+const GRADE_LABELS_TR: Record<keyof SchoolGrades, string> = {
   math: 'Matematik',
   science: 'Fen Bilgisi',
   language: 'Yabancı Dil',
@@ -42,6 +53,17 @@ const GRADE_LABELS: Record<keyof SchoolGrades, string> = {
   geography: 'Coğrafya',
   art: 'Sanat',
   music: 'Müzik',
+};
+
+const GRADE_LABELS_EN: Record<keyof SchoolGrades, string> = {
+  math: 'Math',
+  science: 'Science',
+  language: 'Foreign Language',
+  turkish: 'Turkish',
+  history: 'History',
+  geography: 'Geography',
+  art: 'Art',
+  music: 'Music',
 };
 
 /** Computes stat delta, ignoring energy (too volatile) and money (economy fluctuates). */
@@ -76,10 +98,11 @@ function pickKeyMemories(
     return (emotionOrder[b.emotion] ?? 0) - (emotionOrder[a.emotion] ?? 0);
   });
 
+  const emotionLabels = getRuntimeLocale() === 'en' ? EMOTION_LABELS_EN : EMOTION_LABELS_TR;
   return ageMemories.slice(0, 3).map(m => ({
     eventId: m.eventId,
     emotion: m.emotion,
-    summary: EMOTION_LABELS[m.emotion] ?? 'anı',
+    summary: emotionLabels[m.emotion] ?? 'memory',
   }));
 }
 
@@ -124,7 +147,8 @@ function getAcademicHighlight(
   let worstKey: keyof SchoolGrades | null = null;
   let worstDelta = 0;
 
-  for (const key of Object.keys(GRADE_LABELS) as (keyof SchoolGrades)[]) {
+  const gradeLabels = getRuntimeLocale() === 'en' ? GRADE_LABELS_EN : GRADE_LABELS_TR;
+  for (const key of Object.keys(GRADE_LABELS_TR) as (keyof SchoolGrades)[]) {
     const diff = (currentGrades[key] ?? 0) - (prevGrades[key] ?? 0);
     if (diff > bestDelta) { bestDelta = diff; bestKey = key; }
     if (diff < worstDelta) { worstDelta = diff; worstKey = key; }
@@ -132,10 +156,10 @@ function getAcademicHighlight(
 
   const parts: string[] = [];
   if (bestKey && bestDelta >= 5) {
-    parts.push(`${GRADE_LABELS[bestKey]} +${bestDelta}`);
+    parts.push(`${gradeLabels[bestKey]} +${bestDelta}`);
   }
   if (worstKey && worstDelta <= -5) {
-    parts.push(`${GRADE_LABELS[worstKey]} ${worstDelta}`);
+    parts.push(`${gradeLabels[worstKey]} ${worstDelta}`);
   }
 
   return parts.length > 0 ? parts.join(' / ') : undefined;
@@ -156,6 +180,60 @@ export interface MilestoneBuilderInput {
   currentNpcs: NPC[];
   prevGrades?: SchoolGrades;
   currentGrades?: SchoolGrades;
+}
+
+// -------------------------------------------------------------------
+// Chapter Summary Builder — Faz 1A
+// -------------------------------------------------------------------
+
+/**
+ * Tamamlanan bir bölümün (chapter) tüm yaş milestone'larını birleştirir
+ * ve tek bir ChapterSummary döner.
+ */
+export function buildChapterSummary(
+  chapter: ChapterData,
+  milestones: AgeMilestoneSummary[],
+): ChapterSummary {
+  const totalStatDeltas: Partial<Stats> = {};
+  const gainedSet = new Set<string>();
+  const lostSet = new Set<string>();
+  const allMemories: AgeMilestoneSummary['keyMemories'] = [];
+  const npcChangeMap = new Map<string, AgeMilestoneSummary['npcChanges'][number]>();
+
+  for (const m of milestones) {
+    // Stat deltalarını topla
+    for (const [key, val] of Object.entries(m.statDeltas) as [keyof Stats, number][]) {
+      totalStatDeltas[key] = (totalStatDeltas[key] ?? 0) + val;
+    }
+    // Trait değişimleri — net kazanım/kayıp
+    m.traitsGained.forEach(t => { gainedSet.add(t); lostSet.delete(t); });
+    m.traitsLost.forEach(t => { lostSet.add(t); gainedSet.delete(t); });
+    // Anılar
+    allMemories.push(...m.keyMemories);
+    // NPC değişimleri — sadece en son role transition'ı tut
+    m.npcChanges.forEach(nc => npcChangeMap.set(nc.npcId, nc));
+  }
+
+  // En önemli 4 anıyı seç (PRIDE > GUILT > REGRET > diğerleri)
+  const emotionPriority: Record<string, number> = { PRIDE: 4, GUILT: 3, REGRET: 2, SATISFACTION: 1, NEUTRAL: 0 };
+  const topMemories = [...allMemories]
+    .sort((a, b) => (emotionPriority[b.emotion] ?? 0) - (emotionPriority[a.emotion] ?? 0))
+    .slice(0, 4);
+
+  return {
+    chapterId: chapter.id,
+    chapterName: getLocalizedChapterName(chapter.id),
+    chapterEmoji: chapter.emoji,
+    ageRange: tRuntime('chapter.ageRange', {
+      startAge: chapter.ageStart,
+      endAge: chapter.ageEnd,
+    }, `${chapter.ageStart}-${chapter.ageEnd} yaş`),
+    totalStatDeltas,
+    allTraitsGained: [...gainedSet],
+    allTraitsLost: [...lostSet],
+    keyMemories: topMemories,
+    topNpcChanges: [...npcChangeMap.values()].slice(0, 3),
+  };
 }
 
 export function buildAgeMilestone(input: MilestoneBuilderInput): AgeMilestoneSummary {

@@ -1,100 +1,100 @@
 import { FamilyWealth, Item } from '../types';
-import { tRuntime } from '../i18n/strings';
+import { AppLocale, t as translate, tRuntime } from '../i18n/strings';
 import { CONSUMABLE_CONFIG } from '../config/gameBalance';
 
 export const ITEMS: Item[] = [
   {
     id: 'item_art_set',
-    name: 'Boyama Seti',
+    name: '',
     price: 55,
-    description: 'Resim calismalari icin temel set. Cizim gelisimini hizlandirir.',
+    description: '',
     type: 'PERMANENT',
     requiredForAction: 'arts_draw',
   },
   {
     id: 'item_story_book',
-    name: 'Hikaye Kitabi',
+    name: '',
     price: 70,
-    description: 'Masal saatlerini daha verimli hale getirir, okuma becerisine bonus verir.',
+    description: '',
     type: 'PERMANENT',
     requiredForAction: 'study_book',
   },
   {
     id: 'item_football',
-    name: 'Futbol Topu',
+    name: '',
     price: 90,
-    description: 'Futbolu daha erken yasta acmak icin gerekli.',
+    description: '',
     type: 'PERMANENT',
     requiredForAction: 'sports_football',
   },
   {
     id: 'item_bicycle',
-    name: 'Bisiklet',
+    name: '',
     price: 210,
-    description: 'Bisiklet surus aksiyonunu acar. Saglik ve cesarete katki verir.',
+    description: '',
     type: 'PERMANENT',
     requiredForAction: 'sports_bicycle',
   },
   {
     id: 'item_computer',
-    name: 'Bilgisayar',
+    name: '',
     price: 480,
-    description: 'Kodlama ve tasarim aksiyonlarini acmak icin gerekli.',
+    description: '',
     type: 'PERMANENT',
     requiredForAction: 'computer_code',
   },
   {
     id: 'item_instrument',
-    name: 'Enstruman',
+    name: '',
     price: 390,
-    description: 'Enstruman cal aksiyonunu acmak icin gerekli.',
+    description: '',
     type: 'PERMANENT',
     requiredForAction: 'arts_instrument',
   },
   {
     id: 'item_sports_gear',
-    name: 'Spor Malzemesi',
+    name: '',
     price: 240,
-    description: 'Tum spor aksiyonlarina bonus saglar.',
+    description: '',
     type: 'PERMANENT',
     requiredForAction: 'sports_run',
   },
   {
     id: 'item_energy_drink',
-    name: 'Enerji Icecegi',
+    name: '',
     price: CONSUMABLE_CONFIG.energyDrink.base,
-    description: 'Aninda enerji verir ama sureli kullanim siniri vardir.',
+    description: '',
     type: 'CONSUMABLE',
     effect: { energy: CONSUMABLE_CONFIG.energyDrink.effect },
   },
   {
     id: 'item_tutor_session',
-    name: 'Ozel Ders',
+    name: '',
     price: CONSUMABLE_CONFIG.tutorSession.base,
-    description: 'Rastgele bir derste hizli not takviyesi saglar.',
+    description: '',
     type: 'CONSUMABLE',
   },
   {
     id: 'item_gym_pass',
-    name: 'Spor Salonu Paketi',
+    name: '',
     price: CONSUMABLE_CONFIG.gymPass.base,
-    description: `${CONSUMABLE_CONFIG.gymPass.duration} tur boyunca saglik kazanimi saglar.`,
+    description: '',
     type: 'CONSUMABLE',
     effect: { health: CONSUMABLE_CONFIG.gymPass.healthPerTurn },
   },
   {
     id: 'item_fashion_outfit',
-    name: 'Tarz Kombin',
+    name: '',
     price: CONSUMABLE_CONFIG.fashionOutfit.base,
-    description: `${CONSUMABLE_CONFIG.fashionOutfit.duration} tur boyunca karizma etkisi verir.`,
+    description: '',
     type: 'CONSUMABLE',
     effect: { charisma: CONSUMABLE_CONFIG.fashionOutfit.charismaBoost },
   },
   {
     id: 'item_investment',
-    name: 'Mini Yatirim',
+    name: '',
     price: CONSUMABLE_CONFIG.investment.base,
-    description: `${CONSUMABLE_CONFIG.investment.duration} tur sonra geri donus saglar.`,
+    description: '',
     type: 'CONSUMABLE',
   },
 ];
@@ -122,10 +122,18 @@ export const getItem = (itemId: string): Item | undefined => {
   return ITEMS.find(item => item.id === itemId);
 };
 
-export const getItemName = (itemId: string): string => {
-  return tRuntime(`items.${itemId}.name`, undefined, getItem(itemId)?.name ?? itemId);
+export const getItemName = (itemId: string, locale?: AppLocale): string => {
+  const key = `items.${itemId}.name`;
+  const fallback = getItem(itemId)?.name || itemId;
+  return locale
+    ? translate(locale, key, undefined, fallback)
+    : tRuntime(key, undefined, fallback);
 };
 
-export const getItemDescription = (itemId: string): string => {
-  return tRuntime(`items.${itemId}.description`, undefined, getItem(itemId)?.description ?? '');
+export const getItemDescription = (itemId: string, locale?: AppLocale): string => {
+  const key = `items.${itemId}.description`;
+  const fallback = getItem(itemId)?.description || '';
+  return locale
+    ? translate(locale, key, undefined, fallback)
+    : tRuntime(key, undefined, fallback);
 };

@@ -8,20 +8,20 @@ import {
   subscribeFeatureFlags,
 } from '../config/featureFlags';
 import { getLoadingQuoteByAge } from '../data/loadingQuotes';
-import { AppLocale, DEFAULT_LOCALE } from '../i18n/strings';
+import { DEFAULT_LOCALE } from '../i18n/strings';
+import type { AppLocale } from '../i18n/strings';
 import { analyticsService } from '../services/analytics';
 import { initMonetization, setPersonalizedAdsEnabled as setMonetizationPersonalizedAdsEnabled } from '../services/monetization';
+import { requestPermissions as requestNotificationPermissions } from '../services/notificationService';
 import { initializeSubscriptions } from '../services/subscriptionManager';
 import {
   DEFAULT_UI_PREFS,
-  DensityMode,
   getDensityMetrics,
   getSystemTheme,
   getThemeTokens,
   getWeightedSplashDelay,
-  ThemeMode,
-  UIPrefs,
 } from '../utils/themeUtils';
+import type { DensityMode, ThemeMode, UIPrefs } from '../utils/themeUtils';
 
 const UI_PREFS_KEY = '@yazgi_sim/ui_prefs/v1';
 const ONBOARDING_KEY = '@yazgi/onboarding_completed';
@@ -116,11 +116,15 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
         console.warn('Monetization init failed:', error);
       });
 
-      initializeSubscriptions().catch((error) => {
-        console.warn('Subscription init failed:', error);
+      requestNotificationPermissions().catch((error) => {
+        console.warn('Notification permissions request failed:', error);
       });
 
-      unsubscribeFlags = subscribeFeatureFlags(() => {
+      unsubscribeFlags = subscribeFeatureFlags((nextFlags) => {
+        if (!nextFlags.PREMIUM_SUBSCRIPTION) {
+          return;
+        }
+
         initializeSubscriptions().catch((error) => {
           console.warn('Subscription init failed:', error);
         });

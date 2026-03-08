@@ -1,3 +1,4 @@
+import { tRuntime } from '../i18n/strings';
 import { Family, FamilyEvolutionState, ScheduledEvent } from '../types';
 
 interface FamilyEvolutionParams {
@@ -95,40 +96,40 @@ export const getFamilyThought = ({
   const thoughts: string[] = [];
 
   if (family.dynamic === 'STRICT' && familyRelation < 40) {
-    thoughts.push('Babam yine kizacak. Her seyi dogru yapmam lazim.');
+    thoughts.push(tRuntime('narrative.family.thoughts.strictLowRelation'));
   }
 
   if (family.dynamic === 'CHAOTIC' && age >= 12) {
-    thoughts.push('Keske evde biraz daha duzen olsa.');
+    thoughts.push(tRuntime('narrative.family.thoughts.chaoticTeen'));
   }
 
   if (family.dynamic === 'SUPPORTIVE' && age >= 10 && familyRelation >= 65) {
-    thoughts.push('Evde hata yapsam bile beni dinleyen biri var.');
+    thoughts.push(tRuntime('narrative.family.thoughts.supportiveHighRelation'));
   }
 
   if (family.wealth === 'POOR' && age >= 8) {
-    thoughts.push('Arkadaslarimin yeni telefonu var... Bizim neden yok?');
+    thoughts.push(tRuntime('narrative.family.thoughts.poor'));
   }
 
   if (family.wealth === 'RICH' && age >= 10) {
-    thoughts.push('Herkes benden bir sey bekliyor gibi.');
+    thoughts.push(tRuntime('narrative.family.thoughts.rich'));
   }
 
   if (state.strictWarmthTriggered && family.dynamic === 'STRICT' && familyRelation >= 60) {
-    thoughts.push('Evdeki ton degisti. Artik sadece emir degil, sohbet de var.');
+    thoughts.push(tRuntime('narrative.family.thoughts.strictWarmth'));
   }
 
   if (state.familyCrisisTriggered && familyRelation < 35) {
-    thoughts.push('Evdeki sessizlik bazen bagirmaktan daha agir.');
+    thoughts.push(tRuntime('narrative.family.thoughts.crisis'));
   }
 
   if (thoughts.length === 0) {
     if (family.dynamic === 'STRICT') {
-      thoughts.push('Evde kurallar net. Hata yaparsam hemen fark edilir.');
+      thoughts.push(tRuntime('narrative.family.thoughts.fallback.strict'));
     } else if (family.dynamic === 'CHAOTIC') {
-      thoughts.push('Evde herkes kendi ritminde. Plan yapmak zor.');
+      thoughts.push(tRuntime('narrative.family.thoughts.fallback.chaotic'));
     } else {
-      thoughts.push('Ailem yanimda oldugunu hissettiriyor.');
+      thoughts.push(tRuntime('narrative.family.thoughts.fallback.supportive'));
     }
   }
 
@@ -141,15 +142,19 @@ export const getFamilyAtmosphereLabel = (
   familyRelation: number,
   evolution?: FamilyEvolutionState
 ): string => {
-  if (!family) return 'Belirsiz';
+  if (!family) return tRuntime('narrative.family.atmosphere.unknown');
 
   const state = normalizeFamilyEvolutionState(evolution);
-  if (state.familyCrisisTriggered && familyRelation <= 35) return 'Gerilimli Sessizlik';
-  if (family.dynamic === 'STRICT' && state.strictWarmthTriggered) return 'Yumusayan Otorite';
-  if (familyRelation >= 80) return 'Guvenli';
-  if (familyRelation <= 25) return 'Kirilgan';
+  if (state.familyCrisisTriggered && familyRelation <= 35) {
+    return tRuntime('narrative.family.atmosphere.crisis');
+  }
+  if (family.dynamic === 'STRICT' && state.strictWarmthTriggered) {
+    return tRuntime('narrative.family.atmosphere.softening');
+  }
+  if (familyRelation >= 80) return tRuntime('narrative.family.atmosphere.secure');
+  if (familyRelation <= 25) return tRuntime('narrative.family.atmosphere.fragile');
 
-  if (family.dynamic === 'STRICT') return 'Disiplinli';
-  if (family.dynamic === 'CHAOTIC') return 'Daginik';
-  return 'Destekleyici';
+  if (family.dynamic === 'STRICT') return tRuntime('narrative.family.atmosphere.strict');
+  if (family.dynamic === 'CHAOTIC') return tRuntime('narrative.family.atmosphere.chaotic');
+  return tRuntime('narrative.family.atmosphere.supportive');
 };

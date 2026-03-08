@@ -8,29 +8,29 @@ const GOAL_CHAIN_STAGE_IDS = {
 
 const GOAL_TEXT: Record<LifeGoal, { stage1: string; stage2: string; stage3: string }> = {
   ACADEMIC: {
-    stage1: 'Ogretmenin sende akademik potansiyel gordu ve bir mentor programina davet etti.',
-    stage2: 'Ilk ciddi deneme sinavina cikiyorsun. Programin gercekten ise yarayip yaramadigi belli olacak.',
-    stage3: 'Ulke capindaki burs finaline ciktin. Tum emegin bu son performansta olculecek.',
+    stage1: 'Öğretmenin sende akademik potansiyel gördü ve bir mentor programına davet etti.',
+    stage2: 'İlk ciddi deneme sınavına çıkıyorsun. Programın gerçekten işe yarayıp yaramadığı belli olacak.',
+    stage3: 'Ülke çapındaki burs finaline çıktın. Tüm emeğin bu son performansta ölçülecek.',
   },
   ATHLETIC: {
-    stage1: 'Antrenorun fiziksel kapasiteni fark edip seni ozel bir programa aldi.',
-    stage2: 'Ilk resmi turnuvana cikiyorsun. Performansin artik sadece idmanla olculmeyecek.',
-    stage3: 'Buyuk final maci. Kazanirsan milli kamp listesine girebilirsin.',
+    stage1: 'Antrenörün fiziksel kapasiteni fark edip seni özel bir programa aldı.',
+    stage2: 'İlk resmi turnuvana çıkıyorsun. Performansın artık sadece idmanla ölçülmeyecek.',
+    stage3: 'Büyük final maçı. Kazanırsan milli kamp listesine girebilirsin.',
   },
   CREATIVE: {
-    stage1: 'Atolye hocan tarzini fark etti ve seni ozel bir proje grubuna secti.',
-    stage2: 'Ilk kez kalabalik bir sahnede/sergide isini gostereceksin.',
-    stage3: 'Buyuk final gecesi. Isin dogru etkiyi yaratirsa profesyonel bir firsat acilacak.',
+    stage1: 'Atölye hocan tarzını fark etti ve seni özel bir proje grubuna seçti.',
+    stage2: 'İlk kez kalabalık bir sahnede/sergide işini göstereceksin.',
+    stage3: 'Büyük final gecesi. İşin doğru etkiyi yaratırsa profesyonel bir fırsat açılacak.',
   },
   WEALTH: {
-    stage1: 'Kucuk bir is fikrin dikkat cekti. Bir mentor senden mini bir is plani istiyor.',
-    stage2: 'Ilk gercek musteri ve gelir baskisiyla karsi karsiyasin.',
-    stage3: 'Yatirimci onunde son sunum. Planin ya buyuyecek ya da kapanacak.',
+    stage1: 'Küçük bir iş fikrin dikkat çekti. Bir mentor senden mini bir iş planı istiyor.',
+    stage2: 'İlk gerçek müşteri ve gelir baskısıyla karşı karşıyasın.',
+    stage3: 'Yatırımcı önünde son sunum. Planın ya büyüyecek ya da kapanacak.',
   },
   SOCIAL: {
-    stage1: 'Okul toplulugu seni temsilci adayi olarak one cikardi.',
-    stage2: 'Ilk kriz toplantisini yonetiyorsun. Insanlari ayni hedefte tutman gerekiyor.',
-    stage3: 'Sehir capinda buyuk forum finali. Bag kurma becerin sinanin zirvesinde.',
+    stage1: 'Okul topluluğu seni temsilci adayı olarak öne çıkardı.',
+    stage2: 'İlk kriz toplantısını yönetiyorsun. İnsanları aynı hedefte tutman gerekiyor.',
+    stage3: 'Şehir çapında büyük forum finali. Bağ kurma becerin sınavın zirvesinde.',
   },
 };
 
@@ -110,9 +110,9 @@ const feedbackByGoal = (
   variant: 'safe' | 'risky'
 ): string => {
   if (variant === 'safe') {
-    return `${GOAL_TEXT[goal][`stage${stage}` as 'stage1' | 'stage2' | 'stage3']} Dengeli bir yaklasimla istikrar kurdun.`;
+    return `${GOAL_TEXT[goal][`stage${stage}` as 'stage1' | 'stage2' | 'stage3']} Dengeli bir yaklaşımla istikrar kurdun.`;
   }
-  return `${GOAL_TEXT[goal][`stage${stage}` as 'stage1' | 'stage2' | 'stage3']} Yuksek risk aldin; hizli kazandin ama bedel odedin.`;
+  return `${GOAL_TEXT[goal][`stage${stage}` as 'stage1' | 'stage2' | 'stage3']} Yüksek risk aldın; hızlı kazandın ama bedel ödedin.`;
 };
 
 const buildStageChoices = (stage: 1 | 2 | 3): ((context: EventContext) => Choice)[] => [
@@ -120,7 +120,7 @@ const buildStageChoices = (stage: 1 | 2 | 3): ((context: EventContext) => Choice
     const goal = resolveGoal(context);
     return {
       id: `goal_chain_s${stage}_safe`,
-      text: 'Planli ve kontrollu ilerle',
+      text: 'Planlı ve kontrollü ilerle',
       effect: effectByGoal(goal, stage, 'safe'),
       stressEffect: 3,
       feedback: feedbackByGoal(goal, stage, 'safe'),
@@ -130,7 +130,7 @@ const buildStageChoices = (stage: 1 | 2 | 3): ((context: EventContext) => Choice
     const goal = resolveGoal(context);
     return {
       id: `goal_chain_s${stage}_risky`,
-      text: 'Agresif hamle yap, hizli sonucu zorla',
+      text: 'Agresif hamle yap, hızlı sonucu zorla',
       effect: effectByGoal(goal, stage, 'risky'),
       stressEffect: 10,
       feedback: feedbackByGoal(goal, stage, 'risky'),
@@ -189,7 +189,7 @@ export const GOAL_CHAIN_EVENTS: GameEvent[] = [
 
 export const GOAL_CHAIN_ARC: StoryArc = {
   id: 'arc_goal_path_chain',
-  title: 'Hayat Amaci Zinciri',
+  title: 'Hayat Amacı Zinciri',
   ageRange: [14, 18],
   isRepeatable: false,
   events: [

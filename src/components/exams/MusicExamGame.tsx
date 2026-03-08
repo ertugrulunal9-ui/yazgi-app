@@ -12,6 +12,7 @@ import Animated, {
   cancelAnimation,
 } from 'react-native-reanimated';
 import { Haptics } from '../../utils/haptics';
+import { tRuntime } from '../../i18n/strings';
 import { Difficulty, GameState } from './MiniGameContainer';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -57,7 +58,7 @@ const MusicExamGame: React.FC<MusicExamGameProps> = ({
   if (!gameState || !setGameState) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Yükleniyor...</Text>
+        <Text style={styles.loadingText}>{tRuntime('exams.music.loading')}</Text>
       </View>
     );
   }
@@ -175,7 +176,7 @@ const MusicExamGame: React.FC<MusicExamGameProps> = ({
     if (feedback !== null) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     setFeedback('wrong');
-    setHitText('KAÇTI');
+    setHitText(tRuntime('exams.music.missed'));
     setHitTextColor('#ef4444');
     hitFlash.value = withSequence(
       withTiming(1, { duration: 80 }),
@@ -207,7 +208,13 @@ const MusicExamGame: React.FC<MusicExamGameProps> = ({
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setFeedback('correct');
-      setHitText(isPerfect ? 'MÜKEMMEL' : isGood ? 'İYİ' : 'TAMAM');
+      setHitText(
+        isPerfect
+          ? tRuntime('exams.music.perfect')
+          : isGood
+            ? tRuntime('exams.music.good')
+            : tRuntime('exams.music.okay')
+      );
       setHitTextColor(isPerfect ? '#facc15' : isGood ? '#22c55e' : '#60a5fa');
       setHitLaneIndex(laneIndex);
       noteScale.value = withSequence(withSpring(1.2), withTiming(0.95));
@@ -225,7 +232,7 @@ const MusicExamGame: React.FC<MusicExamGameProps> = ({
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setFeedback('wrong');
-      setHitText(inWindow ? 'YANLIŞ' : 'KAÇTI');
+      setHitText(inWindow ? tRuntime('exams.music.wrong') : tRuntime('exams.music.missed'));
       setHitTextColor('#ef4444');
       setHitLaneIndex(laneIndex);
       hitFlash.value = withSequence(

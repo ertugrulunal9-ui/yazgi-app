@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { PersonalityState, PersonalityTendency } from '../types';
+import { tRuntime } from '../i18n/strings';
+import { useRuntimeLocale } from '../i18n/useRuntimeLocale';
 import {
   getSpecialPathProgress,
   HIGH_MOMENTUM_THRESHOLD,
@@ -15,9 +17,9 @@ interface ProgressBonusProps {
 }
 
 const TENDENCY_LABELS: Record<PersonalityTendency, string> = {
-  HELPFUL: 'Yardimsever',
-  PRAGMATIC: 'Pragmatik',
-  AGGRESSIVE: 'Agresif',
+  HELPFUL: 'Helpful',
+  PRAGMATIC: 'Pragmatic',
+  AGGRESSIVE: 'Aggressive',
 };
 
 const TENDENCY_TONES: Record<PersonalityTendency, {
@@ -49,12 +51,19 @@ export const ProgressBonus: React.FC<ProgressBonusProps> = ({
   tendency,
   threshold = HIGH_MOMENTUM_THRESHOLD,
 }) => {
+  useRuntimeLocale();
+
   const normalizedState = normalizePersonalityState(personalityState);
   const data = normalizedState[tendency];
   const tone = TENDENCY_TONES[tendency];
   const progress = getSpecialPathProgress(normalizedState, tendency, threshold);
   const unlocked = isSpecialPathUnlocked(normalizedState, tendency, threshold);
   const glowIntensity = useMemo(() => clamp((data.multiplier - 1) / 0.6, 0.1, 1), [data.multiplier]);
+  const tendencyLabel = tRuntime(
+    `feedback.momentum.tendencies.${tendency}`,
+    undefined,
+    TENDENCY_LABELS[tendency]
+  );
 
   const shakeX = useRef(new Animated.Value(0)).current;
   const cardOpacity = useRef(new Animated.Value(1)).current;
@@ -92,7 +101,13 @@ export const ProgressBonus: React.FC<ProgressBonusProps> = ({
 
     if (multiplierRaised) {
       const bonusPercent = Math.max(0, Math.round((data.multiplier - 1) * 100));
-      setBonusText(`+%${bonusPercent} Momentum Bonusu!`);
+      setBonusText(
+        tRuntime(
+          'feedback.momentum.highMomentum',
+          { percent: bonusPercent },
+          `+${bonusPercent}% Momentum Bonus!`
+        )
+      );
       bonusOpacity.setValue(0);
       Animated.sequence([
         Animated.timing(bonusOpacity, {
@@ -171,7 +186,11 @@ export const ProgressBonus: React.FC<ProgressBonusProps> = ({
 
       <View className="mb-2 flex-row items-center justify-between">
         <Text className="text-sm font-semibold text-zinc-100">
-          {TENDENCY_LABELS[tendency]} Ivmesi
+          {tRuntime(
+            'character.screen.momentumCard.title',
+            { tendency: tendencyLabel },
+            `${tendencyLabel} Momentum`
+          )}
         </Text>
         <Text
           className="text-xs font-bold"
@@ -192,12 +211,16 @@ export const ProgressBonus: React.FC<ProgressBonusProps> = ({
       </View>
 
       <View className="flex-row items-center justify-between">
-        <Text className="text-xs text-zinc-300">Streak: {data.streak}</Text>
+        <Text className="text-xs text-zinc-300">
+          {tRuntime('character.screen.momentumCard.streak', { count: data.streak }, `Streak: ${data.streak}`)}
+        </Text>
         <Text
           className="text-xs font-semibold"
           style={{ color: unlocked ? tone.textColor : '#71717a' }}
         >
-          {unlocked ? 'Ozel Yol Acik' : 'Yol Kilidi Kapali'}
+          {unlocked
+            ? tRuntime('character.screen.momentumCard.specialPathUnlocked', undefined, 'Special Path Unlocked')
+            : tRuntime('character.screen.momentumCard.specialPathLocked', undefined, 'Path Locked')}
         </Text>
       </View>
 

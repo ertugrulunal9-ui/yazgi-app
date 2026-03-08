@@ -15,6 +15,7 @@ import {
   generateFutureVision,
   resolveEnding,
   TOTAL_ENDING_COUNT,
+  ENDING_ID_LOOKUP,
 } from '../utils/endingResolver';
 import { buildLifeStoryNarrative } from '../utils/memoryLogic';
 import { buildNarrativeWeightBreakdown } from '../utils/narrativeWeight';
@@ -73,7 +74,7 @@ const ENDING_GOAL_TO_LIFE_GOAL: Record<EndingGoal, LifeGoal | null> = {
 const LIFE_GOAL_LABELS: Record<LifeGoal, string> = {
   ACADEMIC: 'Akademik',
   ATHLETIC: 'Atletik',
-  CREATIVE: 'Yaratici',
+  CREATIVE: 'Yaratıcı',
   WEALTH: 'Finansal',
   SOCIAL: 'Sosyal',
 };
@@ -106,10 +107,12 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
     inferredGoalLabel,
     mismatchFailure,
     compatibilityScore,
+    score: finalScore,
     errorDebt,
     achievementFlavor,
     tier,
     socialSummary,
+    scoreBreakdown,
   } = endingResolution;
   const socialEpilogue = socialSummary ?? [];
 
@@ -206,8 +209,8 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
   const lifeStorySummary = useMemo(() => {
     const firstParagraph = lifeStory.paragraphs[0] || '';
     const sentence = firstSentence(firstParagraph);
-    return sentence || 'Hayatim inisli cikisli bir yoldu.';
-  }, [lifeStory.paragraphs]);
+    return sentence || t('endings.shareCard.defaultSummary');
+  }, [lifeStory.paragraphs, t]);
 
   const handleShareLife = async () => {
     if (isSharing) return;
@@ -217,8 +220,8 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
       const sharingAvailable = await Sharing.isAvailableAsync();
       if (!sharingAvailable) {
         Alert.alert(
-          t('messages.sharingUnavailable', undefined, 'Paylasim kullanilamiyor'),
-          t('messages.sharingNotSupported', undefined, 'Bu cihazda paylasim desteklenmiyor.')
+          t('messages.sharingUnavailable'),
+          t('messages.sharingNotSupported')
         );
         return;
       }
@@ -226,15 +229,15 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
       const uri = await shareCardRef.current?.capture?.();
       if (!uri) {
         Alert.alert(
-          t('messages.sharingNotReady', undefined, 'Paylasim hazir degil'),
-          t('messages.cardCreationFailed', undefined, 'Kart olusturulamadi, tekrar dene.')
+          t('messages.sharingNotReady'),
+          t('messages.cardCreationFailed')
         );
         return;
       }
 
       await Sharing.shareAsync(uri, {
         mimeType: 'image/png',
-        dialogTitle: t('messages.shareTitle', undefined, 'Yazgi - Hayatimi Paylas'),
+        dialogTitle: t('messages.shareTitle'),
       });
 
       void logShareEvent({
@@ -245,8 +248,8 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
     } catch (error) {
       console.error('Failed to share life card:', error);
       Alert.alert(
-        t('messages.sharingFailed', undefined, 'Paylasim basarisiz'),
-        t('messages.cardSharingFailed', undefined, 'Kart paylasimi tamamlanamadi.')
+        t('messages.sharingFailed'),
+        t('messages.cardSharingFailed')
       );
     } finally {
       setIsSharing(false);
@@ -277,8 +280,8 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
           errorMessage: adResult.error,
         });
         Alert.alert(
-          t('messages.adNotShown', undefined, 'Reklam gosterilemedi'),
-          adResult.error || t('messages.tryAgain', undefined, 'Lutfen tekrar dene.')
+          t('messages.adNotShown'),
+          adResult.error || t('messages.tryAgain')
         );
         return;
       }
@@ -346,7 +349,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
               textAlign: 'center',
               marginBottom: 6,
             }}>
-              {t('endings.title', undefined, 'Yolun Sonu')}
+              {t('endings.title')}
             </Text>
           </FadeInDownView>
 
@@ -390,8 +393,8 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                 fontSize: 14,
               }}>
                 {isSharing
-                  ? t('ui.cardPreparing', undefined, 'Kart Hazirlaniyor...')
-                  : t('buttons.shareLife', undefined, 'Hayatini Paylas')}
+                  ? t('ui.cardPreparing')
+                  : t('buttons.shareLife')}
               </Text>
             </ShimmerButton>
           </FadeInUpView>
@@ -434,7 +437,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
           <FadeInUpView delay={280}>
             <View style={{ marginBottom: 16 }}>
               <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
-                {t('endings.analysisTitle', undefined, 'Sonuc Analizi')}
+                  {t('endings.analysisTitle')}
               </Text>
               <View style={{ flexDirection: 'row', justifyContent: 'space-around', paddingVertical: 8 }}>
                 <FadeInLeftView delay={330}>
@@ -444,7 +447,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                       style={{ color: theme.accentSkill, fontWeight: '700', fontSize: 18 }}
                     />
                     <Text style={{ color: theme.textSecondary, fontSize: 11 }}>
-                      {t('endings.compatibilityScore', undefined, 'Hedef Uyumu')}
+                      {t('endings.compatibilityScore')}
                     </Text>
                   </View>
                 </FadeInLeftView>
@@ -455,7 +458,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                       style={{ color: theme.accentStat, fontWeight: '700', fontSize: 18 }}
                     />
                     <Text style={{ color: theme.textSecondary, fontSize: 11 }}>
-                      {t('endings.errorDebt', undefined, 'Hata Borcu')}
+                      {t('endings.errorDebt')}
                     </Text>
                   </View>
                 </FadeInRightView>
@@ -466,7 +469,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                       style={{ color: theme.accentGrade, fontWeight: '700', fontSize: 18 }}
                     />
                     <Text style={{ color: theme.textSecondary, fontSize: 11 }}>
-                      {t('endings.traits', undefined, 'Ozellik')}
+                      {t('endings.traits')}
                     </Text>
                   </View>
                 </FadeInRightView>
@@ -474,11 +477,63 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
             </View>
           </FadeInUpView>
 
+          {scoreBreakdown && (
+            <FadeInUpView delay={315}>
+              <View style={{
+                marginBottom: 16,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: theme.border,
+                backgroundColor: theme.surfaceOverlay,
+                padding: metrics.pad,
+              }}>
+                <Text style={{ color: theme.textPrimary, fontWeight: '700', fontSize: 14, marginBottom: 10 }}>
+                  {t('endings.scoreBreakdown.title')}
+                </Text>
+                {([
+                  { label: t('endings.scoreBreakdown.rawScore'), value: scoreBreakdown.rawScore, positive: true },
+                  scoreBreakdown.achievementBonus > 0 && { label: t('endings.scoreBreakdown.achievements'), value: scoreBreakdown.achievementBonus, positive: true },
+                  scoreBreakdown.difficultyModifier !== 0 && { label: t('endings.scoreBreakdown.difficulty'), value: scoreBreakdown.difficultyModifier, positive: scoreBreakdown.difficultyModifier > 0 },
+                  scoreBreakdown.memoryBonus > 0 && { label: t('endings.scoreBreakdown.memories'), value: scoreBreakdown.memoryBonus, positive: true },
+                  scoreBreakdown.debtPenalty > 0 && { label: t('endings.scoreBreakdown.debt'), value: -scoreBreakdown.debtPenalty, positive: false },
+                  scoreBreakdown.scarPenalty > 0 && { label: t('endings.scoreBreakdown.scars'), value: -scoreBreakdown.scarPenalty, positive: false },
+                  scoreBreakdown.mismatchPenalty > 0 && { label: t('endings.scoreBreakdown.mismatch'), value: -scoreBreakdown.mismatchPenalty, positive: false },
+                  scoreBreakdown.versatilityPenalty > 0 && { label: t('endings.scoreBreakdown.versatility'), value: -scoreBreakdown.versatilityPenalty, positive: false },
+                ] as const).filter(Boolean).map((item, i) => {
+                  if (!item) return null;
+                  const barWidth = Math.min(100, Math.abs(item.value));
+                  return (
+                    <View key={i} style={{ marginBottom: 8 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
+                        <Text style={{ color: theme.textSecondary, fontSize: 12 }}>{item.label}</Text>
+                        <Text style={{ color: item.positive ? '#22c55e' : '#ef4444', fontSize: 12, fontWeight: '700' }}>
+                          {item.value > 0 ? '+' : ''}{Math.round(item.value)}
+                        </Text>
+                      </View>
+                      <View style={{ height: 4, backgroundColor: theme.border, borderRadius: 2, overflow: 'hidden' }}>
+                        <View style={{ height: '100%', width: `${barWidth}%`, backgroundColor: item.positive ? '#22c55e' : '#ef4444', borderRadius: 2 }} />
+                      </View>
+                    </View>
+                  );
+                })}
+                <View style={{ height: 1, backgroundColor: theme.border, marginVertical: 8 }} />
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={{ color: theme.textPrimary, fontWeight: '700', fontSize: 13 }}>
+                    {t('endings.scoreBreakdown.total')}
+                  </Text>
+                  <Text style={{ color: getTierBadgeColor(tier), fontWeight: '800', fontSize: 15 }}>
+                    {Math.round(finalScore)}
+                  </Text>
+                </View>
+              </View>
+            </FadeInUpView>
+          )}
+
           {endingHints.length > 0 && (
             <FadeInUpView delay={320}>
               <View style={{ marginBottom: 16 }}>
                 <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
-                  {t('endings.discoveryHints', undefined, 'Bir Sonraki Kesif Ipuclari')}
+                  {t('endings.discoveryHints')}
                 </Text>
                 {endingHints.map((hint, index) => (
                   <View
@@ -497,7 +552,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                       {LIFE_GOAL_LABELS[hint.goalPath]} {hint.tier}
                     </Text>
                     <Text style={{ color: theme.textSecondary, marginTop: 2, fontSize: 12 }}>
-                      %{hint.progressPercent} yaklastin
+                      {t('endings.progressHint', { percent: hint.progressPercent }, `%${hint.progressPercent} yaklaştın`)}
                     </Text>
                   </View>
                 ))}
@@ -508,12 +563,12 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
           <FadeInUpView delay={340}>
             <View style={{ marginBottom: 16 }}>
               <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
-                {t('endings.goalLabel', undefined, 'Hedef')}
+                {t('endings.goalLabel')}
               </Text>
               <Text style={{ color: theme.textPrimary, fontWeight: '600' }}>{selectedGoalLabel}</Text>
               {selectedGoalLabel !== goalLabel && (
                 <Text style={{ color: theme.textSecondary, marginTop: 2 }}>
-                  {`${t('endings.activeCalculation', undefined, 'Aktif hesaplama: ')}${goalLabel}`}
+                  {`${t('endings.activeCalculation')}${goalLabel}`}
                 </Text>
               )}
               {mismatchFailure && (
@@ -527,7 +582,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
               )}
               {errorDebt.reasons.length > 0 && (
                 <Text style={{ color: theme.textSecondary, marginTop: 6, lineHeight: 18 }}>
-                  {`${t('endings.criticalDebts', undefined, 'Kritik borclar: ')}${errorDebt.reasons.slice(0, 2).join(', ')}`}
+                  {`${t('endings.criticalDebts')}${errorDebt.reasons.slice(0, 2).join(', ')}`}
                 </Text>
               )}
             </View>
@@ -537,7 +592,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
             <FadeInUpView delay={380}>
               <View style={{ marginBottom: 16 }}>
                 <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
-                  {t('endings.achievementImpact', undefined, 'Basarim Etkisi')}
+                  {t('endings.achievementImpact')}
                 </Text>
                 {achievementFlavor.slice(0, 2).map((line, index) => (
                   <Text key={`${line}_${index}`} style={{ color: theme.textPrimary, marginBottom: 4, lineHeight: 18 }}>
@@ -552,7 +607,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
             <FadeInUpView delay={420}>
               <View style={{ marginBottom: 16 }}>
                 <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
-                  {t('endings.gainedTraits', undefined, 'Kazanilan Ozellikler')}
+                  {t('endings.gainedTraits')}
                 </Text>
                 <StaggeredFadeIn>
                   {gameState.traits.map((traitId) => (
@@ -579,7 +634,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
             <FadeInUpView delay={440}>
               <View style={{ marginBottom: 16 }}>
                 <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
-                  {t('social.epilogue.title', undefined, 'Sosyal Epilog')}
+                  {t('social.epilogue.title')}
                 </Text>
                 <View style={{ borderTopWidth: 1, borderTopColor: theme.border }}>
                   {socialEpilogue.map((summary) => {
@@ -617,7 +672,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                 padding: metrics.pad,
               }}>
                 <Text style={{ color: theme.textPrimary, fontWeight: '700', fontSize: 15, marginBottom: 10 }}>
-                  {'\u{1F4DC}'} {t('endings.lifeStory.title', undefined, 'Hayat Hikayen')}
+                  {'\u{1F4DC}'} {t('endings.lifeStory.title')}
                 </Text>
                 {lifeStory.paragraphs.map((para, i) => (
                   <Text
@@ -636,6 +691,46 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
             </FadeInUpView>
           )}
 
+          {(() => {
+            const EMOTION_EMOJI: Record<string, string> = { PRIDE: '\u{1F31F}', GUILT: '\uD83D\uDE14', REGRET: '\u{1F4AD}', SATISFACTION: '\u2705', NEUTRAL: '\u25CB' };
+            const EMOTION_LABEL: Record<string, string> = { PRIDE: 'Gurur', GUILT: 'Pişmanlık', REGRET: 'Üzüntü', SATISFACTION: 'Tatmin', NEUTRAL: 'Nötr' };
+            const turningPoints = (gameState.memories ?? [])
+              .filter(m => m.weight === 'HIGH')
+              .sort((a, b) => a.age - b.age);
+            if (turningPoints.length === 0) return null;
+            return (
+              <FadeInUpView delay={448}>
+                <View style={{
+                  marginBottom: 16,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                  backgroundColor: theme.surfaceOverlay,
+                  padding: metrics.pad,
+                }}>
+                  <Text style={{ color: theme.textPrimary, fontWeight: '700', fontSize: 15, marginBottom: 10 }}>
+                    {t('endings.turningPoints.title')}
+                  </Text>
+                  {turningPoints.map((mem, i) => (
+                    <View key={mem.id} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: i < turningPoints.length - 1 ? 10 : 0, gap: 10 }}>
+                      <View style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: theme.surfaceRaised, alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ fontSize: 18 }}>{EMOTION_EMOJI[mem.emotion] ?? '\u25CB'}</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text numberOfLines={1} style={{ color: theme.textPrimary, fontWeight: '600', fontSize: 13 }}>
+                          {mem.eventId.replace(/_/g, ' ')}
+                        </Text>
+                        <Text style={{ color: theme.textSecondary, fontSize: 11, marginTop: 1 }}>
+                          {mem.age} {t('character.ageUnit')} — {EMOTION_LABEL[mem.emotion] ?? mem.emotion}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </FadeInUpView>
+            );
+          })()}
+
           {(narrativeBreakdown.positiveMemories.length > 0 || narrativeBreakdown.negativeMemories.length > 0) && (
             <FadeInUpView delay={450}>
               <View style={{
@@ -647,7 +742,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                 padding: metrics.pad,
               }}>
                 <Text style={{ color: '#a78bfa', fontWeight: '700', fontSize: 15, marginBottom: 10 }}>
-                  {'\u2728'} {t('endings.narrativeWeight.title', undefined, 'Seni \u015eekillendiren Anlar')}
+                  {'\u2728'} {t('endings.narrativeWeight.title')}
                 </Text>
                 {narrativeBreakdown.positiveMemories.map(mem => (
                   <View key={mem.id} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 }}>
@@ -702,7 +797,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                   >
                     <Text style={{ color: '#ef4444', fontWeight: '600', fontSize: 13 }}>
                       {scar.label}
-                      {scar.sourceAge ? ` (${scar.sourceAge} ya\u015f\u0131nda)` : ''}
+                      {scar.sourceAge ? t('endings.shareCard.scarAgeLabel', { age: scar.sourceAge }) : ''}
                     </Text>
                     <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2, lineHeight: 17 }}>
                       {scar.description}
@@ -716,10 +811,10 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
           <FadeInUpView delay={460}>
             <View style={{ marginBottom: 16 }}>
               <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
-                {t('endings.legacy', undefined, 'Legacy')}
+                {t('endings.legacy')}
               </Text>
               <Text style={{ color: theme.textPrimary, marginBottom: 4 }}>
-                {t('endings.runLegacyPoints', { points: runLegacyPoints }, 'Bu kosu: +{points} legacy puani')}
+                {t('endings.runLegacyPoints', { points: runLegacyPoints }, 'Bu kosu: +{points} miras puani')}
               </Text>
               <Text style={{ color: theme.textSecondary, marginBottom: 2 }}>
                 {t(
@@ -729,7 +824,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                 )}
               </Text>
               <Text style={{ color: theme.textSecondary }}>
-                {`${t('endings.totalLegacyPoints', undefined, 'Toplam legacy puani: ')}${safeMeta.totalLegacyPoints}`}
+                {`${t('endings.totalLegacyPoints')}${safeMeta.totalLegacyPoints}`}
               </Text>
             </View>
           </FadeInUpView>
@@ -744,7 +839,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
               padding: metrics.pad,
             }}>
               <Text style={{ color: theme.textPrimary, fontWeight: '700', fontSize: 15, marginBottom: 8 }}>
-                {'\u{1F4D6}'} {t('endings.remainingLife', undefined, 'Hayatinin Geri Kalani')}
+                {'\u{1F4D6}'} {t('endings.remainingLife')}
               </Text>
               <Text style={{ color: theme.textSecondary, lineHeight: 20, marginBottom: 10 }}>
                 {futureVision.at30}
@@ -753,7 +848,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
                 <View style={{ flex: 1, height: 1, backgroundColor: theme.border }} />
                 <Text style={{ color: theme.textSecondary, fontSize: 11, marginHorizontal: 8 }}>
-                  {t('endings.in20Years', undefined, '20 yil sonra')}
+                  {t('endings.in20Years')}
                 </Text>
                 <View style={{ flex: 1, height: 1, backgroundColor: theme.border }} />
               </View>
@@ -763,7 +858,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
               </Text>
 
               <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
-                {`${futureMoodIcon} ${t('endings.futureMood', undefined, 'Gelecek ruh hali: ')}${futureVision.mood}`}
+                {`${futureMoodIcon} ${t('endings.futureMood')}${futureVision.mood}`}
               </Text>
             </View>
           </FadeInUpView>
@@ -779,7 +874,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                 borderColor: theme.border,
               }}>
                 <Text style={{ color: theme.textSecondary, fontSize: 11, marginBottom: 4 }}>
-                  {t('endings.whatIfDifferent', undefined, 'Peki ya farkli secseydin?')}
+                  {t('endings.whatIfDifferent')}
                 </Text>
                 <Text style={{ color: theme.textPrimary, fontWeight: '600', lineHeight: 20 }}>
                   {alternativeSuggestion}
@@ -803,8 +898,8 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                   >
                     <Text style={{ color: '#22c55e', fontWeight: '700', fontSize: 13 }}>
                       {altEndingUnlocking
-                        ? t('ui.adLoading', undefined, 'Reklam yukleniyor...')
-                        : t('buttons.watchAdAlternativeEnding', undefined, 'Reklam Izle: Alternatif Sonu Goster')}
+                        ? t('ui.adLoading')
+                        : t('buttons.watchAdAlternativeEnding')}
                     </Text>
                   </ShimmerButton>
                 )}
@@ -856,7 +951,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                 fontFamily: theme.fontHeading,
                 fontSize: 16,
               }}>
-                {t('buttons.newGame', undefined, 'Yeni Oyun')}
+                {t('buttons.newGame')}
               </Text>
             </ShimmerButton>
           </FadeInUpView>
@@ -876,6 +971,9 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
           .slice(0, 3)
           .map(memory => memory.eventId.replace(/_/g, ' '))}
         finalStats={stats}
+        endingEmoji={ENDING_ID_LOOKUP[endingResolution.id]?.icon}
+        finalScore={finalScore}
+        goalLabel={goalLabel}
       />
     </View>
     </View>

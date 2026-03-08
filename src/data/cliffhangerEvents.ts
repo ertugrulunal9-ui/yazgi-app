@@ -22,8 +22,8 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
     text: (ctx) => {
       const friend = getFriend(ctx);
       return friend
-        ? `${friend.name} sana yaklasti. "Yarin sana onemli bir sey soyleyecegim. Simdi olmaz ama... hazir ol."`
-        : 'Arkadaslarindan biri seni kenara cekti. "Yarin konusmamiz lazim. Onemli."';
+        ? `${friend.name} sana yaklaştı. "Yarın sana önemli bir şey söyleyeceğim. Şimdi olmaz ama... hazır ol."`
+        : 'Arkadaşlarından biri seni kenara çekti. "Yarın konuşmamız lazım. Önemli."';
     },
     minAge: 8, maxAge: 18,
     rarity: 'UNCOMMON',
@@ -35,13 +35,13 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
         effect: { charisma: 2 },
         npcRelationChange: 5,
         futureEvents: [{ trigger: 'TURNS', eventId: 'cliff_npc_secret_reveal', turnsLater: 1 }],
-        feedback: 'Merak icinde kaldin. Yarin ne soyleyecek acaba?',
+        feedback: 'Merak içinde kaldın. Yarın ne söyleyecek acaba?',
       },
       {
-        text: '😤 "Simdi soyle, bekleyemem"',
+        text: '😤 "Şimdi söyle, bekleyemem"',
         effect: { charisma: -1 },
         npcRelationChange: -3,
-        feedback: 'Sabirsizligin fark edildi. "Yarin" dedi ve gitti.',
+        feedback: 'Sabırsızlığın fark edildi. "Yarın" dedi ve gitti.',
       },
     ],
   },
@@ -50,26 +50,26 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
     tags: ['social', 'friend', 'npc'],
     text: (ctx) => {
       const friend = getFriend(ctx);
-      const name = friend?.name || 'Arkadasin';
-      return `${name} sonunda konusuyor: "Ailem tasinmaya karar verdi. Bu sehirden gidiyoruz..."`;
+      const name = friend?.name || 'Arkadaşın';
+      return `${name} sonunda konuşuyor: "Ailem taşınmaya karar verdi. Bu şehirden gidiyoruz..."`;
     },
     minAge: 8, maxAge: 18,
     rarity: 'UNCOMMON',
     personalityCategory: 'SOCIAL',
     choices: [
       {
-        text: '😢 "Hayir... gitme"',
+        text: '😢 "Hayır... gitme"',
         effect: { charisma: -6 },
         npcRelationChange: 10,
         personalityEffects: [{ axis: 'empathy', change: 3 }],
-        memory: { emotion: 'REGRET', weight: 'HIGH', customNote: 'Arkadasinin tasindigi gun' },
-        feedback: 'Bazi vedalar hayatin en zor kisimlaridir.',
+        memory: { emotion: 'REGRET', weight: 'HIGH', customNote: 'Arkadaşının taşındığı gün' },
+        feedback: 'Bazı vedalar hayatın en zor kısımlarıdır.',
       },
       {
-        text: '💪 "Uzak da olsak arkadas kaliriz"',
+        text: '💪 "Uzak da olsak arkadaş kalırız"',
         effect: { charisma: 1 },
         npcRelationChange: 15,
-        feedback: 'Mesafe dostlugun onundeki tek engel degil.',
+        feedback: 'Mesafe dostluğun önündeki tek engel değil.',
       },
     ],
   },
@@ -81,29 +81,29 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
     id: 'cliff_exam_tomorrow',
     continuationEventId: 'cliff_exam_result_good',
     tags: ['exam', 'study', 'school'],
-    text: 'Yarin buyuk sinav var. Gece gec saate kadar ders mi calismalsin, yoksa dinlenip zihni tazele?',
+    text: 'Yarın büyük sınav var. Gece geç saate kadar ders mi çalışmalısın, yoksa dinlenip zihni tazele?',
     minAge: 7, maxAge: 18,
     rarity: 'COMMON',
     personalityCategory: 'GROWTH',
     choices: [
       {
-        text: '📚 Son bir kez daha gozden gecir',
+        text: '📚 Son bir kez daha gözden geçir',
         effect: { intelligence: 3, health: -2 },
         futureEvents: [{ trigger: 'TURNS', eventId: 'cliff_exam_result_good', turnsLater: 1 }],
-        feedback: 'Geceyi ders calisarak gecirdin. Umarim sonuc iyi olur...',
+        feedback: 'Geceyi ders çalışarak geçirdin. Umarım sonuç iyi olur...',
       },
       {
-        text: '😴 Erken yat — dinlenmis zihin daha iyi calisir',
+        text: '😴 Erken yat — dinlenmiş zihin daha iyi çalışır',
         effect: { health: 3 },
         futureEvents: [{ trigger: 'TURNS', eventId: 'cliff_exam_result_rested', turnsLater: 1 }],
-        feedback: 'Rahat bir uyku cektin. Yarin taze bir kafayla gireceksin.',
+        feedback: 'Rahat bir uyku çektin. Yarın taze bir kafayla gireceksin.',
       },
     ],
   },
   {
     id: 'cliff_exam_result_good',
     tags: ['exam', 'school'],
-    text: 'Sinav sonuclari aciklandi! Gece boyunca calistigi konulardan soru gelmis.',
+    text: 'Sınav sonuçları açıklandı! Gece boyunca çalıştığı konulardan soru gelmiş.',
     minAge: 7, maxAge: 18,
     rarity: 'COMMON',
     personalityCategory: 'GROWTH',
@@ -112,14 +112,14 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
         text: '🎉 Sonuclara bak',
         effect: { intelligence: 4, charisma: 6 },
         gradeUpdates: { math: 5, science: 3 },
-        feedback: 'Harika bir not! Gece calismak ise yaramis.',
+        feedback: 'Harika bir not! Gece çalışmak işe yaramış.',
       },
     ],
   },
   {
     id: 'cliff_exam_result_rested',
     tags: ['exam', 'school'],
-    text: 'Sinav sonuclari aciklandi. Dinlenmis bir kafayla girdiginde kendini iyi hissetmistin.',
+    text: 'Sınav sonuçları açıklandı. Dinlenmiş bir kafayla girdiğinde kendini iyi hissetmiştin.',
     minAge: 7, maxAge: 18,
     rarity: 'COMMON',
     personalityCategory: 'GROWTH',
@@ -128,7 +128,7 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
         text: '📊 Sonuclara bak',
         effect: { intelligence: 2, charisma: 4, health: 2 },
         gradeUpdates: { math: 3 },
-        feedback: 'Fena degil! Dinlenmek de ise yaramis. Hem sagligindan da olmedin.',
+        feedback: 'Fena değil! Dinlenmek de işe yaramış. Hem sağlığından da olmadın.',
       },
     ],
   },
@@ -143,47 +143,47 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
     text: (ctx) => {
       const familyDynamic = ctx.gameState?.family?.dynamic;
       return familyDynamic === 'STRICT'
-        ? 'Baban aksam yemeginde sert bir yuzle "Konusmamiz lazim" dedi. Annesi de sessiz.'
-        : 'Ailen aksam yemeginde "Size bir haberimiz var" dedi. Yuzlerinde garip bir ifade.';
+        ? 'Baban akşam yemeğinde sert bir yüzle "Konuşmamız lazım" dedi. Annesi de sessiz.'
+        : 'Ailen akşam yemeğinde "Size bir haberimiz var" dedi. Yüzlerinde garip bir ifade.';
     },
     minAge: 8, maxAge: 16,
     rarity: 'UNCOMMON',
     personalityCategory: 'SOCIAL',
     choices: [
       {
-        text: '😰 "Ne oldu? Soyleyin..."',
+        text: '😰 "Ne oldu? Söyleyin..."',
         effect: { charisma: -2 },
         futureEvents: [{ trigger: 'TURNS', eventId: 'cliff_family_news_reveal', turnsLater: 1 }],
-        feedback: '"Yarin konusuruz" dediler. Gece uyuyamadin.',
+        feedback: '"Yarın konuşuruz" dediler. Gece uyuyamadın.',
       },
       {
         text: '😊 "Iyi haber mi?"',
         effect: {},
         futureEvents: [{ trigger: 'TURNS', eventId: 'cliff_family_news_reveal', turnsLater: 1 }],
-        feedback: 'Gulumsediler ama cevap vermediler. Merak icinde kaldin.',
+        feedback: 'Güldümsediler ama cevap vermediler. Merak içinde kaldın.',
       },
     ],
   },
   {
     id: 'cliff_family_news_reveal',
     tags: ['family', 'social'],
-    text: 'Ailen sonunda haberi verdi: yeni bir kardes yolda! Hayatin degisecek.',
+    text: 'Ailen sonunda haberi verdi: yeni bir kardeş yolda! Hayatın değişecek.',
     minAge: 8, maxAge: 16,
     rarity: 'UNCOMMON',
     personalityCategory: 'SOCIAL',
     choices: [
       {
-        text: '🎉 "Harika! Abi/abla olacagim!"',
+        text: '🎉 "Harika! Abi/abla olacağım!"',
         effect: { charisma: 10 },
         personalityEffects: [{ axis: 'empathy', change: 3 }],
-        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Yeni kardes haberi' },
-        feedback: 'Heyecanlisin! Buyuk sorumluluk ama buyuk mutluluk da.',
+        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Yeni kardeş haberi' },
+        feedback: 'Heyecanlısın! Büyük sorumluluk ama büyük mutluluk da.',
       },
       {
-        text: '😰 "Ya dikkat bana azalirsa?"',
+        text: '😰 "Ya dikkat bana azalırsa?"',
         effect: { charisma: -3 },
         personalityEffects: [{ axis: 'openness', change: -2 }],
-        feedback: 'Endiselen. Ama zamanla alisacaksiniz.',
+        feedback: 'Endişelen. Ama zamanla alışacaksınız.',
       },
     ],
   },
@@ -194,22 +194,22 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
   {
     id: 'cliff_fate_turning_point',
     tags: ['growth', 'identity'],
-    text: 'Bugun garip bir gun. Her sey normal gibi ama icinde bir his var — "yarin bir seyler degisecek." Buna hazir misin?',
+    text: 'Bugün garip bir gün. Her şey normal gibi ama içinde bir his var — "yarın bir şeyler değişecek." Buna hazır mısın?',
     minAge: 10, maxAge: 18,
     rarity: 'RARE',
     personalityCategory: 'GROWTH',
     choices: [
       {
-        text: '🌟 "Degisime hazirim"',
+        text: '🌟 "Değişime hazırım"',
         effect: { charisma: 3 },
         personalityEffects: [{ axis: 'openness', change: 3 }, { axis: 'openness', change: 2 }],
-        feedback: 'Icindeki ses guclendi. Yarin ne getirecek bilmiyorsun ama korkun yok.',
+        feedback: 'İçindeki ses güçlendi. Yarın ne getireceğini bilmiyorsun ama korkun yok.',
       },
       {
         text: '😟 "Umarim kotu bir sey degildir"',
         effect: { charisma: -1 },
         personalityEffects: [{ axis: 'openness', change: -1 }],
-        feedback: 'Tedirginsin. Ama bazen en iyi seyler beklenmedik anda gelir.',
+        feedback: 'Tedirginsin. Ama bazen en iyi şeyler beklenmedik anda gelir.',
       },
     ],
   },
@@ -221,7 +221,7 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
     id: 'cliff_mysterious_letter',
     continuationEventId: 'cliff_letter_meetup',
     tags: ['social', 'friend'],
-    text: 'Cantanda bir mektup buldun. Uzerinde sadece "Yarin parkta ol, saat 4" yazıyor. El yazisi tanidik ama cikaramadin.',
+    text: 'Çantanda bir mektup buldun. Üzerinde sadece "Yarın parkta ol, saat 4" yazıyor. El yazısı tanıdık ama çıkaramadın.',
     minAge: 10, maxAge: 18,
     rarity: 'UNCOMMON',
     personalityCategory: 'RISK',
@@ -231,20 +231,20 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
         effect: { charisma: 2 },
         personalityEffects: [{ axis: 'openness', change: 3 }, { axis: 'openness', change: 2 }],
         futureEvents: [{ trigger: 'TURNS', eventId: 'cliff_letter_meetup', turnsLater: 1 }],
-        feedback: 'Cesur bir karar. Yarin parkta ne bekliyor seni?',
+        feedback: 'Cesur bir karar. Yarın parkta ne bekliyor seni?',
       },
       {
         text: '🗑️ "Tuzak olabilir, gitmem"',
         effect: {},
         personalityEffects: [{ axis: 'conformity', change: 2 }],
-        feedback: 'Temkinli davrandin. Belki hakli, belki de bir firsati kacirdin.',
+        feedback: 'Temkinli davrandın. Belki haklı, belki de bir fırsatı kaçırdın.',
       },
     ],
   },
   {
     id: 'cliff_letter_meetup',
     tags: ['social', 'friend', 'npc'],
-    text: 'Parka gittin. Bankta oturan kisiyi gordun — eski bir arkadasin! Yillardir gormemistin. "Seni bulamaya calistim" diyor.',
+    text: 'Parka gittin. Bankta oturan kişiyi gördün — eski bir arkadaşın! Yıllardır görmemiştin. "Seni bulmaya çalıştım" diyor.',
     minAge: 10, maxAge: 18,
     rarity: 'UNCOMMON',
     personalityCategory: 'SOCIAL',
@@ -252,13 +252,13 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
       {
         text: '🤗 "Inanamiyorum! Gel sarilayim!"',
         effect: { charisma: 11 },
-        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Eski arkadas tekrar bulundu' },
-        feedback: 'Bazen hayat en guzel surprizleri en beklenmedik anda verir.',
+        memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Eski arkadaş tekrar bulundu' },
+        feedback: 'Bazen hayat en güzel sürprizleri en beklenmedik anda verir.',
       },
       {
-        text: '🤔 "Neden simdi?"',
+        text: '🤔 "Neden şimdi?"',
         effect: { charisma: 3, intelligence: 1 },
-        feedback: 'Mesafeli ama meraklisin. Hikayesini dinlemeye basladiniz.',
+        feedback: 'Mesafeli ama meraklısın. Hikayesini dinlemeye başladınız.',
       },
     ],
   },

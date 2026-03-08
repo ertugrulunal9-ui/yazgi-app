@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-nati
 import { Stats, StatKey, Family, GameState, Talent } from '../types';
 import StatBar from './StatBar';
 import { getStatCap } from '../utils/gameUtils';
-import { getTrait } from '../data/traits';
+import { getTrait, getTraitName } from '../data/traits';
 import { tRuntime } from '../i18n/strings';
 import { useRuntimeLocale } from '../i18n/useRuntimeLocale';
 
@@ -289,7 +289,7 @@ const Sidebar = React.memo<SidebarProps>(({ age, stats, playerName, family, game
                   const traitStyle = getTraitStyle(trait.type);
                   return (
                     <View key={traitId} style={[styles.traitBadge, traitStyle]}>
-                      <Text style={{ color: traitStyle.color }}>{trait.name}</Text>
+                      <Text style={{ color: traitStyle.color }}>{getTraitName(traitId)}</Text>
                     </View>
                   );
                 })}

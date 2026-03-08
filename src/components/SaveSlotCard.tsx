@@ -4,6 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { SaveSlotMetadata } from '../save/SaveSlot';
 import { formatPlaytime, formatLastPlayed } from '../utils/saveUtils';
 import { tRuntime } from '../i18n/strings';
+import { getChapterNameKey } from '../utils/gameUtils';
 
 interface SaveSlotCardProps {
   metadata: SaveSlotMetadata;
@@ -37,6 +38,12 @@ export const SaveSlotCard: React.FC<SaveSlotCardProps> = ({
 }) => {
   const isEmpty = metadata.status === 'empty';
   const isCorrupted = metadata.status === 'corrupted';
+  const chapterName = metadata.chapter != null
+    ? tRuntime(getChapterNameKey(metadata.chapter), undefined, metadata.chapterName)
+    : metadata.chapterName;
+  const goalName = metadata.goalName
+    ? tRuntime(`recap.goalNames.${metadata.goalName}`, undefined, metadata.goalName)
+    : undefined;
 
   const getStatusStyle = () => {
     if (isCorrupted) return { borderColor: '#ef4444', backgroundColor: 'rgba(127, 29, 29, 0.2)' };
@@ -130,6 +137,18 @@ export const SaveSlotCard: React.FC<SaveSlotCardProps> = ({
         </View>
         <View style={styles.statsRow}>
           <Text style={[styles.statText, { color: theme.textSecondary }]}>{tRuntime('save.ageLabel', { age: metadata.age })}</Text>
+          {chapterName ? (
+            <>
+              <Text style={[styles.statDivider, { color: theme.textSecondary }]}>•</Text>
+              <Text style={[styles.statText, { color: theme.textSecondary }]}>{chapterName}</Text>
+            </>
+          ) : null}
+          {goalName ? (
+            <>
+              <Text style={[styles.statDivider, { color: theme.textSecondary }]}>•</Text>
+              <Text style={[styles.statText, { color: theme.textSecondary }]}>{goalName}</Text>
+            </>
+          ) : null}
           <Text style={[styles.statDivider, { color: theme.textSecondary }]}>•</Text>
           <View style={styles.playtimeRow}>
             <Feather name="clock" size={12} color={theme.textSecondary} />

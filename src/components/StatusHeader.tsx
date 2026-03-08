@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated, TouchableOpacity, Modal, Pressable } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { InnerThoughtType, LifeGoal, Stats } from '../types';
+import type { AvatarConfig } from '../types/core';
+import { Avatar } from './Avatar';
 import { MessageToast } from '../animations/ToastAnimations';
 import { usePillarStats, useStress } from '../hooks/useGameSelectors';
 import { getLifeGoalMeta } from '../utils/lifeGoalSystem';
@@ -13,6 +15,10 @@ type TranslateFn = (key: string, params?: Record<string, string | number | boole
 interface StatusHeaderProps {
   playerName: string;
   age: number;
+  chapter?: number;
+  chapterName?: string;
+  chapterEmoji?: string;
+  avatar?: AvatarConfig;
   innerThought?: string;
   innerThoughtType?: InnerThoughtType;
   stats: Stats;
@@ -61,8 +67,8 @@ const fallbackTranslate: TranslateFn = (key, params, fallback) => {
 
 const formatMoneyDisplay = (money: number, t: TranslateFn): string => (
   Math.abs(money) >= 1000
-    ? `${(money / 1000).toFixed(1)}${t('ui.statusHeader.moneyFormatK', undefined, 'K TL')}`
-    : `${money}${t('ui.statusHeader.moneyFormat', undefined, ' TL')}`
+    ? `${(money / 1000).toFixed(1)}${t('ui.statusHeader.moneyFormatK')}`
+    : `${money}${t('ui.statusHeader.moneyFormat')}`
 );
 
 const getStressBand = (ratio: number): StressBand => {
@@ -73,9 +79,9 @@ const getStressBand = (ratio: number): StressBand => {
 };
 
 const getStressHint = (band: StressBand, t: TranslateFn): string | null => {
-  if (band === 'YELLOW') return t('ui.statusHeader.stressYellow', undefined, 'Yorgunluk birikmeye basliyor.');
-  if (band === 'ORANGE') return t('ui.statusHeader.stressOrange', undefined, 'Dikkat: Yukunu hafiflet.');
-  if (band === 'RED') return t('ui.statusHeader.stressRed', undefined, 'Kriz esigindesin! Dur ve nefes al.');
+  if (band === 'YELLOW') return t('ui.statusHeader.stressYellow');
+  if (band === 'ORANGE') return t('ui.statusHeader.stressOrange');
+  if (band === 'RED') return t('ui.statusHeader.stressRed');
   return null;
 };
 
@@ -90,10 +96,10 @@ const getStressReliefHint = (band: StressBand, t: TranslateFn): string | null =>
 
 const formatStressSourceReason = (reason: string, t: TranslateFn): string => {
   if (reason.startsWith('Event: ')) {
-    return t('ui.statusHeader.stressSourceEvent', undefined, 'Etkinlik secimi');
+    return t('ui.statusHeader.stressSourceEvent');
   }
   if (reason.startsWith('Hub Action: ')) {
-    return t('ui.statusHeader.stressSourceAction', undefined, 'Aksiyon secimi');
+    return t('ui.statusHeader.stressSourceAction');
   }
   return reason;
 };
@@ -140,7 +146,7 @@ const StatMeter: React.FC<StatMeterProps> = ({
       },
     ]}
     accessibilityRole="button"
-    accessibilityLabel={`${label} ${t('ui.statusHeader.openDetails', undefined, 'detaylarini ac')}`}
+    accessibilityLabel={`${label} ${t('ui.statusHeader.openDetails')}`}
   >
     {alertDot && <View style={styles.alertDot} />}
     <View style={styles.statLabelRow}>
@@ -163,22 +169,22 @@ const StatMeter: React.FC<StatMeterProps> = ({
 );
 
 const getDreamHint = (progress: number, statHint: string, t: TranslateFn): string => {
-  if (progress >= 100) return t('ui.statusHeader.dreamComplete', undefined, 'Hayalin sana acik!');
-  if (progress >= 71) return t('ui.statusHeader.dreamAlmost', undefined, 'Hedefe cok yakinsin. Son hamleyi dikkatli yap.');
+  if (progress >= 100) return t('ui.statusHeader.dreamComplete');
+  if (progress >= 71) return t('ui.statusHeader.dreamAlmost');
   if (progress >= 31) return t('ui.statusHeader.dreamMid', { statHint }, 'Iyi gidiyorsun! {statHint} biraz daha guclendir.');
   return t('ui.statusHeader.dreamStart', { statHint }, 'Yolun basindasin. {statHint} gelistirmeye odaklan.');
 };
 
 const getRiskName = (risk: number, t: TranslateFn): string => {
-  if (risk >= 85) return `\u26A0\uFE0F ${t('ui.statusHeader.riskCritical', undefined, 'Kritik Risk Alarmi')}`;
-  if (risk >= 50) return t('ui.statusHeader.riskOpen', undefined, 'Risk Alarmi Acik');
-  return t('ui.statusHeader.riskNormal', undefined, 'Risk Seviyesi Normal');
+  if (risk >= 85) return `\u26A0\uFE0F ${t('ui.statusHeader.riskCritical')}`;
+  if (risk >= 50) return t('ui.statusHeader.riskOpen');
+  return t('ui.statusHeader.riskNormal');
 };
 
 const getRiskHint = (risk: number, t: TranslateFn): string => {
-  if (risk >= 85) return t('ui.statusHeader.riskCriticalHint', undefined, 'Kritik risk! Son hamlen cok onemli.');
-  if (risk >= 50) return t('ui.statusHeader.riskIncreasingHint', undefined, 'Risk artiyor. Kararlarini yavasla.');
-  return t('ui.statusHeader.riskNormalHint', undefined, 'Risk seviyesi kontrol altinda.');
+  if (risk >= 85) return t('ui.statusHeader.riskCriticalHint');
+  if (risk >= 50) return t('ui.statusHeader.riskIncreasingHint');
+  return t('ui.statusHeader.riskNormalHint');
 };
 
 const GoalAndRiskTracker: React.FC<TrackerProps> = ({
@@ -227,18 +233,18 @@ const GoalAndRiskTracker: React.FC<TrackerProps> = ({
           <View style={styles.trackerLabelWrap}>
             <MaterialCommunityIcons name="target" size={15} color={goalMeta?.accentColor || theme.textSecondary} />
             <Text style={[styles.trackerLabel, { color: theme.textSecondary }]}>
-              {t('ui.statusHeader.dreamTracker', undefined, 'Dream Tracker')}
+              {t('ui.statusHeader.dreamTracker')}
             </Text>
           </View>
           <Text style={[styles.trackerValue, { color: theme.textPrimary }]}>%{Math.round(safeDreamProgress)}</Text>
         </View>
         <Text style={[styles.goalName, { color: theme.textPrimary }]}>
-          {goalMeta?.label || t('ui.statusHeader.goalUnlocksAt10', undefined, 'Hedef secimi 10 yasinda acilir.')}
+          {goalMeta?.label || t('ui.statusHeader.goalUnlocksAt10')}
         </Text>
         <Text style={[styles.goalHint, { color: theme.textSecondary }]}>
           {goalMeta
             ? getDreamHint(safeDreamProgress, goalMeta.statHint, t)
-            : t('ui.statusHeader.selectGoalHint', undefined, 'Hedef secince izlenecek statlar burada gorunur.')}
+            : t('ui.statusHeader.selectGoalHint')}
         </Text>
         <View style={[styles.trackerBar, { backgroundColor: theme.border }]}>
           <View
@@ -264,7 +270,7 @@ const GoalAndRiskTracker: React.FC<TrackerProps> = ({
               />
             </Animated.View>
             <Text style={[styles.trackerLabel, { color: theme.textSecondary }]}>
-              {t('ui.statusHeader.riskAlarm', undefined, 'Risk Alarmi')}
+              {t('ui.statusHeader.riskAlarm')}
             </Text>
           </View>
           <Text style={[styles.trackerValue, { color: safeRisk >= 50 ? '#ef4444' : theme.textPrimary }]}>
@@ -349,6 +355,10 @@ const THOUGHT_STYLES: Record<InnerThoughtType, {
 export const StatusHeader: React.FC<StatusHeaderProps> = ({
   playerName,
   age,
+  chapter,
+  chapterName,
+  chapterEmoji,
+  avatar,
   innerThought,
   innerThoughtType,
   stats,
@@ -389,38 +399,38 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
 
     if (selectedPillar === 'beden') {
       return {
-        title: t('labels.pillars.body', undefined, 'Beden'),
+        title: t('labels.pillars.body'),
         rows: [
-          { label: t('labels.stats.health', undefined, 'Saglik'), value: Math.round(pillarStats.raw.health).toString() },
-          { label: t('labels.stats.energy', undefined, 'Enerji'), value: `${Math.round(pillarStats.raw.energy)}/${safeMaxEnergy}` },
+          { label: t('labels.stats.health'), value: Math.round(pillarStats.raw.health).toString() },
+          { label: t('labels.stats.energy'), value: `${Math.round(pillarStats.raw.energy)}/${safeMaxEnergy}` },
         ],
       };
     }
 
     if (selectedPillar === 'zihin') {
       return {
-        title: t('labels.pillars.mind', undefined, 'Zihin'),
+        title: t('labels.pillars.mind'),
         rows: [
-          { label: t('labels.stats.intelligence', undefined, 'Zeka'), value: Math.round(pillarStats.raw.intelligence).toString() },
-          { label: t('labels.stats.discipline', undefined, 'Disiplin'), value: Math.round(pillarStats.raw.discipline).toString() },
+          { label: t('labels.stats.intelligence'), value: Math.round(pillarStats.raw.intelligence).toString() },
+          { label: t('labels.stats.discipline'), value: Math.round(pillarStats.raw.discipline).toString() },
         ],
       };
     }
 
     if (selectedPillar === 'ruh') {
       return {
-        title: t('labels.pillars.soul', undefined, 'Ruh'),
+        title: t('labels.pillars.soul'),
         rows: [
-          { label: t('labels.stats.charisma', undefined, 'Karizma'), value: Math.round(pillarStats.raw.charisma).toString() },
-          { label: t('labels.stats.familyRelation', undefined, 'Aile'), value: Math.round(pillarStats.raw.familyRelation).toString() },
+          { label: t('labels.stats.charisma'), value: Math.round(pillarStats.raw.charisma).toString() },
+          { label: t('labels.stats.familyRelation'), value: Math.round(pillarStats.raw.familyRelation).toString() },
         ],
       };
     }
 
     return {
-      title: t('labels.pillars.wealth', undefined, 'Servet'),
+      title: t('labels.pillars.wealth'),
       rows: [
-        { label: t('labels.stats.money', undefined, 'Para'), value: moneyDisplay },
+        { label: t('labels.stats.money'), value: moneyDisplay },
       ],
     };
   }, [moneyDisplay, pillarStats.raw, safeMaxEnergy, selectedPillar, t]);
@@ -524,23 +534,35 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
     >
       <View style={styles.heroSection}>
         <View style={[styles.avatarContainer, { backgroundColor: accentBg, borderColor: theme.border }]}>
-          <MaterialCommunityIcons name={avatarIcon} size={26} color={theme.textPrimary} />
+          {avatar
+            ? <Avatar config={avatar} age={age} size={38} />
+            : <MaterialCommunityIcons name={avatarIcon} size={26} color={theme.textPrimary} />
+          }
         </View>
 
         <View style={styles.infoContainer}>
           <Text style={[styles.playerName, { color: theme.textPrimary, fontFamily: theme.fontHeading ?? undefined }]}>
-            {playerName || t('ui.statusHeader.playerDefault', undefined, 'Oyuncu')}
+            {playerName || t('ui.statusHeader.playerDefault')}
           </Text>
-          <Text style={[styles.age, { color: theme.accentBrand ?? theme.textSecondary }]}>
-            {`${age}${t('ui.statusHeader.ageFormat', undefined, ' yasinda')}`}
-          </Text>
+          <View style={styles.ageChapterRow}>
+            <Text style={[styles.age, { color: theme.accentBrand ?? theme.textSecondary }]}>
+              {`${age}${t('ui.statusHeader.ageFormat')}`}
+            </Text>
+            {chapter != null && chapterName ? (
+              <View style={[styles.chapterBadge, { backgroundColor: theme.surfaceOverlay, borderColor: theme.border }]}>
+                <Text style={[styles.chapterText, { color: theme.textSecondary }]}>
+                  {chapterEmoji ? `${chapterEmoji} ` : ''}{chapterName}
+                </Text>
+              </View>
+            ) : null}
+          </View>
         </View>
       </View>
 
       <View style={styles.statusRow}>
         <StatMeter
           icon="heart-pulse"
-          label={t('labels.pillars.body', undefined, 'Beden')}
+          label={t('labels.pillars.body')}
           barColor="#ef4444"
           percent={pillarStats.beden}
           valueText={`%${pillarStats.beden}`}
@@ -551,7 +573,7 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
         />
         <StatMeter
           icon="brain"
-          label={t('labels.pillars.mind', undefined, 'Zihin')}
+          label={t('labels.pillars.mind')}
           barColor="#3b82f6"
           percent={pillarStats.zihin}
           valueText={`%${pillarStats.zihin}`}
@@ -562,7 +584,7 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
         />
         <StatMeter
           icon="star-four-points-outline"
-          label={t('labels.pillars.soul', undefined, 'Ruh')}
+          label={t('labels.pillars.soul')}
           barColor="#a855f7"
           percent={pillarStats.ruh}
           valueText={`%${pillarStats.ruh}`}
@@ -573,7 +595,7 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
         />
         <StatMeter
           icon="sack"
-          label={t('labels.pillars.wealth', undefined, 'Servet')}
+          label={t('labels.pillars.wealth')}
           barColor="#22c55e"
           percent={Math.min(100, Math.max(0, pillarStats.servet / 10))}
           valueText={moneyDisplay}
@@ -598,7 +620,7 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
         >
           <View style={styles.stressHeader}>
             <Text style={[styles.stressLabel, { color: stressColor }]}>
-              {'\u{1F321}\uFE0F'}{t('ui.statusHeader.stressLabel', undefined, ' Stres')}
+              {'\u{1F321}\uFE0F'}{t('ui.statusHeader.stressLabel')}
             </Text>
             <Text style={[styles.stressValue, { color: stressColor }]}>
               {stress.current}/{stress.threshold} (%{stressPercent})
@@ -633,16 +655,14 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
                 {
                   amount: latestStressDelta > 0 ? `+${latestStressDelta}` : `${latestStressDelta}`,
                   reason: latestStressReason,
-                },
-                `Son degisim: {amount} ({reason})`
+                }
               )}
             </Text>
           )}
           <Text style={[styles.stressMetaText, { color: theme.textSecondary }]}>
             {t(
               'ui.statusHeader.stressRecoveryHint',
-              { amount: stress.recoveryPerTurn },
-              `Gunu bitirince tahmini -{amount} stres toparlanir.`
+              { amount: stress.recoveryPerTurn }
             )}
           </Text>
         </Animated.View>
@@ -659,7 +679,7 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
             },
           ]}
           accessibilityRole="button"
-          accessibilityLabel={t('ui.statusHeader.toggleNotificationsPanel', undefined, 'Bildirim panelini ac veya kapat')}
+          accessibilityLabel={t('ui.statusHeader.toggleNotificationsPanel')}
         >
           <MaterialCommunityIcons
             name={notificationsOpen ? 'chevron-up' : 'chevron-down'}
@@ -670,7 +690,7 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
           <Text style={[styles.notificationToggleText, { color: theme.textPrimary }]}>
             {safeRiskPercent >= 50
               ? t('ui.statusHeader.notificationsWithRisk', { risk: Math.round(safeRiskPercent) }, 'Bildirimler · %{risk} risk')
-              : t('ui.statusHeader.notifications', undefined, 'Bildirimler')}
+              : t('ui.statusHeader.notifications')}
           </Text>
           <View style={[styles.notificationCountBadge, { backgroundColor: badgeIsUrgent ? '#ef4444' : theme.accentEvent }]}>
             <Text style={styles.notificationCountText}>{notificationCount}</Text>
@@ -688,7 +708,7 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
             { borderColor: thoughtStyle.borderColor, backgroundColor: thoughtStyle.backgroundColor },
           ]}
           accessibilityRole="button"
-          accessibilityLabel={t('ui.statusHeader.viewCrisisNotification', undefined, 'Kriz bildirimini goruntule')}
+          accessibilityLabel={t('ui.statusHeader.viewCrisisNotification')}
         >
           <MaterialCommunityIcons name={thoughtStyle.icon} size={13} color={thoughtStyle.iconColor} />
           <Text style={[styles.thoughtPeekText, { color: thoughtStyle.iconColor }]} numberOfLines={1}>
@@ -758,12 +778,12 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
             <View style={[styles.sheetHandle, { backgroundColor: theme.border }]} />
             <View style={styles.sheetHeader}>
               <Text style={[styles.sheetTitle, { color: theme.textPrimary }]}>
-                {`${selectedPillarContent?.title ?? ''}${t('ui.statusHeader.detailsSuffix', undefined, ' Detaylari')}`}
+                {`${selectedPillarContent?.title ?? ''}${t('ui.statusHeader.detailsSuffix')}`}
               </Text>
               <TouchableOpacity
                 onPress={() => setSelectedPillar(null)}
                 accessibilityRole="button"
-                accessibilityLabel={t('ui.statusHeader.closeDetailPanel', undefined, 'Detay panelini kapat')}
+                accessibilityLabel={t('ui.statusHeader.closeDetailPanel')}
               >
                 <MaterialCommunityIcons name="close" size={20} color={theme.textSecondary} />
               </TouchableOpacity>
@@ -781,7 +801,7 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
 
       <MessageToast
         visible={stressToastVisible}
-        message={t('ui.statusHeader.crisisApproaching', undefined, 'Kriz yaklasiyor!')}
+        message={t('ui.statusHeader.crisisApproaching')}
         type="error"
         onClose={() => setStressToastVisible(false)}
         style={styles.stressToast}
@@ -821,6 +841,22 @@ const styles = StyleSheet.create({
   },
   age: {
     fontSize: 13,
+    fontWeight: '600',
+  },
+  ageChapterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  chapterBadge: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
+  chapterText: {
+    fontSize: 10,
     fontWeight: '600',
   },
   statusRow: {
@@ -1109,4 +1145,3 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
-

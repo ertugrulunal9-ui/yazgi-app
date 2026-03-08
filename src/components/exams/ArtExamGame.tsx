@@ -12,6 +12,7 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import { Haptics } from '../../utils/haptics';
+import { tRuntime } from '../../i18n/strings';
 import { Difficulty, GameState } from './MiniGameContainer';
 
 interface ArtExamGameProps {
@@ -115,7 +116,7 @@ const ArtExamGame: React.FC<ArtExamGameProps> = ({
   if (!gameState || !setGameState) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Yükleniyor...</Text>
+        <Text style={styles.loadingText}>{tRuntime('exams.art.loading')}</Text>
       </View>
     );
   }
@@ -270,7 +271,7 @@ const ArtExamGame: React.FC<ArtExamGameProps> = ({
   if (!question) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Hazırlanıyor...</Text>
+        <Text style={styles.loadingText}>{tRuntime('exams.art.preparing')}</Text>
       </View>
     );
   }
@@ -284,13 +285,13 @@ const ArtExamGame: React.FC<ArtExamGameProps> = ({
 
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>Hedef Renk</Text>
+          <Text style={styles.title}>{tRuntime('exams.art.targetTitle')}</Text>
           <View style={styles.targetWrapper}>
             <Animated.View style={[styles.targetPulse, targetPulseStyle]} />
             <Animated.View style={[styles.sparkle, sparkleStyle]} />
             <View style={[styles.targetSwatch, { backgroundColor: question.target }]} />
           </View>
-          <Text style={styles.subtitle}>Aynı rengi seç</Text>
+          <Text style={styles.subtitle}>{tRuntime('exams.art.targetSubtitle')}</Text>
         </View>
 
         <View style={styles.options}>

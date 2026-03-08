@@ -178,11 +178,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
       <Animated.View style={[styles.panel, settingsPanelStyle]}>
         <SafeAreaView style={{ flex: 1 }}>
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>{t('settings.title', undefined, 'Ayarlar')}</Text>
+            <Text style={styles.headerTitle}>{t('settings.title')}</Text>
             <TouchableOpacity
               onPress={onClose}
               style={styles.closeButton}
-              accessibilityLabel="Ayarlari kapat"
+              accessibilityLabel={t('app.closeSettings')}
               accessibilityRole="button"
             >
               <Feather name="x" color={theme.textPrimary} size={24} />
@@ -191,7 +191,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
           <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
             <View style={{ marginBottom: 28 }}>
-              <Text style={styles.sectionTitle}>{t('settings.theme', undefined, 'Tema Secin')}</Text>
+              <Text style={styles.sectionTitle}>{t('settings.theme')}</Text>
               <View style={styles.optionRow}>
                 {(['light', 'dark', 'system'] as const).map(themeOption => {
                   const isActive = uiPrefs.theme === themeOption;
@@ -205,9 +205,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     system: 'monitor',
                   } as const;
                   const labels = {
-                    light: t('settings.themeOptions.light', undefined, 'Acik'),
-                    dark: t('settings.themeOptions.dark', undefined, 'Koyu'),
-                    system: t('settings.themeOptions.system', undefined, 'Sistem'),
+                    light: t('settings.themeOptions.light'),
+                    dark: t('settings.themeOptions.dark'),
+                    system: t('settings.themeOptions.system'),
                   };
 
                   return (
@@ -236,7 +236,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             </View>
 
             <View style={{ marginBottom: 28 }}>
-              <Text style={styles.sectionTitle}>{t('settings.density', undefined, 'Yogunluk')}</Text>
+              <Text style={styles.sectionTitle}>{t('settings.density')}</Text>
               <View style={styles.optionRow}>
                 {(['compact', 'standard', 'comfort'] as const).map(densityOption => {
                   const isActive = uiPrefs.density === densityOption;
@@ -248,9 +248,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     comfort: 'zoom-in',
                   } as const;
                   const labels = {
-                    compact: t('settings.densityOptions.compact', undefined, 'Kucuk'),
-                    standard: t('settings.densityOptions.standard', undefined, 'Normal'),
-                    comfort: t('settings.densityOptions.comfort', undefined, 'Buyuk'),
+                    compact: t('settings.densityOptions.compact'),
+                    standard: t('settings.densityOptions.standard'),
+                    comfort: t('settings.densityOptions.comfort'),
                   };
 
                   return (
@@ -279,7 +279,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             </View>
 
             <View style={{ marginBottom: 28 }}>
-              <Text style={styles.sectionTitle}>{t('settings.motion', undefined, 'Hareket')}</Text>
+              <Text style={styles.sectionTitle}>{t('settings.motion')}</Text>
               <View
                 style={{
                   flexDirection: 'row',
@@ -300,7 +300,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     size={24}
                   />
                   <Text style={{ color: theme.textPrimary, fontSize: 16, fontWeight: '600' }}>
-                    {t('settings.reduceMotion', undefined, 'Gecisleri Azalt')}
+                    {t('settings.reduceMotion')}
                   </Text>
                 </View>
                 <Switch
@@ -308,13 +308,13 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   onValueChange={onToggleMotion}
                   trackColor={{ false: theme.surfaceOverlay, true: MOTION_OPTION_COLOR }}
                   thumbColor={theme.surfaceRaised}
-                  accessibilityLabel="Gecisleri azalt"
+                  accessibilityLabel={t('settings.reduceMotion')}
                 />
               </View>
             </View>
 
             <View style={{ marginBottom: 28 }}>
-              <Text style={styles.sectionTitle}>{t('settings.audio', undefined, 'Ses')}</Text>
+              <Text style={styles.sectionTitle}>{t('settings.audio')}</Text>
               <View
                 style={{
                   flexDirection: 'row',
@@ -336,12 +336,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   />
                   <View style={{ flexShrink: 1 }}>
                     <Text style={{ color: theme.textPrimary, fontSize: 16, fontWeight: '600' }}>
-                      {t('settings.muteAudio', undefined, 'Sesleri Kapat')}
+                      {t('settings.muteAudio')}
                     </Text>
                     <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>
                       {soundMuted
-                        ? t('settings.audioMutedState', undefined, 'Tum oyun sesleri kapali')
-                        : t('settings.audioEnabledState', undefined, 'Muzik ve efektler acik')}
+                        ? t('settings.audioMutedState')
+                        : t('settings.audioEnabledState')}
                     </Text>
                   </View>
                 </View>
@@ -350,13 +350,13 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   onValueChange={() => onSoundMuteChange(!soundMuted)}
                   trackColor={{ false: theme.surfaceOverlay, true: readableDangerColor }}
                   thumbColor={theme.surfaceRaised}
-                  accessibilityLabel="Sesleri kapat"
+                  accessibilityLabel={t('settings.muteAudio')}
                 />
               </View>
             </View>
 
             <View style={{ marginBottom: 28 }}>
-              <Text style={styles.sectionTitle}>{t('settings.privacy', undefined, 'Gizlilik')}</Text>
+              <Text style={styles.sectionTitle}>{t('settings.privacy')}</Text>
               <View
                 style={{
                   flexDirection: 'row',
@@ -379,15 +379,13 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   />
                   <View style={{ flexShrink: 1 }}>
                     <Text style={{ color: theme.textPrimary, fontSize: 16, fontWeight: '600' }}>
-                      {t('settings.analyticsOptIn', undefined, 'Davranis Analitigi')}
+                      {t('settings.analyticsOptIn')}
                     </Text>
                     <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>
                       {t(
                         uiPrefs.analyticsEnabled
                           ? 'settings.analyticsOptInEnabled'
-                          : 'settings.analyticsOptInDisabled',
-                        undefined,
-                        uiPrefs.analyticsEnabled ? 'Acik' : 'Kapali'
+                          : 'settings.analyticsOptInDisabled'
                       )}
                     </Text>
                   </View>
@@ -397,7 +395,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   onValueChange={onAnalyticsEnabledChange}
                   trackColor={{ false: theme.surfaceOverlay, true: theme.accentEvent }}
                   thumbColor={theme.surfaceRaised}
-                  accessibilityLabel="Davranis analitigi"
+                  accessibilityLabel={t('settings.analyticsOptIn')}
                 />
               </View>
 
@@ -422,15 +420,13 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   />
                   <View style={{ flexShrink: 1 }}>
                     <Text style={{ color: theme.textPrimary, fontSize: 16, fontWeight: '600' }}>
-                      {t('settings.personalizedAds', undefined, 'Kisisellestirilmis Reklam')}
+                      {t('settings.personalizedAds')}
                     </Text>
                     <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>
                       {t(
                         uiPrefs.personalizedAdsEnabled
                           ? 'settings.personalizedAdsEnabled'
-                          : 'settings.personalizedAdsDisabled',
-                        undefined,
-                        uiPrefs.personalizedAdsEnabled ? 'Acik' : 'Kapatildi'
+                          : 'settings.personalizedAdsDisabled'
                       )}
                     </Text>
                   </View>
@@ -440,13 +436,13 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   onValueChange={onPersonalizedAdsEnabledChange}
                   trackColor={{ false: theme.surfaceOverlay, true: theme.accentEvent }}
                   thumbColor={theme.surfaceRaised}
-                  accessibilityLabel="Kisisellestirilmis reklam"
+                  accessibilityLabel={t('settings.personalizedAds')}
                 />
               </View>
             </View>
 
             <View style={{ marginBottom: 28 }}>
-              <Text style={styles.sectionTitle}>{t('settings.language', undefined, 'Dil')}</Text>
+              <Text style={styles.sectionTitle}>{t('settings.language')}</Text>
               <View style={styles.optionRow}>
                 {(['tr', 'en'] as const).map(languageOption => {
                   const isActive = locale === languageOption;
@@ -465,11 +461,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                         borderColor: isActive ? theme.accentEvent : 'transparent',
                       }}
                       accessibilityRole="button"
-                      accessibilityLabel={t(`settings.languageOptions.${languageOption}`, undefined, languageOption)}
+                      accessibilityLabel={t(`settings.languageOptions.${languageOption}`)}
                       accessibilityState={{ selected: isActive }}
                     >
                       <Text style={{ color: isActive ? theme.accentEvent : theme.textSecondary, fontSize: 13, fontWeight: '700' }}>
-                        {t(`settings.languageOptions.${languageOption}`, undefined, languageOption.toUpperCase())}
+                        {t(`settings.languageOptions.${languageOption}`)}
                       </Text>
                     </TouchableOpacity>
                   );
@@ -531,16 +527,16 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     alignItems: 'center',
                     gap: 12,
                   }}
-                  accessibilityLabel="Premium'a gec"
+                  accessibilityLabel={t('settings.goPremium')}
                   accessibilityRole="button"
                 >
                   <Feather name="star" color="#d97706" size={22} />
                   <View style={{ flex: 1 }}>
                     <Text style={{ color: '#d97706', fontSize: 16, fontWeight: '700' }}>
-                      {t('settings.goPremium', undefined, 'Yazgi Premium')}
+                      {t('settings.goPremium')}
                     </Text>
                     <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>
-                      {t('settings.premiumDesc', undefined, 'Reklamsiz, sinirsiz geri al, ozel eventler')}
+                      {t('settings.premiumDesc')}
                     </Text>
                   </View>
                   <Feather name="chevron-right" color="#d97706" size={20} />
@@ -549,7 +545,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             )}
 
             <View style={{ marginBottom: 28 }}>
-              <Text style={styles.sectionTitle}>{t('settings.saves', undefined, 'Kayitlar')}</Text>
+              <Text style={styles.sectionTitle}>{t('settings.saves')}</Text>
               <TouchableOpacity
                 onPress={onOpenSavePicker}
                 style={{
@@ -563,12 +559,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   alignItems: 'center',
                   gap: 12,
                 }}
-                accessibilityLabel="Kayitlari yonet"
+                accessibilityLabel={t('common.saveLoad')}
                 accessibilityRole="button"
               >
                 <Feather name="save" color={theme.textSecondary} size={20} />
                 <Text style={{ color: theme.textPrimary, fontSize: 16, fontWeight: '600' }}>
-                  {t('common.saveLoad', undefined, 'Kaydet / Yukle')}
+                  {t('common.saveLoad')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -588,7 +584,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 }}
               >
                 <Text style={{ color: readableDangerColor, fontWeight: '700', fontSize: 15 }}>
-                  {t('settings.newLife', undefined, 'Yeni Hayata Basla')}
+                  {t('settings.newLife')}
                 </Text>
               </TouchableOpacity>
             </View>
