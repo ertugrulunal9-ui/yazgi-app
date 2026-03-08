@@ -3,16 +3,5 @@
     "omitDev": true,
     "failOnSeverity": ["high", "critical"]
   },
-  "allowedAdvisories": [
-    {
-      "url": "https://github.com/advisories/GHSA-3ppc-4f35-3m26",
-      "reason": "Expo SDK 54 transitive toolchain includes minimatch <10.2.1. No non-breaking fix is available in the current stack.",
-      "reviewAfter": "2026-04-15"
-    },
-    {
-      "url": "https://github.com/advisories/GHSA-jmr7-xgp7-cmfj",
-      "reason": "React Native community CLI chain includes fast-xml-parser 4.x advisory. Compatible long-term fix depends on upstream releases.",
-      "reviewAfter": "2026-04-15"
-    }
-  ]
+  "allowedAdvisories": []
 }

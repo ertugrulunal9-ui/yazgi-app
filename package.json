@@ -123,6 +123,47 @@
   },
   "private": true,
   "overrides": {
-    "fast-xml-parser": "^5.3.6"
+    "fast-xml-parser": "^5.3.8",
+    "@expo/cli": {
+      "minimatch": "^9.0.7",
+      "tar": "^7.5.10"
+    },
+    "@expo/fingerprint": {
+      "minimatch": "^9.0.7"
+    },
+    "@expo/metro-config": {
+      "minimatch": "^9.0.7"
+    },
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "^9.0.7"
+    },
+    "@eslint/config-array": {
+      "minimatch": "^3.1.4"
+    },
+    "@eslint/eslintrc": {
+      "minimatch": "^3.1.4"
+    },
+    "@humanwhocodes/config-array": {
+      "minimatch": "^3.1.4"
+    },
+    "eslint": {
+      "minimatch": "^3.1.4"
+    },
+    "eslint-plugin-import": {
+      "minimatch": "^3.1.4"
+    },
+    "eslint-plugin-react": {
+      "minimatch": "^3.1.4"
+    },
+    "jsdom": {
+      "http-proxy-agent": "^7.0.2",
+      "https-proxy-agent": "^7.0.6"
+    },
+    "glob@7": {
+      "minimatch": "^3.1.4"
+    },
+    "glob@13": {
+      "minimatch": "^10.2.3"
+    }
   }
 }
