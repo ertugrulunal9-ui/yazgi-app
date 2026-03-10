@@ -31,8 +31,8 @@ coverage/
 .env.*
 !.env.example
 
-# Mobile service config (keep out of VCS unless explicitly needed)
-google-services.json
+# Mobile service config
+# google-services.json is committed intentionally (API key is embedded in APK anyway)
 android/app/google-services.json
 GoogleService-Info.plist
 
