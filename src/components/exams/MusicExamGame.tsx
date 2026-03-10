@@ -13,9 +13,14 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Haptics } from '../../utils/haptics';
 import { tRuntime } from '../../i18n/strings';
-import { Difficulty, GameState } from './MiniGameContainer';
+import type { Difficulty, GameState } from './MiniGameContainer';
+import {
+  DEFAULT_EXAM_AREA_WIDTH,
+  getHitLineY,
+  getLaneItemX,
+} from './layoutHelpers';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface MusicExamGameProps {
   gameState?: GameState;
@@ -27,14 +32,12 @@ interface MusicExamGameProps {
 interface Note {
   id: number;
   lane: number;
-  x: number;
 }
 
 const LANE_COUNT = 3;
 const NOTE_SIZE = 44;
 const GAME_HEIGHT = Math.min(360, SCREEN_HEIGHT * 0.55);
 const START_Y = -60;
-const HIT_LINE_Y = GAME_HEIGHT - 90;
 const HIT_WINDOW = 34;
 const GOOD_WINDOW = 18;
 const PERFECT_WINDOW = 8;
@@ -74,6 +77,8 @@ const MusicExamGame: React.FC<MusicExamGameProps> = ({
   const didSpawnInitial = useRef(false);
   const handleMissRef = useRef<() => void>(() => {});
   const spawnNoteRef = useRef<() => void>(() => {});
+  const [gameAreaWidth, setGameAreaWidth] = useState(DEFAULT_EXAM_AREA_WIDTH);
+  const [gameAreaHeight, setGameAreaHeight] = useState(GAME_HEIGHT);
 
   const noteY = useSharedValue(START_Y);
   const noteScale = useSharedValue(1);
@@ -83,6 +88,14 @@ const MusicExamGame: React.FC<MusicExamGameProps> = ({
   const hitFlash = useSharedValue(0);
   const rippleScale = useSharedValue(0);
   const rippleOpacity = useSharedValue(0);
+  const hitLineY = getHitLineY(gameAreaHeight, 90, 140);
+
+  const handleGameAreaLayout = useCallback((event: { nativeEvent: { layout: { width: number; height: number } } }) => {
+    const { width, height } = event.nativeEvent.layout;
+
+    setGameAreaWidth(prev => (Math.abs(prev - width) < 1 ? prev : width));
+    setGameAreaHeight(prev => (Math.abs(prev - height) < 1 ? prev : height));
+  }, []);
 
   useEffect(() => {
     beatPulse.value = withRepeat(
@@ -103,12 +116,10 @@ const MusicExamGame: React.FC<MusicExamGameProps> = ({
     }
 
     const lane = Math.floor(Math.random() * LANE_COUNT);
-    const laneWidth = SCREEN_WIDTH / LANE_COUNT;
-    const x = lane * laneWidth + (laneWidth - NOTE_SIZE) / 2;
     const duration = getNoteSpeed(difficulty, gameState.currentQuestion, age);
 
     noteIdRef.current += 1;
-    setCurrentNote({ id: noteIdRef.current, lane, x });
+    setCurrentNote({ id: noteIdRef.current, lane });
     setFeedback(null);
     setHitText(null);
     setNoteStartMs(Date.now());
@@ -120,7 +131,7 @@ const MusicExamGame: React.FC<MusicExamGameProps> = ({
     noteOpacity.value = 1;
 
     noteY.value = withTiming(
-      HIT_LINE_Y,
+      hitLineY,
       { duration, easing: Easing.linear },
       (finished) => {
         if (finished) {
@@ -138,6 +149,7 @@ const MusicExamGame: React.FC<MusicExamGameProps> = ({
     noteY,
     setGameState,
     triggerMiss,
+    hitLineY,
   ]);
 
   useEffect(() => {
@@ -194,8 +206,8 @@ const MusicExamGame: React.FC<MusicExamGameProps> = ({
 
     const elapsed = Date.now() - noteStartMs;
     const progress = Math.min(1, Math.max(0, elapsed / Math.max(1, noteDurationMs)));
-    const currentY = START_Y + (HIT_LINE_Y - START_Y) * progress;
-    const delta = Math.abs(currentY - HIT_LINE_Y);
+    const currentY = START_Y + (hitLineY - START_Y) * progress;
+    const delta = Math.abs(currentY - hitLineY);
     const inWindow = delta <= HIT_WINDOW;
     const isCorrectLane = laneIndex === currentNote.lane;
 
@@ -246,12 +258,12 @@ const MusicExamGame: React.FC<MusicExamGameProps> = ({
       feedbackScale.value = withSequence(withSpring(1.1), withTiming(0));
       finishQuestion(false);
     }
-  }, [currentNote, feedback, noteStartMs, noteDurationMs, noteY, noteScale, noteOpacity, feedbackScale, finishQuestion, hitFlash, rippleOpacity, rippleScale]);
+  }, [currentNote, feedback, noteStartMs, noteDurationMs, noteY, noteScale, noteOpacity, feedbackScale, finishQuestion, hitFlash, hitLineY, rippleOpacity, rippleScale]);
 
   const noteStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: noteY.value }, { scale: noteScale.value }],
     opacity: noteOpacity.value,
-    left: currentNote?.x ?? 0,
+    left: currentNote ? getLaneItemX(gameAreaWidth, LANE_COUNT, currentNote.lane, NOTE_SIZE) : 0,
   }));
 
   const hitLineStyle = useAnimatedStyle(() => ({
@@ -273,23 +285,22 @@ const MusicExamGame: React.FC<MusicExamGameProps> = ({
     transform: [{ scale: rippleScale.value }],
   }));
 
-  const laneWidth = SCREEN_WIDTH / LANE_COUNT;
   const rippleLeft = hitLaneIndex !== null
-    ? hitLaneIndex * laneWidth + (laneWidth - NOTE_SIZE) / 2
+    ? getLaneItemX(gameAreaWidth, LANE_COUNT, hitLaneIndex, NOTE_SIZE)
     : -999;
 
   return (
     <View style={styles.container}>
-      <View style={styles.gameArea}>
+      <View style={styles.gameArea} onLayout={handleGameAreaLayout}>
         <View style={styles.lanes}>
           {LANE_COLORS.map((color) => (
             <View key={color} style={[styles.lane, { borderColor: color }]} />
           ))}
         </View>
 
-        <Animated.View style={[styles.hitLine, hitLineStyle]} />
-        <Animated.View style={[styles.hitGlow, hitFlashStyle]} />
-        <Animated.View style={[styles.hitRipple, rippleStyle, { left: rippleLeft }]} />
+        <Animated.View style={[styles.hitLine, hitLineStyle, { top: hitLineY }]} />
+        <Animated.View style={[styles.hitGlow, hitFlashStyle, { top: hitLineY - 10 }]} />
+        <Animated.View style={[styles.hitRipple, rippleStyle, { left: rippleLeft, top: hitLineY - 20 }]} />
 
         {currentNote && (
           <Animated.View style={[styles.note, noteStyle, { backgroundColor: LANE_COLORS[currentNote.lane] }]}>
@@ -346,6 +357,7 @@ const styles = StyleSheet.create({
     height: GAME_HEIGHT,
     position: 'relative',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   lanes: {
     ...StyleSheet.absoluteFillObject,
@@ -361,7 +373,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    top: HIT_LINE_Y,
     height: 4,
     backgroundColor: '#94a3b8',
     opacity: 0.5,
@@ -370,14 +381,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    top: HIT_LINE_Y - 10,
     height: 24,
     backgroundColor: 'rgba(59, 130, 246, 0.35)',
     opacity: 0,
   },
   hitRipple: {
     position: 'absolute',
-    top: HIT_LINE_Y - 20,
     width: NOTE_SIZE + 10,
     height: NOTE_SIZE + 10,
     borderRadius: (NOTE_SIZE + 10) / 2,
@@ -424,7 +433,6 @@ const styles = StyleSheet.create({
   controls: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: '#1e293b',
   },

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, TextInput, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import Animated, {
     useAnimatedStyle,
     useSharedValue,
@@ -12,9 +12,14 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Haptics } from '../../utils/haptics';
 import { tRuntime } from '../../i18n/strings';
-import { Difficulty, GameState } from './MiniGameContainer';
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+import type { Difficulty, GameState } from './MiniGameContainer';
+import {
+    clampHorizontalPosition,
+    DEFAULT_EXAM_AREA_HEIGHT,
+    DEFAULT_EXAM_AREA_WIDTH,
+    getRandomHorizontalPosition,
+    getVerticalTravelTarget,
+} from './layoutHelpers';
 
 interface MathQuestion {
     id: number;
@@ -24,6 +29,13 @@ interface MathQuestion {
     answer: number;
     x: number;
 }
+
+const FALL_START_Y = -120;
+const BALLOON_WIDTH_ESTIMATE = 132;
+const BALLOON_HEIGHT_ESTIMATE = 84;
+const BALLOON_SIDE_PADDING = 16;
+const BALLOON_BOTTOM_SPACING = 16;
+const BALLOON_MIN_TRAVEL_TARGET = 140;
 
 interface MathExamGameProps {
     gameState?: GameState;
@@ -84,7 +96,12 @@ const scaleHardValue = (difficulty: Difficulty, value: number, factor: number, m
 };
 
 // Generate a math question based on difficulty and age
-const generateQuestion = (difficulty: Difficulty, age: number, id: number): MathQuestion => {
+const generateQuestion = (
+    difficulty: Difficulty,
+    age: number,
+    id: number,
+    areaWidth: number
+): MathQuestion => {
     let num1: number, num2: number, operator: '+' | '-' | '×' | '÷', answer: number;
 
     const config = getMathConfig(age);
@@ -120,8 +137,7 @@ const generateQuestion = (difficulty: Difficulty, age: number, id: number): Math
             num1 = 1; num2 = 1; answer = 2;
     }
 
-    // Random x position for balloon
-    const x = Math.random() * (SCREEN_WIDTH - 140) + 20;
+    const x = getRandomHorizontalPosition(areaWidth, BALLOON_WIDTH_ESTIMATE, BALLOON_SIDE_PADDING);
 
     return { id, num1, num2, operator, answer, x };
 };
@@ -132,8 +148,9 @@ const FallingBalloon: React.FC<{
     onMissed: () => void;
     speed: number;
     isActive: boolean;
-}> = ({ question, onMissed, speed, isActive }) => {
-    const translateY = useSharedValue(-120);
+    travelY: number;
+}> = ({ question, onMissed, speed, isActive, travelY }) => {
+    const translateY = useSharedValue(FALL_START_Y);
     const scale = useSharedValue(1);
     const opacity = useSharedValue(1);
 
@@ -141,7 +158,7 @@ const FallingBalloon: React.FC<{
         if (!isActive) return;
 
         translateY.value = withTiming(
-            SCREEN_HEIGHT * 0.6,
+            travelY,
             {
                 duration: speed,
                 easing: Easing.linear,
@@ -156,7 +173,7 @@ const FallingBalloon: React.FC<{
         return () => {
             cancelAnimation(translateY);
         };
-    }, [isActive, onMissed, speed, translateY]);
+    }, [isActive, onMissed, speed, travelY, translateY]);
 
     const animatedStyle = useAnimatedStyle(() => ({
         transform: [
@@ -200,10 +217,30 @@ const MathExamGame: React.FC<MathExamGameProps> = ({
     const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
     const [questionId, setQuestionId] = useState(0);
     const hasInitialized = useRef(false);
+    const [gameAreaSize, setGameAreaSize] = useState({
+        width: DEFAULT_EXAM_AREA_WIDTH,
+        height: DEFAULT_EXAM_AREA_HEIGHT,
+    });
 
     const inputRef = useRef<TextInput>(null);
     const shakeX = useSharedValue(0);
     const feedbackScale = useSharedValue(0);
+    const balloonTravelTarget = getVerticalTravelTarget(
+        gameAreaSize.height,
+        BALLOON_HEIGHT_ESTIMATE,
+        BALLOON_BOTTOM_SPACING,
+        BALLOON_MIN_TRAVEL_TARGET
+    );
+
+    const handleGameAreaLayout = useCallback((event: { nativeEvent: { layout: { width: number; height: number } } }) => {
+        const { width, height } = event.nativeEvent.layout;
+        setGameAreaSize(prev => {
+            if (Math.abs(prev.width - width) < 1 && Math.abs(prev.height - height) < 1) {
+                return prev;
+            }
+            return { width, height };
+        });
+    }, []);
 
     // Calculate balloon speed based on difficulty
     const getBalloonSpeed = useCallback(() => {
@@ -221,13 +258,13 @@ const MathExamGame: React.FC<MathExamGameProps> = ({
             return;
         }
 
-        const newQuestion = generateQuestion(difficulty, age, questionId);
+        const newQuestion = generateQuestion(difficulty, age, questionId, gameAreaSize.width);
         setCurrentQuestion(newQuestion);
         setQuestionId(prev => prev + 1);
         setUserAnswer('');
         setFeedback(null);
         // Focus is handled by useEffect when feedback becomes null
-    }, [gameState.currentQuestion, gameState.totalQuestions, difficulty, age, questionId, setGameState]);
+    }, [gameAreaSize.width, gameState.currentQuestion, gameState.totalQuestions, difficulty, age, questionId, setGameState]);
 
     // Start with first question
     useEffect(() => {
@@ -245,6 +282,19 @@ const MathExamGame: React.FC<MathExamGameProps> = ({
         }, 150);
         return () => clearTimeout(timer);
     }, [feedback, currentQuestion]);
+
+    useEffect(() => {
+        setCurrentQuestion(prev => {
+            if (!prev) return prev;
+            const nextX = clampHorizontalPosition(
+                prev.x,
+                gameAreaSize.width,
+                BALLOON_WIDTH_ESTIMATE,
+                BALLOON_SIDE_PADDING
+            );
+            return nextX === prev.x ? prev : { ...prev, x: nextX };
+        });
+    }, [gameAreaSize.width]);
 
     // Handle answer submission
     const handleSubmit = useCallback(() => {
@@ -351,13 +401,14 @@ const MathExamGame: React.FC<MathExamGameProps> = ({
     return (
         <View style={styles.container}>
             {/* Game Area */}
-            <View style={styles.gameArea}>
+            <View style={styles.gameArea} onLayout={handleGameAreaLayout}>
                 <FallingBalloon
                     key={currentQuestion.id}
                     question={currentQuestion}
                     onMissed={handleBalloonMissed}
                     speed={getBalloonSpeed()}
                     isActive={feedback === null}
+                    travelY={balloonTravelTarget}
                 />
 
                 {/* Feedback overlay */}
@@ -433,7 +484,7 @@ const styles = StyleSheet.create({
         flex: 1,
         minHeight: 200,
         position: 'relative',
-        overflow: 'visible',
+        overflow: 'hidden',
     },
     balloon: {
         position: 'absolute',

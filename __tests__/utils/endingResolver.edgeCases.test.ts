@@ -294,6 +294,34 @@ describe('endingResolver — Edge Cases', () => {
       expect(stressDebt.total).toBeGreaterThan(normalDebt.total);
     });
 
+    it('sosyal etkileşimle düşen orta-yüksek stres runtime riskini azaltır', () => {
+      const tenseDebt = calculateEndingErrorDebt(
+        createGameState({
+          stress: {
+            current: 56,
+            threshold: 70,
+            turnsSinceBreakdown: 0,
+            sources: [],
+          },
+        }),
+        baseStats
+      );
+      const relievedDebt = calculateEndingErrorDebt(
+        createGameState({
+          stress: {
+            current: 49,
+            threshold: 70,
+            turnsSinceBreakdown: 0,
+            sources: [{ reason: 'Social: CHAT', amount: -7, turn: 90 }],
+          },
+        }),
+        baseStats
+      );
+
+      expect(relievedDebt.stress).toBeLessThan(tenseDebt.stress);
+      expect(relievedDebt.total).toBeLessThan(tenseDebt.total);
+    });
+
     it('stres threshold 0 → bölmeye sıfır hatası olmaz', () => {
       const debt = calculateEndingErrorDebt(
         createGameState({ stress: { current: 50, threshold: 0, turnsSinceBreakdown: 0, sources: [] } }),

@@ -20,7 +20,7 @@ import { Choice, PersonalityState, Stats } from '../types';
 import { selectionHaptic, importantDecision } from '../animations';
 import { getMomentumDialogueTag } from '../utils/momentumDialogue';
 import { generateTradeoffHint } from '../utils/tradeoffHints';
-import { tRuntime } from '../i18n/strings';
+import { tRuntime, getRuntimeLocale } from '../i18n/strings';
 import { useRuntimeLocale } from '../i18n/useRuntimeLocale';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -51,6 +51,12 @@ const CHOICE_TYPE_COLORS: Record<string, string> = {
   CHALLENGE: '#f97316',
   BREAKDOWN: '#ef4444',
   NEUTRAL: '#94a3b8',
+};
+
+const CHOICE_TYPE_LABELS: Record<string, { tr: string; en: string }> = {
+  PASSIVE:    { tr: 'Güvenli',  en: 'Safe'    },
+  CHALLENGE:  { tr: 'Cesur',   en: 'Bold'    },
+  BREAKDOWN:  { tr: 'Kriz',    en: 'Crisis'  },
 };
 
 const STAT_ICONS: Partial<Record<keyof Stats, { icon: string }>> = {
@@ -161,7 +167,11 @@ export const SwipeChoiceCard: React.FC<SwipeChoiceCardProps> = React.memo(({
     ),
   }));
 
-  const choiceTypeColor = CHOICE_TYPE_COLORS[choice.choiceType || 'NEUTRAL'];
+  const choiceType = choice.choiceType || 'NEUTRAL';
+  const choiceTypeColor = CHOICE_TYPE_COLORS[choiceType];
+  const choiceTypeLabel = choiceType !== 'NEUTRAL'
+    ? (CHOICE_TYPE_LABELS[choiceType]?.[getRuntimeLocale() === 'tr' ? 'tr' : 'en'] ?? choiceType)
+    : null;
   const dialogueTag = getMomentumDialogueTag(choice, personalityState);
   const tradeoffHint = dialogueTag ? null : generateTradeoffHint(choice);
   const swipeHint = tRuntime('events.swipe.swipeHint', undefined, 'kaydir');
@@ -189,7 +199,13 @@ export const SwipeChoiceCard: React.FC<SwipeChoiceCardProps> = React.memo(({
 
           {/* Header: choice type + position */}
           <View style={styles.header}>
-            <View style={[styles.typeDot, { backgroundColor: choiceTypeColor }]} />
+            {choiceTypeLabel ? (
+              <View style={[styles.typeChip, { backgroundColor: `${choiceTypeColor}22`, borderColor: `${choiceTypeColor}66` }]}>
+                <Text style={[styles.typeChipText, { color: choiceTypeColor }]}>{choiceTypeLabel}</Text>
+              </View>
+            ) : (
+              <View style={[styles.typeDot, { backgroundColor: choiceTypeColor }]} />
+            )}
             <Text style={[styles.positionText, { color: theme.textSecondary }]}>
               {index + 1} / {totalChoices}
             </Text>
@@ -207,6 +223,11 @@ export const SwipeChoiceCard: React.FC<SwipeChoiceCardProps> = React.memo(({
                 <Text style={[styles.tagChipText, { color: dialogueTag.textColor }]}>
                   {dialogueTag.tagText}
                 </Text>
+                {dialogueTag.streak >= 3 && (
+                  <Text style={[styles.tagChipText, { color: dialogueTag.textColor, opacity: 0.85 }]}>
+                    {` 🔥×${dialogueTag.streak}`}
+                  </Text>
+                )}
               </View>
             )}
           </View>
@@ -295,6 +316,17 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
+  },
+  typeChip: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  typeChipText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   positionText: {
     fontSize: 11,

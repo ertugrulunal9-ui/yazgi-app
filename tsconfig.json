@@ -1,5 +1,5 @@
 {
-  "extends": "expo/tsconfig.base",
+  "extends": "expo/tsconfig.base.json",
   "compilerOptions": {
     "target": "ES2022",
     "experimentalDecorators": true,
@@ -26,6 +26,7 @@
         "src/*"
       ]
     },
+    "noEmit": true,
     "allowImportingTsExtensions": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,

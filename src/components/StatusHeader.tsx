@@ -8,6 +8,7 @@ import { MessageToast } from '../animations/ToastAnimations';
 import { usePillarStats, useStress } from '../hooks/useGameSelectors';
 import { getLifeGoalMeta } from '../utils/lifeGoalSystem';
 import { clamp } from '../utils/gameUtils';
+import { tRuntime } from '../i18n/strings';
 
 type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
 type TranslateFn = (key: string, params?: Record<string, string | number | boolean>, fallback?: string) => string;
@@ -55,14 +56,16 @@ interface TrackerProps {
 
 type PillarKey = 'beden' | 'zihin' | 'ruh' | 'servet';
 type StressBand = 'HIDDEN' | 'YELLOW' | 'ORANGE' | 'RED';
+const STATUS_HEADER_KEY_PREFIX = 'ui.statusHeader.';
+
+const normalizeStatusHeaderKey = (key: string): string => (
+  key.startsWith(STATUS_HEADER_KEY_PREFIX)
+    ? `statusHeader.${key.slice(STATUS_HEADER_KEY_PREFIX.length)}`
+    : key
+);
 
 const fallbackTranslate: TranslateFn = (key, params, fallback) => {
-  const template = fallback ?? key;
-  if (!params) return template;
-  return template.replace(/\{(\w+)\}/g, (_, token: string) => {
-    const value = params[token];
-    return value === undefined ? `{${token}}` : String(value);
-  });
+  return tRuntime(normalizeStatusHeaderKey(key), params, fallback);
 };
 
 const formatMoneyDisplay = (money: number, t: TranslateFn): string => (
@@ -283,6 +286,17 @@ const GoalAndRiskTracker: React.FC<TrackerProps> = ({
         <Text style={[styles.goalHint, { color: theme.textSecondary }]}>
           {getRiskHint(safeRisk, t)}
         </Text>
+        {safeRisk >= 60 && (
+          <View style={[styles.riskPenaltyBanner, { borderColor: safeRisk >= 85 ? '#ef444455' : '#f9731655' }]}>
+            <Text style={[styles.riskPenaltyText, { color: safeRisk >= 85 ? '#ef4444' : '#f97316' }]}>
+              {t(
+                'ui.statusHeader.riskPenaltyHint',
+                { pct: String(Math.round((safeRisk - 40) * 0.5)) },
+                `⬇ Yüksek stres: tüm gelişimler zayıflatılıyor`
+              )}
+            </Text>
+          </View>
+        )}
         {riskReasons && riskReasons.length > 0 && safeRisk > 0 ? (
           <View style={styles.riskReasonsContainer}>
             {riskReasons.map((reason, idx) => (
@@ -370,7 +384,10 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
   theme,
   t: propTranslate,
 }) => {
-  const t = propTranslate ?? fallbackTranslate;
+  const baseTranslate = propTranslate ?? fallbackTranslate;
+  const t: TranslateFn = (key, params, fallback) => (
+    baseTranslate(normalizeStatusHeaderKey(key), params, fallback)
+  );
   const safeMaxEnergy = Math.max(1, maxEnergy);
   const avatarIcon = getPlayerIcon(age);
   const safeRiskPercent = clamp(riskPercent, 0, 100);
@@ -1042,6 +1059,19 @@ const styles = StyleSheet.create({
   trackerFill: {
     height: '100%',
     borderRadius: 999,
+  },
+  riskPenaltyBanner: {
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginTop: 4,
+    marginBottom: 2,
+    backgroundColor: 'rgba(239,68,68,0.06)',
+  },
+  riskPenaltyText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
   riskReasonsContainer: {
     marginTop: 4,

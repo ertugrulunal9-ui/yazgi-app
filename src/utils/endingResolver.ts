@@ -6,6 +6,7 @@ import {
   SchoolGrades,
   Skills,
   Stats,
+  StressState,
   UnlockedAchievement,
 } from '../types';
 import { BURDEN_CONSTANTS } from '../constants/gameConstants';
@@ -499,6 +500,16 @@ const calculateActionVersatility = (gameState: GameState): ActionVersatilityAnal
 const ACTION_DEBT_RISK_PREFIXES = ['study_', 'sports_', 'work_', 'computer_', 'arts_'];
 const ACTION_DEBT_RECOVERY_PREFIXES = ['baby_sleep', 'baby_eat', 'family_'];
 
+const calculateStressDebtBase = (stress: StressState): number => {
+  if (stress.threshold <= 0) return 0;
+
+  const stressRatio = stress.current / stress.threshold;
+  const cautionBandDebt = Math.max(0, Math.min(stressRatio, 0.85) - 0.55) * 8;
+  const crisisBandDebt = Math.max(0, stressRatio - 0.85) * 40;
+
+  return cautionBandDebt + crisisBandDebt;
+};
+
 const calculateActionDerivedDebt = (
   gameState: GameState,
   multiplier: number
@@ -747,12 +758,12 @@ const calculateBaseErrorDebt = (
   const stressRatio = stress.threshold > 0
     ? stress.current / stress.threshold
     : 0;
-  const stressDebtBase = Math.max(0, (stressRatio - 0.85) * 40);
+  const stressDebtBase = calculateStressDebtBase(stress);
   const actionDebt = runtimeMode
     ? calculateActionDerivedDebt(gameState, BURDEN_CONSTANTS.ACTION_DEBT_MULTIPLIER)
     : 0;
   const stressDebt = stressDebtBase + actionDebt;
-  if (stressDebtBase > 0) reasons.push(tRuntime('endings.errorReasons.stressHigh'));
+  if (stressRatio >= 0.75) reasons.push(tRuntime('endings.errorReasons.stressHigh'));
   if (actionDebt > 4) reasons.push(tRuntime('endings.errorReasons.overextensionDebt'));
 
   const total =

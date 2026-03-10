@@ -142,6 +142,27 @@ describe('Social locale smoke', () => {
     expect(getByText('Noah')).toBeTruthy();
   });
 
+  it('renders corrected Turkish labels in SocialScreen', () => {
+    setRuntimeLocale('tr');
+
+    const { getByText } = render(
+      <SocialScreen
+        npcs={[]}
+        currentEnergy={20}
+        currentMoney={100}
+        playerAge={12}
+        playerPersonality={{ openness: 50, empathy: 50, courage: 50, conformity: 50 }}
+        onBack={jest.fn()}
+        onInteract={() => ({ success: true, message: 'ok', cost: { energy: 0, money: 0 } })}
+        onMeetNew={() => ({ success: true })}
+      />
+    );
+
+    expect(getByText(/Sosyal Çevre/)).toBeTruthy();
+    expect(getByText('Yeni Biri ile Tanış')).toBeTruthy();
+    expect(getByText('Henüz kimseyi tanımıyorsun')).toBeTruthy();
+  });
+
   it('renders SocialScreen header and empty-state labels in English locale', () => {
     setRuntimeLocale('en');
 

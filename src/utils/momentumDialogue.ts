@@ -10,6 +10,8 @@ export interface MomentumDialogueTag {
   textColor: string;
   borderColor: string;
   glowColor: string;
+  streak: number;
+  multiplier: number;
 }
 
 const TENDENCY_LABELS: Record<PersonalityTendency, string> = {
@@ -69,6 +71,8 @@ export const getMomentumDialogueTag = (
     textColor: colors.text,
     borderColor: colors.border,
     glowColor: colors.glow,
+    streak: entry.streak,
+    multiplier: entry.multiplier,
   };
 };
 

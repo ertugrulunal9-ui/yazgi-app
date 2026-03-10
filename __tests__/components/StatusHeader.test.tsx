@@ -1,7 +1,8 @@
 import React from 'react';
-import { render, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { StatusHeader } from '../../src/components/StatusHeader';
 import { usePillarStats, useStress } from '../../src/hooks/useGameSelectors';
+import { setRuntimeLocale } from '../../src/i18n/strings';
 
 jest.mock('../../src/hooks/useGameSelectors', () => ({
   useStress: jest.fn(),
@@ -60,10 +61,12 @@ const flattenStyle = (style: any): Record<string, any> => {
 
 describe('StatusHeader stress indicator', () => {
   beforeEach(() => {
+    setRuntimeLocale('tr');
     mockedUseStress.mockReturnValue({
       current: 65,
       threshold: 70,
       ratio: 65 / 70,
+      recoveryPerTurn: 8,
     });
     mockedUsePillarStats.mockImplementation((incomingStats: any) => ({
       beden: Math.round((incomingStats.health + incomingStats.energy) / 2),
@@ -94,6 +97,23 @@ describe('StatusHeader stress indicator', () => {
     await waitFor(() => {
       expect(getByTestId('stress-critical-toast')).toBeTruthy();
     });
-    expect(getByText('Kriz yaklasiyor!')).toBeTruthy();
+    expect(getByText('Kriz yaklaşıyor!')).toBeTruthy();
+  });
+
+  it('renders localized goal tracker copy inside the notifications panel', () => {
+    const { getByText } = render(
+      <StatusHeader
+        playerName="Test User"
+        age={12}
+        stats={stats}
+        maxEnergy={100}
+        theme={theme}
+      />
+    );
+
+    fireEvent.press(getByText('Bildirimler'));
+
+    expect(getByText('Hedef seçimi 10 yaşında açılır.')).toBeTruthy();
+    expect(getByText('Hedef seçince izlenecek statlar burada görünür.')).toBeTruthy();
   });
 });

@@ -47,7 +47,19 @@
       "Bash(__NEW_LINE_2c4d6d0ec9a928a4__ echo \"=== VERIFICATION ROUND ===\")",
       "Bash(sed -n '650,654p' c:/Yazgi/src/data/moralDilemmaEvents.ts)",
       "Bash(sed -n '207,211p' c:/Yazgi/src/data/familyArcEvents.ts)",
-      "Bash(sed -n '40,42p; 60,62p; 68,70p; 153,155p; 175,177p; 182,184p; 202,204p; 236,238p; 258,260p' c:/Yazgi/src/data/cliffhangerEvents.ts)"
+      "Bash(sed -n '40,42p; 60,62p; 68,70p; 153,155p; 175,177p; 182,184p; 202,204p; 236,238p; 258,260p' c:/Yazgi/src/data/cliffhangerEvents.ts)",
+      "Bash(grep -A5 '\"\"minimatch\"\"')",
+      "Bash(npm install)",
+      "Bash(npm --version)",
+      "Bash(node --version)",
+      "Bash(npm install --package-lock-only)",
+      "Bash(node -e \":*)",
+      "Bash(rm package-lock.json)",
+      "Bash(npx --yes npm@10 install)",
+      "Bash(npx npm@10 --version)",
+      "Bash(node check-lockfile.js)",
+      "Bash(npx npm@10 install --package-lock-only)",
+      "Bash(npx npm@10 ci --dry-run)"
     ]
   }
 }

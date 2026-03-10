@@ -374,7 +374,7 @@ export class HubActionCommand implements ActionCommand {
     const nextSkills = skillResult.newSkills;
 
     const nextStress = action.stressEffect !== undefined
-      ? updateStress(gameState.stress, action.stressEffect, tRuntime('ui.statusHeader.stressSourceAction'), gameState.turn)
+      ? updateStress(gameState.stress, action.stressEffect, tRuntime('statusHeader.stressSourceAction'), gameState.turn)
       : gameState.stress;
     let nextPersonality = gameState.personality;
     let personalityShifts: PersonalityShift[] = [];
