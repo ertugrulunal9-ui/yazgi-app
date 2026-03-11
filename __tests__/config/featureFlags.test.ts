@@ -102,13 +102,14 @@ describe('featureFlags', () => {
       CAREER_PATH_ACTIONS: false,
       LEGACY_PERKS: false,
       MILESTONE_SUMMARY: true,
+      CHAPTER_SYSTEM: true,
       PERMANENT_FLAGS: false,
       FATE_TRANSPARENCY: true,
       ECONOMY_DEPTH: true,
       MICRO_GOALS: true,
       NPC_RICH_FEEDBACK: true,
       UNDO_MECHANIC: true,
-      PREMIUM_SUBSCRIPTION: false,
+      PREMIUM_SUBSCRIPTION: true,
     });
   });
 });

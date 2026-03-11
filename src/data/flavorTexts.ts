@@ -15,6 +15,10 @@ export const FLAVOR_TEXT_CATEGORIES = [
 
 type FlavorCategory = (typeof FLAVOR_TEXT_CATEGORIES)[number];
 
+export const FLAVOR_TEXTS = Object.fromEntries(
+  FLAVOR_TEXT_CATEGORIES.map(cat => [cat, [] as string[]])
+) as Record<FlavorCategory, string[]>;
+
 export const getRandomFlavor = (category: FlavorCategory): string => {
   const locale = getRuntimeLocale();
   const localeStrings = strings[locale];

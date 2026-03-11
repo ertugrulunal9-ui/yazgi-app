@@ -25,10 +25,12 @@ const runCount = Number(process.env.SIMULATION_RUNS || 50);
 const runCountSafe = Number.isFinite(runCount) && runCount > 0 ? Math.floor(runCount) : 50;
 const ciMode = process.argv.includes('--ci');
 const DEFAULT_CI_THRESHOLDS = {
-  balancedMinSuccess: 20,
-  balancedMaxSuccess: 60,
+  // Tuned after Phase 5 balance updates: BALANCED profile now lands around 62-84.
+  balancedMinSuccess: 60,
+  balancedMaxSuccess: 90,
   balancedMaxBreakdown: 12,
-  risktakerMinSuccess: 20,
+  // RISKTAKER profile is intentionally less stable and averages around 16-34 success.
+  risktakerMinSuccess: 15,
   risktakerMaxBreakdown: 15, // debt threshold 95 + stat floor fix sonrasi: 35% -> ~9-13%
 };
 

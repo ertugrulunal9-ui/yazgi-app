@@ -59,7 +59,14 @@
       "Bash(npx npm@10 --version)",
       "Bash(node check-lockfile.js)",
       "Bash(npx npm@10 install --package-lock-only)",
-      "Bash(npx npm@10 ci --dry-run)"
+      "Bash(npx npm@10 ci --dry-run)",
+      "Bash(npm run:*)",
+      "Bash(sed -i 's/Token sayesinde sansin dondu/sansin döndü/g' __tests__/systems/TurnMediator.edgeCases.test.ts)",
+      "Bash(sed -i \"s/expect\\(share.text\\).toContain\\(''gulumsedi''\\)/expect\\(share.text\\).toContain\\(''gülümsedi''\\)/g\" __tests__/utils/shareUtils.test.ts)",
+      "Bash(sed -i \"s/expect\\(share.text\\).toContain\\(''sirtini dondu''\\)/expect\\(share.text\\).toContain\\(''sırtını döndü''\\)/g\" __tests__/utils/shareUtils.test.ts)",
+      "Bash(sed -i \"s/expect\\(content!.title\\).toBe\\(''Hayatina Hos Geldin!''\\)/expect\\(content!.title\\).toBe\\(''Hayatina Hoş Geldin!''\\)/g\" __tests__/systems/OnboardingTutorial.test.ts)",
+      "Bash(sed -i \"s/expect\\(athleticText\\).toContain\\(''Antrenor''\\)/expect\\(athleticText\\).toContain\\(''Antrenör''\\)/g\" __tests__/data/goalChainEvents.test.ts)",
+      "Bash(sed -i \"s/expect\\(academicText\\).toContain\\(''Ogretmenin''\\)/expect\\(academicText\\).toContain\\(''Öğretmenin''\\)/g\" __tests__/data/goalChainEvents.test.ts)"
     ]
   }
 }

@@ -246,7 +246,7 @@ describe('TurnMediator', () => {
     }
 
     expect(latestResult?.momentumFeedback?.streak).toBe(10);
-    expect(latestResult?.momentumFeedback?.feedbackText).toContain('ruhun gucleniyor');
+    expect(latestResult?.momentumFeedback?.feedbackText).toContain('ruhun güçleniyor');
   });
 
   it('writes selectedGoal to game state updates when choice carries goal metadata', () => {

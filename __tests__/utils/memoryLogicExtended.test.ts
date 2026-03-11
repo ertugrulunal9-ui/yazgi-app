@@ -146,14 +146,14 @@ describe('memoryLogic extended', () => {
       [makeMemory({ id: 'r', emotion: 'REGRET', weight: 'HIGH', age: 14, turnTimestamp: 20 }), neutralTail],
       { eventId: lowRollEvent, currentAge: 14, currentTurn: 7, personalityCategory: 'RISK' }
     );
-    expect(regretText).toContain('Az once');
+    expect(regretText).toContain('Az önce');
 
     const guiltText = buildMemoryAwareEventText(
       'Base guilt',
       [makeMemory({ id: 'g', emotion: 'GUILT', weight: 'HIGH', age: 13, turnTimestamp: 21 }), neutralTail],
       { eventId: lowRollEvent, currentAge: 14, currentTurn: 7, personalityCategory: 'RISK' }
     );
-    expect(guiltText).toContain('yasinda');
+    expect(guiltText).toContain('yaşında');
 
     const prideText = buildMemoryAwareEventText(
       'Base pride',

@@ -31,7 +31,7 @@ describe('TraitProgressPanel', () => {
       <TraitProgressPanel traitProgress={{}} theme={theme} />
     );
 
-    expect(getByText('Henuz takip edilen bir ozellik formasyonu yok.')).toBeTruthy();
+    expect(getByText('Henüz takip edilen bir özellik formasyonu yok.')).toBeTruthy();
   });
 
   it('renders progress values and status labels', () => {

@@ -222,10 +222,10 @@ export const uiStrings: DomainStrings = {
       importError: 'İçe Aktarma Başarısız',
       importErrorMsg: 'Geçersiz kayıt formatı.',
       relativeTime: {
-        daysAgo: '{count} gün once',
-        hoursAgo: '{count} saat once',
-        minutesAgo: '{count} dk once',
-        justNow: 'Az once',
+        daysAgo: '{count} gün önce',
+        hoursAgo: '{count} saat önce',
+        minutesAgo: '{count} dk önce',
+        justNow: 'Az önce',
       },
     },
     achievements: {
@@ -608,9 +608,9 @@ export const uiStrings: DomainStrings = {
         relationShiftNegative: 'zayifladi',
       },
       statNarrative: {
-        tiredPenalty: 'Çok yorgunsun, kazancin azaldi.',
+        tiredPenalty: 'Çok yorgunsun, kazancın azaldı.',
         traitBoost: 'Yeteneklerin devreye girdi!',
-        momentumBoost: 'İvme bonusu aldin!',
+        momentumBoost: 'İvme bonusu aldın!',
       },
     },
     buttons: {

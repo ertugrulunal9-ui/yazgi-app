@@ -126,7 +126,7 @@ describe('OnboardingTutorial', () => {
     it('returns original text for WELCOME_HUB when sessionNumber is 1', () => {
       const content = getTutorialContent('WELCOME_HUB', { sessionNumber: 1 });
       expect(content).not.toBeNull();
-      expect(content!.title).toBe('Hayatina Hos Geldin!');
+      expect(content!.title).toBe('Hayatina Hoş Geldin!');
     });
 
     it('has correct step numbers for all steps', () => {

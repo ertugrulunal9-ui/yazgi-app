@@ -13,7 +13,7 @@ export const narrativeStrings: DomainStrings = {
           yearsAgo: '{years} yil once',
         },
         agePrefix: {
-          current: 'Az once',
+          current: 'Az önce',
           atAge: '{age} yaşında',
         },
         random: {

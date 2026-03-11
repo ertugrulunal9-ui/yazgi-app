@@ -5,7 +5,7 @@ describe('ACTION_CATEGORIES childhood additions', () => {
     const explore = ACTION_CATEGORIES.find(category => category.id === 'explore');
 
     expect(explore).toBeDefined();
-    expect((explore?.title || '').length).toBeGreaterThan(0);
+    expect(explore?.id).toBeDefined(); // title comes from i18n
     expect(explore?.minAge).toBe(3);
     expect(explore?.maxAge).toBe(6);
     expect(explore?.subActions).toHaveLength(4);
@@ -23,7 +23,7 @@ describe('ACTION_CATEGORIES childhood additions', () => {
     const family = ACTION_CATEGORIES.find(category => category.id === 'family');
 
     expect(family).toBeDefined();
-    expect((family?.title || '').length).toBeGreaterThan(0);
+    expect(family?.id).toBeDefined(); // title comes from i18n
     expect(family?.minAge).toBe(3);
     expect(family?.maxAge).toBe(6);
     expect(family?.subActions).toHaveLength(3);

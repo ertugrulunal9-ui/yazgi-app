@@ -251,7 +251,7 @@ describe('AppShell integration', () => {
     await act(async () => {
       tree = renderer.create(<AppShell />);
     });
-    const startTutorialButton = tree.root.findByProps({ accessibilityLabel: 'Tutorialu baslat' });
+    const startTutorialButton = tree.root.findByProps({ accessibilityLabel: 'Rehberi başlat' });
 
     await act(async () => {
       startTutorialButton.props.onPress();
@@ -283,7 +283,7 @@ describe('AppShell integration', () => {
       tree = renderer.create(<AppShell />);
     });
 
-    const skipTutorialButton = tree.root.findByProps({ accessibilityLabel: 'Tutorialu atla' });
+    const skipTutorialButton = tree.root.findByProps({ accessibilityLabel: 'Rehberi atla' });
 
     await act(async () => {
       skipTutorialButton.props.onPress();

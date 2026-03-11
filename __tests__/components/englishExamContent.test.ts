@@ -65,23 +65,23 @@ describe('englishExamContent', () => {
     }));
 
     expect(advancedHard).toMatchInlineSnapshot(`
-      [
-        {
-          "correctOption": "had",
-          "id": "eng_en_a_h_1",
-          "question": "I wish I ___ attended the meeting yesterday.",
-        },
-        {
-          "correctOption": "have I seen",
-          "id": "eng_en_a_h_2",
-          "question": "Seldom ___ such a talented musician.",
-        },
-        {
-          "correctOption": "Showy and attention-seeking",
-          "id": "eng_en_a_h_3",
-          "question": "What does "ostentatious" mean?",
-        },
-      ]
-    `);
+[
+  {
+    "correctOption": "would have passed",
+    "id": "eng_en_a_m_1",
+    "question": "If I had studied, I ___ the exam.",
+  },
+  {
+    "correctOption": "is",
+    "id": "eng_en_a_m_2",
+    "question": "Not only ___ she smart, but she is also hardworking.",
+  },
+  {
+    "correctOption": "Make worse",
+    "id": "eng_en_a_m_3",
+    "question": "What does "exacerbate" mean?",
+  },
+]
+`);
   });
 });

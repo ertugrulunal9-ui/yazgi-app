@@ -418,7 +418,7 @@ describe('HubActionCommand', () => {
     expect(result.gameStateUpdates.scheduledEvents?.some(
       event => event.eventId === 'econ_poor_scholarship_offer'
     )).toBe(true);
-    expect(result.feedbackMessage).toContain('destek kapisi');
+    expect(result.feedbackMessage).toContain('destek kapısı');
 
     randomSpy.mockRestore();
   });

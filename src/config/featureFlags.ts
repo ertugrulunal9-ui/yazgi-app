@@ -29,7 +29,7 @@ export const FEATURE_FLAGS = {
   MICRO_GOALS: true,
   NPC_RICH_FEEDBACK: true,
   UNDO_MECHANIC: true,
-  PREMIUM_SUBSCRIPTION: false,
+  PREMIUM_SUBSCRIPTION: true,
 } as const;
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS;

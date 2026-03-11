@@ -409,7 +409,7 @@ describe('StatEngine — Edge Cases', () => {
       );
 
       const feedback = StatEngine.getStatChangeNarrativeFeedback(result.details);
-      expect(feedback).toContain('Momentum bonusu aldın!');
+      expect(feedback).toContain('İvme bonusu aldın!');
     });
   });
 });

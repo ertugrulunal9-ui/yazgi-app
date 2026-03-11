@@ -387,7 +387,7 @@ describe('TurnMediator — Edge Cases', () => {
       });
 
       const feedbackLines = result.gameStateUpdates.lastResult?.statNarrativeFeedback || [];
-      expect(feedbackLines.some(line => line.includes('Token sayesinde sansin dondu'))).toBe(true);
+      expect(feedbackLines.some(line => line.includes('sansin döndü'))).toBe(true);
       expect(feedbackLines.some(line => line.includes('Lanetli ->'))).toBe(true);
     });
   });

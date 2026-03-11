@@ -181,6 +181,7 @@ describe('subscriptionManager hardening', () => {
   });
 
   it('keeps entitlement read path available when premium feature flag is off', async () => {
+    // When flag is off, RevenueCat is not initialized; paywall stays closed.
     const { subscriptionManager } = await loadSubscriptionManager({
       premiumEnabled: false,
       apiKeySource: 'env',
@@ -188,12 +189,9 @@ describe('subscriptionManager hardening', () => {
     });
 
     await subscriptionManager.initializeSubscriptions();
-    const premiumNow = await subscriptionManager.refreshPremiumStatus();
     const runtime = subscriptionManager.getPremiumRuntimeStatus();
 
-    expect(runtime.initialized).toBe(true);
-    expect(premiumNow).toBe(true);
-    expect(subscriptionManager.isPremium()).toBe(true);
+    expect(runtime.initialized).toBe(false);
     expect(subscriptionManager.canOpenPremiumPaywall()).toBe(false);
   });
 

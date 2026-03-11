@@ -51,8 +51,8 @@ describe('goalChainEvents', () => {
       ? stage1.text(buildContext('ACADEMIC'))
       : stage1.text;
 
-    expect(athleticText).toContain('Antrenor');
-    expect(academicText).toContain('Ogretmenin');
+    expect(athleticText).toContain('Antrenör');
+    expect(academicText).toContain('Öğretmenin');
     expect(stage2.reqEventIds).toEqual(['goal_chain_stage1_discovery']);
     expect(stage3.reqEventIds).toEqual(['goal_chain_stage2_first_competition']);
     expect(GOAL_CHAIN_ARC.events).toHaveLength(3);

@@ -44,7 +44,7 @@ describe('shareUtils', () => {
 
     expect(share.type).toBe('FATE_MOMENT');
     expect(share.emoji).toBe('\u{1F31F}');
-    expect(share.text).toContain('gulumsedi');
+    expect(share.text).toContain('gülümsedi');
   });
 
   it('creates negative fate share text', () => {
@@ -53,7 +53,7 @@ describe('shareUtils', () => {
 
     expect(share.type).toBe('FATE_MOMENT');
     expect(share.emoji).toBe('\u{1F327}\uFE0F');
-    expect(share.text).toContain('sirtini dondu');
+    expect(share.text).toContain('sırtını döndü');
   });
 
   it('formats final share message with signature', () => {

@@ -90,6 +90,8 @@ describe('MainMenuScreen zodiac panel', () => {
   });
 
   it('waits for persisted meta progression before applying daily login rewards', () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-03-08T12:00:00Z'));
     const updateMetaProgression = jest.fn();
     const staleMeta = createInitialMetaProgression(0);
     const persistedMeta = {
@@ -146,5 +148,6 @@ describe('MainMenuScreen zodiac panel', () => {
       totalLegacyPoints: 45,
     });
     expect(queryByText('Welcome back! +5 Legacy Points (3-day streak!)')).toBeTruthy();
+    jest.useRealTimers();
   });
 });

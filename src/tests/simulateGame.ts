@@ -1129,8 +1129,8 @@ const printSideBySide = (report: SideBySideSummary): void => {
     `Risktaker | ${report.risktaker.targetSuccessRate} | ${report.risktaker.breakdownRate} | ${report.risktaker.tiers.LEGENDARY} | ${report.risktaker.tiers.SUCCESS} | ${report.risktaker.tiers.NORMAL} | ${report.risktaker.tiers.FAILURE}`
   );
   console.log('Hedef metrikler:');
-  console.log('  Balanced Bot hedefi: %30 Success, %10 Breakdown');
-  console.log('  Risktaker Bot hedefi: %60 Success, %50 Breakdown');
+  console.log('  Balanced Bot hedefi: %60-%90 Success, <=%12 Breakdown');
+  console.log('  Risktaker Bot hedefi: >=%15 Success, <=%15 Breakdown');
 };
 
 export const runSideBySideSimulation = (runs: number = 50): SideBySideSummary => {
