@@ -71,7 +71,7 @@ jobs:
         run: npm run test:ci -- --watchAll=false
 
       - name: Upload Coverage Report
-        if: always()
+        if: always() && hashFiles('coverage/**') != ''
         uses: actions/upload-artifact@v6
         with:
           name: coverage-report

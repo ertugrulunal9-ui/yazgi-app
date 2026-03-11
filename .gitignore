@@ -35,5 +35,8 @@ coverage/
 # Both files committed intentionally (bare workflow: Gradle reads android/app/ directly)
 GoogleService-Info.plist
 
+# Local Claude/Codex temporary worktrees
+.claude/worktrees/
+
 # Local cloudsync runtime data
 backend/data/
