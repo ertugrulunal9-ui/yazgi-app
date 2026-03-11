@@ -378,7 +378,7 @@ class MonetizationService {
       };
     }
 
-    if (this.rewardedAdCount >= this.dailyAdLimit) {
+    if (!this.allowMockAds && this.rewardedAdCount >= this.dailyAdLimit) {
       return {
         success: false,
         error: `Daily ad limit reached (${this.dailyAdLimit})`,

@@ -140,8 +140,9 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
   }, []);
 
   useEffect(() => {
+    if (!uiPrefsLoaded) return;
     analyticsService.setEnabled(uiPrefs.analyticsEnabled);
-  }, [uiPrefs.analyticsEnabled]);
+  }, [uiPrefs.analyticsEnabled, uiPrefsLoaded]);
 
   useEffect(() => {
     setMonetizationPersonalizedAdsEnabled(uiPrefs.personalizedAdsEnabled);

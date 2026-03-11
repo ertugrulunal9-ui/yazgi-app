@@ -18,6 +18,7 @@ import { useUI } from '../context/UIContext';
 import {
   canOpenPremiumPaywall,
   getOfferings,
+  PremiumErrorCode,
   getPremiumRuntimeStatus,
   isPremium,
   PremiumRuntimeStatus,
@@ -80,6 +81,9 @@ const resolvePremiumError = (
     case 'restore_disabled':
       baseMessage = t('premium.restoreDisabled');
       break;
+    case 'billing_unavailable':
+      baseMessage = t('premium.billingUnavailable');
+      break;
     case 'revenuecat_unavailable':
     case 'missing_config':
     case 'not_initialized':
@@ -127,6 +131,10 @@ const getRuntimeBlockedMessage = (runtimeStatus: PremiumRuntimeStatus, t: Transl
     return t('premium.storeUnavailable');
   }
 
+  if (runtimeStatus.canMakePayments === false) {
+    return t('premium.billingUnavailable');
+  }
+
   if (!runtimeStatus.purchasesEnabled && !runtimeStatus.restoreEnabled) {
     return t('premium.temporarilyUnavailable');
   }
@@ -143,8 +151,15 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ visible, onClose }) 
   const [restoring, setRestoring] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const runtimeStatus = getPremiumRuntimeStatus();
-  const purchaseAllowed = runtimeStatus.purchasesEnabled && runtimeStatus.hasApiKey && runtimeStatus.revenueCatAvailable;
-  const restoreAllowed = runtimeStatus.restoreEnabled && runtimeStatus.hasApiKey && runtimeStatus.revenueCatAvailable;
+  const billingAvailable = runtimeStatus.canMakePayments !== false;
+  const purchaseAllowed = runtimeStatus.purchasesEnabled
+    && runtimeStatus.hasApiKey
+    && runtimeStatus.revenueCatAvailable
+    && billingAvailable;
+  const restoreAllowed = runtimeStatus.restoreEnabled
+    && runtimeStatus.hasApiKey
+    && runtimeStatus.revenueCatAvailable
+    && billingAvailable;
 
   useEffect(() => {
     if (!visible) return;
@@ -208,7 +223,12 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ visible, onClose }) 
     });
 
     if (!purchaseAllowed) {
-      const blockedCode = runtimeStatus.hasApiKey ? 'purchases_disabled' : 'missing_config';
+      let blockedCode: PremiumErrorCode = 'missing_config';
+      if (runtimeStatus.hasApiKey && !billingAvailable) {
+        blockedCode = 'billing_unavailable';
+      } else if (runtimeStatus.hasApiKey) {
+        blockedCode = 'purchases_disabled';
+      }
       void logPurchaseResult({
         placement: 'settings',
         productId: selectedId,
@@ -261,15 +281,21 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ visible, onClose }) 
     }
 
     setError(resolvePremiumError(result, 'purchase', t));
-  }, [selectedId, loading, restoring, loadingOfferings, products, onClose, purchaseAllowed, runtimeStatus.hasApiKey, t]);
+  }, [selectedId, loading, restoring, loadingOfferings, products, onClose, purchaseAllowed, runtimeStatus.hasApiKey, billingAvailable, t]);
 
   const handleRestore = useCallback(async () => {
     if (restoring || loading || loadingOfferings) return;
     if (!restoreAllowed) {
+      let blockedCode: PremiumErrorCode = 'missing_config';
+      if (runtimeStatus.hasApiKey && !billingAvailable) {
+        blockedCode = 'billing_unavailable';
+      } else if (runtimeStatus.hasApiKey) {
+        blockedCode = 'restore_disabled';
+      }
       setError(resolvePremiumError(
         {
           success: false,
-          code: runtimeStatus.hasApiKey ? 'restore_disabled' : 'missing_config',
+          code: blockedCode,
         },
         'restore',
         t
@@ -287,7 +313,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ visible, onClose }) 
     } else {
       setError(resolvePremiumError(result, 'restore', t));
     }
-  }, [restoring, loading, loadingOfferings, onClose, restoreAllowed, runtimeStatus.hasApiKey, t]);
+  }, [restoring, loading, loadingOfferings, onClose, restoreAllowed, runtimeStatus.hasApiKey, billingAvailable, t]);
 
   if (isPremium()) {
     return (

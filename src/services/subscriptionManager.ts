@@ -31,6 +31,7 @@ export type PremiumErrorCode =
   | 'premium_kill_switch'
   | 'purchases_disabled'
   | 'restore_disabled'
+  | 'billing_unavailable'
   | 'revenuecat_unavailable'
   | 'missing_config'
   | 'not_initialized'
@@ -57,6 +58,7 @@ export interface PremiumRuntimeStatus {
   restoreEnabled: boolean;
   hasApiKey: boolean;
   revenueCatAvailable: boolean;
+  canMakePayments: boolean | null;
   initialized: boolean;
   cachedPremium: boolean;
   lastInitIssueCode: PremiumErrorCode | null;
@@ -64,6 +66,7 @@ export interface PremiumRuntimeStatus {
 
 const ENTITLEMENT_ID = 'premium';
 const PLACEHOLDER_SECRET_PATTERN = /(TODO|REPLACE|YOUR_|CHANGE_ME|<.*>)/i;
+const BILLING_UNAVAILABLE_MESSAGE = 'Billing is unavailable on this device';
 
 type RevenueCatExtraConfig = {
   iosApiKey?: string;
@@ -259,6 +262,7 @@ let cachedPremiumState = false;
 let customerInfoUnsubscribe: (() => void) | null = null;
 let lastInitIssue: InitIssue | null = null;
 let initInFlight: Promise<void> | null = null;
+let canMakePayments: boolean | null = null;
 
 const listeners = new Set<(isPremium: boolean) => void>();
 
@@ -273,6 +277,73 @@ const clearInitIssue = (): void => {
 
 const setInitIssue = (code: PremiumErrorCode, message: string): void => {
   lastInitIssue = { code, message };
+};
+
+const getPurchasesErrorCode = (error: unknown): string => {
+  if (
+    typeof error === 'object'
+    && error !== null
+    && 'code' in error
+    && typeof (error as { code?: unknown }).code === 'string'
+  ) {
+    return normalizeKey((error as { code: string }).code);
+  }
+  return '';
+};
+
+const getPurchasesReadableCode = (error: unknown): string => {
+  if (
+    typeof error === 'object'
+    && error !== null
+    && 'userInfo' in error
+    && isObjectRecord((error as { userInfo?: unknown }).userInfo)
+  ) {
+    const fromUserInfo = normalizeKey((error as { userInfo: { readableErrorCode?: unknown } }).userInfo.readableErrorCode);
+    if (fromUserInfo) return fromUserInfo.toUpperCase();
+  }
+
+  if (
+    typeof error === 'object'
+    && error !== null
+    && 'readableErrorCode' in error
+    && typeof (error as { readableErrorCode?: unknown }).readableErrorCode === 'string'
+  ) {
+    return normalizeKey((error as { readableErrorCode: string }).readableErrorCode).toUpperCase();
+  }
+
+  return '';
+};
+
+const getPurchasesUnderlyingMessage = (error: unknown): string => {
+  if (
+    typeof error === 'object'
+    && error !== null
+    && 'underlyingErrorMessage' in error
+    && typeof (error as { underlyingErrorMessage?: unknown }).underlyingErrorMessage === 'string'
+  ) {
+    return normalizeKey((error as { underlyingErrorMessage: string }).underlyingErrorMessage);
+  }
+  return '';
+};
+
+const isBillingUnavailableError = (error: unknown): boolean => {
+  const code = getPurchasesErrorCode(error);
+  const readableCode = getPurchasesReadableCode(error);
+  const details = `${formatErrorMessage(error, '')} ${getPurchasesUnderlyingMessage(error)}`.toLowerCase();
+
+  if (code === '3') return true;
+  if (readableCode.includes('PURCHASE_NOT_ALLOWED')) return true;
+  return /billing.*unavailable|purchase not allowed|not allowed to make the purchase/.test(details);
+};
+
+const isOfferingsConfigurationError = (error: unknown): boolean => {
+  const code = getPurchasesErrorCode(error);
+  const readableCode = getPurchasesReadableCode(error);
+  const details = `${formatErrorMessage(error, '')} ${getPurchasesUnderlyingMessage(error)}`.toLowerCase();
+
+  if (code === '23') return true;
+  if (readableCode.includes('CONFIGURATION')) return true;
+  return /there is an issue with your configuration|offerings.*empty|no play store products/.test(details);
 };
 
 async function getRevenueCat(): Promise<any | null> {
@@ -339,6 +410,13 @@ const ensurePremiumRuntimeReady = async (
     };
   }
 
+  if (mode !== 'read' && canMakePayments === false) {
+    return {
+      ok: false,
+      result: buildFailure('billing_unavailable', BILLING_UNAVAILABLE_MESSAGE, productId),
+    };
+  }
+
   return { ok: true, Purchases };
 };
 
@@ -356,6 +434,12 @@ const mapPurchaseFailure = (
   if (isNetworkMessage(message)) {
     return buildFailure('network_error', message, productId);
   }
+  if (isBillingUnavailableError(error)) {
+    return buildFailure('billing_unavailable', BILLING_UNAVAILABLE_MESSAGE, productId);
+  }
+  if (isOfferingsConfigurationError(error)) {
+    return buildFailure('offerings_unavailable', 'No purchasable offerings available', productId);
+  }
   return buildFailure(fallbackCode, message, productId);
 };
 
@@ -371,6 +455,7 @@ export function getPremiumRuntimeStatus(): PremiumRuntimeStatus {
     restoreEnabled: rollout.restoreEnabled,
     hasApiKey,
     revenueCatAvailable,
+    canMakePayments,
     initialized: revenueCatInitialized,
     cachedPremium: cachedPremiumState,
     lastInitIssueCode: lastInitIssue?.code ?? null,
@@ -383,6 +468,7 @@ export function canOpenPremiumPaywall(): boolean {
   if (runtimeStatus.killSwitchActive) return false;
   if (!runtimeStatus.hasApiKey) return false;
   if (!runtimeStatus.revenueCatAvailable) return false;
+  if (runtimeStatus.canMakePayments === false) return false;
   return runtimeStatus.purchasesEnabled || runtimeStatus.restoreEnabled;
 }
 
@@ -416,7 +502,16 @@ export async function initializeSubscriptions(): Promise<void> {
     try {
       await Purchases.configure({ apiKey });
       revenueCatInitialized = true;
+      canMakePayments = null;
       clearInitIssue();
+
+      if (typeof Purchases.canMakePayments === 'function') {
+        try {
+          canMakePayments = await Purchases.canMakePayments();
+        } catch {
+          canMakePayments = null;
+        }
+      }
 
       await refreshPremiumStatus();
 
@@ -472,7 +567,7 @@ export async function getOfferings(): Promise<SubscriptionProduct[]> {
   if (guardFailure) return [];
 
   const readiness = await ensurePremiumRuntimeReady('read');
-  if (!readiness.ok) return PRODUCTS;
+  if (!readiness.ok) return [];
 
   try {
     const offerings = await readiness.Purchases.getOfferings();
@@ -480,7 +575,7 @@ export async function getOfferings(): Promise<SubscriptionProduct[]> {
     const packages = current?.availablePackages;
 
     if (!Array.isArray(packages) || packages.length === 0) {
-      return PRODUCTS;
+      return [];
     }
 
     return packages
@@ -492,8 +587,11 @@ export async function getOfferings(): Promise<SubscriptionProduct[]> {
         period: pkg?.packageType === 'ANNUAL' ? 'yearly' as const : 'monthly' as const,
       }))
       .filter((item: SubscriptionProduct) => item.id.length > 0);
-  } catch {
-    return PRODUCTS;
+  } catch (error) {
+    if (isOfferingsConfigurationError(error)) {
+      return [];
+    }
+    return [];
   }
 }
 

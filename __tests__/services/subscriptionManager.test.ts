@@ -1,4 +1,4 @@
-﻿type LoadOptions = {
+type LoadOptions = {
   premiumEnabled?: boolean;
   killSwitch?: boolean;
   purchasesEnabled?: boolean;
@@ -6,8 +6,10 @@
   initialPremium?: boolean;
   apiKeySource?: 'env' | 'env_api_alias' | 'config' | 'none' | 'placeholder';
   revenueCatAvailable?: boolean;
-  purchaseOutcome?: 'success' | 'cancelled' | 'no_entitlement' | 'network_error';
+  purchaseOutcome?: 'success' | 'cancelled' | 'no_entitlement' | 'network_error' | 'billing_unavailable';
   restoreOutcome?: 'success' | 'no_active' | 'network_error';
+  offeringsOutcome?: 'available' | 'empty' | 'configuration_error';
+  canMakePayments?: boolean;
 };
 
 const PRODUCT_ID = 'yazgi_premium_monthly';
@@ -47,6 +49,13 @@ const createPurchasesMock = (options: LoadOptions = {}) => {
     if (options.purchaseOutcome === 'network_error') {
       throw new Error('Network request failed');
     }
+    if (options.purchaseOutcome === 'billing_unavailable') {
+      throw {
+        code: '3',
+        message: 'The device or user is not allowed to make the purchase.',
+        underlyingErrorMessage: 'Billing is not available in this device. ErrorCode: BILLING_UNAVAILABLE.',
+      };
+    }
     if (options.purchaseOutcome === 'no_entitlement') {
       return { customerInfo: { entitlements: { active: {} } } };
     }
@@ -66,12 +75,31 @@ const createPurchasesMock = (options: LoadOptions = {}) => {
   return {
     configure: jest.fn(async () => undefined),
     addCustomerInfoUpdateListener: jest.fn(() => undefined),
+    canMakePayments: jest.fn(async () => options.canMakePayments ?? true),
     getCustomerInfo: jest.fn(async () => ({ entitlements: { active: initialEntitlements } })),
-    getOfferings: jest.fn(async () => ({
-      current: {
-        availablePackages: packages,
-      },
-    })),
+    getOfferings: jest.fn(async () => {
+      if (options.offeringsOutcome === 'configuration_error') {
+        throw {
+          code: '23',
+          message: 'There is an issue with your configuration.',
+          underlyingErrorMessage: 'No Play Store products are configured for offerings.',
+        };
+      }
+
+      if (options.offeringsOutcome === 'empty') {
+        return {
+          current: {
+            availablePackages: [],
+          },
+        };
+      }
+
+      return {
+        current: {
+          availablePackages: packages,
+        },
+      };
+    }),
     purchasePackage,
     restorePurchases,
   };
@@ -248,6 +276,34 @@ describe('subscriptionManager hardening', () => {
     expect(result.error).toBe('cancelled');
   });
 
+  it('returns billing_unavailable when store billing is unavailable on device', async () => {
+    const { subscriptionManager } = await loadSubscriptionManager({
+      premiumEnabled: true,
+      apiKeySource: 'env',
+      canMakePayments: false,
+    });
+
+    const result = await subscriptionManager.purchaseProduct(PRODUCT_ID);
+    expect(result.success).toBe(false);
+    expect(result.code).toBe('billing_unavailable');
+    expect(subscriptionManager.canOpenPremiumPaywall()).toBe(false);
+  });
+
+  it('maps offerings configuration errors to offerings_unavailable', async () => {
+    const { subscriptionManager } = await loadSubscriptionManager({
+      premiumEnabled: true,
+      apiKeySource: 'env',
+      offeringsOutcome: 'configuration_error',
+    });
+
+    const offerings = await subscriptionManager.getOfferings();
+    const purchaseAttempt = await subscriptionManager.purchaseProduct(PRODUCT_ID);
+
+    expect(offerings).toEqual([]);
+    expect(purchaseAttempt.success).toBe(false);
+    expect(purchaseAttempt.code).toBe('offerings_unavailable');
+  });
+
   it('returns no_active_subscription on restore without entitlement', async () => {
     const { subscriptionManager } = await loadSubscriptionManager({
       premiumEnabled: true,
@@ -302,9 +358,10 @@ describe('subscriptionManager hardening', () => {
       purchasesEnabled: true,
       restoreEnabled: true,
       killSwitch: false,
+      canMakePayments: true,
     });
 
+    await subscriptionManager.initializeSubscriptions();
     expect(subscriptionManager.canOpenPremiumPaywall()).toBe(true);
   });
 });
-

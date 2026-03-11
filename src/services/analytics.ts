@@ -111,6 +111,7 @@ class AnalyticsService {
   private firebaseAnalytics: FirebaseAnalyticsModule | null = null;
   private firebaseLoadAttempted = false;
   private firebaseUnavailableWarned = false;
+  private collectionPreferenceQueue: Promise<void> = Promise.resolve();
 
   constructor() {
     this.initialize();
@@ -185,7 +186,11 @@ class AnalyticsService {
    */
   setEnabled(enabled: boolean): void {
     this.enabled = enabled;
-    void this.applyCollectionPreference(enabled);
+    this.collectionPreferenceQueue = this.collectionPreferenceQueue
+      .catch(() => {
+        // Keep queue alive after a previous failure.
+      })
+      .then(() => this.applyCollectionPreference(enabled));
     devLog.log(`[ANALYTICS] ${this.enabled ? 'enabled' : 'disabled'}`);
   }
 

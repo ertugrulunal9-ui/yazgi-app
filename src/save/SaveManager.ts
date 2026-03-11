@@ -1080,8 +1080,8 @@ class SaveManager {
       return { valid: true, reason: 'match' };
     }
 
-    // Development migration safety: autosave signature drift can occur after local secret/key changes.
-    if (IS_DEV_RUNTIME && slotId === AUTO_SAVE_SLOT_ID) {
+    // Development migration safety: signature drift can occur after local secret/key changes (any slot).
+    if (IS_DEV_RUNTIME) {
       await this.persistSlotSignature(slotId, expected);
       return { valid: true, reason: 'resealed_dev_autosave' };
     }
