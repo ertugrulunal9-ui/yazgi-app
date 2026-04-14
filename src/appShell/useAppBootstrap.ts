@@ -11,6 +11,7 @@ import { getLoadingQuoteByAge } from '../data/loadingQuotes';
 import { DEFAULT_LOCALE } from '../i18n/strings';
 import type { AppLocale } from '../i18n/strings';
 import { analyticsService } from '../services/analytics';
+import { requestAndResolveConsent } from '../services/consentService';
 import { initMonetization, setPersonalizedAdsEnabled as setMonetizationPersonalizedAdsEnabled } from '../services/monetization';
 import { requestPermissions as requestNotificationPermissions } from '../services/notificationService';
 import { initializeSubscriptions } from '../services/subscriptionManager';
@@ -112,9 +113,16 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
 
       if (cancelled) return;
 
-      initMonetization().catch((error) => {
-        console.warn('Monetization init failed:', error);
-      });
+      requestAndResolveConsent()
+        .then((personalizedAllowed) => {
+          // Consent sonucunu hem monetization servisine hem de UIPrefs'e yaz
+          setMonetizationPersonalizedAdsEnabled(personalizedAllowed);
+          setUiPrefs(prev => ({ ...prev, personalizedAdsEnabled: personalizedAllowed }));
+          return initMonetization();
+        })
+        .catch((error) => {
+          console.warn('Monetization init failed:', error);
+        });
 
       requestNotificationPermissions().catch((error) => {
         console.warn('Notification permissions request failed:', error);

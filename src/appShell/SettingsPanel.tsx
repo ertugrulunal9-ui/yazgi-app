@@ -1,6 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import React, { useEffect, useMemo } from 'react';
 import {
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -13,6 +14,7 @@ import {
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FeatureFlag, FeatureFlagState } from '../config/featureFlags';
+import { PRIVACY_POLICY_URL, TERMS_URL } from '../config/legal';
 import { canOpenPremiumPaywall, isPremium } from '../services/subscriptionManager';
 import { DENSITY_OPTION_COLORS, DANGER_COLOR, MOTION_OPTION_COLOR, THEME_OPTION_COLORS } from '../constants/themeColors';
 import { Z_INDEX } from '../constants/zIndex';
@@ -438,6 +440,50 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   thumbColor={theme.surfaceRaised}
                   accessibilityLabel={t('settings.personalizedAds')}
                 />
+              </View>
+
+              <Text style={{ color: theme.textSecondary, fontSize: 11, marginTop: 8, paddingHorizontal: 4 }}>
+                {t('settings.consentNote')}
+              </Text>
+
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
+                <TouchableOpacity
+                  onPress={() => void Linking.openURL(PRIVACY_POLICY_URL)}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 10,
+                    borderRadius: 10,
+                    backgroundColor: theme.surfaceBase,
+                    borderWidth: 1,
+                    borderColor: theme.border,
+                    alignItems: 'center',
+                  }}
+                  accessibilityRole="link"
+                  accessibilityLabel={t('settings.privacyPolicy')}
+                >
+                  <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: '600' }}>
+                    {t('settings.privacyPolicy')}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => void Linking.openURL(TERMS_URL)}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 10,
+                    borderRadius: 10,
+                    backgroundColor: theme.surfaceBase,
+                    borderWidth: 1,
+                    borderColor: theme.border,
+                    alignItems: 'center',
+                  }}
+                  accessibilityRole="link"
+                  accessibilityLabel={t('settings.termsOfService')}
+                >
+                  <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: '600' }}>
+                    {t('settings.termsOfService')}
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
 

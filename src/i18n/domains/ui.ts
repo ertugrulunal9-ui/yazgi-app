@@ -56,6 +56,7 @@ export const uiStrings: DomainStrings = {
       accessoryGlasses: 'Gözlük',
       accessoryHat: 'Şapka',
       quickPlay: 'Hızlı Oyun - 13 Yaştan Başla',
+      quickPlayHint: 'Hızlı oynamak isteyenler için — 13 yaşından başla',
       saveClose: 'Kapat',
       saveBack: 'Geri',
       dropdownBackToHub: 'Ana ekrana dön',
@@ -617,6 +618,7 @@ export const uiStrings: DomainStrings = {
       shareLife: 'Hayatını Paylaş',
       watchAdAlternativeEnding: 'Reklam İzle: Alternatif Sonu Göster',
       newGame: 'Yeni Oyun',
+      legacyBonusAd: '▶ Reklam İzle → +15 Legacy Puanı',
     },
     messages: {
       sharingUnavailable: 'Paylaşım kullanılamıyor',
@@ -628,6 +630,14 @@ export const uiStrings: DomainStrings = {
       cardSharingFailed: 'Kart paylaşımı tamamlanamadı.',
       adNotShown: 'Reklam gösterilemedi',
       tryAgain: 'Lütfen tekrar dene.',
+    },
+    gameOver: {
+      tabs: {
+        ozet: 'Özet',
+        detay: 'Detay',
+        hikaye: 'Hikaye',
+      },
+      communityCount: 'Bu hayatı yaşayan {count}. kişisin',
     },
     recap: {
       title: 'Hoş Geldin',
@@ -800,6 +810,7 @@ export const uiStrings: DomainStrings = {
       accessoryGlasses: 'Glasses',
       accessoryHat: 'Hat',
       quickPlay: 'Quick Play - Start at Age 13',
+      quickPlayHint: 'For those who want to fast-forward — starts at age 13',
       dailyRewardMessage: 'Welcome back! +{points} Legacy Points',
       dailyRewardMessageStreak: 'Welcome back! +{points} Legacy Points ({streak}-day streak!)',
       dismissDailyReward: 'Dismiss daily reward notice',
@@ -1328,6 +1339,7 @@ export const uiStrings: DomainStrings = {
       shareLife: 'Share Your Life',
       watchAdAlternativeEnding: 'Watch Ad: Show Alternative Ending',
       newGame: 'New Game',
+      legacyBonusAd: '▶ Watch Ad → +15 Legacy Points',
     },
     messages: {
       sharingUnavailable: 'Sharing unavailable',
@@ -1339,6 +1351,14 @@ export const uiStrings: DomainStrings = {
       cardSharingFailed: 'Card sharing could not be completed.',
       adNotShown: 'Ad could not be shown',
       tryAgain: 'Please try again.',
+    },
+    gameOver: {
+      tabs: {
+        ozet: 'Summary',
+        detay: 'Details',
+        hikaye: 'Story',
+      },
+      communityCount: 'You are the {count}. person to live this life',
     },
     recap: {
       title: 'Welcome Back',

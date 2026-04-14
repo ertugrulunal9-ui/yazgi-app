@@ -344,6 +344,7 @@ export type MonetizationPlacement =
   | 'undo_choice'
   | 'age_transition'
   | 'settings'
+  | 'legacy_bonus'
   | 'unknown';
 
 type MonetizationFunnelStep =

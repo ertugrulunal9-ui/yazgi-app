@@ -20,12 +20,6 @@
     "esModuleInterop": true,
     "jsx": "react-native",
     "skipLibCheck": true,
-    "baseUrl": ".",
-    "paths": {
-      "@/*": [
-        "src/*"
-      ]
-    },
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "forceConsistentCasingInFileNames": true,

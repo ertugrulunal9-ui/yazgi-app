@@ -219,3 +219,44 @@ export const checkDailyLogin = (meta: MetaProgression): DailyLoginResult => {
   return { isNewDay: true, streak: newStreak, legacyPointsBonus: bonus, updatedMeta };
 };
 
+// =================================================================
+// COMMUNITY RUN COUNT
+// =================================================================
+
+const COMMUNITY_RUN_STORAGE_KEY = '@yazgi/community_run_count';
+
+const getAsyncStorage = async () => {
+  try {
+    const mod = await import('@react-native-async-storage/async-storage');
+    return (mod as any).default ?? mod;
+  } catch {
+    return null;
+  }
+};
+
+export const getTotalCommunityRuns = async (): Promise<number> => {
+  try {
+    const asyncStorage = await getAsyncStorage();
+    if (!asyncStorage) return 0;
+    const value = await asyncStorage.getItem(COMMUNITY_RUN_STORAGE_KEY);
+    if (!value) return 0;
+    const parsed = JSON.parse(value);
+    return typeof parsed.count === 'number' ? parsed.count : 0;
+  } catch {
+    return 0;
+  }
+};
+
+export const incrementCommunityRuns = async (): Promise<number> => {
+  try {
+    const asyncStorage = await getAsyncStorage();
+    if (!asyncStorage) return 0;
+    const current = await getTotalCommunityRuns();
+    const newCount = current + 1;
+    await asyncStorage.setItem(COMMUNITY_RUN_STORAGE_KEY, JSON.stringify({ count: newCount }));
+    return newCount;
+  } catch {
+    return 0;
+  }
+};
+
