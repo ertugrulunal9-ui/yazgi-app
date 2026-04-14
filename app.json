@@ -15,6 +15,7 @@
         {
           "android": {
             "minSdkVersion": 24,
+            "targetSdkVersion": 35,
             "enableHermes": true,
             "newArchEnabled": true
           },
