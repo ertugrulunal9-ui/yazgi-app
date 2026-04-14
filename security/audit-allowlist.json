@@ -3,5 +3,66 @@
     "omitDev": true,
     "failOnSeverity": ["high", "critical"]
   },
-  "allowedAdvisories": []
+  "allowedAdvisories": [
+    {
+      "url": "https://github.com/advisories/GHSA-wh4c-j3r5-mjhp",
+      "package": "@xmldom/xmldom",
+      "reason": "Build-time only. Pulled in by @expo/plist -> @expo/config-plugins -> @expo/metro-config (Expo SDK 54). Not bundled into the app or run on device. Fix blocked on Expo SDK upgrade."
+    },
+    {
+      "url": "https://github.com/advisories/GHSA-2328-f5f3-gj25",
+      "package": "node-forge",
+      "reason": "Build-time only. Pulled in by @expo/code-signing-certificates -> @expo/cli (Expo SDK 54). Not bundled into the app or run on device. Fix blocked on Expo SDK upgrade."
+    },
+    {
+      "url": "https://github.com/advisories/GHSA-q67f-28xg-22rw",
+      "package": "node-forge",
+      "reason": "Build-time only. Pulled in by @expo/code-signing-certificates -> @expo/cli (Expo SDK 54). Not bundled into the app or run on device. Fix blocked on Expo SDK upgrade."
+    },
+    {
+      "url": "https://github.com/advisories/GHSA-5m6q-g25r-mvwx",
+      "package": "node-forge",
+      "reason": "Build-time only. Pulled in by @expo/code-signing-certificates -> @expo/cli (Expo SDK 54). Not bundled into the app or run on device. Fix blocked on Expo SDK upgrade."
+    },
+    {
+      "url": "https://github.com/advisories/GHSA-ppp5-5v6c-4jwp",
+      "package": "node-forge",
+      "reason": "Build-time only. Pulled in by @expo/code-signing-certificates -> @expo/cli (Expo SDK 54). Not bundled into the app or run on device. Fix blocked on Expo SDK upgrade."
+    },
+    {
+      "url": "https://github.com/advisories/GHSA-3v7f-55p6-f55p",
+      "package": "picomatch",
+      "reason": "Build-time only. Pulled in by @expo/cli -> Metro bundler (Expo SDK 54). Not bundled into the app or run on device. Fix blocked on Expo SDK upgrade."
+    },
+    {
+      "url": "https://github.com/advisories/GHSA-c2c7-rcm5-vvqj",
+      "package": "picomatch",
+      "reason": "Build-time only. Pulled in by @expo/cli -> Metro bundler (Expo SDK 54). Not bundled into the app or run on device. Fix blocked on Expo SDK upgrade."
+    },
+    {
+      "url": "https://github.com/advisories/GHSA-f269-vfmq-vjvj",
+      "package": "undici",
+      "reason": "Build-time only. Pulled in by @expo/cli (Expo SDK 54) as HTTP client. Not bundled into the app or run on device. Fix blocked on Expo SDK upgrade."
+    },
+    {
+      "url": "https://github.com/advisories/GHSA-2mjp-6q6p-2qxm",
+      "package": "undici",
+      "reason": "Build-time only. Pulled in by @expo/cli (Expo SDK 54) as HTTP client. Not bundled into the app or run on device. Fix blocked on Expo SDK upgrade."
+    },
+    {
+      "url": "https://github.com/advisories/GHSA-vrm6-8vpv-qv8q",
+      "package": "undici",
+      "reason": "Build-time only. Pulled in by @expo/cli (Expo SDK 54) as HTTP client. Not bundled into the app or run on device. Fix blocked on Expo SDK upgrade."
+    },
+    {
+      "url": "https://github.com/advisories/GHSA-v9p9-hfj2-hcw8",
+      "package": "undici",
+      "reason": "Build-time only. Pulled in by @expo/cli (Expo SDK 54) as HTTP client. Not bundled into the app or run on device. Fix blocked on Expo SDK upgrade."
+    },
+    {
+      "url": "https://github.com/advisories/GHSA-4992-7rv2-5pvq",
+      "package": "undici",
+      "reason": "Build-time only. Pulled in by @expo/cli (Expo SDK 54) as HTTP client. Not bundled into the app or run on device. Fix blocked on Expo SDK upgrade."
+    }
+  ]
 }
