@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Volume2, VolumeX, Music, Sparkles } from 'lucide-react';
-import { audioManager } from '../audio/AudioManager';
-import { musicPlayer } from '../audio/MusicPlayer';
+import React from 'react';
+import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { tRuntime } from '../i18n/strings';
 
 interface AudioSettingsProps {
   isOpen: boolean;
@@ -9,165 +8,75 @@ interface AudioSettingsProps {
 }
 
 export const AudioSettings: React.FC<AudioSettingsProps> = ({ isOpen, onClose }) => {
-  const [masterVolume, setMasterVolume] = useState(0.7);
-  const [musicVolume, setMusicVolume] = useState(0.8);
-  const [sfxVolume, setSfxVolume] = useState(0.8);
-  const [muted, setMuted] = useState(false);
-
-  useEffect(() => {
-    // Load current settings
-    const settings = audioManager.getSettings();
-    setMasterVolume(settings.masterVolume);
-    setMusicVolume(settings.musicVolume);
-    setSfxVolume(settings.sfxVolume);
-    setMuted(settings.muted);
-  }, [isOpen]);
-
-  const handleMasterVolumeChange = async (value: number) => {
-    setMasterVolume(value);
-    await audioManager.setMasterVolume(value);
-    await musicPlayer.updateVolume();
-  };
-
-  const handleMusicVolumeChange = async (value: number) => {
-    setMusicVolume(value);
-    await audioManager.setMusicVolume(value);
-    await musicPlayer.updateVolume();
-  };
-
-  const handleSFXVolumeChange = async (value: number) => {
-    setSfxVolume(value);
-    await audioManager.setSFXVolume(value);
-    // Play test sound
-    await audioManager.playSFX('button_click');
-  };
-
-  const handleMuteToggle = async () => {
-    const newMuted = !muted;
-    setMuted(newMuted);
-    await audioManager.setMuted(newMuted);
-    await musicPlayer.updateVolume();
-  };
-
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4">
-      <div className="bg-gray-900 rounded-xl w-full max-w-md border border-gray-700 overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 p-6 border-b border-gray-700">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Music className="text-blue-400" size={24} />
-              <h2 className="text-xl font-bold text-white">Ses Ayarları</h2>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 space-y-6">
-          {/* Mute Toggle */}
-          <div className="flex items-center justify-between">
-            <span className="text-white font-medium">Ses</span>
-            <button
-              onClick={handleMuteToggle}
-              className={`
-                px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2
-                ${muted 
-                  ? 'bg-red-600 hover:bg-red-700 text-white' 
-                  : 'bg-green-600 hover:bg-green-700 text-white'
-                }
-              `}
-            >
-              {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-              {muted ? 'Kapalı' : 'Açık'}
-            </button>
-          </div>
-
-          {/* Master Volume */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-300 flex items-center gap-2">
-                <Volume2 size={16} />
-                Ana Ses
-              </span>
-              <span className="text-white font-medium">{Math.round(masterVolume * 100)}%</span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={masterVolume}
-              onChange={(e) => handleMasterVolumeChange(parseFloat(e.target.value))}
-              disabled={muted}
-              className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
-              style={{
-                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${masterVolume * 100}%, #374151 ${masterVolume * 100}%, #374151 100%)`
-              }}
-            />
-          </div>
-
-          {/* Music Volume */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-300 flex items-center gap-2">
-                <Music size={16} />
-                Müzik
-              </span>
-              <span className="text-white font-medium">{Math.round(musicVolume * 100)}%</span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={musicVolume}
-              onChange={(e) => handleMusicVolumeChange(parseFloat(e.target.value))}
-              disabled={muted}
-              className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
-              style={{
-                background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${musicVolume * 100}%, #374151 ${musicVolume * 100}%, #374151 100%)`
-              }}
-            />
-          </div>
-
-          {/* SFX Volume */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-300 flex items-center gap-2">
-                <Sparkles size={16} />
-                Efektler
-              </span>
-              <span className="text-white font-medium">{Math.round(sfxVolume * 100)}%</span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={sfxVolume}
-              onChange={(e) => handleSFXVolumeChange(parseFloat(e.target.value))}
-              disabled={muted}
-              className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
-              style={{
-                background: `linear-gradient(to right, #10b981 0%, #10b981 ${sfxVolume * 100}%, #374151 ${sfxVolume * 100}%, #374151 100%)`
-              }}
-            />
-          </div>
-
-          {/* Info Text */}
-          <div className="text-xs text-gray-500 text-center pt-4 border-t border-gray-800">
-            Ayarlar otomatik kaydedilir
-          </div>
-        </div>
-      </div>
-    </div>
+    <Modal
+      transparent
+      visible={isOpen}
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <View style={styles.backdrop}>
+        <View style={styles.card}>
+          <Text style={styles.title}>
+            {tRuntime('app.audioSettingsTitle', undefined, 'Ses Ayarlari')}
+          </Text>
+          <Text style={styles.description}>
+            {tRuntime('app.audioSettingsDescription', undefined, 'Bu ekran mobil surumde kullanilmiyor.')}
+          </Text>
+          <TouchableOpacity style={styles.button} onPress={onClose}>
+            <Text style={styles.buttonText}>
+              {tRuntime('app.audioSettingsClose', undefined, 'Kapat')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
   );
 };
+
+const styles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  card: {
+    width: '100%',
+    maxWidth: 360,
+    borderRadius: 16,
+    padding: 20,
+    backgroundColor: '#111827',
+    borderWidth: 1,
+    borderColor: '#374151',
+    gap: 12,
+  },
+  title: {
+    color: '#f9fafb',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  description: {
+    color: '#d1d5db',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  button: {
+    marginTop: 4,
+    alignSelf: 'flex-end',
+    backgroundColor: '#2563eb',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+});
+
+export default AudioSettings;

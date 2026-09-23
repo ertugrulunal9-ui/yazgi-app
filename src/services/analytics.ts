@@ -1,8 +1,27 @@
+import type {
+  AgePacingBucket,
+  CohortEventRarity,
+  EnergyCostBucket,
+  RetentionCheckpoint,
+} from '../utils/progressionAnalytics';
+import { devLog } from '../utils/devLogger';
+
+
 const isDev = __DEV__;
 const isWeb = typeof window !== 'undefined' && typeof navigator !== 'undefined';
 
+type FirebaseAnalyticsModule = {
+  logEvent: (name: string, params?: Record<string, unknown>) => Promise<void>;
+  setUserId: (id: string | null) => Promise<void>;
+  setUserProperty: (name: string, value: string) => Promise<void>;
+  setAnalyticsCollectionEnabled: (enabled: boolean) => Promise<void>;
+  resetAnalyticsData: () => Promise<void>;
+};
+
+type FirebaseAnalyticsFactory = () => FirebaseAnalyticsModule;
+
 /**
- * Yazgı Game Analytics Service
+ * Yazgi Game Analytics Service
  * Type-safe event tracking for Firebase Analytics
  */
 
@@ -60,23 +79,106 @@ export interface PurchaseMadeParams {
   category?: string;
 }
 
-// Analytics configuration
+export interface ProgressionEconomyParams {
+  source: 'event_choice' | 'hub_action' | 'turn_progress' | 'session_start' | 'session_end';
+  eventId?: string;
+  eventRarity: CohortEventRarity;
+  energyCost: number;
+  energyCostBucket: EnergyCostBucket;
+  age: number;
+  agePacing: AgePacingBucket;
+  turn: number;
+  totalTurns: number;
+  currentEnergy: number;
+  maxEnergy: number;
+  daySinceInstall: number;
+  retentionCheckpoint: RetentionCheckpoint;
+  cohortKey: string;
+}
+
+export interface RetentionCheckpointParams {
+  checkpoint: 'D1' | 'D3';
+  daySinceInstall: number;
+  age: number;
+  turn: number;
+  totalTurns: number;
+  eventChoices: number;
+  cohortKey: string;
+}
 
 class AnalyticsService {
-  private enabled: boolean = !isDev && !isWeb; // Disable on web and dev by default
+  private enabled: boolean = false;
+  private firebaseAnalytics: FirebaseAnalyticsModule | null = null;
+  private firebaseLoadAttempted = false;
+  private firebaseUnavailableWarned = false;
+  private collectionPreferenceQueue: Promise<void> = Promise.resolve();
 
   constructor() {
-    console.log('📊 Using simple analytics logger (Firebase removed)');
+    this.initialize();
   }
 
-  /**
-   * Initialize Analytics - now a no-op
-   */
-  private async initializeAnalytics(): Promise<void> {
-    // No-op - using console-based logging
+  private initialize(): void {
+    this.firebaseAnalytics = this.getFirebaseAnalytics();
+    devLog.log('[ANALYTICS] Service initialized');
+    this.setEnabled(false); // Explicit opt-in required.
   }
 
+  private getFirebaseAnalytics(): FirebaseAnalyticsModule | null {
+    if (isWeb) {
+      return null;
+    }
+
+    if (this.firebaseAnalytics) {
+      return this.firebaseAnalytics;
+    }
+
+    if (this.firebaseLoadAttempted) {
+      return null;
+    }
+
+    this.firebaseLoadAttempted = true;
+
+    try {
+      const firebaseModule = require('@react-native-firebase/analytics') as {
+        default?: FirebaseAnalyticsFactory;
+      };
+      if (!firebaseModule.default) {
+        return null;
+      }
+      this.firebaseAnalytics = firebaseModule.default();
+      return this.firebaseAnalytics;
+    } catch (error) {
       if (isDev) {
+        devLog.warn('[ANALYTICS] Firebase Analytics module not available', error);
+      }
+      return null;
+    }
+  }
+
+  private warnFirebaseUnavailableOnce(): void {
+    if (this.firebaseUnavailableWarned || isWeb) {
+      return;
+    }
+    this.firebaseUnavailableWarned = true;
+    devLog.warn('[ANALYTICS] Firebase Analytics not available. Check native Firebase setup.');
+  }
+
+  private async applyCollectionPreference(enabled: boolean): Promise<void> {
+    const firebaseAnalytics = this.getFirebaseAnalytics();
+    if (!firebaseAnalytics) {
+      if (enabled && !isDev) {
+        this.warnFirebaseUnavailableOnce();
+      }
+      return;
+    }
+
+    try {
+      await firebaseAnalytics.setAnalyticsCollectionEnabled(enabled);
+    } catch (error) {
+      if (isDev) {
+        devLog.warn('[ANALYTICS] Failed to set analytics collection state', error);
+      }
+    }
   }
 
   /**
@@ -84,7 +186,62 @@ class AnalyticsService {
    */
   setEnabled(enabled: boolean): void {
     this.enabled = enabled;
-    console.log(`📊 Analytics ${enabled ? 'enabled' : 'disabled'}`);
+    this.collectionPreferenceQueue = this.collectionPreferenceQueue
+      .catch(() => {
+        // Keep queue alive after a previous failure.
+      })
+      .then(() => this.applyCollectionPreference(enabled));
+    devLog.log(`[ANALYTICS] ${this.enabled ? 'enabled' : 'disabled'}`);
+  }
+
+  private sanitizeParams(params?: Record<string, unknown>): Record<string, unknown> | undefined {
+    if (!params) {
+      return undefined;
+    }
+    const sanitized: Record<string, unknown> = {};
+    const MAX_STRING_LENGTH = 100;
+
+    for (const key in params) {
+      if (Object.prototype.hasOwnProperty.call(params, key)) {
+        const value = params[key];
+        if (value === undefined || value === null) {
+          continue;
+        }
+
+        if (typeof value === 'boolean') {
+          // GA4 boolean params should be represented as numeric values.
+          sanitized[key] = value ? 1 : 0;
+          continue;
+        }
+
+        if (typeof value === 'number') {
+          if (Number.isFinite(value)) {
+            sanitized[key] = value;
+          }
+          continue;
+        }
+
+        if (typeof value === 'string') {
+          sanitized[key] = value.length > MAX_STRING_LENGTH
+            ? `${value.substring(0, MAX_STRING_LENGTH - 3)}...`
+            : value;
+          continue;
+        }
+
+        if (Array.isArray(value)) {
+          const serialized = value
+            .map((item) => (typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean' ? String(item) : ''))
+            .filter(Boolean)
+            .join(',');
+
+          if (!serialized) continue;
+          sanitized[key] = serialized.length > MAX_STRING_LENGTH
+            ? `${serialized.substring(0, MAX_STRING_LENGTH - 3)}...`
+            : serialized;
+        }
+      }
+    }
+    return sanitized;
   }
 
   /**
@@ -92,7 +249,7 @@ class AnalyticsService {
    */
   async logGameStarted(params: GameStartedParams): Promise<void> {
     const event = {
-      character_name: params.characterName,
+      character_name_length: params.characterName.length,
       difficulty: params.difficulty || 'normal',
       platform: isWeb ? 'web' : 'mobile',
       timestamp: new Date().toISOString(),
@@ -159,6 +316,47 @@ class AnalyticsService {
   }
 
   /**
+   * Log progression economy sample for cohort analysis
+   */
+  async logProgressionEconomy(params: ProgressionEconomyParams): Promise<void> {
+    const event = {
+      source: params.source,
+      event_id: params.eventId || 'none',
+      event_rarity: params.eventRarity,
+      energy_cost: params.energyCost,
+      energy_cost_bucket: params.energyCostBucket,
+      age: params.age,
+      age_pacing: params.agePacing,
+      turn: params.turn,
+      total_turns: params.totalTurns,
+      current_energy: params.currentEnergy,
+      max_energy: params.maxEnergy,
+      day_since_install: params.daySinceInstall,
+      retention_checkpoint: params.retentionCheckpoint,
+      cohort_key: params.cohortKey,
+    };
+
+    await this.logEvent('progression_economy_sample', event);
+  }
+
+  /**
+   * Log D1 / D3 retention checkpoints once per user
+   */
+  async logRetentionCheckpoint(params: RetentionCheckpointParams): Promise<void> {
+    const event = {
+      checkpoint: params.checkpoint,
+      day_since_install: params.daySinceInstall,
+      age: params.age,
+      turn: params.turn,
+      total_turns: params.totalTurns,
+      event_choices: params.eventChoices,
+      cohort_key: params.cohortKey,
+    };
+
+    await this.logEvent('retention_checkpoint', event);
+  }
+
+  /**
    * Log game ended
    */
   async logGameEnded(params: GameEndedParams): Promise<void> {
@@ -193,29 +391,46 @@ class AnalyticsService {
   /**
    * Custom event logger
    */
-  async logCustomEvent(eventName: string, params?: Record<string, any>): Promise<void> {
+  async logCustomEvent(eventName: string, params?: Record<string, unknown>): Promise<void> {
     await this.logEvent(eventName, params);
   }
 
   /**
-   * Core event logging logic - now console-only
+   * Core event logging logic
    */
   private async logEvent(
     eventName: string,
-    params?: Record<string, any>
+    params?: Record<string, unknown>
   ): Promise<void> {
-    if (isDev) {
-      console.log(`📊 [${eventName}]`, params || {});
+    if (!this.enabled && !isDev) {
+      return;
     }
-  }
 
-  /**
-   * Sanitize parameters - simplified
-   */
-  private sanitizeParams(
-    params?: Record<string, any>
-  ): Record<string, string | number> {
-    return params || {};
+    const sanitizedParams = this.sanitizeParams(params ?? {});
+
+    if (isDev) {
+      devLog.log(`[ANALYTICS] Event: ${eventName}`, sanitizedParams || {});
+    }
+
+    if (!this.enabled) {
+      return;
+    }
+
+    const firebaseAnalytics = this.getFirebaseAnalytics();
+    if (!firebaseAnalytics) {
+      if (!isDev) {
+        this.warnFirebaseUnavailableOnce();
+      }
+      return;
+    }
+
+    try {
+      await firebaseAnalytics.logEvent(eventName, sanitizedParams);
+    } catch (error) {
+      if (isDev) {
+        devLog.warn(`[ANALYTICS] Failed to log event: ${eventName}`, error);
+      }
+    }
   }
 
   /**
@@ -223,7 +438,27 @@ class AnalyticsService {
    */
   async setUserId(userId: string): Promise<void> {
     if (isDev) {
-      console.log(`👤 User ID set: ${userId}`);
+      devLog.log(`[ANALYTICS] User ID set: ${userId}`);
+    }
+
+    if (!this.enabled) {
+      return;
+    }
+
+    const firebaseAnalytics = this.getFirebaseAnalytics();
+    if (!firebaseAnalytics) {
+      if (!isDev) {
+        this.warnFirebaseUnavailableOnce();
+      }
+      return;
+    }
+
+    try {
+      await firebaseAnalytics.setUserId(userId);
+    } catch (error) {
+      if (isDev) {
+        devLog.warn('[ANALYTICS] Failed to set user ID', error);
+      }
     }
   }
 
@@ -235,7 +470,27 @@ class AnalyticsService {
     value: string | number
   ): Promise<void> {
     if (isDev) {
-      console.log(`📝 User property: ${name} = ${value}`);
+      devLog.log(`[ANALYTICS] User property set: ${name} = ${value}`);
+    }
+
+    if (!this.enabled) {
+      return;
+    }
+
+    const firebaseAnalytics = this.getFirebaseAnalytics();
+    if (!firebaseAnalytics) {
+      if (!isDev) {
+        this.warnFirebaseUnavailableOnce();
+      }
+      return;
+    }
+
+    try {
+      await firebaseAnalytics.setUserProperty(name, String(value));
+    } catch (error) {
+      if (isDev) {
+        devLog.warn(`[ANALYTICS] Failed to set user property: ${name}`, error);
+      }
     }
   }
 
@@ -244,7 +499,20 @@ class AnalyticsService {
    */
   async resetAnalytics(): Promise<void> {
     if (isDev) {
-      console.log('🔄 Analytics data reset');
+      devLog.log('[ANALYTICS] Data reset');
+    }
+
+    const firebaseAnalytics = this.getFirebaseAnalytics();
+    if (!firebaseAnalytics) {
+      return;
+    }
+
+    try {
+      await firebaseAnalytics.resetAnalyticsData();
+    } catch (error) {
+      if (isDev) {
+        devLog.warn('[ANALYTICS] Failed to reset analytics data', error);
+      }
     }
   }
 }
@@ -255,10 +523,10 @@ export const analyticsService = new AnalyticsService();
 // For debugging: enable/disable analytics
 export const enableAnalyticsDebug = () => {
   analyticsService.setEnabled(true);
-  console.log('🔍 Analytics debug enabled');
+  devLog.log('[ANALYTICS] Debug enabled');
 };
 
 export const disableAnalyticsDebug = () => {
   analyticsService.setEnabled(false);
-  console.log('🔍 Analytics debug disabled');
+  devLog.log('[ANALYTICS] Debug disabled');
 };

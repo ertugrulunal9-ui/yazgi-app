@@ -1,0 +1,11 @@
+android/app/build/
+android/build/
+.gradle/
+coverage/
+reports/
+screenshots/
+audit.out
+*.md
+.claude/
+scripts/
+patches/

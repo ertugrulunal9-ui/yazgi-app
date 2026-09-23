@@ -1,0 +1,278 @@
+{
+  "meta": {
+    "target": "billionaire",
+    "runs_per_candidate": 220,
+    "seed": 42,
+    "candidate_count": 144,
+    "max_steps_override": 600,
+    "targets": {
+      "median_min": 380.0,
+      "median_max": 560.0,
+      "p90_max": 600.0,
+      "target_success_min": 0.65,
+      "target_success_max": 0.95
+    }
+  },
+  "top": [
+    {
+      "score": 22.5,
+      "params": {
+        "growth_rate": 0.0024,
+        "ad_boost_chance": 0.04,
+        "ad_boost_multiplier": 1.45,
+        "upkeep_rate": 0.0018,
+        "crash_chance": 0.05,
+        "crash_multiplier": 0.55
+      },
+      "milestone": {
+        "success_rate": 0.9363636363636364,
+        "median_step": 447.5,
+        "p90_step": 558.0,
+        "mean_step": 446.2718446601942
+      }
+    },
+    {
+      "score": 24.5,
+      "params": {
+        "growth_rate": 0.0024,
+        "ad_boost_chance": 0.04,
+        "ad_boost_multiplier": 1.45,
+        "upkeep_rate": 0.0008,
+        "crash_chance": 0.05,
+        "crash_multiplier": 0.55
+      },
+      "milestone": {
+        "success_rate": 0.9363636363636364,
+        "median_step": 445.5,
+        "p90_step": 557.0,
+        "mean_step": 445.05825242718447
+      }
+    },
+    {
+      "score": 24.5,
+      "params": {
+        "growth_rate": 0.0024,
+        "ad_boost_chance": 0.04,
+        "ad_boost_multiplier": 1.45,
+        "upkeep_rate": 0.0012,
+        "crash_chance": 0.05,
+        "crash_multiplier": 0.55
+      },
+      "milestone": {
+        "success_rate": 0.9363636363636364,
+        "median_step": 445.5,
+        "p90_step": 557.5,
+        "mean_step": 445.49514563106794
+      }
+    },
+    {
+      "score": 119.90909090909149,
+      "params": {
+        "growth_rate": 0.0024,
+        "ad_boost_chance": 0.04,
+        "ad_boost_multiplier": 1.45,
+        "upkeep_rate": 0.0018,
+        "crash_chance": 0.05,
+        "crash_multiplier": 0.7
+      },
+      "milestone": {
+        "success_rate": 0.9590909090909091,
+        "median_step": 441,
+        "p90_step": 554.0,
+        "mean_step": 441.0568720379147
+      }
+    },
+    {
+      "score": 165.8636363636367,
+      "params": {
+        "growth_rate": 0.0024,
+        "ad_boost_chance": 0.04,
+        "ad_boost_multiplier": 1.45,
+        "upkeep_rate": 0.0012,
+        "crash_chance": 0.05,
+        "crash_multiplier": 0.7
+      },
+      "milestone": {
+        "success_rate": 0.9636363636363636,
+        "median_step": 440.5,
+        "p90_step": 555.7,
+        "mean_step": 440.9292452830189
+      }
+    },
+    {
+      "score": 166.3636363636367,
+      "params": {
+        "growth_rate": 0.0024,
+        "ad_boost_chance": 0.04,
+        "ad_boost_multiplier": 1.45,
+        "upkeep_rate": 0.0008,
+        "crash_chance": 0.05,
+        "crash_multiplier": 0.7
+      },
+      "milestone": {
+        "success_rate": 0.9636363636363636,
+        "median_step": 440.0,
+        "p90_step": 554.8,
+        "mean_step": 440.0943396226415
+      }
+    },
+    {
+      "score": 171.3636363636367,
+      "params": {
+        "growth_rate": 0.0024,
+        "ad_boost_chance": 0.04,
+        "ad_boost_multiplier": 1.45,
+        "upkeep_rate": 0.0018,
+        "crash_chance": 0.03,
+        "crash_multiplier": 0.55
+      },
+      "milestone": {
+        "success_rate": 0.9636363636363636,
+        "median_step": 435.0,
+        "p90_step": 556.7,
+        "mean_step": 438.49056603773585
+      }
+    },
+    {
+      "score": 171.8636363636367,
+      "params": {
+        "growth_rate": 0.0024,
+        "ad_boost_chance": 0.04,
+        "ad_boost_multiplier": 1.45,
+        "upkeep_rate": 0.0008,
+        "crash_chance": 0.03,
+        "crash_multiplier": 0.55
+      },
+      "milestone": {
+        "success_rate": 0.9636363636363636,
+        "median_step": 434.5,
+        "p90_step": 556.7,
+        "mean_step": 436.9433962264151
+      }
+    },
+    {
+      "score": 171.8636363636367,
+      "params": {
+        "growth_rate": 0.0024,
+        "ad_boost_chance": 0.04,
+        "ad_boost_multiplier": 1.45,
+        "upkeep_rate": 0.0012,
+        "crash_chance": 0.03,
+        "crash_multiplier": 0.55
+      },
+      "milestone": {
+        "success_rate": 0.9636363636363636,
+        "median_step": 434.5,
+        "p90_step": 556.7,
+        "mean_step": 437.74528301886795
+      }
+    },
+    {
+      "score": 216.81818181818187,
+      "params": {
+        "growth_rate": 0.003,
+        "ad_boost_chance": 0.04,
+        "ad_boost_multiplier": 1.45,
+        "upkeep_rate": 0.0018,
+        "crash_chance": 0.05,
+        "crash_multiplier": 0.55
+      },
+      "milestone": {
+        "success_rate": 0.9681818181818181,
+        "median_step": 435,
+        "p90_step": 550.6,
+        "mean_step": 437.13145539906105
+      }
+    },
+    {
+      "score": 261.77272727272816,
+      "params": {
+        "growth_rate": 0.003,
+        "ad_boost_chance": 0.04,
+        "ad_boost_multiplier": 1.45,
+        "upkeep_rate": 0.0012,
+        "crash_chance": 0.05,
+        "crash_multiplier": 0.55
+      },
+      "milestone": {
+        "success_rate": 0.9727272727272728,
+        "median_step": 435.5,
+        "p90_step": 549.7,
+        "mean_step": 436.85981308411215
+      }
+    },
+    {
+      "score": 262.27272727272816,
+      "params": {
+        "growth_rate": 0.003,
+        "ad_boost_chance": 0.04,
+        "ad_boost_multiplier": 1.45,
+        "upkeep_rate": 0.0008,
+        "crash_chance": 0.05,
+        "crash_multiplier": 0.55
+      },
+      "milestone": {
+        "success_rate": 0.9727272727272728,
+        "median_step": 435.0,
+        "p90_step": 548.4000000000001,
+        "mean_step": 435.9906542056075
+      }
+    }
+  ],
+  "best_config": {
+    "runs": 1000,
+    "seed": 42,
+    "max_steps": 600,
+    "initial_state": {
+      "cash": 50000,
+      "daily_income": 14000,
+      "growth_rate": 0.0024,
+      "upkeep_rate": 0.0018,
+      "ad_boost_chance": 0.04,
+      "ad_boost_multiplier": 1.45,
+      "crash_chance": 0.05,
+      "crash_multiplier": 0.55
+    },
+    "step_updates": [
+      {
+        "var": "cash",
+        "expr": "cash + daily_income - max(0, cash * upkeep_rate)"
+      },
+      {
+        "var": "daily_income",
+        "expr": "daily_income * (1 + growth_rate)"
+      }
+    ],
+    "events": [
+      {
+        "label": "viral_boost",
+        "when": "random() < ad_boost_chance",
+        "updates": [
+          {
+            "var": "daily_income",
+            "expr": "daily_income * ad_boost_multiplier"
+          }
+        ]
+      },
+      {
+        "label": "market_crash",
+        "when": "random() < crash_chance",
+        "updates": [
+          {
+            "var": "cash",
+            "expr": "cash * crash_multiplier"
+          }
+        ]
+      }
+    ],
+    "milestones": {
+      "millionaire": "cash >= 1000000",
+      "billionaire": "cash >= 1000000000"
+    },
+    "stop_condition": "cash >= 1000000000",
+    "collect": {
+      "final_cash": "cash",
+      "final_daily_income": "daily_income"
+    }
+  }
+}

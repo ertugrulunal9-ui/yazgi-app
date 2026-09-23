@@ -5,13 +5,12 @@
  */
 
 import React, { ReactNode } from 'react';
-import { Pressable, StyleSheet, ViewStyle, View } from 'react-native';
+import { Pressable, StyleSheet, ViewStyle } from 'react-native';
 import { triggerHaptic, buttonPress } from './HapticFeedback';
 
-export type ButtonAnimationType = 
+export type ButtonAnimationType =
   | 'pressScale'      // Basınca küçülme
   | 'ripple'          // Ripple efekti
-  | 'shimmer'         // Parlama efekti
   | 'bounce'          // Zıplama efekti
   | 'pulse'           // Nabız efekti
   | 'shake'           // Sarsma efekti
@@ -25,7 +24,9 @@ interface AnimatedButtonProps {
   style?: ViewStyle;
   animationType?: ButtonAnimationType;
   scaleAmount?: number;
-  duration?: number;
+  accessibilityRole?: 'button' | 'link' | 'none';
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }
 
 /**
@@ -40,11 +41,36 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = React.memo(({
   style,
   animationType = 'pressScale',
   scaleAmount = 0.95,
-  duration = 150,
+  accessibilityRole,
+  accessibilityLabel,
+  accessibilityHint,
 }) => {
   const [scale, setScale] = React.useState(1);
   const [opacity, setOpacity] = React.useState(1);
-  const [shimmerOffset, setShimmerOffset] = React.useState(-100);
+  const [translateX, setTranslateX] = React.useState(0);
+  const shakeTimersRef = React.useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const clearShakeTimers = React.useCallback(() => {
+    shakeTimersRef.current.forEach(clearTimeout);
+    shakeTimersRef.current = [];
+  }, []);
+
+  const runShakeAnimation = React.useCallback(() => {
+    clearShakeTimers();
+    triggerHaptic('error');
+
+    const sequence = [-8, 8, -6, 6, -3, 3, 0];
+    sequence.forEach((value, index) => {
+      const timer = setTimeout(() => {
+        setTranslateX(value);
+      }, index * 42);
+      shakeTimersRef.current.push(timer);
+    });
+  }, [clearShakeTimers]);
+
+  React.useEffect(() => () => {
+    clearShakeTimers();
+  }, [clearShakeTimers]);
 
   const handlePressIn = () => {
     if (disabled) return;
@@ -63,8 +89,8 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = React.memo(({
       case 'ripple':
         setOpacity(0.7);
         break;
-      case 'shimmer':
-        setShimmerOffset(100);
+      case 'shake':
+        runShakeAnimation();
         break;
     }
   };
@@ -80,8 +106,9 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = React.memo(({
       case 'ripple':
         setOpacity(1);
         break;
-      case 'shimmer':
-        setShimmerOffset(-100);
+      case 'shake':
+        clearShakeTimers();
+        setTranslateX(0);
         break;
     }
   };
@@ -93,6 +120,8 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = React.memo(({
 
   if (animationType === 'pressScale' || animationType === 'bounce') {
     buttonStyle.transform = [{ scale }];
+  } else if (animationType === 'shake') {
+    buttonStyle.transform = [{ translateX }];
   }
   
   if (animationType === 'ripple') {
@@ -106,15 +135,16 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = React.memo(({
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       disabled={disabled}
+      accessibilityRole={accessibilityRole}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
       style={buttonStyle}
     >
       {children}
     </Pressable>
   );
-}, (prevProps, nextProps) => {
-  return prevProps.disabled === nextProps.disabled &&
-         prevProps.animationType === nextProps.animationType;
 });
+AnimatedButton.displayName = 'AnimatedButton';
 
 /**
  * Pulse animasyonlu buton (sürekli nabız)
@@ -134,7 +164,7 @@ export const PulseButton: React.FC<AnimatedButtonProps> = React.memo(({
       isAnimatingRef.current = true;
       let growing = true;
       const interval = setInterval(() => {
-        setScale(prev => growing ? 1.05 : 1);
+        setScale(growing ? 1.05 : 1);
         growing = !growing;
       }, 1000);
       return () => {
@@ -145,20 +175,20 @@ export const PulseButton: React.FC<AnimatedButtonProps> = React.memo(({
       isAnimatingRef.current = false;
       setScale(1);
     }
+    return undefined;
   }, [disabled]);
 
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      style={[styles.button, style, { transform: [{ scale }] }]}
+      style={[styles.button, style, { transform: [{ scale }], zIndex: 10 }]}
     >
       {children}
     </Pressable>
   );
-}, (prevProps, nextProps) => {
-  return prevProps.disabled === nextProps.disabled;
 });
+PulseButton.displayName = 'PulseButton';
 
 /**
  * Shake animasyonlu buton (hata/uyarı için)
@@ -200,6 +230,7 @@ export const ShakeButton: React.FC<AnimatedButtonProps & { shake?: boolean }> = 
       }, 50);
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [shake, disabled]);
 
   return (
@@ -211,10 +242,8 @@ export const ShakeButton: React.FC<AnimatedButtonProps & { shake?: boolean }> = 
       {children}
     </Pressable>
   );
-}, (prevProps, nextProps) => {
-  return prevProps.disabled === nextProps.disabled &&
-         prevProps.shake === nextProps.shake;
 });
+ShakeButton.displayName = 'ShakeButton';
 
 /**
  * Shimmer animasyonlu buton (parlama efekti)
@@ -243,6 +272,7 @@ export const ShimmerButton: React.FC<AnimatedButtonProps> = React.memo(({
       shimmerRef.current = false;
       setOpacity(1);
     }
+    return undefined;
   }, [disabled]);
 
   return (
@@ -254,9 +284,8 @@ export const ShimmerButton: React.FC<AnimatedButtonProps> = React.memo(({
       {children}
     </Pressable>
   );
-}, (prevProps, nextProps) => {
-  return prevProps.disabled === nextProps.disabled;
 });
+ShimmerButton.displayName = 'ShimmerButton';
 
 const styles = StyleSheet.create({
   button: {

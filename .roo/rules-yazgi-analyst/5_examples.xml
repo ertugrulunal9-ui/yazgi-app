@@ -1,0 +1,364 @@
+<debugging_examples>
+  <overview>
+    Yazgı projesinde sık karşılaşılan sorunların tam çözüm örnekleri.
+  </overview>
+
+  <example name="expo_build_native_module_error">
+    <title>Expo Build: Native Module Bulunamadı Hatası</title>
+    <scenario>
+      Kullanıcı EAS build çalıştırdığında "Unable to resolve module" hatası alıyor.
+    </scenario>
+    <error_message>
+      <text>Unable to resolve module @react-native-async-storage/async-storage from src/utils/saveUtils.ts</text>
+      <text>Error: Cannot find module '@react-native-async-storage/async-storage'</text>
+    </error_message>
+    <analysis>
+      <step>Hata mesajını analiz et: @react-native-async-storage/async-storage modülü bulunamıyor</step>
+      <step>package.json dosyasını oku: Paket listelenmiş mi?</step>
+      <step>node_modules dizinini kontrol et: Paket yüklü mü?</step>
+      <step>Expo uyumluluğunu kontrol et: Bu paket Expo SDK 53 ile uyumlu mu?</step>
+    </analysis>
+    <root_cause>
+      Paket package.json'da listelenmiş ancak node_modules'da yüklü değil veya
+      Expo prebuild çalıştırılmadığı için native modül linklenmemiş.
+    </root_cause>
+    <solution>
+      <step>npm install @react-native-async-storage/async-storage komutunu çalıştır</step>
+      <step>npx expo prebuild --clean komutunu çalıştır</step>
+      <step>Uygulamayı yeniden başlat</step>
+    </solution>
+    <commands>
+      <execute_command>
+        <command>npm install @react-native-async-storage/async-storage</command>
+        <cwd>c:/Yazgi</cwd>
+      </execute_command>
+      <execute_command>
+        <command>npx expo prebuild --clean</command>
+        <cwd>c:/Yazgi</cwd>
+      </execute_command>
+    </commands>
+  </example>
+
+  <example name="render_loop_useeffect">
+    <title>Render Döngüsü: useEffect Bağımlılık Sorunu</title>
+    <scenario>
+      GameScreen component'i sürekli render oluyor ve "Maximum update depth exceeded" hatası veriyor.
+    </scenario>
+    <error_message>
+      <text>Warning: Maximum update depth exceeded. This can happen when a component repeatedly calls setState inside useEffect.</text>
+    </error_message>
+    <analysis>
+      <step>Hata mesajını analiz et: useEffect içinde sürekli setState çağrılıyor</step>
+      <step>src/screens/GameScreen.tsx dosyasını oku</step>
+      <step>useEffect bağımlılık dizisini kontrol et</step>
+      <step>State güncelleme mekanizmasını incele</step>
+    </analysis>
+    <root_cause>
+      useEffect bağımlılık dizisindeki state değişkeni, useEffect içinde güncelleniyor.
+      Bu sonsuz bir döngüye neden oluyor.
+    </root_cause>
+    <solution>
+      <step>useEffect içindeki setState çağrısını previous state fonksiyonunu kullanacak şekilde değiştir</step>
+      <step>Bağımlılık dizisini boş yaparak sadece mount'ta çalışmasını sağla</step>
+    </solution>
+    <code_change>
+      <file>src/screens/GameScreen.tsx</file>
+      <before>
+        <code><![CDATA[
+const [count, setCount] = useState(0);
+
+useEffect(() => {
+  setCount(count + 1);
+}, [count]);
+        ]]></code>
+      </before>
+      <after>
+        <code><![CDATA[
+const [count, setCount] = useState(0);
+
+useEffect(() => {
+  setCount(prev => prev + 1);
+}, []);
+        ]]></code>
+      </after>
+    </code_change>
+  </example>
+
+  <example name="async_await_missing">
+    <title>Async/Await: await Eksikliği</title>
+    <scenario>
+      loadData fonksiyonu veriyi yüklemiyor ve undefined döndürüyor.
+    </scenario>
+    <error_message>
+      <text>TypeError: Cannot read property 'map' of undefined</text>
+    </error_message>
+    <analysis>
+      <step>Hata mesajını analiz et: undefined üzerinde map çağrılmaya çalışılıyor</step>
+      <step>İlgili dosyayı oku: loadData fonksiyonunu incele</step>
+      <step>fetchData çağrısını kontrol et: await kullanılmış mı?</step>
+      <step>Async fonksiyonun doğru çağrıldığını kontrol et</step>
+    </analysis>
+    <root_cause>
+      fetchData fonksiyonu bir Promise döndürüyor ancak await kullanılmadığı için
+      fonksiyon Promise objesini döndürüyor, veriyi değil.
+    </root_cause>
+    <solution>
+      <step>fetchData çağrısına await ekle</step>
+      <step>Try-catch bloğu ile hata yönetimi ekle</step>
+    </solution>
+    <code_change>
+      <file>src/hooks/useEvents.tsx</file>
+      <before>
+        <code><![CDATA[
+const loadData = async () => {
+  const data = fetchData(); // await eksik
+  return data;
+};
+        ]]></code>
+      </before>
+      <after>
+        <code><![CDATA[
+const loadData = async () => {
+  try {
+    const data = await fetchData(); // await eklendi
+    return data;
+  } catch (error) {
+    console.error('Error loading data:', error);
+    return null;
+  }
+};
+        ]]></code>
+      </after>
+    </code_change>
+  </example>
+
+  <example name="typescript_type_error">
+    <title>TypeScript: Type Atanabilirlik Hatası</title>
+    <scenario>
+      User interface'ine bir obje atamaya çalışırken type hatası alınıyor.
+    </scenario>
+    <error_message>
+      <text>Type 'string' is not assignable to type 'number'.</text>
+    </error_message>
+    <analysis>
+      <step>Hata mesajını analiz et: string beklenen yerde number kullanılmış</step>
+      <step>src/types.ts dosyasını oku: User interface tanımını kontrol et</step>
+      <step>Hata veren dosyayı oku: Obje tanımını incele</step>
+      <step>Tip uyumsuzluğunu tespit et</step>
+    </analysis>
+    <root_cause>
+      User interface'inde age özelliği number olarak tanımlanmış ancak
+      obje oluştururken string kullanılmış.
+    </root_cause>
+    <solution>
+      <step>Obje tanımında age özelliğini number olarak düzelt</step>
+    </solution>
+    <code_change>
+      <file>src/screens/MainMenuScreen.tsx</file>
+      <before>
+        <code><![CDATA[
+interface User {
+  name: string;
+  age: number;
+}
+
+const user: User = {
+  name: 'John',
+  age: '25' // Hata: string, number bekleniyor
+};
+        ]]></code>
+      </before>
+      <after>
+        <code><![CDATA[
+interface User {
+  name: string;
+  age: number;
+}
+
+const user: User = {
+  name: 'John',
+  age: 25 // Düzeltildi: number
+};
+        ]]></code>
+      </after>
+    </code_change>
+  </example>
+
+  <example name="package_version_conflict">
+    <title>Paket Versiyon Çakışması</title>
+    <scenario>
+      npm install çalıştırıldığında peer dependency uyarısı alınıyor.
+    </scenario>
+    <error_message>
+      <text>npm WARN peer dep missing: react@18.2.0, required by @react-navigation/native@6.x</text>
+    </error_message>
+    <analysis>
+      <step>Hata mesajını analiz et: react@18.2.0 eksik</step>
+      <step>package.json dosyasını oku: React versiyonunu kontrol et</step>
+      <step>npm ls react komutu ile bağımlılık ağacını incele</step>
+      <step>Expo SDK 53 ile uyumlu React versiyonunu kontrol et</step>
+    </analysis>
+    <root_cause>
+        React versiyonu @react-navigation/native tarafından beklenen versiyondan
+        farklı veya eksik.
+    </root_cause>
+    <solution>
+      <step>React versiyonunu güncelle</step>
+      <step>node_modules silip yeniden yükle</step>
+    </solution>
+    <commands>
+      <execute_command>
+        <command>npm install react@18.2.0</command>
+        <cwd>c:/Yazgi</cwd>
+      </execute_command>
+      <execute_command>
+        <command>rm -rf node_modules && npm install</command>
+        <cwd>c:/Yazgi</cwd>
+      </execute_command>
+    </commands>
+  </example>
+
+  <example name="metro_cache_issue">
+    <title>Metro Bundler: Önbellek Sorunu</title>
+    <scenario>
+      Kod değişiklikleri uygulama yansıtılmıyor ve eski kod çalışıyor.
+    </scenario>
+    <error_message>
+      <text>Değişiklikler görünmüyor, eski kod çalışıyor</text>
+    </error_message>
+    <analysis>
+      <step>Sorunu analiz et: Kod değişiklikleri yansıtılmıyor</step>
+      <step>Metro bundler önbelleğini kontrol et</step>
+      <step>Değişikliklerin doğru yapıldığını doğrula</step>
+    </analysis>
+    <root_cause>
+      Metro bundler önbelleği temizlenmediği için eski kod kullanılıyor.
+    </root_cause>
+    <solution>
+      <step>Metro önbelleğini temizle</step>
+      <step>Geliştirme sunucusunu yeniden başlat</step>
+    </solution>
+    <commands>
+      <execute_command>
+        <command>npx expo start --clear</command>
+        <cwd>c:/Yazgi</cwd>
+      </execute_command>
+    </commands>
+  </example>
+
+  <example name="react_native_web_tags">
+    <title>React Native: Web Etiketleri Kullanımı</title>
+    <scenario>
+      Uygulama çalışma zamanında hata veriyor ve component render olmuyor.
+    </scenario>
+    <error_message>
+      <text>ReferenceError: Can't find variable: div</text>
+      <text>ReferenceError: Can't find variable: span</text>
+    </error_message>
+    <analysis>
+      <step>Hata mesajını analiz et: div ve span değişkenleri bulunamıyor</step>
+      <step>İlgili component dosyasını oku</step>
+      <step>Kullanılan etiketleri kontrol et</step>
+    </analysis>
+    <root_cause>
+      React Native'de web etiketleri (div, span, h1 vb.) mevcut değil.
+      Bu etiketler sadece React web'de kullanılabilir.
+    </root_cause>
+    <solution>
+      <step>Web etiketlerini React Native bileşenleri ile değiştir</step>
+      <step>div -> View, span -> Text, h1 -> Text (style ile)</step>
+    </solution>
+    <code_change>
+      <file>src/components/StatBar.tsx</file>
+      <before>
+        <code><![CDATA[
+const StatBar = () => {
+  return (
+    <div className="stat-container">
+      <span className="stat-label">Health</span>
+      <span className="stat-value">100</span>
+    </div>
+  );
+};
+        ]]></code>
+      </before>
+      <after>
+        <code><![CDATA[
+const StatBar = () => {
+  return (
+    <View style={styles.statContainer}>
+      <Text style={styles.statLabel}>Health</Text>
+      <Text style={styles.statValue}>100</Text>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  statContainer: {
+    flexDirection: 'row',
+    padding: 8,
+  },
+  statLabel: {
+    marginRight: 8,
+  },
+  statValue: {
+    fontWeight: 'bold',
+  },
+});
+        ]]></code>
+      </after>
+    </code_change>
+  </example>
+
+  <example name="callback_dependency_issue">
+    <title>Callback Bağımlılık Sorunu</title>
+    <scenario>
+      Child component sürekli render oluyor ve performans sorunları yaşanıyor.
+    </scenario>
+    <error_message>
+      <text>Child component sürekli render oluyor</text>
+    </error_message>
+    <analysis>
+      <step>Sorunu analiz et: Child component sürekli render oluyor</step>
+      <step>Parent component'i oku: Callback fonksiyonunu kontrol et</step>
+      <step>useEffect bağımlılık dizisini incele</step>
+    </analysis>
+    <root_cause>
+      Parent component'teki callback fonksiyonu her render'da yeni bir referans
+      oluşturuyor ve bu da Child component'in sürekli render olmasına neden oluyor.
+    </root_cause>
+    <solution>
+      <step>Callback fonksiyonunu useCallback ile sar</step>
+      <step>Bağımlılık dizisini doğru ayarla</step>
+    </solution>
+    <code_change>
+      <file>src/screens/GameScreen.tsx</file>
+      <before>
+        <code><![CDATA[
+const GameScreen = () => {
+  const [count, setCount] = useState(0);
+
+  const handleClick = () => {
+    setCount(prev => prev + 1);
+  };
+
+  return <Child onClick={handleClick} />;
+};
+        ]]></code>
+      </before>
+      <after>
+        <code><![CDATA[
+const GameScreen = () => {
+  const [count, setCount] = useState(0);
+
+  const handleClick = useCallback(() => {
+    setCount(prev => prev + 1);
+  }, []);
+
+  return <Child onClick={handleClick} />;
+};
+        ]]></code>
+      </after>
+    </code_change>
+  </example>
+</debugging_examples>

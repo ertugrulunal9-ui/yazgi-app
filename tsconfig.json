@@ -1,5 +1,5 @@
 {
-  "extends": "expo/tsconfig.base",
+  "extends": "expo/tsconfig.base.json",
   "compilerOptions": {
     "target": "ES2022",
     "experimentalDecorators": true,
@@ -20,12 +20,7 @@
     "esModuleInterop": true,
     "jsx": "react-native",
     "skipLibCheck": true,
-    "baseUrl": ".",
-    "paths": {
-      "@/*": [
-        "src/*"
-      ]
-    },
+    "noEmit": true,
     "allowImportingTsExtensions": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
@@ -37,7 +32,6 @@
   "include": [
     "App.tsx",
     "src/**/*",
-    "index.web.tsx",
     "index.js"
   ],
   "exclude": [

@@ -1,20 +1,24 @@
 /**
- * Monetization Service - IAP & Ads Management
- * Yazgı - Life Simulation Game
+ * Monetization Service - Pure Ad-Only
+ * Yazgi - AdMob rewarded + interstitial ads
  */
-
-export type ProductId = 
-  | 'premium_traits'
-  | 'save_slots_premium'
-  | 'cosmetics_pack'
-  | 'energy_refill'
-  | 'season_pass'
-  | 'remove_ads';
+import { Platform } from 'react-native';
+import SaveManager from '../save/SaveManager';
+import { isPremium as checkPremiumSubscription } from './subscriptionManager';
+import { devLog } from '../utils/devLogger';
+import { loadAdMobModule } from './adMobModule';
 
 export type AdType = 'rewarded' | 'interstitial';
+export type RewardType = 'energy' | 'intelligence' | 'money';
+export type RewardedPlacement =
+  | 'exam_prep'
+  | 'energy_depleted'
+  | 'crisis_recovery'
+  | 'ending_alternative'
+  | 'undo_choice';
 
 export interface Product {
-  id: ProductId;
+  id: string;
   title: string;
   description: string;
   price: string;
@@ -24,377 +28,789 @@ export interface Product {
 
 export interface PurchaseResult {
   success: boolean;
-  productId: ProductId;
+  productId: string;
   error?: string;
 }
 
 export interface RewardedAdResult {
   success: boolean;
   reward?: {
-    type: 'energy' | 'intelligence' | 'money';
+    type: RewardType;
     amount: number;
   };
   error?: string;
 }
 
-// Mock product catalog (replace with actual RevenueCat/Expo IAP in production)
-const PRODUCTS: Record<ProductId, Product> = {
-  premium_traits: {
-    id: 'premium_traits',
-    title: 'Premium Özellikler',
-    description: 'GENIUS, LUCKY veya CHARMING özelliğini seç ve oyununa başla!',
-    price: '₺29.99',
-    localizedPrice: '29.99',
-    currencyCode: 'TRY'
-  },
-  save_slots_premium: {
-    id: 'save_slots_premium',
-    title: '+3 Kayıt Slotu',
-    description: '3 ek kayıt slotu ile daha fazla karakter yaşat!',
-    price: '₺14.99',
-    localizedPrice: '14.99',
-    currencyCode: 'TRY'
-  },
-  cosmetics_pack: {
-    id: 'cosmetics_pack',
-    title: 'Kozmetik Paketi',
-    description: 'Özel avatar skinleri ve aile isimleri',
-    price: '₺24.99',
-    localizedPrice: '24.99',
-    currencyCode: 'TRY'
-  },
-  energy_refill: {
-    id: 'energy_refill',
-    title: 'Enerji Doldurma',
-    description: 'Hemen +50 enerji kazan!',
-    price: '₺9.99',
-    localizedPrice: '9.99',
-    currencyCode: 'TRY'
-  },
-  season_pass: {
-    id: 'season_pass',
-    title: 'Sezon Kartı',
-    description: '30 gün: Günlük ödüller, %50 XP bonusu, reklamsız deneyim',
-    price: '₺59.99',
-    localizedPrice: '59.99',
-    currencyCode: 'TRY'
-  },
-  remove_ads: {
-    id: 'remove_ads',
-    title: 'Reklamları Kaldır',
-    description: 'Tüm reklamlardan sonsuza kadar kurtul!',
-    price: '₺39.99',
-    localizedPrice: '39.99',
-    currencyCode: 'TRY'
+export interface ContextualRewardedAdResult {
+  success: boolean;
+  placement: RewardedPlacement;
+  rewardType: RewardType | 'utility';
+  amount: number;
+  error?: string;
+}
+
+export type InterstitialBlockReason =
+  | 'shown'
+  | 'ads_disabled'
+  | 'premium_user'
+  | 'session_cap'
+  | 'cooldown'
+  | 'provider_unavailable'
+  | 'ad_error';
+
+export interface InterstitialAdResult {
+  shown: boolean;
+  reason: InterstitialBlockReason;
+  provider: 'admob' | 'mock';
+  cooldownRemainingMs?: number;
+}
+
+export type AuthTokenProvider = () => Promise<string | null> | string | null;
+
+type AdMobFactory = () => {
+  initialize: () => Promise<unknown>;
+};
+
+type AdMobModule = {
+  default?: AdMobFactory;
+  InterstitialAd?: {
+    createForAdRequest: (adUnitId: string, requestOptions?: Record<string, unknown>) => any;
+  };
+  RewardedAd?: {
+    createForAdRequest: (adUnitId: string, requestOptions?: Record<string, unknown>) => any;
+  };
+  AdEventType?: {
+    LOADED: string;
+    ERROR: string;
+    CLOSED: string;
+  };
+  RewardedAdEventType?: {
+    LOADED: string;
+    EARNED_REWARD: string;
+  };
+  TestIds?: {
+    REWARDED: string;
+    INTERSTITIAL: string;
+  };
+};
+
+interface AdMobConfig {
+  iosRewardedUnitId?: string;
+  androidRewardedUnitId?: string;
+  iosInterstitialUnitId?: string;
+  androidInterstitialUnitId?: string;
+}
+
+interface MonetizationConfig {
+  interstitialSessionLimit?: number | string;
+  interstitialCooldownMs?: number | string;
+}
+
+const STORAGE_AD_COUNT_KEY = '@yazgi/ad_count';
+const hasLocalStorage = typeof localStorage !== 'undefined';
+const isDevRuntime =
+  Boolean((globalThis as { __DEV__?: boolean }).__DEV__) || process.env.NODE_ENV !== 'production';
+const isTestRuntime = process.env.NODE_ENV === 'test';
+const MOCK_REWARDED_AD_DELAY_MS = isTestRuntime ? 0 : 1200;
+const MOCK_INTERSTITIAL_DELAY_MS = isTestRuntime ? 0 : 800;
+const DEFAULT_INTERSTITIAL_SESSION_LIMIT = 2;
+const DEFAULT_INTERSTITIAL_COOLDOWN_MS = isTestRuntime ? 0 : 3 * 60 * 1000;
+const INTERSTITIAL_SESSION_LIMIT_BOUNDS = { min: 0, max: 10 } as const;
+const INTERSTITIAL_COOLDOWN_MS_BOUNDS = { min: 0, max: 3_600_000 } as const;
+const PLACEHOLDER_AD_IDENTIFIER_PATTERN = /(TODO|REPLACE|YOUR_|CHANGE_ME|<.*>|PLACEHOLDER)/i;
+const KNOWN_TEST_AD_UNIT_IDS = new Set([
+  'ca-app-pub-3940256099942544/5224354917',
+  'ca-app-pub-3940256099942544/1033173712',
+  'ca-app-pub-3940256099942544/1712485313',
+  'ca-app-pub-3940256099942544/4411468910',
+]);
+
+let asyncStorageModule: any = null;
+
+const getAsyncStorage = async () => {
+  if (asyncStorageModule) return asyncStorageModule;
+  try {
+    const mod = await import('@react-native-async-storage/async-storage');
+    asyncStorageModule = (mod as any).default ?? mod;
+    return asyncStorageModule;
+  } catch {
+    return null;
   }
+};
+
+const readStorageItem = async (key: string): Promise<string | null> => {
+  if (hasLocalStorage) return localStorage.getItem(key);
+  const asyncStorage = await getAsyncStorage();
+  if (!asyncStorage) return null;
+  return asyncStorage.getItem(key);
+};
+
+const writeStorageItem = async (key: string, value: string): Promise<void> => {
+  if (hasLocalStorage) {
+    localStorage.setItem(key, value);
+    return;
+  }
+  const asyncStorage = await getAsyncStorage();
+  if (asyncStorage) {
+    await asyncStorage.setItem(key, value);
+  }
+};
+
+const optionalRequire = (moduleName: string): any => {
+  try {
+    if (typeof require !== 'function') return null;
+
+    switch (moduleName) {
+      case 'expo-constants':
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require('expo-constants');
+      case 'react-native-google-mobile-ads':
+        return loadAdMobModule();
+      default:
+        return null;
+    }
+  } catch {
+    return null;
+  }
+};
+
+const isObjectRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const normalizeConfigString = (value: unknown): string | null => {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
+};
+
+const normalizeAdIdentifier = (value: unknown): string | null => {
+  const normalized = normalizeConfigString(value);
+  if (!normalized) return null;
+  if (PLACEHOLDER_AD_IDENTIFIER_PATTERN.test(normalized)) return null;
+  return normalized;
+};
+
+const toBoundedInteger = (
+  value: unknown,
+  bounds: { min: number; max: number }
+): number | null => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const rounded = Math.floor(value);
+    return rounded >= bounds.min && rounded <= bounds.max ? rounded : null;
+  }
+  if (typeof value === 'string') {
+    const parsed = Number(value.trim());
+    if (!Number.isFinite(parsed)) return null;
+    const rounded = Math.floor(parsed);
+    return rounded >= bounds.min && rounded <= bounds.max ? rounded : null;
+  }
+  return null;
+};
+
+const parseAppExtras = (): Record<string, unknown> => {
+  const constantsModule = optionalRequire('expo-constants');
+  const constants = constantsModule?.default ?? constantsModule;
+  const expoConfig = constants?.expoConfig ?? constants?.manifest ?? null;
+  return isObjectRecord(expoConfig?.extra) ? expoConfig.extra : {};
+};
+
+const getAdMobConfig = (): AdMobConfig => {
+  const extras = parseAppExtras();
+  const config = extras.admob;
+  return isObjectRecord(config) ? (config as AdMobConfig) : {};
+};
+
+const getMonetizationConfig = (): MonetizationConfig => {
+  const extras = parseAppExtras();
+  const config = extras.monetization;
+  return isObjectRecord(config) ? (config as MonetizationConfig) : {};
+};
+
+const getAdUnitIdFromConfig = (kind: AdType): string | null => {
+  const envKey =
+    kind === 'rewarded'
+      ? Platform.OS === 'ios'
+        ? 'EXPO_PUBLIC_ADMOB_IOS_REWARDED_UNIT_ID'
+        : 'EXPO_PUBLIC_ADMOB_ANDROID_REWARDED_UNIT_ID'
+      : Platform.OS === 'ios'
+        ? 'EXPO_PUBLIC_ADMOB_IOS_INTERSTITIAL_UNIT_ID'
+        : 'EXPO_PUBLIC_ADMOB_ANDROID_INTERSTITIAL_UNIT_ID';
+
+  const envValue = normalizeAdIdentifier(process.env[envKey]);
+  if (envValue) return envValue;
+
+  const adMobConfig = getAdMobConfig();
+  const configKey =
+    kind === 'rewarded'
+      ? Platform.OS === 'ios'
+        ? 'iosRewardedUnitId'
+        : 'androidRewardedUnitId'
+      : Platform.OS === 'ios'
+        ? 'iosInterstitialUnitId'
+        : 'androidInterstitialUnitId';
+
+  return normalizeAdIdentifier(adMobConfig[configKey]);
+};
+
+const getRuntimeInterstitialConfig = (): { sessionLimit: number; cooldownMs: number } => {
+  const config = getMonetizationConfig();
+
+  const fromEnvSessionCap = toBoundedInteger(
+    process.env.EXPO_PUBLIC_INTERSTITIAL_SESSION_CAP,
+    INTERSTITIAL_SESSION_LIMIT_BOUNDS
+  );
+  const fromEnvCooldown = toBoundedInteger(
+    process.env.EXPO_PUBLIC_INTERSTITIAL_COOLDOWN_MS,
+    INTERSTITIAL_COOLDOWN_MS_BOUNDS
+  );
+
+  const fromConfigSessionCap = toBoundedInteger(
+    config.interstitialSessionLimit,
+    INTERSTITIAL_SESSION_LIMIT_BOUNDS
+  );
+  const fromConfigCooldown = toBoundedInteger(
+    config.interstitialCooldownMs,
+    INTERSTITIAL_COOLDOWN_MS_BOUNDS
+  );
+
+  return {
+    sessionLimit: fromEnvSessionCap ?? fromConfigSessionCap ?? DEFAULT_INTERSTITIAL_SESSION_LIMIT,
+    cooldownMs: fromEnvCooldown ?? fromConfigCooldown ?? DEFAULT_INTERSTITIAL_COOLDOWN_MS,
+  };
 };
 
 class MonetizationService {
   private isInitialized = false;
-  private ownedProducts: Set<ProductId> = new Set();
-  private adProvider: 'admob' | 'unity' | 'mock' = 'mock';
+  private adProvider: 'admob' | 'mock' = 'mock';
+  private adMobModule: AdMobModule | null = null;
   private adsEnabled = true;
+  private personalizedAdsEnabled = false;
   private rewardedAdCount = 0;
-  private dailyAdLimit = 5;
+  private dailyAdLimit = 8;
+  private interstitialShownThisSession = 0;
+  private interstitialSessionLimit = DEFAULT_INTERSTITIAL_SESSION_LIMIT;
+  private interstitialCooldownMs = DEFAULT_INTERSTITIAL_COOLDOWN_MS;
+  private lastInterstitialShownAt = 0;
   private lastAdResetDate: string | null = null;
+  private readonly allowMockAds = isDevRuntime;
 
-  /**
-   * Reset service state (for testing)
-   */
-  __reset__() {
+  __reset() {
     this.isInitialized = false;
-    this.ownedProducts.clear();
+    this.adProvider = 'mock';
+    this.adMobModule = null;
+    this.adsEnabled = true;
+    this.personalizedAdsEnabled = false;
     this.rewardedAdCount = 0;
+    this.dailyAdLimit = 8;
+    this.interstitialShownThisSession = 0;
+    this.interstitialSessionLimit = DEFAULT_INTERSTITIAL_SESSION_LIMIT;
+    this.interstitialCooldownMs = DEFAULT_INTERSTITIAL_COOLDOWN_MS;
+    this.lastInterstitialShownAt = 0;
     this.lastAdResetDate = null;
+    SaveManager.setPremiumUnlocked(false);
+    SaveManager.setAdsDisabled(false);
   }
 
-  /**
-   * Initialize monetization service
-   * In production, this would initialize RevenueCat/Expo IAP and AdMob
-   */
+  __reset__() {
+    this.__reset();
+  }
+
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
 
-    try {
-      console.log('🛒 Initializing Monetization Service...');
-      
-      // In production:
-      // await Purchases.configure({ apiKey: REVENUECAT_API_KEY });
-      // await AdMob.initialize();
-      
-      // Load owned products from storage
-      await this.loadOwnedProducts();
-      
-      // Reset daily ad counter if needed
-      this.resetDailyAdCountIfNeeded();
-      
-      this.isInitialized = true;
-      console.log('✅ Monetization Service initialized');
-    } catch (error) {
-      console.error('❌ Monetization initialization failed:', error);
-      throw error;
-    }
+    const interstitialRuntime = getRuntimeInterstitialConfig();
+    this.interstitialSessionLimit = interstitialRuntime.sessionLimit;
+    this.interstitialCooldownMs = interstitialRuntime.cooldownMs;
+
+    await this.initializeAds();
+    await this.loadAdCount();
+    this.resetDailyAdCountIfNeeded();
+
+    SaveManager.setPremiumUnlocked(checkPremiumSubscription());
+    SaveManager.setAdsDisabled(false);
+
+    this.isInitialized = true;
+    devLog.log(
+      `[monetization] initialized (ads=${this.adProvider}, session_cap=${this.interstitialSessionLimit}, cooldown_ms=${this.interstitialCooldownMs})`
+    );
   }
 
-  /**
-   * Get all available products
-   */
   async getProducts(): Promise<Product[]> {
     if (!this.isInitialized) await this.initialize();
-    
-    // In production: fetch from store
-    // const offerings = await Purchases.getOfferings();
-    // return offerings.current?.availablePackages || [];
-    
-    return Object.values(PRODUCTS);
+    return [];
   }
 
-  /**
-   * Purchase a product
-   */
-  async purchaseProduct(productId: ProductId): Promise<PurchaseResult> {
+  async purchaseProduct(productId: string): Promise<PurchaseResult> {
     if (!this.isInitialized) await this.initialize();
-
-    try {
-      console.log(`💳 Purchasing: ${productId}`);
-
-      // In production:
-      // const { customerInfo } = await Purchases.purchasePackage(package);
-      // const isPremium = customerInfo.entitlements.active[productId] !== undefined;
-      
-      // Mock purchase (always succeeds in dev)
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      this.ownedProducts.add(productId);
-      await this.saveOwnedProducts();
-
-      console.log(`✅ Purchase successful: ${productId}`);
-      
-      return {
-        success: true,
-        productId
-      };
-    } catch (error: any) {
-      console.error('❌ Purchase failed:', error);
-      return {
-        success: false,
-        productId,
-        error: error.message || 'Satın alma başarısız'
-      };
-    }
+    return {
+      success: false,
+      productId,
+      error: 'IAP disabled: pure ad-only build',
+    };
   }
 
-  /**
-   * Restore purchases (for users who reinstalled)
-   */
-  async restorePurchases(): Promise<ProductId[]> {
+  async restorePurchases(): Promise<string[]> {
     if (!this.isInitialized) await this.initialize();
-
-    try {
-      console.log('🔄 Restoring purchases...');
-
-      // In production:
-      // const customerInfo = await Purchases.restorePurchases();
-      // const activeEntitlements = Object.keys(customerInfo.entitlements.active);
-      
-      // Mock restore
-      const restored = Array.from(this.ownedProducts);
-      console.log(`✅ Restored ${restored.length} purchases`);
-      
-      return restored;
-    } catch (error) {
-      console.error('❌ Restore failed:', error);
-      return [];
-    }
+    return [];
   }
 
-  /**
-   * Check if user owns a product
-   */
-  hasProduct(productId: ProductId): boolean {
-    return this.ownedProducts.has(productId);
+  hasProduct(_productId: string): boolean {
+    return false;
   }
 
-  /**
-   * Check if user has premium (any premium product)
-   */
   isPremium(): boolean {
-    return this.ownedProducts.size > 0;
+    return checkPremiumSubscription();
   }
 
-  /**
-   * Show rewarded ad and give reward
-   */
-  async showRewardedAd(rewardType: 'energy' | 'intelligence' | 'money'): Promise<RewardedAdResult> {
+  async showRewardedAd(rewardType: RewardType): Promise<RewardedAdResult> {
     if (!this.isInitialized) await this.initialize();
 
-    // Check if ads are disabled
-    if (!this.adsEnabled || this.hasProduct('remove_ads') || this.hasProduct('season_pass')) {
+    if (this.isPremium()) {
+      return { success: false, error: 'Premium user — ads disabled' };
+    }
+
+    this.resetDailyAdCountIfNeeded();
+
+    if (!this.adsEnabled) {
       return {
         success: false,
-        error: 'Reklamlar devre dışı (Premium kullanıcı)'
+        error: 'Ads disabled',
       };
     }
 
-    // Check daily limit
-    if (this.rewardedAdCount >= this.dailyAdLimit) {
+    if ((!this.allowMockAds || isTestRuntime) && this.rewardedAdCount >= this.dailyAdLimit) {
       return {
         success: false,
-        error: `Günlük reklam limiti (${this.dailyAdLimit}) aşıldı. Yarın tekrar dene!`
+        error: `Daily ad limit reached (${this.dailyAdLimit})`,
       };
     }
 
-    try {
-      console.log(`📺 Showing rewarded ad for: ${rewardType}`);
+    const fallbackAmount = this.getFallbackRewardAmount(rewardType);
 
-      // In production:
-      // const ad = RewardedAd.createForAdRequest('ca-app-pub-xxx');
-      // await ad.show();
-      
-      // Mock ad viewing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Determine reward amount
-      let amount = 0;
-      switch (rewardType) {
-        case 'energy':
-          amount = 20;
-          break;
-        case 'intelligence':
-          amount = 10;
-          break;
-        case 'money':
-          amount = 100;
-          break;
+    if (this.adProvider === 'admob' && this.adMobModule) {
+      const result = await this.showRewardedAdWithAdMob(rewardType, fallbackAmount);
+      if (result.success) {
+        this.rewardedAdCount += 1;
+        this.saveAdCount();
       }
+      return result;
+    }
 
-      this.rewardedAdCount++;
-      this.saveAdCount();
+    if (!this.allowMockAds) {
+      return {
+        success: false,
+        error: 'Ads provider unavailable in this build',
+      };
+    }
 
-      console.log(`✅ Ad watched! Reward: +${amount} ${rewardType}`);
+    await new Promise(resolve => setTimeout(resolve, MOCK_REWARDED_AD_DELAY_MS));
+    this.rewardedAdCount += 1;
+    this.saveAdCount();
+    return {
+      success: true,
+      reward: {
+        type: rewardType,
+        amount: fallbackAmount,
+      },
+    };
+  }
 
+  async showContextualRewardedAd(placement: RewardedPlacement): Promise<ContextualRewardedAdResult> {
+    if (!this.isInitialized) await this.initialize();
+
+    const placementMap: Record<RewardedPlacement, {
+      adDriverRewardType: RewardType;
+      rewardType: RewardType | 'utility';
+      amount: number;
+    }> = {
+      exam_prep: {
+        adDriverRewardType: 'intelligence',
+        rewardType: 'intelligence',
+        amount: 15,
+      },
+      energy_depleted: {
+        adDriverRewardType: 'energy',
+        rewardType: 'energy',
+        amount: 25,
+      },
+      crisis_recovery: {
+        adDriverRewardType: 'money',
+        rewardType: 'utility',
+        amount: 0,
+      },
+      ending_alternative: {
+        adDriverRewardType: 'money',
+        rewardType: 'utility',
+        amount: 0,
+      },
+      undo_choice: {
+        adDriverRewardType: 'money',
+        rewardType: 'utility',
+        amount: 0,
+      },
+    };
+
+    const plan = placementMap[placement];
+
+    // Premium users keep reward utility without ad interruptions.
+    if (this.isPremium()) {
       return {
         success: true,
-        reward: { type: rewardType, amount }
+        placement,
+        rewardType: plan.rewardType,
+        amount: plan.amount,
       };
-    } catch (error: any) {
-      console.error('❌ Ad failed:', error);
+    }
+
+    const adResult = await this.showRewardedAd(plan.adDriverRewardType);
+    if (!adResult.success) {
       return {
         success: false,
-        error: error.message || 'Reklam gösterilemedi'
+        placement,
+        rewardType: plan.rewardType,
+        amount: 0,
+        error: adResult.error ?? 'Rewarded ad failed',
       };
     }
+
+    return {
+      success: true,
+      placement,
+      rewardType: plan.rewardType,
+      amount: plan.amount,
+    };
   }
 
-  /**
-   * Show interstitial ad (game over, etc.)
-   */
-  async showInterstitialAd(): Promise<boolean> {
+  async showInterstitialAdDetailed(): Promise<InterstitialAdResult> {
     if (!this.isInitialized) await this.initialize();
 
-    // Don't show if premium
-    if (!this.adsEnabled || this.hasProduct('remove_ads') || this.hasProduct('season_pass')) {
-      console.log('🚫 Interstitial ad skipped (Premium user)');
-      return false;
+    if (this.isPremium()) {
+      return { shown: false, reason: 'premium_user', provider: this.adProvider };
     }
 
-    try {
-      console.log('📺 Showing interstitial ad...');
-
-      // In production:
-      // const ad = InterstitialAd.createForAdRequest('ca-app-pub-xxx');
-      // await ad.show();
-      
-      // Mock ad
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      console.log('✅ Interstitial ad shown');
-      return true;
-    } catch (error) {
-      console.error('❌ Interstitial ad failed:', error);
-      return false;
+    if (!this.adsEnabled) {
+      return {
+        shown: false,
+        reason: 'ads_disabled',
+        provider: this.adProvider,
+      };
     }
+
+    if (this.interstitialShownThisSession >= this.interstitialSessionLimit) {
+      return {
+        shown: false,
+        reason: 'session_cap',
+        provider: this.adProvider,
+      };
+    }
+
+    const now = Date.now();
+    if (
+      this.lastInterstitialShownAt > 0 &&
+      now - this.lastInterstitialShownAt < this.interstitialCooldownMs
+    ) {
+      return {
+        shown: false,
+        reason: 'cooldown',
+        provider: this.adProvider,
+        cooldownRemainingMs: Math.max(0, this.interstitialCooldownMs - (now - this.lastInterstitialShownAt)),
+      };
+    }
+
+    if (this.adProvider === 'admob' && this.adMobModule) {
+      const shown = await this.showInterstitialWithAdMob();
+      if (shown) this.recordInterstitialShown(now);
+      return {
+        shown,
+        reason: shown ? 'shown' : 'ad_error',
+        provider: 'admob',
+      };
+    }
+
+    if (!this.allowMockAds) {
+      return {
+        shown: false,
+        reason: 'provider_unavailable',
+        provider: this.adProvider,
+      };
+    }
+
+    await new Promise(resolve => setTimeout(resolve, MOCK_INTERSTITIAL_DELAY_MS));
+    this.recordInterstitialShown(now);
+    return {
+      shown: true,
+      reason: 'shown',
+      provider: 'mock',
+    };
   }
 
-  /**
-   * Get remaining rewarded ads for today
-   */
+  async showInterstitialAd(): Promise<boolean> {
+    const result = await this.showInterstitialAdDetailed();
+    return result.shown;
+  }
+
   getRemainingRewardedAds(): number {
+    this.resetDailyAdCountIfNeeded();
     return Math.max(0, this.dailyAdLimit - this.rewardedAdCount);
   }
 
-  /**
-   * Enable/disable ads (for testing)
-   */
   setAdsEnabled(enabled: boolean): void {
     this.adsEnabled = enabled;
-    console.log(`📺 Ads ${enabled ? 'enabled' : 'disabled'}`);
   }
 
-  // Private methods
+  setPersonalizedAdsEnabled(enabled: boolean): void {
+    this.personalizedAdsEnabled = enabled;
+  }
 
-  private async loadOwnedProducts(): Promise<void> {
+  setEntitlementTokenProvider(_provider: AuthTokenProvider | null): void {
+    // No-op in ad-only build.
+  }
+
+  private async initializeAds(): Promise<void> {
+    if (Platform.OS === 'web') {
+      this.adProvider = 'mock';
+      return;
+    }
+
+    const constantsModule = optionalRequire('expo-constants');
+    const constants = constantsModule?.default ?? constantsModule;
+    const appOwnership = normalizeConfigString(constants?.appOwnership)?.toLowerCase();
+    const executionEnvironment = normalizeConfigString(constants?.executionEnvironment)?.toLowerCase();
+    const isExpoGoClient = appOwnership === 'expo' || executionEnvironment === 'storeclient';
+
+    if (isExpoGoClient) {
+      devLog.log('[monetization] Expo Go detected. Using mock ads.');
+      this.adProvider = 'mock';
+      this.adMobModule = null;
+      return;
+    }
+
     try {
-      if (typeof localStorage !== 'undefined') {
-        const saved = localStorage.getItem('@yazgi/owned_products');
-        if (saved) {
-          this.ownedProducts = new Set(JSON.parse(saved));
-          console.log(`📦 Loaded ${this.ownedProducts.size} owned products`);
-        }
+      const adMobImport = optionalRequire('react-native-google-mobile-ads') as AdMobModule | null;
+      const mobileAdsFactory = adMobImport?.default;
+
+      if (!mobileAdsFactory) {
+        this.adProvider = 'mock';
+        this.adMobModule = null;
+        return;
       }
+
+      await mobileAdsFactory().initialize();
+      this.adProvider = 'admob';
+      this.adMobModule = adMobImport;
+      devLog.log('[monetization] AdMob initialized.');
     } catch (error) {
-      console.error('Failed to load owned products:', error);
+      devLog.warn('[monetization] AdMob unavailable, using mock ads.', error);
+      this.adProvider = 'mock';
+      this.adMobModule = null;
     }
   }
 
-  private async saveOwnedProducts(): Promise<void> {
-    try {
-      if (typeof localStorage !== 'undefined') {
-        const products = Array.from(this.ownedProducts);
-        localStorage.setItem('@yazgi/owned_products', JSON.stringify(products));
-        console.log(`💾 Saved ${products.length} owned products`);
-      }
-    } catch (error) {
-      console.error('Failed to save owned products:', error);
+  private getAdUnitId(kind: AdType): string | null {
+    const testIds = this.adMobModule?.TestIds;
+    if (isDevRuntime && testIds) {
+      return kind === 'rewarded' ? testIds.REWARDED : testIds.INTERSTITIAL;
     }
+
+    const configured = getAdUnitIdFromConfig(kind);
+    if (!configured) return null;
+    if (KNOWN_TEST_AD_UNIT_IDS.has(configured)) return null;
+    return configured;
+  }
+
+  private async showRewardedAdWithAdMob(
+    rewardType: RewardType,
+    fallbackAmount: number
+  ): Promise<RewardedAdResult> {
+    const rewardedFactory = this.adMobModule?.RewardedAd;
+    const adEventType = this.adMobModule?.AdEventType;
+    const rewardedEventType = this.adMobModule?.RewardedAdEventType;
+    const adUnitId = this.getAdUnitId('rewarded');
+
+    if (!rewardedFactory || !adEventType || !rewardedEventType || !adUnitId) {
+      return { success: false, error: 'Rewarded ad dependencies are unavailable' };
+    }
+
+    return new Promise<RewardedAdResult>((resolve) => {
+      const rewardedAd = rewardedFactory.createForAdRequest(adUnitId, {
+        requestNonPersonalizedAdsOnly: !this.personalizedAdsEnabled,
+      });
+
+      let settled = false;
+      const unsubs: Array<() => void> = [];
+      const settle = (result: RewardedAdResult) => {
+        if (settled) return;
+        settled = true;
+        unsubs.forEach((unsub) => {
+          try {
+            unsub();
+          } catch {
+            // no-op
+          }
+        });
+        resolve(result);
+      };
+
+      unsubs.push(
+        rewardedAd.addAdEventListener(rewardedEventType.EARNED_REWARD, (reward: any) => {
+          const amount = Number(reward?.amount) || fallbackAmount;
+          settle({
+            success: true,
+            reward: { type: rewardType, amount },
+          });
+        })
+      );
+
+      unsubs.push(
+        rewardedAd.addAdEventListener(rewardedEventType.LOADED, () => {
+          try {
+            void rewardedAd.show();
+          } catch (error: any) {
+            settle({
+              success: false,
+              error: error?.message || 'Rewarded ad show failed',
+            });
+          }
+        })
+      );
+
+      unsubs.push(
+        rewardedAd.addAdEventListener(adEventType.ERROR, (error: any) => {
+          settle({
+            success: false,
+            error: error?.message || 'Rewarded ad failed',
+          });
+        })
+      );
+
+      unsubs.push(
+        rewardedAd.addAdEventListener(adEventType.CLOSED, () => {
+          settle({
+            success: false,
+            error: 'Rewarded ad closed before reward',
+          });
+        })
+      );
+
+      rewardedAd.load();
+    });
+  }
+
+  private async showInterstitialWithAdMob(): Promise<boolean> {
+    const interstitialFactory = this.adMobModule?.InterstitialAd;
+    const adEventType = this.adMobModule?.AdEventType;
+    const adUnitId = this.getAdUnitId('interstitial');
+
+    if (!interstitialFactory || !adEventType || !adUnitId) {
+      return false;
+    }
+
+    return new Promise<boolean>((resolve) => {
+      const interstitialAd = interstitialFactory.createForAdRequest(adUnitId, {
+        requestNonPersonalizedAdsOnly: !this.personalizedAdsEnabled,
+      });
+
+      let settled = false;
+      const unsubs: Array<() => void> = [];
+      const settle = (result: boolean) => {
+        if (settled) return;
+        settled = true;
+        unsubs.forEach((unsub) => {
+          try {
+            unsub();
+          } catch {
+            // no-op
+          }
+        });
+        resolve(result);
+      };
+
+      unsubs.push(
+        interstitialAd.addAdEventListener(adEventType.LOADED, () => {
+          try {
+            void interstitialAd.show();
+          } catch {
+            settle(false);
+          }
+        })
+      );
+
+      unsubs.push(
+        interstitialAd.addAdEventListener(adEventType.ERROR, () => {
+          settle(false);
+        })
+      );
+
+      unsubs.push(
+        interstitialAd.addAdEventListener(adEventType.CLOSED, () => {
+          settle(true);
+        })
+      );
+
+      interstitialAd.load();
+    });
+  }
+
+  private getFallbackRewardAmount(rewardType: RewardType): number {
+    if (rewardType === 'energy') return 20;
+    if (rewardType === 'intelligence') return 10;
+    return 100;
+  }
+
+  private recordInterstitialShown(timestamp: number): void {
+    this.interstitialShownThisSession += 1;
+    this.lastInterstitialShownAt = timestamp;
   }
 
   private resetDailyAdCountIfNeeded(): void {
     const today = new Date().toISOString().split('T')[0];
-    
-    if (this.lastAdResetDate !== today) {
-      this.rewardedAdCount = 0;
-      this.lastAdResetDate = today;
-      this.saveAdCount();
-      console.log('🔄 Daily ad count reset');
-    }
+    if (this.lastAdResetDate === today) return;
+
+    this.rewardedAdCount = 0;
+    this.lastAdResetDate = today;
+    this.saveAdCount();
   }
 
   private saveAdCount(): void {
+    void writeStorageItem(
+      STORAGE_AD_COUNT_KEY,
+      JSON.stringify({
+        count: this.rewardedAdCount,
+        date: this.lastAdResetDate,
+      })
+    ).catch((error) => {
+      devLog.warn('[monetization] Failed to persist ad count.', error);
+    });
+  }
+
+  private async loadAdCount(): Promise<void> {
     try {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('@yazgi/ad_count', JSON.stringify({
-          count: this.rewardedAdCount,
-          date: this.lastAdResetDate
-        }));
-      }
+      const raw = await readStorageItem(STORAGE_AD_COUNT_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      this.rewardedAdCount = Number(parsed?.count) || 0;
+      this.lastAdResetDate = typeof parsed?.date === 'string' ? parsed.date : null;
     } catch (error) {
-      console.error('Failed to save ad count:', error);
+      devLog.warn('[monetization] Failed to load ad count.', error);
     }
   }
 }
 
-// Singleton instance
 export const monetizationService = new MonetizationService();
 
-// Convenience exports
 export const initMonetization = () => monetizationService.initialize();
 export const getProducts = () => monetizationService.getProducts();
-export const purchaseProduct = (id: ProductId) => monetizationService.purchaseProduct(id);
-export const hasProduct = (id: ProductId) => monetizationService.hasProduct(id);
+export const purchaseProduct = (id: string) => monetizationService.purchaseProduct(id);
+export const hasProduct = (id: string) => monetizationService.hasProduct(id);
 export const isPremium = () => monetizationService.isPremium();
-export const showRewardedAd = (type: 'energy' | 'intelligence' | 'money') => 
-  monetizationService.showRewardedAd(type);
+export const showRewardedAd = (type: RewardType) => monetizationService.showRewardedAd(type);
+export const showContextualRewardedAd = (placement: RewardedPlacement) =>
+  monetizationService.showContextualRewardedAd(placement);
 export const showInterstitialAd = () => monetizationService.showInterstitialAd();
+export const showInterstitialAdDetailed = () => monetizationService.showInterstitialAdDetailed();
 export const getRemainingRewardedAds = () => monetizationService.getRemainingRewardedAds();
 export const restorePurchases = () => monetizationService.restorePurchases();
+export const setPersonalizedAdsEnabled = (enabled: boolean) =>
+  monetizationService.setPersonalizedAdsEnabled(enabled);
+export const setEntitlementTokenProvider = (provider: AuthTokenProvider | null) =>
+  monetizationService.setEntitlementTokenProvider(provider);

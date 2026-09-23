@@ -16,10 +16,8 @@ describe('Trait System', () => {
         expect(trait.id).toBeTruthy();
         expect(typeof trait.id).toBe('string');
         
-        expect(trait.name).toBeTruthy();
+        // name and description come from i18n (empty string in static data)
         expect(typeof trait.name).toBe('string');
-        
-        expect(trait.description).toBeTruthy();
         expect(typeof trait.description).toBe('string');
         
         expect(trait.category).toMatch(/GENETIC|ACQUIRED/);
@@ -33,11 +31,10 @@ describe('Trait System', () => {
       expect(ids.length).toBe(uniqueIds.size);
     });
 
-    it('trait names should be unique', () => {
-      const names = TRAIT_DEFINITIONS.map(t => t.name);
-      const uniqueNames = new Set(names);
-      
-      expect(names.length).toBe(uniqueNames.size);
+    it('trait ids should be unique (names come from i18n)', () => {
+      const ids = TRAIT_DEFINITIONS.map(t => t.id);
+      const uniqueIds = new Set(ids);
+      expect(ids.length).toBe(uniqueIds.size);
     });
   });
 

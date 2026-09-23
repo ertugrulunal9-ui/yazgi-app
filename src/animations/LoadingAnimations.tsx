@@ -46,7 +46,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = React.memo(({
       -1,
       false
     );
-  }, []);
+  }, [rotation]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${rotation.value}deg` }],
@@ -95,7 +95,7 @@ export const PulseLoader: React.FC<LoadingSpinnerProps> = React.memo(({
       -1,
       false
     );
-  }, []);
+  }, [opacity, scale]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -160,7 +160,7 @@ export const DotsLoader: React.FC<LoadingSpinnerProps> = React.memo(({
       -1,
       false
     );
-  }, []);
+  }, [dot1, dot2, dot3]);
 
   const animatedStyle1 = useAnimatedStyle(() => ({
     transform: [{ translateY: dot1.value }],
@@ -246,7 +246,7 @@ export const BarsLoader: React.FC<LoadingSpinnerProps> = React.memo(({
       -1,
       false
     );
-  }, []);
+  }, [bar1, bar2, bar3]);
 
   const animatedStyle1 = useAnimatedStyle(() => ({
     opacity: bar1.value,
@@ -315,7 +315,7 @@ export const SkeletonLoader: React.FC<{
       -1,
       false
     );
-  }, []);
+  }, [opacity]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
@@ -363,7 +363,7 @@ export const BounceLoader: React.FC<LoadingSpinnerProps> = React.memo(({
       -1,
       false
     );
-  }, []);
+  }, [scale, translateY]);
 
   const animatedStyle = useAnimatedStyle(() => {
     const transformArray: any[] = [];
@@ -388,6 +388,13 @@ export const BounceLoader: React.FC<LoadingSpinnerProps> = React.memo(({
 }, (prevProps, nextProps) => {
   return prevProps.size === nextProps.size && prevProps.color === nextProps.color;
 });
+
+LoadingSpinner.displayName = 'LoadingSpinner';
+PulseLoader.displayName = 'PulseLoader';
+DotsLoader.displayName = 'DotsLoader';
+BarsLoader.displayName = 'BarsLoader';
+SkeletonLoader.displayName = 'SkeletonLoader';
+BounceLoader.displayName = 'BounceLoader';
 
 const styles = StyleSheet.create({
   container: {

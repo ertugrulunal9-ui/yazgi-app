@@ -15,6 +15,9 @@
         {
           "android": {
             "minSdkVersion": 24,
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36,
+            "buildToolsVersion": "36.0.0",
             "enableHermes": true,
             "newArchEnabled": true
           },
@@ -29,12 +32,14 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "androidAppId": "ca-app-pub-7452780443706539~6798586178",
           "iosAppId": "ca-app-pub-3940256099942544~1458002511"
         }
       ],
       "expo-secure-store",
-      "expo-audio"
+      "expo-audio",
+      "@react-native-firebase/crashlytics",
+      "expo-localization"
     ],
     "jsEngine": "hermes",
     "ios": {
@@ -50,56 +55,26 @@
       "googleServicesFile": "./google-services.json"
     },
     "extra": {
-      "revenueCat": {
-        "androidApiKey": "",
-        "iosApiKey": "",
-        "productIds": {
-          "premium_traits": {
-            "android": "premium_traits",
-            "ios": "premium_traits"
-          },
-          "save_slots_premium": {
-            "android": "save_slots_premium",
-            "ios": "save_slots_premium"
-          },
-          "cosmetics_pack": {
-            "android": "cosmetics_pack",
-            "ios": "cosmetics_pack"
-          },
-          "energy_refill": {
-            "android": "energy_refill",
-            "ios": "energy_refill"
-          },
-          "season_pass": {
-            "android": "season_pass",
-            "ios": "season_pass"
-          },
-          "remove_ads": {
-            "android": "remove_ads",
-            "ios": "remove_ads"
-          }
-        },
-        "entitlements": {
-          "premium": "save_slots_premium",
-          "premium_slots": "save_slots_premium",
-          "no_ads": "remove_ads",
-          "season_pass": "season_pass"
-        }
-      },
+      "_admob_note": "LAUNCH CHECKLIST: Replace test app IDs in plugins.react-native-google-mobile-ads AND fill ad unit IDs below with production values from AdMob console (admob.google.com)",
       "admob": {
-        "androidRewardedUnitId": "",
-        "iosRewardedUnitId": "",
-        "androidInterstitialUnitId": "",
-        "iosInterstitialUnitId": ""
+        "androidRewardedUnitId": "ca-app-pub-7452780443706539/8447534175",
+        "iosRewardedUnitId": "TODO_REPLACE_WITH_ADMOB_IOS_REWARDED_UNIT_ID",
+        "androidInterstitialUnitId": "ca-app-pub-7452780443706539/7601150500",
+        "iosInterstitialUnitId": "TODO_REPLACE_WITH_ADMOB_IOS_INTERSTITIAL_UNIT_ID"
       },
       "monetization": {
         "interstitialSessionLimit": 2,
-        "interstitialCooldownMs": 180000,
-        "remoteConfigUrl": "",
-        "entitlementApiBaseUrl": "",
-        "requireServerAuthority": true,
-        "entitlementRefreshOnStartup": false,
-        "entitlementRequestTimeoutMs": 2000
+        "interstitialCooldownMs": 180000
+      },
+      "revenueCat": {
+        "iosApiKey": "TODO_REPLACE_WITH_REVENUECAT_IOS_API_KEY",
+        "androidApiKey": "goog_VKJbyVvVAJNrTCYOOHKPkFUaeii"
+      },
+      "premiumRollout": {
+        "_note": "Kill-switch and operation gates for dark-launch control",
+        "killSwitch": false,
+        "purchasesEnabled": true,
+        "restoreEnabled": true
       },
       "cloudSync": {
         "enabled": false

@@ -1,78 +1,135 @@
-import React from 'react';
-import { View, Text, ScrollView, SafeAreaView } from 'react-native';
-import { useGame } from '../context/GameContext';
-import { useEvents } from '../hooks/useEvents';
-import { getThemeTokens, getDensityMetrics } from '../utils/themeUtils';
-import {
-  FadeInUpView,
-  StaggeredFadeIn,
-  buttonPress,
-  importantDecision,
-} from '../animations';
-import { AnimatedButton } from '../animations/ButtonAnimations';
+import React, { useMemo } from 'react';
+import { ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useUI } from '../context/UIContext';
+import { Z_INDEX } from '../constants/zIndex';
+import { SwipeChoiceDeck } from '../components/SwipeChoiceDeck';
+import { EventNarrative } from '../components/EventNarrative';
+import { FeedbackOverlay } from '../components/FeedbackOverlay';
+import { FateIndicator } from '../components/FateIndicator';
+import { isFeatureEnabled } from '../config/featureFlags';
+import { useEventScreenController } from '../hooks/useEventScreenController';
 
-interface EventScreenProps {
-  theme: ReturnType<typeof getThemeTokens>;
-  metrics: ReturnType<typeof getDensityMetrics>;
-}
+export const EventScreen: React.FC = React.memo(() => {
+  const { theme, metrics, t } = useUI();
+  const insets = useSafeAreaInsets();
+  const {
+    gameState,
+    stats,
+    choicesToRender,
+    resolveChoice,
+    handleChoice,
+    handleContinue,
+    handleCrisisRecoveryAd,
+    handleReroll,
+    canUndo,
+    handleUndo,
+    selectedChoice,
+    canReroll,
+    buttonEnabled,
+    hasCrisisRecoveryOption,
+    crisisRecoveryLoading,
+    undoLoading,
+    breakdownShakeX,
+    isBreakdownEvent,
+    isDramaticEvent,
+    eventText,
+  } = useEventScreenController();
 
-export const EventScreen: React.FC<EventScreenProps> = ({ theme, metrics }) => {
-  const { gameState } = useGame();
-  const { handleEventChoice, resolveEventText, resolveChoice } = useEvents();
+  const overlayStyle = useMemo(() => ({
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: Z_INDEX.EVENT_OVERLAY,
+    backgroundColor: theme.appBg,
+  }), [theme.appBg]);
 
-  const handleChoice = (choice: any, index: number) => {
-    buttonPress();
-    importantDecision();
-    handleEventChoice(choice, index);
-  };
+  const scrollContentStyle = useMemo(() => ({
+    paddingTop: Math.max(insets.top + 20, 60),
+    paddingBottom: Math.max(insets.bottom + 20, 40),
+  }), [insets.bottom, insets.top]);
 
-  if (!gameState.currentEvent) {
+  const scrollViewStyle = useMemo(() => ({
+    flex: 1 as const,
+    padding: metrics.pad,
+  }), [metrics.pad]);
+
+  if (gameState.phase !== 'EVENT' && gameState.phase !== 'RESULT') return null;
+
+  if (gameState.phase === 'RESULT') {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.appBg, justifyContent: 'center', alignItems: 'center' }}>
-        <Text style={{ color: theme.textPrimary }}>Olay bulunamadı</Text>
-      </SafeAreaView>
+      <FeedbackOverlay
+        theme={theme}
+        metrics={metrics}
+        insets={insets}
+        t={t}
+        lastResult={gameState.lastResult}
+        currentEvent={gameState.currentEvent}
+        selectedChoice={selectedChoice}
+        stats={stats}
+        personality={gameState.personality}
+        skills={gameState.skills}
+        fate={gameState.fate}
+        canReroll={canReroll}
+        buttonEnabled={buttonEnabled}
+        hasCrisisRecoveryOption={hasCrisisRecoveryOption}
+        crisisRecoveryLoading={crisisRecoveryLoading}
+        undoLoading={undoLoading}
+        canUndo={canUndo}
+        onUndo={handleUndo}
+        onContinue={handleContinue}
+        onRecoverWithAd={handleCrisisRecoveryAd}
+        onReroll={handleReroll}
+      />
     );
   }
 
-  const evt = gameState.currentEvent;
-  const eventText = resolveEventText(evt);
+  if (!gameState.currentEvent || !eventText) return null;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.appBg }}>
-      <ScrollView style={{ flex: 1, padding: metrics.pad }}>
-        <FadeInUpView>
-          <View style={{ backgroundColor: theme.surfaceBase, borderRadius: 14, borderWidth: 1, borderColor: theme.border, padding: metrics.pad, marginBottom: 20 }}>
-            <Text style={{ color: theme.textPrimary, fontSize: 16, fontWeight: '700', marginBottom: 12, lineHeight: 22 }}>
-              {eventText}
-            </Text>
-          </View>
-        </FadeInUpView>
+    <View style={overlayStyle}>
+      <ScrollView
+        style={scrollViewStyle}
+        contentContainerStyle={scrollContentStyle}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
+        overScrollMode="never"
+        bounces={false}
+      >
+        {isFeatureEnabled('FATE_TRANSPARENCY') && gameState.fate && (
+          <FateIndicator
+            fateState={gameState.fate}
+            personalityCategory={gameState.currentEvent.personalityCategory}
+            theme={theme}
+          />
+        )}
 
-        <StaggeredFadeIn staggerDelay={100}>
-          {evt.choices.map((choice, index) => {
-            const resolved = resolveChoice(choice);
-            return (
-              <AnimatedButton
-                key={index}
-                onPress={() => handleChoice(choice, index)}
-                animationType="pressScale"
-                style={{
-                  backgroundColor: theme.surfaceBase,
-                  padding: metrics.pad,
-                  borderRadius: 12,
-                  marginBottom: 10,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                }}
-              >
-                <Text style={{ color: theme.textPrimary, fontSize: metrics.font, fontWeight: '600', lineHeight: Math.round(metrics.font * 1.4) }}>
-                  {resolved.text}
-                </Text>
-              </AnimatedButton>
-            );
-          })}
-        </StaggeredFadeIn>
+        <EventNarrative
+          event={gameState.currentEvent}
+          eventText={eventText}
+          theme={theme}
+          metrics={metrics}
+          isDramaticEvent={isDramaticEvent}
+          isBreakdownEvent={isBreakdownEvent}
+          breakdownShakeX={breakdownShakeX}
+          causalLink={gameState.currentCausalLink}
+        />
+
+        <SwipeChoiceDeck
+          choices={choicesToRender ?? gameState.currentEvent.choices}
+          resolveChoice={resolveChoice}
+          onChoiceSelected={handleChoice}
+          isBreakdownEvent={isBreakdownEvent}
+          originalChoices={gameState.currentEvent.choices}
+          personalityState={gameState.personalityState}
+          eventId={gameState.currentEvent.id}
+          eventRarity={gameState.currentEvent.rarity}
+        />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
-};
+});
+
+EventScreen.displayName = 'EventScreen';

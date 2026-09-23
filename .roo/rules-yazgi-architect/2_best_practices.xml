@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<instructions>
+  <best_practices>
+    <category name="Mimari Tasarım Prensipleri">
+      <practice>
+        <title>Clean Architecture</title>
+        <description>
+          Clean Architecture prensiplerini uygula:
+        </description>
+        <guidelines>
+          <guideline>Dependency Inversion: Yüksek seviyeli modüller düşük seviyelere bağımlı olmamalı</guideline>
+          <guideline>Single Responsibility: Her modül tek bir sorumluluk taşımalı</guideline>
+          <guideline>Open/Closed: Modüller değişime kapalı, uzantıya açık olmalı</guideline>
+          <guideline>Layered Architecture: Presentation, Domain, Data katmanlarını ayır</guideline>
+        </guidelines>
+      </practice>
+      
+      <practice>
+        <title>SOLID Prensipleri</title>
+        <description>
+          Component ve hook tasarımında SOLID prensiplerini uygula:
+        </description>
+        <guidelines>
+          <guideline>Single Responsibility: Her component tek bir iş yapmalı</guideline>
+          <guideline>Open/Closed: Component'ler genişletilebilir, değiştirilemez olmalı</guideline>
+          <guideline>Liskov Substitution: Alt component'ler üst component'lerin yerini alabilmeli</guideline>
+          <guideline>Interface Segregation: İhtiyaç duyulan prop'ları sadece al</guideline>
+          <guideline>Dependency Inversion: Bağımlılıkları abstraction üzerinden yönet</guideline>
+        </guidelines>
+      </practice>
+    </category>
+    
+    <category name="Component Mimarisi">
+      <practice>
+        <title>Atomic Design</title>
+        <description>
+          Bileşenleri Atomic Design prensiplerine göre tasarla:
+        </description>
+        <guidelines>
+          <guideline>Atomlar: En temel bileşenler (Button, Text, Icon, Avatar)</guideline>
+          <guideline>Moleküller: Atomların birleşimi (SearchBar, CardHeader, FormField)</guideline>
+          <guideline>Organizmalar: Moleküllerin birleşimi (Card, ListItem, Navbar)</guideline>
+          <guideline>Şablonlar: Sayfa düzenleri (ScreenLayout, PageTemplate)</guideline>
+          <guideline>Sayfalar: Şablonların somutlaştırılmış hali (HomeScreen, ProfileScreen)</guideline>
+        </guidelines>
+      </practice>
+      
+      <practice>
+        <title>Component Composition</title>
+        <description>
+          Bileşenleri composition pattern'ı ile birleştir:
+        </description>
+        <guidelines>
+          <guideline>Compound Component pattern kullan (Card.Header, Card.Body)</guideline>
+          <guideline>Render Props ile esneklik sağla</guideline>
+          <guideline>Children prop ile içerik enjeksiyonu yap</guideline>
+          <guideline>Slot pattern ile içerik yerleşimini kontrol et</guideline>
+        </guidelines>
+      </practice>
+      
+      <practice>
+        <title>TypeScript Prop Tanımları</title>
+        <description>
+          Tüm bileşenlerde açık tip tanımları kullan:
+        </description>
+        <guidelines>
+          <guideline>Interface yerine type kullan (basit prop'lar için)</guideline>
+          <guideline>Optional prop'ları ? ile belirt</guideline>
+          <guideline>Default değerleri sağla</guideline>
+          <guideline>Children prop'u için ReactNode kullan</guideline>
+          <guideline>Event handler'ları doğru tip ile tanımla (GestureResponderEvent)</guideline>
+        </guidelines>
+      </practice>
+    </category>
+    
+    <category name="State Management Mimarisi">
+      <practice>
+        <title>State Stratejisi</title>
+        <description>
+          State management için doğru stratejiyi seç:
+        </description>
+        <guidelines>
+          <guideline>Local state: Component içi durumlar için useState</guideline>
+          <guideline>Global state: Uygulama genelinde paylaşılan durumlar için Context API</guideline>
+          <guideline>Server state: API verileri için React Query veya SWR</guideline>
+          <guideline>Form state: Form yönetimi için Formik veya React Hook Form</guideline>
+          <guideline>URL state: URL tabanlı durumlar için react-router hooks</guideline>
+        </guidelines>
+      </practice>
+      
+      <practice>
+        <title>Context API Best Practices</title>
+        <description>
+          Context API kullanımında en iyi uygulamaları uygula:
+        </description>
+        <guidelines>
+          <guideline>Context'leri küçük ve odaklı tut (UserContext, ThemeContext)</guideline>
+          <guideline>Provider'ları birleştir (combine contexts)</guideline>
+          <guideline>Custom hooks ile context erişimini sağla (useUser, useTheme)</guideline>
+          <guideline>Context value'larını useMemo ile stabilize et</guideline>
+          <guideline>Context provider'ları mümkün olduğunca yukarıda konumlandır</guideline>
+        </guidelines>
+      </practice>
+    </category>
+    
+    <category name="Layout ve Responsive Tasarım">
+      <practice>
+        <title>Flexbox Layout</title>
+        <description>
+          İleri seviye Flexbox kullanımı:
+        </description>
+        <guidelines>
+          <guideline>justifyContent ve alignItems kombinasyonlarını doğru kullan</guideline>
+          <guideline>flex: 1 yerine flexBasis ve flexGrow kullan</guideline>
+          <guideline>gap prop'unu kullan (React Native 0.71+)</guideline>
+          <guideline>SafeAreaView ile ekran kenarlarını koru</guideline>
+          <guideline>Dimensions API ile responsive değerler hesapla</guideline>
+          <guideline>flexWrap ile responsive grid'ler oluştur</guideline>
+        </guidelines>
+      </practice>
+      
+      <practice>
+        <title>Responsive Design</title>
+        <description>
+          Ekran boyutuna göre responsive tasarım:
+        </description>
+        <guidelines>
+          <guideline>useWindowDimensions hook ile ekran boyutlarını al</guideline>
+          <guideline>Breakpoint'leri tanımla (mobile: <768, tablet: 768-1024, desktop: >1024)</guideline>
+          <guideline>Responsive değerler için custom hook kullan (useResponsive)</guideline>
+          <guideline>Orientation change'leri yönet</guideline>
+          <guideline>Platform spesifik stiller için Platform.select kullan</guideline>
+        </guidelines>
+      </practice>
+    </category>
+    
+    <category name="Performans Optimizasyonu">
+      <practice>
+        <title>Render Optimizasyonu</title>
+        <description>
+          React Native performansını optimize et:
+        </description>
+        <guidelines>
+          <guideline>React.memo kullanarak gereksiz re-render'ları önle</guideline>
+          <guideline>useCallback ile fonksiyon referanslarını stabilize et</guideline>
+          <guideline>useMemo ile hesaplamaları cache'le</guideline>
+          <guideline>FlatList yerine ScrollView'i sadece kısa listeler için kullan</guideline>
+          <guideline>key prop'larını doğru kullan (stable ve unique)</guideline>
+          <guideline>VirtualizedList ile uzun listeleri optimize et</guideline>
+        </guidelines>
+      </practice>
+      
+      <practice>
+        <title>StyleSheet Performansı</title>
+        <description>
+          StyleSheet kullanımında performans odaklı yaklaş:
+        </description>
+        <guidelines>
+          <guideline>StyleSheet.create() kullanarak statik stilleri tanımla</guideline>
+          <guideline>Dinamik stilleri useMemo ile cache'le</guideline>
+          <guideline>Inline style kullanımından kaçın (performans düşüşü)</guideline>
+          <guideline>Style prop'larını merge ederken spread operator kullan</guideline>
+          <guideline>Platform spesifik stiller için Platform.select kullan</guideline>
+        </guidelines>
+      </practice>
+      
+      <practice>
+        <title>Animation Performansı</title>
+        <description>
+          Animasyon performansını optimize et:
+        </description>
+        <guidelines>
+          <guideline>useNativeDriver: true ile animasyonları native thread'de çalıştır</guideline>
+          <guideline>Opacity ve transform özelliklerini kullan (native driver destekler)</guideline>
+          <guideline>Layout animasyonları için LayoutAnimation API kullan</guideline>
+          <guideline>Reanimated 2 ile karmaşık animasyonları optimize et</guideline>
+          <guideline>InteractionManager ile animasyonları yönet</guideline>
+        </guidelines>
+      </practice>
+    </category>
+    
+    <category name="New Architecture (Bridgeless Mode)">
+      <practice>
+        <title>Fabric Components</title>
+        <description>
+          New Architecture'de Fabric Components kullan:
+        </description>
+        <guidelines>
+          <guideline>Native component'leri Fabric ile yeniden yaz</guideline>
+          <guideline>useNativeDriver ile animasyonları optimize et</guideline>
+          <guideline>Direct manipulation yerine Fabric API'lerini kullan</guideline>
+          <guideline>Legacy UIManager kullanımlarını kaldır</guideline>
+          <guideline>Fabric Props API ile component prop'larını yönet</guideline>
+        </guidelines>
+      </practice>
+      
+      <practice>
+        <title>TurboModules</title>
+        <description>
+          Native modüller için TurboModules kullan:
+        </description>
+        <guidelines>
+          <guideline>Legacy NativeModules yerine TurboModules kullan</guideline>
+          <guideline>JSI (JavaScript Interface) avantajlarından yararlan</guideline>
+          <guideline>Synchronous native calls için TurboModules tercih et</guideline>
+          <guideline>Native modül performansını optimize et</guideline>
+          <guideline>Codegen ile TypeScript tanımlarını otomatik oluştur</guideline>
+        </guidelines>
+      </practice>
+      
+      <practice>
+        <title>Concurrent Rendering</title>
+        <description>
+          React 18 Concurrent Rendering özelliklerini kullan:
+        </description>
+        <guidelines>
+          <guideline>useTransition ile düşük öncelikli güncellemeleri yönet</guideline>
+          <guideline>useDeferredValue ile render gecikmesini optimize et</guideline>
+          <guideline>Strict Mode ile potansiyel sorunları tespit et</guideline>
+          <guideline>useId ile benzersiz ID'ler oluştur</guideline>
+          <guideline>startTransition ile non-blocking UI güncellemeleri yap</guideline>
+        </guidelines>
+      </practice>
+    </category>
+    
+    <category name="Expo SDK 52 Standartları">
+      <practice>
+        <title>SDK 52 Özellikleri</title>
+        <description>
+          Expo SDK 52 özelliklerini doğru kullan:
+        </description>
+        <guidelines>
+          <guideline>expo-router kullanarak dosya tabanlı routing</guideline>
+          <guideline>expo-constants ile uygulama bilgilerine eriş</guideline>
+          <guideline>expo-status-bar ile status bar yönetimi</guideline>
+          <guideline>expo-linear-gradient ile gradyanlar</guideline>
+          <guideline>expo-haptics ile haptic feedback</guideline>
+          <guideline>expo-av ile audio/video yönetimi</guideline>
+        </guidelines>
+      </practice>
+      
+      <practice>
+        <title>EAS Build</title>
+        <description>
+          Expo Application Services (EAS) ile build yönetimi:
+        </description>
+        <guidelines>
+          <guideline>eas.json ile build konfigürasyonlarını yönet</guideline>
+          <guideline>Environment variables için eas-cli kullan</guideline>
+          <guideline>Development, preview, production build'leri ayır</guideline>
+          <guideline>Update API ile over-the-air güncellemeleri yönet</guideline>
+        </guidelines>
+      </practice>
+    </category>
+    
+    <category name="Erişilebilirlik (Accessibility)">
+      <practice>
+        <title>Accessibility Özellikleri</title>
+        <description>
+          Erişilebilirlik standartlarını uygula:
+        </description>
+        <guidelines>
+          <guideline>accessibilityLabel ile ekran okuyucular için açıklama ekle</guideline>
+          <guideline>accessibilityHint ile ek eylem bilgisi ver</guideline>
+          <guideline>accessibilityRole ile bileşen rolünü belirt</guideline>
+          <guideline>accessibilityState ile bileşen durumunu tanımla</guideline>
+          <guideline>minimumTouchTarget ile dokunma alanını optimize et (44x44 min)</guideline>
+          <guideline>accessibilityValue ile değerleri açıkla</guideline>
+        </guidelines>
+      </practice>
+    </category>
+    
+    <category name="TypeScript Best Practices">
+      <practice>
+        <title>Type Safety</title>
+        <description>
+          TypeScript ile tam tip güvenliği sağla:
+        </description>
+        <guidelines>
+          <guideline>any kullanmaktan kaçın, bilinmeyen için unknown kullan</guideline>
+          <guideline>Strict mode'u aktif et (tsconfig.json)</guideline>
+          <guideline>Generics ile yeniden kullanılabilir tipler oluştur</guideline>
+          <guideline>Type guards ile runtime type kontrolü yap</guideline>
+          <guideline>Utility types kullan (Pick, Omit, Partial, Required)</guideline>
+        </guidelines>
+      </practice>
+    </category>
+    
+    <category name="Yazgı Projesi Özelinde">
+      <practice>
+        <title>Oyun Mimarisi</title>
+        <description>
+          Yazgı projesi için oyun mimarisi:
+        </description>
+        <guidelines>
+          <guideline>Game loop mantığını doğru tasarla</guideline>
+          <guideline>State machine ile oyun durumlarını yönet</guideline>
+          <guideline>Event system ile oyun olaylarını yönet</guideline>
+          <guideline>Save system mimarisini optimize et</guideline>
+          <guideline>Achievement system mimarisini tasarla</guideline>
+        </guidelines>
+      </practice>
+      
+      <practice>
+        <title>Atmosfer ve Tasarım Dili</title>
+        <description>
+          Yazgı'nın yerel ve samimi atmosferini koru:
+        </description>
+        <guidelines>
+          <guideline>Renk paletini tutarlı kullan</guideline>
+          <guideline>Font ailelerini ve boyutlarını standartlaştır</guideline>
+          <guideline>Animasyonları yumuşak ve doğal tut</guideline>
+          <guideline>UI elementlerini minimal ve temiz tasarla</guideline>
+          <guideline>Oyun akışını bozmayan, kullanıcı dostu arayüzler oluştur</guideline>
+        </guidelines>
+      </practice>
+    </category>
+  </best_practices>
+</instructions>

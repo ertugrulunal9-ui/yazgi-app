@@ -12,6 +12,7 @@ dist
 dist-ssr
 *.local
 .expo
+android/.kotlin/
 
 # Editor directories and files
 .vscode/*
@@ -31,10 +32,12 @@ coverage/
 .env.*
 !.env.example
 
-# Mobile service config (keep out of VCS unless explicitly needed)
-google-services.json
-android/app/google-services.json
+# Mobile service config
+# Both files committed intentionally (bare workflow: Gradle reads android/app/ directly)
 GoogleService-Info.plist
+
+# Local Claude/Codex temporary worktrees
+.claude/worktrees/
 
 # Local cloudsync runtime data
 backend/data/

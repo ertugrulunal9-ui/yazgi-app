@@ -1,17 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import { X, RefreshCw, Download, Upload, Lock } from 'lucide-react';
-import { SaveSlotMetadata } from '../save/SaveSlot';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Modal, Alert, ActivityIndicator, StyleSheet, Pressable, Platform, BackHandler } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SaveSlotData, SaveSlotMetadata } from '../save/SaveSlot';
 import { SaveSlotCard } from './SaveSlotCard';
+import SaveExportModal from './SaveExportModal';
 import SaveManager from '../save/SaveManager';
+import { GameState, Stats } from '../types';
+import { tRuntime } from '../i18n/strings';
+
+const ENABLE_SAVE_TRANSFER = false;
 
 interface SaveSlotPickerProps {
   isOpen: boolean;
   onClose: () => void;
   currentPlayerName: string;
-  currentStats: any;
-  currentGameState: any;
-  onLoadSlot: (slotId: string) => void;
+  currentStats: Stats;
+  currentGameState: GameState;
+  onLoadSlot: (slotId: string, saveData: SaveSlotData) => void;
   currentSlotId?: string;
+  theme: {
+    appBg: string;
+    surfaceBase: string;
+    surfaceRaised: string;
+    textPrimary: string;
+    textSecondary: string;
+    border: string;
+    accentEvent: string;
+  };
 }
 
 export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
@@ -22,17 +38,29 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
   currentGameState,
   onLoadSlot,
   currentSlotId,
+  theme,
 }) => {
+  const insets = useSafeAreaInsets();
   const [slots, setSlots] = useState<SaveSlotMetadata[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportSlotId, setExportSlotId] = useState<string | null>(null);
+  const [saveModalTab, setSaveModalTab] = useState<'export' | 'import'>('export');
 
   useEffect(() => {
     if (isOpen) {
       loadSlots();
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || Platform.OS !== 'android') return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      onClose();
+      return true;
+    });
+    return () => sub.remove();
+  }, [isOpen, onClose]);
 
   const loadSlots = async () => {
     setIsLoading(true);
@@ -70,7 +98,7 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
     try {
       const saveData = await SaveManager.loadFromSlot(slotId);
       if (saveData) {
-        onLoadSlot(slotId);
+        onLoadSlot(slotId, saveData);
         onClose();
       }
     } catch (error) {
@@ -81,130 +109,329 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
   };
 
   const handleDelete = async (slotId: string) => {
-    if (confirm('Bu kayıt silinecek. Emin misin?')) {
-      setIsLoading(true);
-      try {
-        await SaveManager.deleteSlot(slotId);
-        await loadSlots();
-      } catch (error) {
-        console.error('Delete failed:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
+    Alert.alert(
+      tRuntime('save.deleteTitle'),
+      tRuntime('save.deleteConfirm'),
+      [
+        { text: tRuntime('save.cancelBtn'), style: 'cancel' },
+        {
+          text: tRuntime('save.deleteBtn'),
+          style: 'destructive',
+          onPress: async () => {
+            setIsLoading(true);
+            try {
+              await SaveManager.deleteSlot(slotId);
+              await loadSlots();
+            } catch (error) {
+              console.error('Delete failed:', error);
+            } finally {
+              setIsLoading(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleExport = (slotId: string) => {
+    if (!ENABLE_SAVE_TRANSFER) return;
     setExportSlotId(slotId);
+    setSaveModalTab('export');
     setShowExportModal(true);
   };
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur flex items-center justify-center p-4 animate-fade-in">
-      <div className="ui-modal w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+  const content = (
+    <View
+      style={[
+        styles.modalRoot,
+        {
+          paddingTop: insets.top + 16,
+          paddingBottom: insets.bottom + 16,
+        },
+      ]}
+    >
+      <View style={[styles.container, { backgroundColor: theme.surfaceBase, borderColor: theme.border }]}>
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-primary">Kayıt Slotları</h2>
-            <p className="text-sm text-secondary mt-1">
-              {SaveManager.getAvailableSlots()} slot kullanılabilir
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="pressable surface-raised border border-default rounded-lg p-2"
+        <View style={styles.header}>
+          <View>
+            <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>{tRuntime('save.slotsTitle')}</Text>
+            <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
+              {tRuntime('save.slotsAvailable', { count: SaveManager.getAvailableSlots() })}
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={onClose}
+            style={[styles.closeButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}
+            accessibilityLabel={tRuntime('save.close')}
+            accessibilityRole="button"
           >
-            <X className="icon-density" />
-          </button>
-        </div>
-
-        {/* Premium Banner */}
-        <div className="surface-raised border border-yellow-500/30 rounded-xl p-4 mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Lock className="w-6 h-6 text-yellow-500" />
-            <div>
-              <p className="font-bold text-yellow-500">Premium Slotlar</p>
-              <p className="text-sm text-gray-400">3 ekstra slot aç</p>
-            </div>
-          </div>
-          <button className="pressable bg-yellow-600 hover:bg-yellow-500 border-2 border-yellow-500 text-white font-bold py-2 px-4 rounded-lg text-sm">
-            Kilidi Aç
-          </button>
-        </div>
+            <Feather name="x" size={24} color={theme.textSecondary} />
+          </TouchableOpacity>
+        </View>
 
         {/* Refresh Button */}
-        <div className="flex justify-end mb-4">
-          <button
-            onClick={loadSlots}
+        <View style={styles.refreshRow}>
+          <TouchableOpacity
+            onPress={loadSlots}
             disabled={isLoading}
-            className="pressable surface-raised border border-default rounded-lg px-3 py-2 flex items-center gap-2 text-sm font-semibold disabled:opacity-50"
+            style={[
+              styles.refreshButton,
+              { backgroundColor: theme.surfaceRaised, borderColor: theme.border },
+              isLoading && styles.buttonDisabled,
+            ]}
+            accessibilityLabel={tRuntime('save.refresh')}
+            accessibilityRole="button"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Yenile
-          </button>
-        </div>
+            <Feather name="refresh-cw" size={16} color={theme.textPrimary} />
+            <Text style={[styles.refreshButtonText, { color: theme.textPrimary }]}>{tRuntime('save.refresh')}</Text>
+          </TouchableOpacity>
+        </View>
 
-        {/* Slots Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {slots.map((metadata) => (
-            <SaveSlotCard
-              key={metadata.slotId}
-              metadata={metadata}
-              onLoad={handleLoad}
-              onSave={handleSave}
-              onDelete={handleDelete}
-              onExport={handleExport}
-              isCurrentSlot={metadata.slotId === currentSlotId}
-              isAutoSave={metadata.slotId === 'auto'}
-            />
-          ))}
-        </div>
+        {/* Slots List */}
+        <ScrollView style={styles.slotsList} contentContainerStyle={styles.slotsListContent}>
+          {isLoading && slots.length === 0 ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={theme.accentEvent} />
+              <Text style={[styles.loadingText, { color: theme.textSecondary }]}>{tRuntime('save.loading')}</Text>
+            </View>
+          ) : (
+            slots.map((metadata) => (
+              <View key={metadata.slotId} style={styles.slotCardWrapper}>
+                <SaveSlotCard
+                  metadata={metadata}
+                  onLoad={handleLoad}
+                  onSave={handleSave}
+                  onDelete={handleDelete}
+                  onExport={handleExport}
+                  showTransferActions={ENABLE_SAVE_TRANSFER}
+                  isCurrentSlot={metadata.slotId === currentSlotId}
+                  isAutoSave={metadata.slotId === 'auto'}
+                  theme={theme}
+                />
+              </View>
+            ))
+          )}
+        </ScrollView>
 
-        {/* Import/Export Footer */}
-        <div className="mt-6 pt-4 border-t border-default flex gap-2">
-          <button
-            onClick={() => setShowExportModal(true)}
-            className="flex-1 pressable surface-raised border border-default rounded-lg py-3 flex items-center justify-center gap-2 font-semibold"
-          >
-            <Download className="w-4 h-4" />
-            İçe Aktar
-          </button>
-        </div>
-      </div>
-
-      {/* Export Modal */}
-      {showExportModal && exportSlotId && (
-        <div className="fixed inset-0 z-[110] bg-black/50 backdrop-blur flex items-center justify-center p-4">
-          <div className="ui-modal w-full max-w-lg">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-primary">Kayıt Dışa Aktar</h3>
-              <button
-                onClick={() => {
-                  setShowExportModal(false);
-                  setExportSlotId(null);
-                }}
-                className="pressable surface-raised border border-default rounded-lg p-2"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <p className="text-sm text-secondary mb-4">
-              Export/import işlemleri için SaveExportModal component'i kullanılacak
-            </p>
-            <button
-              onClick={() => {
-                setShowExportModal(false);
+        {ENABLE_SAVE_TRANSFER && (
+          <View style={[styles.footer, { backgroundColor: theme.surfaceRaised, borderTopColor: theme.border }]}>
+            <TouchableOpacity
+              onPress={() => {
                 setExportSlotId(null);
+                setSaveModalTab('import');
+                setShowExportModal(true);
               }}
-              className="w-full pressable accent-event-bg accent-event-border text-white font-bold py-3 rounded-xl"
+              style={[styles.importButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}
+              accessibilityLabel={tRuntime('save.importBtn')}
+              accessibilityRole="button"
             >
-              Kapat
-            </button>
-          </div>
-        </div>
+              <Feather name="download" size={16} color={theme.textPrimary} />
+              <Text style={[styles.importButtonText, { color: theme.textPrimary }]}>{tRuntime('save.importBtn')}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+  const overlay = (
+    <View style={styles.overlayRoot} pointerEvents="box-none">
+      <Pressable style={styles.backdrop} onPress={onClose} />
+      {content}
+    </View>
+  );
+
+  if (Platform.OS === 'android') {
+    return (
+      <>
+        {overlay}
+        {ENABLE_SAVE_TRANSFER && (
+          <SaveExportModal
+            isOpen={showExportModal}
+            onClose={() => {
+              setShowExportModal(false);
+              setExportSlotId(null);
+            }}
+            slotId={exportSlotId ?? undefined}
+            initialTab={saveModalTab}
+            theme={theme}
+          />
+        )}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Modal
+        visible={isOpen}
+        animationType="fade"
+        transparent
+        statusBarTranslucent
+        onRequestClose={onClose}
+      >
+        {overlay}
+      </Modal>
+      {ENABLE_SAVE_TRANSFER && (
+        <SaveExportModal
+          isOpen={showExportModal}
+          onClose={() => {
+            setShowExportModal(false);
+            setExportSlotId(null);
+          }}
+          slotId={exportSlotId ?? undefined}
+          initialTab={saveModalTab}
+          theme={theme}
+        />
       )}
-    </div>
+    </>
   );
 };
+
+const styles = StyleSheet.create({
+  overlayRoot: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    zIndex: 1000,
+    elevation: 1000,
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  modalRoot: {
+    flex: 1,
+    alignItems: 'stretch',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  container: {
+    borderRadius: 16,
+    borderWidth: 1,
+    height: '90%',
+    minHeight: 320,
+    width: '100%',
+    maxWidth: 680,
+    overflow: 'hidden',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(107, 114, 128, 0.3)',
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    marginTop: 4,
+  },
+  closeButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  refreshRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  refreshButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    minHeight: 44,
+  },
+  refreshButtonText: {
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  slotsList: {
+    flex: 1,
+  },
+  slotsListContent: {
+    padding: 16,
+    gap: 12,
+  },
+  slotCardWrapper: {
+    marginBottom: 12,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 48,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 14,
+  },
+  footer: {
+    padding: 16,
+    borderTopWidth: 1,
+  },
+  importButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    minHeight: 48,
+  },
+  importButtonText: {
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  exportContainer: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 20,
+    width: '100%',
+    maxWidth: 680,
+  },
+  exportHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  exportTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  exportDescription: {
+    fontSize: 14,
+    marginBottom: 16,
+  },
+  exportCloseButton: {
+    paddingVertical: 14,
+    borderRadius: 16,
+    alignItems: 'center',
+    minHeight: 48,
+    justifyContent: 'center',
+  },
+  exportCloseButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+});
+
+export default SaveSlotPicker;
+
+

@@ -1,10 +1,13 @@
 import { GameState, Stats } from '../types';
 
-export const SAVE_VERSION = 1;
-export const MAX_FREE_SLOTS = 3;
+export const SAVE_VERSION = 5;
+export const SAVE_SCHEMA_VERSION = 5;
+export const SAVE_EXPORT_VERSION = 5;
+export const MAX_FREE_SLOTS = 6;
 export const MAX_PREMIUM_SLOTS = 3;
 export const MAX_TOTAL_SLOTS = MAX_FREE_SLOTS + MAX_PREMIUM_SLOTS;
 export const AUTO_SAVE_SLOT_ID = 'auto';
+export const MAX_BACKUP_HISTORY = 1;
 
 export type SlotStatus = 'empty' | 'active' | 'corrupted';
 export type SyncStatus = 'synced' | 'syncing' | 'pending' | 'error' | 'offline';
@@ -13,10 +16,25 @@ export interface SaveSlotMetadata {
   slotId: string;
   characterName: string;
   age: number;
+  /** Aktif bölüm numarası (1-6) — Faz 1A */
+  chapter?: number;
+  /** Bölüm adı ('Bebeklik', 'İlkokul' vb.) — Faz 1A */
+  chapterName?: string;
+  /** Seçili hedef adı — Faz 1D */
+  goalName?: string;
   playtime: number;
   lastPlayed: number;
   version: number;
   checksum: string;
+  schemaVersion?: number;
+  saveId?: string;
+  deviceId?: string;
+  revision?: number;
+  clientRevision?: number;
+  createdAt?: number;
+  updatedAt?: number;
+  idempotencyKey?: string;
+  migrationState?: 'pending' | 'migrated' | 'conflict';
   thumbnail?: string;
   status: SlotStatus;
   isPremium: boolean;
@@ -41,6 +59,24 @@ export interface SaveBackup {
   data: SaveSlotData;
 }
 
+export interface SaveExportManifest {
+  manifestVersion: number;
+  slotIds: string[];
+  saveCount: number;
+  backupCount: number;
+  createdAt: number;
+  checksum: string;
+}
+
+export interface SaveExportPackage {
+  exportVersion: number;
+  appVersion: string;
+  exportedAt: number;
+  manifest: SaveExportManifest;
+  saves: SaveSlotData[];
+  backups: SaveBackup[];
+}
+
 export interface CloudSyncState {
   enabled: boolean;
   lastSync: number;
@@ -55,6 +91,7 @@ export interface SaveManagerState {
   lastAutoSave: number;
   cloudSync: CloudSyncState;
   isPremiumUnlocked: boolean;
+  adsDisabled: boolean;
 }
 
 export const EMPTY_SLOT_METADATA: Omit<SaveSlotMetadata, 'slotId' | 'isPremium'> = {
@@ -73,8 +110,8 @@ export const createEmptySlot = (slotId: string, isPremium: boolean = false): Sav
   isPremium,
 });
 
-export const getSlotKey = (slotId: string): string => `@yazgi_save/slot_${slotId}/v${SAVE_VERSION}`;
-export const getMetadataKey = (slotId: string): string => `@yazgi_save/meta_${slotId}/v${SAVE_VERSION}`;
+export const getSlotKey = (slotId: string, version: number = SAVE_VERSION): string => `@yazgi_save/slot_${slotId}/v${version}`;
+export const getMetadataKey = (slotId: string, version: number = SAVE_VERSION): string => `@yazgi_save/meta_${slotId}/v${version}`;
 export const getBackupKey = (slotId: string): string => `@yazgi_save/backup_${slotId}`;
 export const getManagerStateKey = (): string => `@yazgi_save/manager_state`;
 export const getLegacySaveKey = (): string => 'game_save';

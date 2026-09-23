@@ -4,21 +4,18 @@
  * Performans için optimize edilmiş
  */
 
-import React, { ReactNode, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import React, { ReactNode, useCallback, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ViewStyle, Platform } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
   withSpring,
   withSequence,
-  withDelay,
   Easing,
   FadeInDown,
-  FadeOutUp,
-  runOnJS,
 } from 'react-native-reanimated';
-import { triggerHaptic, successHaptic } from './HapticFeedback';
+import { successHaptic } from './HapticFeedback';
 
 export type ToastPosition = 'top' | 'bottom' | 'center';
 
@@ -54,6 +51,20 @@ export const Toast: React.FC<ToastProps> = React.memo(({
   const opacity = useSharedValue(0);
   const scale = useSharedValue(0.8);
   const hasTriggeredHaptic = useRef(false);
+
+  const hideToast = useCallback(() => {
+    translateY.value = withTiming(
+      position === 'top' ? -100 : 100,
+      { duration: 300, easing: Easing.in(Easing.ease) }
+    );
+    opacity.value = withTiming(0, { duration: 300 });
+
+    const timer = setTimeout(() => {
+      onClose?.();
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [onClose, opacity, position, translateY]);
 
   useEffect(() => {
     if (visible) {
@@ -97,21 +108,9 @@ export const Toast: React.FC<ToastProps> = React.memo(({
         hasTriggeredHaptic.current = false;
       };
     }
-  }, [visible]);
-
-  const hideToast = () => {
-    translateY.value = withTiming(
-      position === 'top' ? -100 : 100,
-      { duration: 300, easing: Easing.in(Easing.ease) }
-    );
-    opacity.value = withTiming(0, { duration: 300 });
-
-    const timer = setTimeout(() => {
-      onClose?.();
-    }, 300);
-
-    return () => clearTimeout(timer);
-  };
+    
+    return undefined;
+  }, [animationType, duration, hideToast, opacity, scale, translateY, visible]);
 
   const animatedStyle = useAnimatedStyle(() => {
     const transformArray: any[] = [];
@@ -132,14 +131,15 @@ export const Toast: React.FC<ToastProps> = React.memo(({
     : styles.centerPosition;
 
   return (
-    <Animated.View style={[styles.toastContainer, positionStyle, animatedStyle, style]}>
+    <Animated.View style={[styles.toastContainer, positionStyle, animatedStyle, style]} pointerEvents="none">
       {children}
     </Animated.View>
   );
 }, (prevProps, nextProps) => {
   return prevProps.visible === nextProps.visible &&
          prevProps.position === nextProps.position &&
-         prevProps.animationType === nextProps.animationType;
+         prevProps.animationType === nextProps.animationType &&
+         prevProps.style === nextProps.style;
 });
 
 /**
@@ -180,7 +180,14 @@ export const AchievementToastNative: React.FC<{
         {
           backgroundColor: colors.bg,
           borderColor: colors.border,
-          shadowColor: colors.glow,
+          ...Platform.select({
+            web: {
+              boxShadow: `0 4px 10px ${colors.glow}`,
+            },
+            ios: {
+              shadowColor: colors.glow,
+            },
+          }),
         },
       ])}
     >
@@ -217,11 +224,13 @@ export const MessageToast: React.FC<{
   message: string;
   type?: 'success' | 'error' | 'info' | 'warning';
   onClose?: () => void;
+  style?: ViewStyle;
 }> = React.memo(({
   visible,
   message,
   type = 'info',
   onClose,
+  style,
 }) => {
   const typeColors = {
     success: { bg: '#065f46', border: '#059669', text: '#34d399' },
@@ -244,6 +253,7 @@ export const MessageToast: React.FC<{
           backgroundColor: colors.bg,
           borderColor: colors.border,
         },
+        style,
       ])}
     >
       <Text style={[styles.messageText, { color: colors.text }]}>
@@ -254,7 +264,8 @@ export const MessageToast: React.FC<{
 }, (prevProps, nextProps) => {
   return prevProps.visible === nextProps.visible &&
          prevProps.type === nextProps.type &&
-         prevProps.message === nextProps.message;
+         prevProps.message === nextProps.message &&
+         prevProps.style === nextProps.style;
 });
 
 /**
@@ -271,7 +282,7 @@ export const ProgressToast: React.FC<{
     if (visible) {
       progressWidth.value = withTiming(progress, { duration: 300 });
     }
-  }, [visible, progress]);
+  }, [progress, progressWidth, visible]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     width: `${progressWidth.value}%`,
@@ -296,6 +307,11 @@ export const ProgressToast: React.FC<{
          prevProps.progress === nextProps.progress &&
          prevProps.message === nextProps.message;
 });
+
+Toast.displayName = 'Toast';
+AchievementToastNative.displayName = 'AchievementToastNative';
+MessageToast.displayName = 'MessageToast';
+ProgressToast.displayName = 'ProgressToast';
 
 const styles = StyleSheet.create({
   toastContainer: {
@@ -322,9 +338,16 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderRadius: 12,
     padding: 16,
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 10px rgba(0, 0, 0, 0.5)',
+      },
+      ios: {
+        shadowOpacity: 0.5,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 4 },
+      },
+    }),
   },
   achievementContent: {
     flexDirection: 'row',

@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<instructions>
+  <best_practices>
+    <category name="Component Tasarımı">
+      <practice>
+        <title>Atomik Bileşen Yapısı</title>
+        <description>
+          Bileşenleri Atomic Design prensiplerine göre tasarla:
+        </description>
+        <guidelines>
+          <guideline>Atomlar: En temel bileşenler (Button, Text, Icon)</guideline>
+          <guideline>Moleküller: Atomların birleşimi (SearchBar, CardHeader)</guideline>
+          <guideline>Organizmalar: Moleküllerin birleşimi (Card, ListItem)</guideline>
+          <guideline>Şablonlar: Sayfa düzenleri (ScreenLayout)</guideline>
+        </guidelines>
+      </practice>
+      <practice>
+        <title>TypeScript Prop Tanımları</title>
+        <description>
+          Tüm bileşenlerde açık tip tanımları kullan:
+        </description>
+        <guidelines>
+          <guideline>Interface yerine type kullan (basit prop'lar için)</guideline>
+          <guideline>Optional prop'ları ? ile belirt</guideline>
+          <guideline>Default değerleri sağla</guideline>
+          <guideline>Children prop'u için ReactNode kullan</guideline>
+        </guidelines>
+      </practice>
+      <practice>
+        <title>Performans Optimizasyonu</title>
+        <description>
+          React Native performansını optimize et:
+        </description>
+        <guidelines>
+          <guideline>React.memo kullanarak gereksiz re-render'ları önle</guideline>
+          <guideline>useCallback ile fonksiyon referanslarını stabilize et</guideline>
+          <guideline>useMemo ile hesaplamaları cache'le</guideline>
+          <guideline>FlatList yerine ScrollView'i sadece kısa listeler için kullan</guideline>
+          <guideline>key prop'larını doğru kullan</guideline>
+        </guidelines>
+      </practice>
+    </category>
+    
+    <category name="StyleSheet Performansı">
+      <practice>
+        <title>StyleSheet Optimizasyonu</title>
+        <description>
+          StyleSheet kullanımında performans odaklı yaklaş:
+        </description>
+        <guidelines>
+          <guideline>StyleSheet.create() kullanarak statik stilleri tanımla</guideline>
+          <guideline>Dinamik stilleri useMemo ile cache'le</guideline>
+          <guideline>Inline style kullanımından kaçın (performans düşüşü)</guideline>
+          <guideline>Style prop'larını merge ederken spread operator kullan</guideline>
+        </guidelines>
+      </practice>
+      <practice>
+        <title>Flexbox Layout</title>
+        <description>
+          İleri seviye Flexbox kullanımı:
+        </description>
+        <guidelines>
+          <guideline>justifyContent ve alignItems kombinasyonlarını doğru kullan</guideline>
+          <guideline>flex: 1 yerine flexBasis ve flexGrow kullan</guideline>
+          <guideline>gap prop'unu kullan (React Native 0.71+)</guideline>
+          <guideline>SafeAreaView ile ekran kenarlarını koru</guideline>
+          <guideline>Dimensions API ile responsive değerler hesapla</guideline>
+        </guidelines>
+      </practice>
+    </category>
+    
+    <category name="Expo SDK 52 Standartları">
+      <practice>
+        <title>SDK 52 Özellikleri</title>
+        <description>
+          Expo SDK 52 özelliklerini doğru kullan:
+        </description>
+        <guidelines>
+          <guideline>expo-router kullanarak dosya tabanlı routing</guideline>
+          <guideline>expo-constants ile uygulama bilgilerine eriş</guideline>
+          <guideline>expo-status-bar ile status bar yönetimi</guideline>
+          <guideline>expo-linear-gradient ile gradyanlar</guideline>
+          <guideline>expo-haptics ile haptic feedback</guideline>
+        </guidelines>
+      </practice>
+      <practice>
+        <title>React Native 18 Özellikleri</title>
+        <description>
+          React Native 18 özelliklerinden yararlan:
+        </description>
+        <guidelines>
+          <guideline>Concurrent Rendering özelliklerini kullan</guideline>
+          <guideline>useTransition ve useDeferredValue ile performans iyileştirme</guideline>
+          <guideline>Strict Mode ile potansiyel sorunları tespit et</guideline>
+          <guideline>useId ile benzersiz ID'ler oluştur</guideline>
+        </guidelines>
+      </practice>
+    </category>
+    
+    <category name="Erişilebilirlik">
+      <practice>
+        <title>Accessibility Özellikleri</title>
+        <description>
+          Erişilebilirlik standartlarını uygula:
+        </description>
+        <guidelines>
+          <guideline>accessibilityLabel ile ekran okuyucular için açıklama ekle</guideline>
+          <guideline>accessibilityHint ile ek eylem bilgisi ver</guideline>
+          <guideline>accessibilityRole ile bileşen rolünü belirt</guideline>
+          <guideline>accessibilityState ile bileşen durumunu tanımla</guideline>
+          <guideline>minimumTouchTarget ile dokunma alanını optimize et</guideline>
+        </guidelines>
+      </practice>
+    </category>
+    
+    <category name="Yazgı Projesi Özelinde">
+      <practice>
+        <title>Atmosfer ve Tasarım Dili</title>
+        <description>
+          Yazgı'nın yerel ve samimi atmosferini koru:
+        </description>
+        <guidelines>
+          <guideline>Renk paletini tutarlı kullan</guideline>
+          <guideline>Font ailelerini ve boyutlarını standartlaştır</guideline>
+          <guideline>Animasyonları yumuşak ve doğal tut</guideline>
+          <guideline>UI elementlerini minimal ve temiz tasarla</guideline>
+          <guideline>Oyun akışını bozmayan, kullanıcı dostu arayüzler oluştur</guideline>
+        </guidelines>
+      </practice>
+    </category>
+  </best_practices>
+</instructions>

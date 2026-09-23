@@ -579,13 +579,27 @@ export const AGE_PROGRESSION = {
   /** 0-6: Her 2 tur yaş artar */
   youngAgeTurnPeriod: 2,
   youngAgeMax: 6,
-  
+
   /** 7-18: Her 5 tur yaş artar */
   normalAgeTurnPeriod: 5,
-  
+
   /** Maksimum oyun yaşı */
   maxGameAge: 18,
 } as const;
+
+// ============================================================================
+// SECTION 19B: BÖLÜM (CHAPTER) SİSTEMİ
+// ============================================================================
+export const CHAPTERS = [
+  { id: 1, name: 'Bebeklik',  emoji: '🍼', ageStart: 0,  ageEnd: 3  },
+  { id: 2, name: 'Çocukluk', emoji: '🧸', ageStart: 4,  ageEnd: 6  },
+  { id: 3, name: 'İlkokul',  emoji: '📚', ageStart: 7,  ageEnd: 10 },
+  { id: 4, name: 'Ortaokul', emoji: '🎒', ageStart: 11, ageEnd: 13 },
+  { id: 5, name: 'Lise',     emoji: '🎓', ageStart: 14, ageEnd: 16 },
+  { id: 6, name: 'Son Yıl',  emoji: '🌟', ageStart: 17, ageEnd: 18 },
+] as const;
+
+export type ChapterData = typeof CHAPTERS[number];
 
 // ============================================================================
 // SECTION 20: SAKARLIQ ÖZELLİĞİ
@@ -650,6 +664,75 @@ export const TURN_MECHANICS = {
   /** Türkçe "Turn" karşılığı */
   turnName: "Tur",
 } as const;
+
+
+// ============================================================================
+// SECTION 24: ENERJI RECOVERY (Phase 2A)
+// ============================================================================
+export const ENERGY_RECOVERY = {
+  babyPhaseFullRecovery: true,
+  youngRecoveryRate: 0.8, // 7-11 yas
+  teenRecoveryRate: 0.65, // 12-17 yas
+  youngAgeThreshold: 12,
+} as const;
+
+// ============================================================================
+// SECTION 25: CESITLILIK BONUSU (Phase 2B)
+// ============================================================================
+export const VARIETY_BONUS_CONFIG = {
+  windowSize: 5,
+  minCategories: 3,
+  statBonus: 3,
+} as const;
+
+// ============================================================================
+// SECTION 26: TEKRAR CEZASI (Phase 2C)
+// ============================================================================
+export const REPETITION_PENALTY_CONFIG = {
+  penaltyPerRepeat: 0.1, // +%10
+  maxPenalty: 0.4, // +%40 cap
+  windowSize: 5,
+} as const;
+
+// ============================================================================
+// SECTION 27: CONSUMABLE ITEMLAR (Phase 4)
+// ============================================================================
+export const CONSUMABLE_CONFIG = {
+  energyDrink: { base: 80, effect: 15, cooldownTurns: 2, maxPerTurn: 2 },
+  tutorSession: { base: 200, gradeBoost: 5, cooldownTurns: 3, maxPerTurn: 1 },
+  gymPass: { base: 150, healthPerTurn: 3, duration: 3, maxStack: 1 },
+  fashionOutfit: { base: 250, charismaBoost: 5, duration: 5, maxStack: 1 },
+  investment: {
+    base: 500,
+    returnAmount: 650,
+    duration: 10,
+    maxActive: 1,
+    earlyExitRule: 'PARTIAL_REFUND' as const,
+  },
+} as const;
+
+// ============================================================================
+// SECTION 28: BUFF SISTEMI (Phase 4B)
+// ============================================================================
+export const BUFF_RULES = {
+  maxActiveBuffs: 3,
+  sameTypePriority: 'REPLACE' as const, // REPLACE | STACK | REJECT
+  investmentMaxActive: 1,
+} as const;
+// ============================================================================
+// SECTION 29: POWER BUDGET (Cross-Phase)
+// ============================================================================
+export const POWER_BUDGET = {
+  /** Tek bir run boyunca kazanilabilecek toplam net stat artisi */
+  maxNetStatGainPerRun: 420,
+  /** 7 yas sonrasi gunluk (turn basina) max net stat kazanimi */
+  maxDailyNetGainAfterAge7: 12,
+  /** Bu esik sonrasi diminishing returns baslar (stat bazinda) */
+  diminishingStartPerStat: 70,
+  /** Esik sonrasi kazanim carpani (0.50 = yarim etki) */
+  diminishingFactor: 0.50,
+} as const;
+
 
 // ============================================================================
 // HELPER FUNCTIONS (Formula Generator'lar)
@@ -805,6 +888,12 @@ export const GAME_BALANCE_CONFIG = {
   GRADE_THRESHOLDS,
   FAMILY_REACTION_EFFECTS,
   TURN_MECHANICS,
+  ENERGY_RECOVERY,
+  VARIETY_BONUS_CONFIG,
+  REPETITION_PENALTY_CONFIG,
+  CONSUMABLE_CONFIG,
+  BUFF_RULES,
+  POWER_BUDGET,
 } as const;
 
 export default GAME_BALANCE_CONFIG;

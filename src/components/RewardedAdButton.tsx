@@ -1,159 +1,251 @@
-import React, { useState } from 'react';
-import { Zap, Brain, DollarSign, Video } from 'lucide-react';
-import { showRewardedAd, getRemainingRewardedAds } from '../services/monetization';
-import { Stats } from '../types';
+import React, { useMemo, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { getRemainingRewardedAds, showRewardedAd } from '../services/monetization';
+import { logRewardedAdRequested, logRewardedAdResult } from '../utils/analyticsEvents';
+import type { MonetizationPlacement } from '../utils/analyticsEvents';
+import { tRuntime } from '../i18n/strings';
 
 interface RewardedAdButtonProps {
   onRewardClaimed: (reward: { type: 'energy' | 'intelligence' | 'money'; amount: number }) => void;
   currentEnergy: number;
   disabled?: boolean;
+  placement?: MonetizationPlacement;
+  theme: {
+    surfaceBase: string;
+    textPrimary: string;
+    textSecondary: string;
+    border: string;
+  };
 }
 
-export const RewardedAdButton: React.FC<RewardedAdButtonProps> = ({ 
-  onRewardClaimed, 
+type RewardPlan = {
+  rewardType: 'energy' | 'intelligence' | 'money';
+  icon: keyof typeof Feather.glyphMap;
+  accent: string;
+  label: string;
+};
+
+const resolveRewardPlan = (placement: MonetizationPlacement, currentEnergy: number): RewardPlan => {
+  if (placement === 'exam_prep') {
+    return {
+      rewardType: 'intelligence',
+      icon: 'cpu',
+      accent: '#3b82f6',
+      label: tRuntime('ads.intelligenceTitle', undefined, 'Odak Bonusu'),
+    };
+  }
+
+  if (placement === 'energy_depleted') {
+    return {
+      rewardType: 'energy',
+      icon: 'zap',
+      accent: '#16a34a',
+      label: tRuntime('ads.energyTitle', undefined, 'Enerji Kazan'),
+    };
+  }
+
+  if (placement === 'crisis_recovery' || placement === 'ending_alternative' || placement === 'undo_choice') {
+    return {
+      rewardType: 'money',
+      icon: 'shield',
+      accent: '#f59e0b',
+      label: tRuntime('ads.utilityReward', undefined, 'Avantaj Kazan'),
+    };
+  }
+
+  return currentEnergy < 30
+    ? {
+      rewardType: 'energy',
+      icon: 'zap',
+      accent: '#16a34a',
+      label: tRuntime('ads.energyTitle', undefined, 'Enerji Kazan'),
+    }
+    : {
+      rewardType: 'intelligence',
+      icon: 'cpu',
+      accent: '#3b82f6',
+      label: tRuntime('ads.intelligenceTitle', undefined, 'Odak Bonusu'),
+    };
+};
+
+export const RewardedAdButton: React.FC<RewardedAdButtonProps> = ({
+  onRewardClaimed,
   currentEnergy,
-  disabled 
+  disabled,
+  placement = 'unknown',
+  theme,
 }) => {
-  const [showOptions, setShowOptions] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const remainingAds = getRemainingRewardedAds();
 
-  const handleWatchAd = async (rewardType: 'energy' | 'intelligence' | 'money') => {
+  const plan = useMemo(
+    () => resolveRewardPlan(placement, currentEnergy),
+    [placement, currentEnergy]
+  );
+
+  const handleWatchAd = async () => {
+    const remainingBefore = getRemainingRewardedAds();
+
     try {
       setLoading(true);
       setError(null);
-      setShowOptions(false);
+      void logRewardedAdRequested({
+        placement,
+        rewardType: plan.rewardType,
+        remainingBefore,
+      });
 
-      const result = await showRewardedAd(rewardType);
+      const result = await showRewardedAd(plan.rewardType);
+      const remainingAfter = getRemainingRewardedAds();
 
       if (result.success && result.reward) {
         onRewardClaimed(result.reward);
-      } else {
-        setError(result.error || 'Reklam gösterilemedi');
-        setTimeout(() => setError(null), 3000);
+        void logRewardedAdResult({
+          placement,
+          rewardType: plan.rewardType,
+          success: true,
+          amount: result.reward.amount,
+          remainingAfter,
+        });
+        return;
       }
+
+      const errorMessage = result.error || tRuntime('ads.adFailed', undefined, 'Reklam gosterilemedi');
+      setError(errorMessage);
+      void logRewardedAdResult({
+        placement,
+        rewardType: plan.rewardType,
+        success: false,
+        remainingAfter,
+        errorMessage,
+      });
+      setTimeout(() => setError(null), 3000);
     } catch (err: any) {
-      setError(err.message || 'Bir hata oluştu');
+      const errorMessage = err?.message || tRuntime('ads.adError', undefined, 'Reklam hatasi');
+      setError(errorMessage);
+      void logRewardedAdResult({
+        placement,
+        rewardType: plan.rewardType,
+        success: false,
+        remainingAfter: getRemainingRewardedAds(),
+        errorMessage,
+      });
       setTimeout(() => setError(null), 3000);
     } finally {
       setLoading(false);
     }
   };
 
-  const isEnergyLow = currentEnergy < 30;
+  const isDisabled = Boolean(disabled) || loading || remainingAds === 0;
 
   return (
-    <div className="relative">
-      {/* Main Button */}
-      <button
-        onClick={() => setShowOptions(!showOptions)}
-        disabled={disabled || loading || remainingAds === 0}
-        className="pressable bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed relative"
+    <View style={styles.container}>
+      <TouchableOpacity
+        onPress={handleWatchAd}
+        disabled={isDisabled}
+        style={[
+          styles.mainButton,
+          {
+            backgroundColor: `${plan.accent}22`,
+            borderColor: plan.accent,
+          },
+          isDisabled && styles.mainButtonDisabled,
+        ]}
+        accessibilityLabel={tRuntime('ads.watchAdAria')}
+        accessibilityRole="button"
+        accessibilityHint={tRuntime('ads.watchAdHint')}
       >
-        <Video className="w-5 h-5" />
-        <span className="text-sm">Reklam İzle</span>
-        {remainingAds > 0 && (
-          <span className="absolute -top-2 -right-2 bg-yellow-500 text-black text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-            {remainingAds}
-          </span>
-        )}
-      </button>
+        <View style={[styles.iconWrap, { backgroundColor: plan.accent }]}>
+          <Feather name={plan.icon} size={16} color="#ffffff" />
+        </View>
 
-      {/* Error Message */}
+        <View style={styles.textWrap}>
+          <Text style={[styles.mainButtonText, { color: theme.textPrimary }]}>
+            {loading
+              ? tRuntime('ads.loading', undefined, 'Yukleniyor...')
+              : tRuntime('ads.watchAdForReward', undefined, 'Reklam Izle')} {plan.label}
+          </Text>
+          <Text style={[styles.subText, { color: theme.textSecondary }]}>
+            {tRuntime('ads.remaining', { remaining: remainingAds }, `${remainingAds} hak kaldi`)}
+          </Text>
+        </View>
+
+        <View style={[styles.badge, { borderColor: theme.border, backgroundColor: theme.surfaceBase }]}>
+          <Text style={[styles.badgeText, { color: theme.textPrimary }]}>{remainingAds}</Text>
+        </View>
+      </TouchableOpacity>
+
       {error && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-red-500/20 border border-red-500/50 text-red-200 text-xs px-3 py-2 rounded-lg z-50">
-          {error}
-        </div>
+        <View style={[styles.errorContainer, { borderColor: '#ef4444' }]}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
       )}
-
-      {/* Options Dropdown */}
-      {showOptions && remainingAds > 0 && (
-        <div className="absolute top-full left-0 mt-2 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-50 min-w-[280px] overflow-hidden animate-scale-in">
-          <div className="p-3 bg-gradient-to-r from-purple-900 to-pink-900 border-b border-gray-700">
-            <p className="text-xs text-white font-semibold">Reklam izleyerek ödül kazan!</p>
-            <p className="text-xs text-purple-200 mt-1">Kalan: {remainingAds}/5</p>
-          </div>
-
-          <div className="p-2 space-y-1">
-            {/* Energy Reward */}
-            <button
-              onClick={() => handleWatchAd('energy')}
-              disabled={loading}
-              className={`pressable w-full flex items-center gap-3 p-3 rounded-lg transition-all ${
-                isEnergyLow 
-                  ? 'bg-green-600/30 hover:bg-green-600/40 border border-green-500/50' 
-                  : 'hover:bg-gray-800'
-              }`}
-            >
-              <div className="p-2 bg-green-500 rounded-lg">
-                <Zap className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex-1 text-left">
-                <div className="font-bold text-sm text-white">+20 Enerji</div>
-                <div className="text-xs text-gray-400">Enerjini doldur</div>
-              </div>
-              {isEnergyLow && (
-                <span className="text-xs bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded-full">
-                  Önerilen
-                </span>
-              )}
-            </button>
-
-            {/* Intelligence Reward */}
-            <button
-              onClick={() => handleWatchAd('intelligence')}
-              disabled={loading}
-              className="pressable w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-all"
-            >
-              <div className="p-2 bg-blue-500 rounded-lg">
-                <Brain className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex-1 text-left">
-                <div className="font-bold text-sm text-white">+10 Zeka</div>
-                <div className="text-xs text-gray-400">Zekanı artır</div>
-              </div>
-            </button>
-
-            {/* Money Reward */}
-            <button
-              onClick={() => handleWatchAd('money')}
-              disabled={loading}
-              className="pressable w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-all"
-            >
-              <div className="p-2 bg-yellow-500 rounded-lg">
-                <DollarSign className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex-1 text-left">
-                <div className="font-bold text-sm text-white">+100 TL</div>
-                <div className="text-xs text-gray-400">Para kazan</div>
-              </div>
-            </button>
-          </div>
-
-          <div className="p-2 border-t border-gray-700">
-            <button
-              onClick={() => setShowOptions(false)}
-              className="pressable w-full py-2 text-xs text-gray-400 hover:text-white"
-            >
-              İptal
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* No Ads Remaining */}
-      {showOptions && remainingAds === 0 && (
-        <div className="absolute top-full left-0 mt-2 bg-gray-900 border border-gray-700 rounded-xl p-4 z-50 min-w-[280px] animate-scale-in">
-          <div className="text-center">
-            <div className="text-4xl mb-2">🎬</div>
-            <p className="text-sm font-bold text-white mb-1">Günlük limit doldu</p>
-            <p className="text-xs text-gray-400">Yarın tekrar reklam izleyebilirsin!</p>
-          </div>
-        </div>
-      )}
-    </div>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    position: 'relative',
+  },
+  mainButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minHeight: 48,
+  },
+  mainButtonDisabled: {
+    opacity: 0.55,
+  },
+  iconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  textWrap: {
+    flex: 1,
+  },
+  mainButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  subText: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  badge: {
+    minWidth: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  errorContainer: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.14)',
+  },
+  errorText: {
+    color: '#fecaca',
+    fontSize: 12,
+  },
+});
 
 export default RewardedAdButton;

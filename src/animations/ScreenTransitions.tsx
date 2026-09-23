@@ -4,24 +4,8 @@
  * Performans için optimize edilmiş
  */
 
-import React, { ReactNode, useRef } from 'react';
+import React, { ReactNode } from 'react';
 import { View, StyleSheet } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withSequence,
-  FadeInDown,
-  FadeInUp,
-  FadeInLeft,
-  FadeInRight,
-  FadeOutDown,
-  FadeOutUp,
-  FadeOutLeft,
-  FadeOutRight,
-  FadeIn,
-  FadeOut,
-} from 'react-native-reanimated';
 
 export type TransitionType = 
   | 'fade'
@@ -114,12 +98,12 @@ export const ScreenTransition: React.FC<ScreenTransitionProps> = React.memo(({
 
 /**
  * Fade In Down animasyonu
+ * NOT: children her zaman yeniden render edilmeli, memo kaldırıldı
  */
-export const FadeInDownView: React.FC<{ children: ReactNode; delay?: number }> = React.memo(({
+export const FadeInDownView: React.FC<{ children: ReactNode; delay?: number }> = ({
   children,
   delay = 0,
 }) => {
-  console.log('[FadeInDownView] Rendering...', { delay });
   const [opacity, setOpacity] = React.useState(0);
 
   React.useEffect(() => {
@@ -134,18 +118,16 @@ export const FadeInDownView: React.FC<{ children: ReactNode; delay?: number }> =
       {children}
     </View>
   );
-}, (prevProps, nextProps) => {
-  return prevProps.delay === nextProps.delay;
-});
+};
 
 /**
  * Fade In Up animasyonu
+ * NOT: children her zaman yeniden render edilmeli, memo kaldırıldı
  */
-export const FadeInUpView: React.FC<{ children: ReactNode; delay?: number }> = React.memo(({
+export const FadeInUpView: React.FC<{ children: ReactNode; delay?: number }> = ({
   children,
   delay = 0,
 }) => {
-  console.log('[FadeInUpView] Rendering...', { delay });
   const [opacity, setOpacity] = React.useState(0);
 
   React.useEffect(() => {
@@ -160,9 +142,7 @@ export const FadeInUpView: React.FC<{ children: ReactNode; delay?: number }> = R
       {children}
     </View>
   );
-}, (prevProps, nextProps) => {
-  return prevProps.delay === nextProps.delay;
-});
+};
 
 /**
  * Fade In Left animasyonu
@@ -230,16 +210,19 @@ export const FadeView: React.FC<{ children: ReactNode; visible?: boolean }> = Re
   return prevProps.visible === nextProps.visible;
 });
 
+ScreenTransition.displayName = 'ScreenTransition';
+FadeInLeftView.displayName = 'FadeInLeftView';
+FadeInRightView.displayName = 'FadeInRightView';
+FadeView.displayName = 'FadeView';
+
 /**
  * Staggered (kademeli) fade in animasyonu
  * Çocukları sırayla animasyonla gösterir
  */
 export const StaggeredFadeIn: React.FC<{
   children: ReactNode[];
-  staggerDelay?: number;
 }> = ({
   children,
-  staggerDelay = 100
 }) => {
   return (
     <View style={styles.container}>

@@ -1,10 +1,19 @@
-import { useState, useEffect, useCallback } from 'react';
-import { UnlockedAchievement, Stats, GameState, Skills, SchoolGrades } from '../types';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import type {
+  AchievementReward,
+  GameState,
+  SchoolGrades,
+  Skills,
+  Stats,
+  UnlockedAchievement,
+} from '../types';
 import { 
   loadAchievements, 
   checkAllAchievements, 
   applyAchievementReward,
   getAchievementStats,
+  resetAchievements,
+  saveAchievements,
 } from '../systems/achievementSystem';
 import { ACHIEVEMENTS, getAchievement } from '../systems/achievementDefinitions';
 
@@ -14,6 +23,8 @@ interface UseAchievementsReturn {
   checkAchievements: () => Promise<string[]>;
   isUnlocked: (achievementId: string) => boolean;
   getProgress: (achievementId: string) => number;
+  applyRewardsToStats: (currentStats: Stats, rewards: (AchievementReward | undefined)[]) => Stats;
+  totalAchievements: number;
   loading: boolean;
 }
 
@@ -22,49 +33,128 @@ export const useAchievements = (
   gameState: GameState,
   skills: Skills,
   grades: SchoolGrades,
-  onUnlock?: (achievementIds: string[], rewards: any[]) => void
+  onUnlock?: (achievementIds: string[], rewards: (AchievementReward | undefined)[]) => void
 ): UseAchievementsReturn => {
   const [unlockedAchievements, setUnlockedAchievements] = useState<UnlockedAchievement[]>([]);
   const [loading, setLoading] = useState(true);
+  const unlockedAchievementsRef = useRef<UnlockedAchievement[]>([]);
+  const checkInFlightRef = useRef<Promise<string[]> | null>(null);
+  const statsRef = useRef(stats);
+  const gameStateRef = useRef(gameState);
+  const skillsRef = useRef(skills);
+  const gradesRef = useRef(grades);
+  const onUnlockRef = useRef(onUnlock);
 
-  // Load unlocked achievements on mount
+  const savedList = useMemo(
+    () => gameState.unlockedAchievements || [],
+    [gameState.unlockedAchievements]
+  );
+  const isFreshGame = gameState.turn <= 1 && gameState.age <= 1 && savedList.length === 0;
+
   useEffect(() => {
+    unlockedAchievementsRef.current = unlockedAchievements;
+  }, [unlockedAchievements]);
+
+  useEffect(() => {
+    statsRef.current = stats;
+    gameStateRef.current = gameState;
+    skillsRef.current = skills;
+    gradesRef.current = grades;
+    onUnlockRef.current = onUnlock;
+  }, [stats, gameState, skills, grades, onUnlock]);
+
+  // Load/sync unlocked achievements (prefer save data, reset on fresh game)
+  useEffect(() => {
+    let cancelled = false;
+
     const load = async () => {
-      const loaded = await loadAchievements();
-      setUnlockedAchievements(loaded);
-      setLoading(false);
+      try {
+        if (savedList.length > 0) {
+          if (!cancelled) {
+            unlockedAchievementsRef.current = savedList;
+            setUnlockedAchievements(savedList);
+            setLoading(false);
+          }
+          void saveAchievements(savedList);
+          return;
+        }
+
+        if (isFreshGame) {
+          await resetAchievements();
+          if (!cancelled) {
+            unlockedAchievementsRef.current = [];
+            setUnlockedAchievements([]);
+            setLoading(false);
+          }
+          return;
+        }
+
+        const loaded = await loadAchievements();
+        if (!cancelled) {
+          unlockedAchievementsRef.current = loaded;
+          setUnlockedAchievements(loaded);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Achievement load failed:', error);
+        if (!cancelled) {
+          unlockedAchievementsRef.current = [];
+          setUnlockedAchievements([]);
+          setLoading(false);
+        }
+      }
     };
-    load();
-  }, []);
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isFreshGame, savedList]);
 
   // Check all achievements
   const checkAchievements = useCallback(async (): Promise<string[]> => {
-    const newlyUnlocked = await checkAllAchievements(
-      stats,
-      gameState,
-      skills,
-      grades,
-      unlockedAchievements
-    );
-
-    if (newlyUnlocked.length > 0) {
-      setUnlockedAchievements(prev => [...prev, ...newlyUnlocked]);
-      
-      // Extract rewards
-      const rewards = newlyUnlocked.map(ua => {
-        const achievement = getAchievement(ua.achievementId);
-        return achievement?.reward;
-      }).filter(Boolean);
-
-      if (onUnlock) {
-        onUnlock(newlyUnlocked.map(a => a.achievementId), rewards);
-      }
-
-      return newlyUnlocked.map(a => a.achievementId);
+    if (checkInFlightRef.current) {
+      return checkInFlightRef.current;
     }
 
-    return [];
-  }, [stats, gameState, skills, grades, unlockedAchievements, onUnlock]);
+    const pendingCheck = (async (): Promise<string[]> => {
+      const currentUnlocked = unlockedAchievementsRef.current;
+      const newlyUnlocked = await checkAllAchievements(
+        statsRef.current,
+        gameStateRef.current,
+        skillsRef.current,
+        gradesRef.current,
+        currentUnlocked
+      );
+
+      if (newlyUnlocked.length > 0) {
+        const nextUnlocked = [...currentUnlocked, ...newlyUnlocked];
+        unlockedAchievementsRef.current = nextUnlocked;
+        setUnlockedAchievements(nextUnlocked);
+
+        const rewards = newlyUnlocked.map(ua => {
+          const achievement = getAchievement(ua.achievementId);
+          return achievement?.reward;
+        }).filter(Boolean);
+
+        if (onUnlockRef.current) {
+          onUnlockRef.current(newlyUnlocked.map(a => a.achievementId), rewards);
+        }
+
+        return newlyUnlocked.map(a => a.achievementId);
+      }
+
+      return [];
+    })();
+
+    checkInFlightRef.current = pendingCheck;
+    return pendingCheck.finally(() => {
+      if (checkInFlightRef.current === pendingCheck) {
+        checkInFlightRef.current = null;
+      }
+    });
+  }, []);
 
   // Check if achievement is unlocked
   const isUnlocked = useCallback((achievementId: string): boolean => {
@@ -91,7 +181,22 @@ export const useAchievements = (
     return 0;
   }, [stats, gameState, skills, grades, isUnlocked]);
 
+  // Apply rewards to stats
+  const applyRewardsToStats = useCallback((
+    currentStats: Stats,
+    rewards: (AchievementReward | undefined)[]
+  ): Stats => {
+    let newStats = { ...currentStats };
+    rewards.forEach(reward => {
+      if (reward) {
+        newStats = applyAchievementReward(newStats, reward);
+      }
+    });
+    return newStats;
+  }, []);
+
   const achievementStats = getAchievementStats(unlockedAchievements);
+  const totalAchievements = ACHIEVEMENTS.length;
 
   return {
     unlockedAchievements,
@@ -99,6 +204,8 @@ export const useAchievements = (
     checkAchievements,
     isUnlocked,
     getProgress,
+    applyRewardsToStats,
+    totalAchievements,
     loading,
   };
 };

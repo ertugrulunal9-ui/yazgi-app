@@ -1,34 +1,64 @@
-import React, { useState } from 'react';
-import { X, Download, Upload, Copy, QrCode, FileJson, Check } from 'lucide-react';
+import React, { useCallback, useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, TextInput, ScrollView, Modal, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import QRCode from 'react-native-qrcode-svg';
 import SaveManager from '../save/SaveManager';
-import { copyToClipboard, readFromClipboard, downloadFile, readFile, generateQRCode } from '../utils/saveUtils';
+import { copyToClipboard, readFromClipboard, downloadFile, readFile } from '../utils/saveUtils';
 import { getCurrentSlotId } from '../utils/gameUtils';
+import { tRuntime } from '../i18n/strings';
 
 interface SaveExportModalProps {
   isOpen: boolean;
   onClose: () => void;
+  slotId?: string;
+  initialTab?: 'export' | 'import';
+  theme: {
+    appBg: string;
+    surfaceBase: string;
+    surfaceRaised: string;
+    textPrimary: string;
+    textSecondary: string;
+    border: string;
+    accentEvent: string;
+  };
 }
 
 export const SaveExportModal: React.FC<SaveExportModalProps> = ({
   isOpen,
   onClose,
+  slotId,
+  initialTab = 'export',
+  theme,
 }) => {
-  const [slotId, setSlotId] = useState<string>(getCurrentSlotId());
-  const [activeTab, setActiveTab] = useState<'export' | 'import'>('export');
+  const insets = useSafeAreaInsets();
+  const resolvedSlotId = slotId ?? getCurrentSlotId();
+  const [activeTab, setActiveTab] = useState<'export' | 'import'>(initialTab);
   const [exportData, setExportData] = useState<string | null>(null);
-  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [showQRCode, setShowQRCode] = useState(false);
   const [copiedToClipboard, setCopiedToClipboard] = useState(false);
   const [importData, setImportData] = useState<string>('');
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
-  const handleExport = async () => {
-    const data = await SaveManager.exportSlot(slotId);
+  const handleExport = useCallback(async () => {
+    const data = await SaveManager.exportSlot(resolvedSlotId);
     if (data) {
       setExportData(data);
-      const qrUrl = generateQRCode(data);
-      setQrCodeUrl(qrUrl);
     }
-  };
+  }, [resolvedSlotId]);
+
+  const handleGenerateQRCode = useCallback(async () => {
+    if (exportData) {
+      setShowQRCode(true);
+      return;
+    }
+
+    const data = await SaveManager.exportSlot(resolvedSlotId);
+    if (!data) return;
+
+    setExportData(data);
+    setShowQRCode(true);
+  }, [exportData, resolvedSlotId]);
 
   const handleCopyToClipboard = async () => {
     if (!exportData) return;
@@ -41,7 +71,7 @@ export const SaveExportModal: React.FC<SaveExportModalProps> = ({
 
   const handleDownloadJSON = () => {
     if (!exportData) return;
-    const filename = `yazgi_save_slot${slotId}_${Date.now()}.json`;
+    const filename = `yazgi_save_slot${resolvedSlotId}_${Date.now()}.json`;
     downloadFile(filename, exportData);
   };
 
@@ -61,203 +91,476 @@ export const SaveExportModal: React.FC<SaveExportModalProps> = ({
 
   const handleImport = async () => {
     if (!importData.trim()) return;
-    
+
     try {
-      const success = await SaveManager.importSlot(slotId, importData);
+      const success = await SaveManager.importSlot(resolvedSlotId, importData);
       setImportStatus(success ? 'success' : 'error');
       if (success) {
         setTimeout(() => {
           onClose();
         }, 1500);
       }
-    } catch (error) {
+    } catch {
       setImportStatus('error');
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
+    if (!isOpen) return;
+    setActiveTab(initialTab);
+  }, [isOpen, initialTab]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setExportData(null);
+    setShowQRCode(false);
+    setCopiedToClipboard(false);
+    setImportStatus('idle');
+  }, [isOpen, resolvedSlotId]);
+
+  useEffect(() => {
     if (isOpen && activeTab === 'export' && !exportData) {
-      handleExport();
+      void handleExport();
     }
-  }, [isOpen, activeTab]);
+  }, [isOpen, activeTab, exportData, handleExport]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[110] bg-black/70 backdrop-blur flex items-center justify-center p-4 animate-fade-in">
-      <div className="ui-modal w-full max-w-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-primary">Kayıt İçe/Dışa Aktar</h2>
-          <button
-            onClick={onClose}
-            className="pressable surface-raised border border-default rounded-lg p-2"
-          >
-            <X className="icon-density" />
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6">
-          <button
-            onClick={() => setActiveTab('export')}
-            className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-colors ${
-              activeTab === 'export'
-                ? 'accent-event-bg accent-event-border text-white'
-                : 'surface-raised border border-default'
-            }`}
-          >
-            <Download className="w-4 h-4 inline-block mr-2" />
-            Dışa Aktar
-          </button>
-          <button
-            onClick={() => setActiveTab('import')}
-            className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-colors ${
-              activeTab === 'import'
-                ? 'accent-event-bg accent-event-border text-white'
-                : 'surface-raised border border-default'
-            }`}
-          >
-            <Upload className="w-4 h-4 inline-block mr-2" />
-            İçe Aktar
-          </button>
-        </div>
-
-        {/* Export Tab */}
-        {activeTab === 'export' && (
-          <div className="space-y-4">
-            <p className="text-sm text-secondary">
-              Kayıt dosyanı JSON formatında dışa aktar, panoya kopyala veya QR kod ile paylaş.
-            </p>
-
-            {/* Export Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <button
-                onClick={handleCopyToClipboard}
-                disabled={!exportData}
-                className="pressable surface-raised border border-default rounded-lg py-4 flex flex-col items-center gap-2 disabled:opacity-50"
-              >
-                {copiedToClipboard ? (
-                  <>
-                    <Check className="w-6 h-6 text-green-500" />
-                    <span className="font-semibold text-green-500">Kopyalandı!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-6 h-6" />
-                    <span className="font-semibold">Panoya Kopyala</span>
-                  </>
-                )}
-              </button>
-
-              <button
-                onClick={handleDownloadJSON}
-                disabled={!exportData}
-                className="pressable surface-raised border border-default rounded-lg py-4 flex flex-col items-center gap-2 disabled:opacity-50"
-              >
-                <FileJson className="w-6 h-6" />
-                <span className="font-semibold">JSON İndir</span>
-              </button>
-
-              <button
-                onClick={handleExport}
-                disabled={!exportData}
-                className="pressable surface-raised border border-default rounded-lg py-4 flex flex-col items-center gap-2 disabled:opacity-50"
-              >
-                <QrCode className="w-6 h-6" />
-                <span className="font-semibold">QR Kod</span>
-              </button>
-            </div>
-
-            {/* QR Code Display */}
-            {qrCodeUrl && (
-              <div className="surface-raised border border-default rounded-xl p-6 flex flex-col items-center">
-                <p className="text-sm text-secondary mb-4">QR Kodu Tara:</p>
-                <img src={qrCodeUrl} alt="Save QR Code" className="w-48 h-48 rounded-lg" />
-                <p className="text-xs text-gray-500 mt-4 text-center">
-                  Bu QR kodu tarayarak kayıt dosyasını başka cihaza aktarabilirsin
-                </p>
-              </div>
-            )}
-
-            {/* Export Data Preview */}
-            {exportData && (
-              <div className="surface-raised border border-default rounded-xl p-4">
-                <p className="text-xs text-gray-400 mb-2">JSON Önizleme:</p>
-                <pre className="text-xs text-secondary overflow-x-auto max-h-32 p-3 bg-black/30 rounded-lg">
-                  {exportData.substring(0, 500)}...
-                </pre>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Import Tab */}
-        {activeTab === 'import' && (
-          <div className="space-y-4">
-            <p className="text-sm text-secondary">
-              Dışa aktarılan kayıt dosyasını JSON veya panodan içe aktar.
-            </p>
-
-            {/* Import Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <button
-                onClick={handlePasteFromClipboard}
-                className="pressable surface-raised border border-default rounded-lg py-4 flex flex-col items-center gap-2"
-              >
-                <Copy className="w-6 h-6" />
-                <span className="font-semibold">Panodan Yapıştır</span>
-              </button>
-
-              <button
-                onClick={handleImportFromFile}
-                className="pressable surface-raised border border-default rounded-lg py-4 flex flex-col items-center gap-2"
-              >
-                <FileJson className="w-6 h-6" />
-                <span className="font-semibold">Dosyadan Yükle</span>
-              </button>
-            </div>
-
-            {/* Import Data Input */}
-            <textarea
-              value={importData}
-              onChange={(e) => setImportData(e.target.value)}
-              placeholder="Kayıt verisini buraya yapıştır veya yukarıdaki butonları kullan..."
-              className="w-full h-48 surface-base border border-default rounded-xl p-4 text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/40"
-            />
-
-            {/* Import Status */}
-            {importStatus === 'success' && (
-              <div className="surface-raised border-2 border-green-500 bg-green-950/20 rounded-xl p-4 flex items-center gap-3">
-                <Check className="w-6 h-6 text-green-500" />
-                <div>
-                  <p className="font-bold text-green-500">İçe Aktarma Başarılı!</p>
-                  <p className="text-sm text-gray-400">Kayıt yüklendi.</p>
-                </div>
-              </div>
-            )}
-
-            {importStatus === 'error' && (
-              <div className="surface-raised border-2 border-red-500 bg-red-950/20 rounded-xl p-4 flex items-center gap-3">
-                <X className="w-6 h-6 text-red-500" />
-                <div>
-                  <p className="font-bold text-red-500">İçe Aktarma Başarısız</p>
-                  <p className="text-sm text-gray-400">Geçersiz kayıt formatı.</p>
-                </div>
-              </div>
-            )}
-
-            {/* Import Button */}
-            <button
-              onClick={handleImport}
-              disabled={!importData.trim() || importStatus === 'success'}
-              className="w-full pressable accent-event-bg accent-event-border text-white font-bold py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+    <Modal visible={isOpen} animationType="fade" transparent>
+      <View style={[styles.overlay, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+        <View style={[styles.container, { backgroundColor: theme.surfaceBase, borderColor: theme.border }]}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>{tRuntime('save.exportImportTitle')}</Text>
+            <TouchableOpacity
+              onPress={onClose}
+              style={[styles.closeButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}
+              accessibilityLabel={tRuntime('save.close')}
+              accessibilityRole="button"
             >
-              İçe Aktar
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
+              <Feather name="x" size={24} color={theme.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Tabs */}
+          <View style={styles.tabContainer}>
+            <TouchableOpacity
+              onPress={() => setActiveTab('export')}
+              style={[
+                styles.tab,
+                activeTab === 'export'
+                  ? { backgroundColor: theme.accentEvent }
+                  : { backgroundColor: theme.surfaceRaised, borderColor: theme.border, borderWidth: 1 },
+              ]}
+              accessibilityLabel={tRuntime('save.exportTabAria')}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: activeTab === 'export' }}
+            >
+              <Feather name="download" size={16} color={activeTab === 'export' ? '#fff' : theme.textSecondary} />
+              <Text style={[styles.tabText, { color: activeTab === 'export' ? '#fff' : theme.textPrimary }]}>
+                {tRuntime('save.exportTab')}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setActiveTab('import')}
+              style={[
+                styles.tab,
+                activeTab === 'import'
+                  ? { backgroundColor: theme.accentEvent }
+                  : { backgroundColor: theme.surfaceRaised, borderColor: theme.border, borderWidth: 1 },
+              ]}
+              accessibilityLabel={tRuntime('save.importTabAria')}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: activeTab === 'import' }}
+            >
+              <Feather name="upload" size={16} color={activeTab === 'import' ? '#fff' : theme.textSecondary} />
+              <Text style={[styles.tabText, { color: activeTab === 'import' ? '#fff' : theme.textPrimary }]}>
+                {tRuntime('save.importTab')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
+            {/* Export Tab */}
+            {activeTab === 'export' && (
+              <View style={styles.tabContent}>
+                <Text style={[styles.description, { color: theme.textSecondary }]}>
+                  {tRuntime('save.exportDescription')}
+                </Text>
+
+                {/* Export Actions */}
+                <View style={styles.actionsGrid}>
+                  <TouchableOpacity
+                    onPress={handleCopyToClipboard}
+                    disabled={!exportData}
+                    style={[
+                      styles.actionButton,
+                      { backgroundColor: theme.surfaceRaised, borderColor: theme.border },
+                      !exportData && styles.actionButtonDisabled,
+                    ]}
+                    accessibilityLabel={tRuntime('save.copyToClipboard')}
+                    accessibilityRole="button"
+                  >
+                    {copiedToClipboard ? (
+                      <>
+                        <Feather name="check" size={24} color="#22c55e" />
+                        <Text style={[styles.actionButtonText, { color: '#22c55e' }]}>{tRuntime('save.copied')}</Text>
+                      </>
+                    ) : (
+                      <>
+                        <Feather name="copy" size={24} color={theme.textPrimary} />
+                        <Text style={[styles.actionButtonText, { color: theme.textPrimary }]}>{tRuntime('save.copyToClipboard')}</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={handleDownloadJSON}
+                    disabled={!exportData}
+                    style={[
+                      styles.actionButton,
+                      { backgroundColor: theme.surfaceRaised, borderColor: theme.border },
+                      !exportData && styles.actionButtonDisabled,
+                    ]}
+                    accessibilityLabel={tRuntime('save.downloadJSON')}
+                    accessibilityRole="button"
+                  >
+                    <Feather name="file-text" size={24} color={theme.textPrimary} />
+                    <Text style={[styles.actionButtonText, { color: theme.textPrimary }]}>{tRuntime('save.downloadJSON')}</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={handleGenerateQRCode}
+                    style={[
+                      styles.actionButton,
+                      { backgroundColor: theme.surfaceRaised, borderColor: theme.border },
+                    ]}
+                    accessibilityLabel={tRuntime('save.qrCode')}
+                    accessibilityRole="button"
+                  >
+                    <Feather name="grid" size={24} color={theme.textPrimary} />
+                    <Text style={[styles.actionButtonText, { color: theme.textPrimary }]}>{tRuntime('save.qrCode')}</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* QR Code Display */}
+                {showQRCode && exportData && (
+                  <View style={[styles.qrContainer, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}>
+                    <Text style={[styles.qrLabel, { color: theme.textSecondary }]}>{tRuntime('save.qrScanLabel')}</Text>
+                    <View style={styles.qrCodeFrame}>
+                      <QRCode value={exportData} size={192} quietZone={8} />
+                    </View>
+                    <Text style={[styles.qrHint, { color: theme.textSecondary }]}>
+                      {tRuntime('save.qrHint')}
+                    </Text>
+                  </View>
+                )}
+
+                {/* Export Data Preview */}
+                {exportData && (
+                  <View style={[styles.previewContainer, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}>
+                    <Text style={[styles.previewLabel, { color: theme.textSecondary }]}>{tRuntime('save.jsonPreview')}</Text>
+                    <ScrollView horizontal style={styles.previewScroll}>
+                      <Text style={[styles.previewText, { color: theme.textSecondary }]}>
+                        {exportData.substring(0, 500)}...
+                      </Text>
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* Import Tab */}
+            {activeTab === 'import' && (
+              <View style={styles.tabContent}>
+                <Text style={[styles.description, { color: theme.textSecondary }]}>
+                  {tRuntime('save.importDescription')}
+                </Text>
+
+                {/* Import Actions */}
+                <View style={styles.importActionsGrid}>
+                  <TouchableOpacity
+                    onPress={handlePasteFromClipboard}
+                    style={[styles.actionButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}
+                    accessibilityLabel={tRuntime('save.pasteFromClipboard')}
+                    accessibilityRole="button"
+                  >
+                    <Feather name="clipboard" size={24} color={theme.textPrimary} />
+                    <Text style={[styles.actionButtonText, { color: theme.textPrimary }]}>{tRuntime('save.pasteFromClipboard')}</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={handleImportFromFile}
+                    style={[styles.actionButton, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}
+                    accessibilityLabel={tRuntime('save.loadFromFile')}
+                    accessibilityRole="button"
+                  >
+                    <Feather name="file-text" size={24} color={theme.textPrimary} />
+                    <Text style={[styles.actionButtonText, { color: theme.textPrimary }]}>{tRuntime('save.loadFromFile')}</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Import Data Input */}
+                <TextInput
+                  value={importData}
+                  onChangeText={setImportData}
+                  placeholder={tRuntime('save.importPlaceholder')}
+                  placeholderTextColor={theme.textSecondary}
+                  multiline
+                  style={[
+                    styles.textArea,
+                    {
+                      backgroundColor: theme.surfaceBase,
+                      borderColor: theme.border,
+                      color: theme.textPrimary,
+                    },
+                  ]}
+                  accessibilityLabel={tRuntime('save.importInputAria')}
+                />
+
+                {/* Import Status */}
+                {importStatus === 'success' && (
+                  <View style={styles.successBanner}>
+                    <Feather name="check-circle" size={24} color="#22c55e" />
+                    <View>
+                      <Text style={styles.successTitle}>{tRuntime('save.importSuccess')}</Text>
+                      <Text style={styles.successSubtitle}>{tRuntime('save.importSuccessMsg')}</Text>
+                    </View>
+                  </View>
+                )}
+
+                {importStatus === 'error' && (
+                  <View style={styles.errorBanner}>
+                    <Feather name="x-circle" size={24} color="#ef4444" />
+                    <View>
+                      <Text style={styles.errorTitle}>{tRuntime('save.importError')}</Text>
+                      <Text style={styles.errorSubtitle}>{tRuntime('save.importErrorMsg')}</Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* Import Button */}
+                <TouchableOpacity
+                  onPress={handleImport}
+                  disabled={!importData.trim() || importStatus === 'success'}
+                  style={[
+                    styles.importButton,
+                    { backgroundColor: theme.accentEvent },
+                    (!importData.trim() || importStatus === 'success') && styles.importButtonDisabled,
+                  ]}
+                  accessibilityLabel={tRuntime('save.importBtn')}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.importButtonText}>{tRuntime('save.importBtn')}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
   );
 };
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  container: {
+    borderRadius: 16,
+    borderWidth: 1,
+    maxHeight: '90%',
+    overflow: 'hidden',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(107, 114, 128, 0.3)',
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  closeButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    padding: 16,
+    paddingBottom: 0,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    minHeight: 48,
+  },
+  tabText: {
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  content: {
+    flex: 1,
+  },
+  contentContainer: {
+    padding: 16,
+  },
+  tabContent: {
+    gap: 16,
+  },
+  description: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  actionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  importActionsGrid: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  actionButton: {
+    flex: 1,
+    minWidth: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    minHeight: 80,
+  },
+  actionButtonDisabled: {
+    opacity: 0.5,
+  },
+  actionButtonText: {
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  qrContainer: {
+    alignItems: 'center',
+    padding: 24,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  qrLabel: {
+    fontSize: 14,
+    marginBottom: 16,
+  },
+  qrCodeFrame: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 8,
+  },
+  qrHint: {
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 16,
+  },
+  previewContainer: {
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  previewLabel: {
+    fontSize: 12,
+    marginBottom: 8,
+  },
+  previewScroll: {
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 8,
+    padding: 12,
+    maxHeight: 100,
+  },
+  previewText: {
+    fontSize: 12,
+    fontFamily: 'monospace',
+  },
+  textArea: {
+    minHeight: 150,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    fontSize: 14,
+    fontFamily: 'monospace',
+    textAlignVertical: 'top',
+  },
+  successBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: 'rgba(6, 78, 59, 0.3)',
+    borderWidth: 2,
+    borderColor: '#22c55e',
+    borderRadius: 16,
+    padding: 16,
+  },
+  successTitle: {
+    fontWeight: '700',
+    color: '#22c55e',
+    fontSize: 14,
+  },
+  successSubtitle: {
+    color: '#9ca3af',
+    fontSize: 13,
+    marginTop: 2,
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: 'rgba(127, 29, 29, 0.3)',
+    borderWidth: 2,
+    borderColor: '#ef4444',
+    borderRadius: 16,
+    padding: 16,
+  },
+  errorTitle: {
+    fontWeight: '700',
+    color: '#ef4444',
+    fontSize: 14,
+  },
+  errorSubtitle: {
+    color: '#9ca3af',
+    fontSize: 13,
+    marginTop: 2,
+  },
+  importButton: {
+    paddingVertical: 14,
+    borderRadius: 16,
+    alignItems: 'center',
+    minHeight: 48,
+    justifyContent: 'center',
+  },
+  importButtonDisabled: {
+    opacity: 0.5,
+  },
+  importButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+});
+
+export default SaveExportModal;

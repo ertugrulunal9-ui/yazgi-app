@@ -1,0 +1,4 @@
+interface:
+  display_name: "Simulasyon Testleri"
+  short_description: "Oyun ekonomisini coklu simulasyonla test et"
+  default_prompt: "Use $simulasyon-testleri to simulate my game economy 1000 times and estimate when players become billionaires."

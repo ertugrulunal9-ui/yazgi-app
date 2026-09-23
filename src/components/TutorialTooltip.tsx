@@ -1,42 +1,43 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
-  Animated,
   TouchableOpacity,
   StyleSheet,
-  Modal,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-
-interface TooltipPosition {
-  x: number;
-  y: number;
-}
+import { tRuntime } from '../i18n/strings';
 
 interface TutorialTooltipProps {
   visible: boolean;
   title: string;
   message: string;
+  stepNumber?: number;
+  totalSteps?: number;
   position?: 'top' | 'bottom' | 'left' | 'right';
   onDismiss: () => void;
   onNext?: () => void;
+  onSkip?: () => void;
 }
 
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 12000,
+    elevation: 12000,
   },
   tooltipContainer: {
     backgroundColor: '#16213e',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 14,
+    padding: 18,
     marginHorizontal: 20,
     borderWidth: 2,
-    borderColor: '#00ff88',
+    borderColor: '#f59e0b',
   },
   header: {
     flexDirection: 'row',
@@ -44,48 +45,61 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
+  titleRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#00ff88',
-    flex: 1,
+    color: '#f59e0b',
+  },
+  stepBadge: {
+    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  stepText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#f59e0b',
   },
   message: {
     fontSize: 14,
     color: '#ddd',
-    lineHeight: 20,
-    marginBottom: 12,
+    lineHeight: 21,
+    marginBottom: 14,
   },
   footer: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
   },
-  dismissButton: {
+  skipButton: {
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#555',
   },
-  dismissButtonText: {
-    color: '#aaa',
+  skipButtonText: {
+    color: '#888',
     fontSize: 12,
   },
   nextButton: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#00ff88',
-    borderRadius: 6,
+    backgroundColor: '#f59e0b',
+    borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
   nextButtonText: {
-    color: '#1a1a2e',
+    color: '#0b1220',
     fontWeight: 'bold',
-    fontSize: 12,
+    fontSize: 13,
   },
   closeButton: {
     padding: 4,
@@ -96,44 +110,67 @@ export const TutorialTooltip: React.FC<TutorialTooltipProps> = ({
   visible,
   title,
   message,
+  stepNumber,
+  totalSteps,
   onDismiss,
   onNext,
+  onSkip,
 }) => {
   if (!visible) {
     return null;
   }
 
+  const statusBarHeight = Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0;
+  const hasSteps = stepNumber != null && totalSteps != null;
+
   return (
-    <Modal transparent visible={visible} animationType="fade">
-      <View style={styles.overlay}>
-        <View style={styles.tooltipContainer}>
-          <View style={styles.header}>
+    <View style={[styles.overlay, { paddingTop: statusBarHeight }]}>
+      <TouchableOpacity
+        style={StyleSheet.absoluteFill}
+        activeOpacity={1}
+        onPress={onDismiss}
+      />
+      <View style={styles.tooltipContainer}>
+        <View style={styles.header}>
+          <View style={styles.titleRow}>
             <Text style={styles.title}>{title}</Text>
-            <TouchableOpacity onPress={onDismiss} style={styles.closeButton}>
-              <Feather name="x" size={20} color="#888" />
-            </TouchableOpacity>
-          </View>
-
-          <Text style={styles.message}>{message}</Text>
-
-          <View style={styles.footer}>
-            <TouchableOpacity onPress={onDismiss} style={styles.dismissButton}>
-              <Text style={styles.dismissButtonText}>Kapat</Text>
-            </TouchableOpacity>
-
-            {onNext && (
-              <TouchableOpacity onPress={onNext} style={styles.nextButton}>
-                <Text style={styles.nextButtonText}>Sonraki</Text>
-                <Feather name="chevron-right" size={14} color="#1a1a2e" />
-              </TouchableOpacity>
+            {hasSteps && (
+              <View style={styles.stepBadge}>
+                <Text style={styles.stepText}>{stepNumber}/{totalSteps}</Text>
+              </View>
             )}
           </View>
+          <TouchableOpacity onPress={onDismiss} style={styles.closeButton}>
+            <Feather name="x" size={20} color="#888" />
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.message}>{message}</Text>
+
+        <View style={styles.footer}>
+          {onSkip ? (
+            <TouchableOpacity onPress={onSkip} style={styles.skipButton}>
+              <Text style={styles.skipButtonText}>{tRuntime('tutorial.skipAll')}</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity onPress={onDismiss} style={styles.skipButton}>
+              <Text style={styles.skipButtonText}>{tRuntime('tutorial.close')}</Text>
+            </TouchableOpacity>
+          )}
+
+          {onNext && (
+            <TouchableOpacity onPress={onNext} style={styles.nextButton}>
+              <Text style={styles.nextButtonText}>{tRuntime('tutorial.gotIt')}</Text>
+              <Feather name="chevron-right" size={14} color="#0b1220" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
-    </Modal>
+    </View>
   );
 };
 
+// Legacy hook — kept for backward compatibility
 interface UseTutorialTooltipReturn {
   showTooltip: (title: string, message: string) => void;
   hideTooltip: () => void;

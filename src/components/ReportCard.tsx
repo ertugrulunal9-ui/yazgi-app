@@ -1,96 +1,345 @@
 import React, { useMemo } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, StatusBar, ScrollView } from 'react-native';
 import { SchoolGrades, Family } from '../types';
-import { getLetterGrade } from '../utils/schoolLogic';
+import { getLetterGrade, calculateGradeAverage } from '../utils/schoolLogic';
+import { tRuntime } from '../i18n/strings';
+import { useRuntimeLocale } from '../i18n/useRuntimeLocale';
 
 interface ReportCardProps {
   grades: SchoolGrades;
   family: Family;
   onClose: () => void;
   age: number;
+  visible: boolean;
 }
 
-const ReportCard = React.memo<ReportCardProps>(({ grades, family, onClose, age }) => {
-  const average = useMemo(() => 
-    Math.round((grades.math + grades.science + grades.language) / 3),
-    [grades.math, grades.science, grades.language]
-  );
-  
-  const getGradeColor = (score: number) => {
-        if (score >= 60) return 'accent-grade-text';
-        return 'accent-grade-text opacity-60';
-  };
+const ReportCard = React.memo<ReportCardProps>(({ grades, family, onClose, age, visible }) => {
+  useRuntimeLocale();
 
-  const getBgColor = (score: number) => {
-        if (score >= 60) return 'accent-grade-bg accent-grade-border';
-        return 'accent-grade-bg accent-grade-border opacity-60';
-  }
+  // Modal yerine absolute positioning kullan (Android uyumluluğu için)
+
+  const statusBarHeight = Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0;
+  const average = useMemo(() =>
+    Math.round(calculateGradeAverage(grades)),
+    [grades]
+  );
+
+  if (!visible) return null;
+
+  const getGradeColor = (score: number) => {
+    if (score >= 85) return '#10b981'; // Yeşil - Mükemmel
+    if (score >= 70) return '#3b82f6'; // Mavi - İyi
+    if (score >= 50) return '#f59e0b'; // Turuncu - Orta
+    return '#ef4444'; // Kırmızı - Kötü
+  };
 
   const getStatusMessage = (avg: number) => {
-      if (avg >= 85) return "ONUR BELGESİ";
-      if (avg >= 70) return "TEŞEKKÜR";
-      if (avg >= 60) return "SINIFI GEÇTİ";
-      return "SINIF TEKRARI";
+    if (avg >= 85) return { text: tRuntime('exams.reportCard.status.honor'), emoji: "🏆" };
+    if (avg >= 70) return { text: tRuntime('exams.reportCard.status.appreciation'), emoji: "🎉" };
+    if (avg >= 50) return { text: tRuntime('exams.reportCard.status.passed'), emoji: "✅" };
+    return { text: tRuntime('exams.reportCard.status.failed'), emoji: "😰" };
   };
 
+  const getParentReaction = () => {
+    if (average >= 85) {
+      return family.dynamic === 'SUPPORTIVE' ? tRuntime('exams.reportCard.parentReaction.highSupportive') :
+             family.dynamic === 'STRICT' ? tRuntime('exams.reportCard.parentReaction.highStrict') :
+             tRuntime('exams.reportCard.parentReaction.highChaotic');
+    }
+    if (average >= 50) {
+      return family.dynamic === 'SUPPORTIVE' ? tRuntime('exams.reportCard.parentReaction.midSupportive') :
+             family.dynamic === 'STRICT' ? tRuntime('exams.reportCard.parentReaction.midStrict') :
+             tRuntime('exams.reportCard.parentReaction.midChaotic');
+    }
+    return family.dynamic === 'SUPPORTIVE' ? tRuntime('exams.reportCard.parentReaction.lowSupportive') :
+           family.dynamic === 'STRICT' ? tRuntime('exams.reportCard.parentReaction.lowStrict') :
+           tRuntime('exams.reportCard.parentReaction.lowChaotic');
+  };
+
+  const status = getStatusMessage(average);
+  const averageColor = getGradeColor(average);
+
+  const subjects = [
+    { key: 'math', label: tRuntime('exams.reportCard.subjects.math'), emoji: '🔢' },
+    { key: 'turkish', label: tRuntime('exams.reportCard.subjects.turkish'), emoji: '📝' },
+    { key: 'science', label: tRuntime('exams.reportCard.subjects.science'), emoji: '🔬' },
+    { key: 'language', label: tRuntime('exams.reportCard.subjects.language'), emoji: '🌍' },
+    { key: 'history', label: tRuntime('exams.reportCard.subjects.history'), emoji: '📜' },
+    { key: 'geography', label: tRuntime('exams.reportCard.subjects.geography'), emoji: '🗺️' },
+    { key: 'art', label: tRuntime('exams.reportCard.subjects.art'), emoji: '🎨' },
+    { key: 'music', label: tRuntime('exams.reportCard.subjects.music'), emoji: '🎵' },
+  ];
+
   return (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in font-sans">
-            <div className="ui-modal w-full max-w-md overflow-hidden relative transform transition-all scale-100">
-        
-                <div className="surface-base p-6 text-center relative border-b border-default">
-                        <h2 className="text-2xl font-black uppercase tracking-widest">Yıl Sonu Karnesi</h2>
-                        <div className="text-secondary text-sm font-mono mt-1">ÖĞRENCİ YAŞI: {age}</div>
-            
-                        <div className={`absolute top-1/2 -translate-y-1/2 right-6 w-16 h-16 rounded-full flex items-center justify-center border-4 text-xl font-bold surface-raised ${getGradeColor(average)} border-current`}>
-                {average}
-            </div>
-        </div>
+    <View style={[styles.overlay, { paddingTop: statusBarHeight }]}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>{tRuntime('exams.reportCard.title')}</Text>
+            <Text style={styles.headerSubtitle}>{tRuntime('exams.reportCard.studentAge', { age })}</Text>
 
-                <div className="p-6 space-y-4 surface-overlay">
-            
-            <div className="space-y-3">
-                <GradeItem label="Matematik" score={grades.math} colorFn={getGradeColor} bgFn={getBgColor} />
-                <GradeItem label="Fen Bilgisi" score={grades.science} colorFn={getGradeColor} bgFn={getBgColor} />
-                <GradeItem label="Yabancı Dil" score={grades.language} colorFn={getGradeColor} bgFn={getBgColor} />
-            </div>
+            {/* Ortalama Badge */}
+            <View style={[styles.averageBadge, { borderColor: averageColor }]}>
+              <Text style={[styles.averageText, { color: averageColor }]}>{average}</Text>
+              <Text style={[styles.averageGrade, { color: averageColor }]}>
+                {getLetterGrade(average)}
+              </Text>
+            </View>
+          </View>
 
-            <div className="mt-6 flex justify-center">
-                <div className={`
-                    border-4 rounded-lg px-6 py-2 text-xl font-black uppercase tracking-widest rotate-[-5deg] opacity-90 shadow-sm
-                    ${average >= 60 ? 'accent-grade-border accent-grade-text' : 'border-red-500 text-red-500'}
-                `}>
-                    {getStatusMessage(average)}
-                </div>
-            </div>
+          {/* Ders Notları */}
+          <View style={styles.gradesContainer}>
+            {subjects.map((subject) => {
+              const score = grades[subject.key as keyof SchoolGrades] || 0;
+              const color = getGradeColor(score);
+              const letter = getLetterGrade(score);
 
-            <div className="text-[10px] text-secondary text-center mt-4">
-                *Notlar zeka, stres seviyesi ve şans faktörüne göre hesaplanmıştır.
-            </div>
-        </div>
+              return (
+                <View key={subject.key} style={styles.gradeItem}>
+                  <View style={styles.gradeLeft}>
+                    <Text style={styles.gradeEmoji}>{subject.emoji}</Text>
+                    <Text style={styles.gradeLabel}>{subject.label}</Text>
+                  </View>
+                  <View style={styles.gradeRight}>
+                    <Text style={styles.gradeScore}>{Math.round(score)}/100</Text>
+                    <View style={[styles.gradeBadge, { backgroundColor: color + '20', borderColor: color }]}>
+                      <Text style={[styles.gradeLetter, { color }]}>{letter}</Text>
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
 
-        <div className="p-4 surface-raised border-t border-default">
-            <button 
-                onClick={onClose}
-                className="pressable w-full py-3 accent-event-bg accent-event-border text-white font-bold rounded-xl flex items-center justify-center gap-2"
-            >
-                <span>Velini Çağır</span>
-                <span className="text-xl">→</span>
-            </button>
-        </div>
-      </div>
-    </div>
+          {/* Durum Damgası */}
+          <View style={[
+            styles.statusStamp,
+            { borderColor: average >= 50 ? '#10b981' : '#ef4444' }
+          ]}>
+            <Text style={styles.statusEmoji}>{status.emoji}</Text>
+            <Text style={[
+              styles.statusText,
+              { color: average >= 50 ? '#10b981' : '#ef4444' }
+            ]}>
+              {status.text}
+            </Text>
+          </View>
+
+          {/* Veli Tepkisi */}
+          <View style={styles.reactionContainer}>
+            <Text style={styles.reactionText}>{getParentReaction()}</Text>
+          </View>
+
+          {/* Alt Bilgi */}
+          <Text style={styles.footerNote}>
+            {tRuntime('exams.reportCard.footnote')}
+          </Text>
+
+          {/* Tamam Butonu */}
+          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+            <Text style={styles.closeButtonText}>{tRuntime('exams.reportCard.okBtn')}</Text>
+            <Text style={styles.closeButtonArrow}>→</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </View>
   );
 });
 
-const GradeItem = ({ label, score, colorFn, bgFn }: any) => (
-    <div className={`flex justify-between items-center p-3 rounded-xl border ${bgFn(score)}`}>
-        <span className="font-bold">{label}</span>
-        <div className="flex items-center gap-3">
-            <span className="text-sm font-mono text-secondary">{score}/100</span>
-            <span className={`text-xl font-black ${colorFn(score)} w-6 text-center`}>
-                {getLetterGrade(score)}
-            </span>
-        </div>
-    </div>
-);
+ReportCard.displayName = 'ReportCard';
+
+const styles = StyleSheet.create({
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    zIndex: 9500,
+    elevation: 9500,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  container: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: '#1a1a2e',
+    borderRadius: 20,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 16,
+      },
+    }),
+  },
+  header: {
+    backgroundColor: '#16213e',
+    padding: 20,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#334155',
+    position: 'relative',
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: '#94a3b8',
+    marginTop: 4,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+  averageBadge: {
+    position: 'absolute',
+    right: 16,
+    top: '50%',
+    marginTop: -28,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 3,
+    backgroundColor: '#1a1a2e',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  averageText: {
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  averageGrade: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  gradesContainer: {
+    padding: 16,
+  },
+  gradeItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#0f172a',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  gradeLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  gradeEmoji: {
+    fontSize: 18,
+  },
+  gradeLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#e2e8f0',
+  },
+  gradeRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  gradeScore: {
+    fontSize: 12,
+    color: '#94a3b8',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+  gradeBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    minWidth: 32,
+    alignItems: 'center',
+  },
+  gradeLetter: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  statusStamp: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderWidth: 3,
+    borderRadius: 12,
+    transform: [{ rotate: '-2deg' }],
+  },
+  statusEmoji: {
+    fontSize: 24,
+  },
+  statusText: {
+    fontSize: 18,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+  },
+  reactionContainer: {
+    backgroundColor: '#0f172a',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  reactionText: {
+    color: '#cbd5e1',
+    fontSize: 14,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  footerNote: {
+    color: '#64748b',
+    fontSize: 10,
+    textAlign: 'center',
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  closeButton: {
+    backgroundColor: '#3b82f6',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    paddingVertical: 16,
+    borderRadius: 12,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+  },
+  closeButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  closeButtonArrow: {
+    color: '#fff',
+    fontSize: 20,
+  },
+});
 
 export default ReportCard;

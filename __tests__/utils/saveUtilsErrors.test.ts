@@ -67,7 +67,8 @@ describe('SaveUtils - Error Handling & Edge Cases', () => {
     it('should handle very old timestamps', () => {
       const veryOld = now - 365 * 24 * 60 * 60 * 1000; // 1 year ago
       const result = formatLastPlayed(veryOld);
-      expect(result).toMatch(/\d{1,2}\s\w{3}/); // Should be date format
+      // Turkish month names have special characters (Şub, Oca, etc.)
+      expect(result).toMatch(/\d{1,2}\s\S{3}/); // Should be date format like "2 Şub"
     });
 
     it('should handle timestamp of 0', () => {
@@ -214,33 +215,31 @@ describe('SaveUtils - Error Handling & Edge Cases', () => {
   describe('generateQRCode - Edge Cases', () => {
     it('should handle empty string', () => {
       const result = generateQRCode('');
-      expect(result).toContain('qrserver.com');
-      expect(result).toContain('data=');
+      expect(result).toBe('');
     });
 
     it('should handle very long data', () => {
       const longData = 'x'.repeat(10000);
       const result = generateQRCode(longData);
-      expect(result).toContain('qrserver.com');
+      expect(result).toBe(longData);
     });
 
     it('should handle special characters', () => {
       const specialData = 'test@example.com?param=value&foo=bar';
       const result = generateQRCode(specialData);
-      expect(result).toContain('qrserver.com');
-      expect(result).toContain(encodeURIComponent(specialData));
+      expect(result).toBe(specialData);
     });
 
     it('should handle Turkish characters', () => {
       const turkishData = 'Türkçe özel karakterler üğöşçİ';
       const result = generateQRCode(turkishData);
-      expect(result).toContain('qrserver.com');
+      expect(result).toBe(turkishData);
     });
 
     it('should handle JSON data', () => {
       const jsonData = JSON.stringify({ save: 'game', version: 1 });
       const result = generateQRCode(jsonData);
-      expect(result).toContain('qrserver.com');
+      expect(result).toBe(jsonData);
     });
   });
 
@@ -387,8 +386,41 @@ describe('SaveUtils - Error Handling & Edge Cases', () => {
       expect(result).toBeNull();
     });
 
-    it.skip('should handle FileReader error', async () => {
-      // Skipped: FileReader error simulation too complex in Node environment
+    it('should handle FileReader error', async () => {
+      const originalFileReader = (global as any).FileReader;
+
+      class MockFileReader {
+        onload: ((event: any) => void) | null = null;
+        onerror: ((event: any) => void) | null = null;
+
+        readAsText(_file: Blob): void {
+          if (this.onerror) {
+            this.onerror({ type: 'error' });
+          }
+        }
+      }
+
+      try {
+        (global as any).FileReader = MockFileReader as any;
+
+        const promise = readFile();
+
+        setTimeout(() => {
+          const mockFile = new Blob(['{invalid-json'], { type: 'application/json' });
+          const event = {
+            target: {
+              files: [mockFile],
+            },
+          } as any;
+
+          mockInput.onchange(event);
+        }, 0);
+
+        const result = await promise;
+        expect(result).toBeNull();
+      } finally {
+        (global as any).FileReader = originalFileReader;
+      }
     });
   });
 

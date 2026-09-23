@@ -1,6 +1,8 @@
 import { Achievement, UnlockedAchievement, Stats, GameState, Skills, SchoolGrades, AchievementProgress } from '../types';
-import { ACHIEVEMENTS } from './achievementDefinitions';
+import { ACHIEVEMENTS, getAchievementName } from './achievementDefinitions';
 import { analyticsService } from '../services/analytics';
+import { devLog } from '../utils/devLogger';
+import { getRuntimeLocale, tRuntime } from '../i18n/strings';
 
 const STORAGE_KEY = '@yazgi/achievements/v1';
 const hasAsyncStorage = typeof localStorage === 'undefined';
@@ -26,13 +28,13 @@ export const loadAchievements = async (): Promise<UnlockedAchievement[]> => {
       const data = localStorage.getItem(STORAGE_KEY);
       return data ? JSON.parse(data) : [];
     }
-    
+
     const AsyncStorage = await getAsyncStorage();
     if (AsyncStorage) {
       const data = await AsyncStorage.getItem(STORAGE_KEY);
       return data ? JSON.parse(data) : [];
     }
-    
+
     return [];
   } catch (error) {
     console.error('Failed to load achievements:', error);
@@ -43,12 +45,12 @@ export const loadAchievements = async (): Promise<UnlockedAchievement[]> => {
 export const saveAchievements = async (achievements: UnlockedAchievement[]): Promise<void> => {
   try {
     const data = JSON.stringify(achievements);
-    
+
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(STORAGE_KEY, data);
       return;
     }
-    
+
     const AsyncStorage = await getAsyncStorage();
     if (AsyncStorage) {
       await AsyncStorage.setItem(STORAGE_KEY, data);
@@ -67,7 +69,8 @@ export const isAchievementUnlocked = (achievementId: string, unlockedAchievement
 export const unlockAchievement = async (
   achievement: Achievement,
   gameState: GameState,
-  unlockedAchievements: UnlockedAchievement[]
+  unlockedAchievements: UnlockedAchievement[],
+  showFloatingText?: (text: string, x: number, y: number, color: string, options?: any) => void
 ): Promise<{ unlocked: UnlockedAchievement; reward: Achievement['reward'] } | null> => {
   // Already unlocked
   if (isAchievementUnlocked(achievement.id, unlockedAchievements)) {
@@ -82,17 +85,29 @@ export const unlockAchievement = async (
 
   const newAchievements = [...unlockedAchievements, unlocked];
   await saveAchievements(newAchievements);
+  const localizedAchievementName = getAchievementName(achievement.id, achievement.name);
 
   // Analytics
   analyticsService.logCustomEvent('achievement_unlocked', {
     achievement_id: achievement.id,
-    achievement_name: achievement.name,
+    achievement_name: localizedAchievementName,
     rarity: achievement.rarity,
     category: achievement.category,
     age: gameState.age,
   });
 
-  console.log(`🏆 Achievement Unlocked: ${achievement.name}`);
+  devLog.log(`🏆 Achievement Unlocked: ${localizedAchievementName}`);
+
+  // Floating Text Feedback
+  if (showFloatingText) {
+    showFloatingText(
+      `🏆 ${localizedAchievementName}`,
+      100 + Math.random() * 100, // Center-ish
+      100, // Top area
+      '#fbbf24', // Gold
+      { animationType: 'bounce', duration: 3000 }
+    );
+  }
 
   return { unlocked, reward: achievement.reward };
 };
@@ -119,24 +134,26 @@ export const checkAllAchievements = async (
   gameState: GameState,
   skills: Skills,
   grades: SchoolGrades,
-  unlockedAchievements: UnlockedAchievement[]
+  unlockedAchievements: UnlockedAchievement[],
+  showFloatingText?: (text: string, x: number, y: number, color: string, options?: any) => void
 ): Promise<UnlockedAchievement[]> => {
   const newlyUnlocked: UnlockedAchievement[] = [];
+  const currentUnlocked = [...unlockedAchievements];
 
   for (const achievement of ACHIEVEMENTS) {
     // Skip already unlocked
-    if (isAchievementUnlocked(achievement.id, unlockedAchievements)) {
+    if (isAchievementUnlocked(achievement.id, currentUnlocked)) {
       continue;
     }
 
     const result = checkAchievement(achievement, stats, gameState, skills, grades);
-    
+
     // Boolean result (unlocked)
     if (result === true) {
-      const unlock = await unlockAchievement(achievement, gameState, unlockedAchievements);
+      const unlock = await unlockAchievement(achievement, gameState, currentUnlocked, showFloatingText);
       if (unlock) {
         newlyUnlocked.push(unlock.unlocked);
-        unlockedAchievements.push(unlock.unlocked);
+        currentUnlocked.push(unlock.unlocked);
       }
     }
   }
@@ -153,15 +170,15 @@ export const getAchievementProgress = (
   grades: SchoolGrades
 ): number => {
   const result = checkAchievement(achievement, stats, gameState, skills, grades);
-  
+
   if (typeof result === 'boolean') {
     return result ? 100 : 0;
   }
-  
+
   if (result && typeof result === 'object' && 'current' in result && 'target' in result) {
     return Math.min(100, (result.current / result.target) * 100);
   }
-  
+
   return 0;
 };
 
@@ -174,20 +191,16 @@ export const applyAchievementReward = (
 
   const newStats = { ...stats };
 
-  if (reward.money) {
-    newStats.money += reward.money;
-  }
-
   if (reward.stats) {
     Object.keys(reward.stats).forEach(key => {
       const statKey = key as keyof Stats;
       const value = reward.stats![statKey];
+      if (statKey === 'money') {
+        return;
+      }
       if (typeof value === 'number') {
         newStats[statKey] = (newStats[statKey] as number) + value;
-        // Clamp stats
-        if (statKey !== 'money') {
-          newStats[statKey] = Math.min(100, Math.max(0, newStats[statKey] as number));
-        }
+        newStats[statKey] = Math.min(100, Math.max(0, newStats[statKey] as number));
       }
     });
   }
@@ -225,12 +238,26 @@ export const getAchievementStats = (unlockedAchievements: UnlockedAchievement[])
 
 // Share achievement (social media)
 export const shareAchievement = (achievement: Achievement): string => {
-  const text = `🏆 Yazgı'da "${achievement.name}" başarısını açtım! ${achievement.icon}`;
-  const hashtags = ['Yazgı', 'Achievement', 'LifeSimulator'];
-  
+  const localizedAchievementName = getAchievementName(achievement.id, achievement.name);
+  const locale = getRuntimeLocale();
+  const text = locale === 'en'
+    ? tRuntime(
+      'social.share.achievementUnlocked',
+      { name: localizedAchievementName, icon: achievement.icon },
+      `🏆 I unlocked "${localizedAchievementName}" in Yazgi! ${achievement.icon}`
+    )
+    : tRuntime(
+      'social.share.achievementUnlocked',
+      { name: localizedAchievementName, icon: achievement.icon },
+      `🏆 Yazgi'da "${localizedAchievementName}" basarisini actim! ${achievement.icon}`
+    );
+  const hashtags = locale === 'en'
+    ? ['Yazgi', 'Achievement', 'LifeSimulator']
+    : ['Yazgi', 'Basari', 'HayatSimulatoru'];
+
   // Twitter share URL
   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&hashtags=${hashtags.join(',')}`;
-  
+
   return twitterUrl;
 };
 
@@ -240,13 +267,13 @@ export const resetAchievements = async (): Promise<void> => {
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem(STORAGE_KEY);
     }
-    
+
     const AsyncStorage = await getAsyncStorage();
     if (AsyncStorage) {
       await AsyncStorage.removeItem(STORAGE_KEY);
     }
-    
-    console.log('✅ Achievements reset');
+
+    devLog.log('✅ Achievements reset');
   } catch (error) {
     console.error('Failed to reset achievements:', error);
   }

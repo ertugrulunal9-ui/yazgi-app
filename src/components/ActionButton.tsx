@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text } from 'react-native';
 import { getThemeTokens, getDensityMetrics } from '../utils/themeUtils';
 import { AnimatedButton, type ButtonAnimationType } from '../animations/ButtonAnimations';
 

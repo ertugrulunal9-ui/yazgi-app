@@ -1,31 +1,64 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import React, { useCallback } from 'react';
+import { View, Text, FlatList, StyleSheet, ListRenderItemInfo } from 'react-native';
 import { LogEntry } from '../types';
-import { getThemeTokens } from '../utils/themeUtils';
+import { tRuntime } from '../i18n/strings';
+import { useRuntimeLocale } from '../i18n/useRuntimeLocale';
 
 interface EventLogProps {
   logs: LogEntry[];
   theme: any;
 }
 
+const LogItem = React.memo<{ log: LogEntry; getLogColor: (type: string) => string; theme: any }>(
+  ({ log, getLogColor, theme }) => (
+    <View style={[logItemStyles.logItem, { borderLeftColor: theme.border }]}>
+      <Text style={[logItemStyles.logAge, { color: theme.accentEvent }]}>
+        [{log.age}y]
+      </Text>
+      <Text style={[logItemStyles.logMessage, { color: getLogColor(log.type) }]}>
+        {log.message}
+      </Text>
+    </View>
+  )
+);
+LogItem.displayName = 'LogItem';
+
+const logItemStyles = StyleSheet.create({
+  logItem: {
+    borderLeftWidth: 2,
+    paddingLeft: 12,
+    paddingVertical: 4,
+    marginBottom: 8,
+  },
+  logAge: {
+    fontWeight: 'bold',
+    fontSize: 12,
+    marginRight: 8,
+    opacity: 0.7,
+  },
+  logMessage: {
+    fontSize: 14,
+    fontFamily: 'monospace',
+  },
+});
+
 export const EventLog = React.memo<EventLogProps>(({ logs, theme }) => {
-  const bottomRef = useRef<View>(null);
+  useRuntimeLocale();
 
-  useEffect(() => {
-    bottomRef.current?.measure((x, y, width, height, pageX, pageY) => {
-      // React Native'de scrollIntoView yerine ScrollView'un scrollToEnd kullanılabilir
-      // Ancak bu component içinde ScrollView kontrolü yok, parent'tan yönetilmeli
-    });
-  }, [logs]);
-
-  const getLogColor = (type: string): string => {
+  const getLogColor = useCallback((type: string): string => {
     switch (type) {
       case 'positive': return theme.accentGrade;
       case 'negative': return '#f87171';
       case 'achievement': return theme.accentEvent;
       default: return theme.textSecondary;
     }
-  };
+  }, [theme.accentGrade, theme.accentEvent, theme.textSecondary]);
+
+  const keyExtractor = useCallback((item: LogEntry) => item.id, []);
+
+  const renderItem = useCallback(({ item }: ListRenderItemInfo<LogEntry>) => (
+    <LogItem log={item} getLogColor={getLogColor} theme={theme} />
+  ), [getLogColor, theme]);
 
   const styles = StyleSheet.create({
     container: {
@@ -56,9 +89,6 @@ export const EventLog = React.memo<EventLogProps>(({ logs, theme }) => {
       textTransform: 'uppercase',
       letterSpacing: 2,
     },
-    scrollContent: {
-      flex: 1,
-    },
     emptyContainer: {
       flex: 1,
       alignItems: 'center',
@@ -69,24 +99,6 @@ export const EventLog = React.memo<EventLogProps>(({ logs, theme }) => {
       fontStyle: 'italic',
       fontSize: 12,
     },
-    logItem: {
-      borderLeftWidth: 2,
-      borderLeftColor: theme.border,
-      paddingLeft: 12,
-      paddingVertical: 4,
-      marginBottom: 8,
-    },
-    logAge: {
-      color: theme.accentEvent,
-      fontWeight: 'bold',
-      fontSize: 12,
-      marginRight: 8,
-      opacity: 0.7,
-    },
-    logMessage: {
-      fontSize: 14,
-      fontFamily: 'monospace',
-    },
   });
 
   return (
@@ -94,36 +106,31 @@ export const EventLog = React.memo<EventLogProps>(({ logs, theme }) => {
       <View style={styles.header}>
         <Text style={styles.headerIcon}>📜</Text>
         <Text style={styles.headerTitle}>
-          Hayat Günlüğü
+          {tRuntime('eventLog.title')}
         </Text>
       </View>
-      
-      <ScrollView
-        style={styles.scrollContent}
-        showsVerticalScrollIndicator={true}
-      >
-        {(!logs || logs.length === 0) ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              ... Yeni hayat bekleniyor ...
-            </Text>
-          </View>
-        ) : (
-          logs.map((log) => (
-            <View key={log.id} style={styles.logItem}>
-              <Text style={styles.logAge}>
-                [{log.age}y]
-              </Text>
-              <Text style={[styles.logMessage, { color: getLogColor(log.type) }]}>
-                {log.message}
-              </Text>
-            </View>
-          ))
-        )}
-        <View ref={bottomRef} />
-      </ScrollView>
+
+      {(!logs || logs.length === 0) ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>
+            {tRuntime('eventLog.empty')}
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={logs}
+          keyExtractor={keyExtractor}
+          renderItem={renderItem}
+          initialNumToRender={15}
+          maxToRenderPerBatch={5}
+          windowSize={5}
+          showsVerticalScrollIndicator
+        />
+      )}
     </View>
   );
 });
+
+EventLog.displayName = 'EventLog';
 
 export default EventLog;

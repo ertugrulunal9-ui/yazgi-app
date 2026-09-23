@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<instructions>
+  <workflow>
+    <overview>
+      Bu iş akışı, Expo SDK 52 ve React Native 18 New Architecture (Bridgeless mode) üzerinde
+      uygulama mimarisi kurma, bileşen hiyerarşisi düzenleme ve UI/UX standartları belirleme
+      süreçlerini kapsar.
+    </overview>
+
+    <phase name="Analiz ve Bağlam Anlama">
+      <description>
+        Her mimari değişiklikten önce projenin mevcut durumunu derinlemesine anla:
+      </description>
+      <steps>
+        <step number="1">
+          <title>Proje Yapısını İncele</title>
+          <actions>
+            <action>list_files ile genel proje yapısını analiz et</action>
+            <action>src/ klasörü altındaki organizasyonu incele</action>
+            <action>Mevcut component, screen, hook ve utility dosyalarını tespit et</action>
+            <action>Design system veya stil konfigürasyonları varsa incele</action>
+          </actions>
+        </step>
+        
+        <step number="2">
+          <title>Mevcut Mimarikarını Anla</title>
+          <actions>
+            <action>State management yaklaşımını belirle (Context, Redux, Zustand vb.)</action>
+            <action>Component organizasyonunu analiz et (Atomic Design kullanılıyor mu?)</action>
+            <action>Navigation yapısını incele (expo-router, react-navigation)</action>
+            <action>Yapısal sorunları ve iyileştirme alanlarını tespit et</action>
+          </actions>
+        </step>
+
+        <step number="3">
+          <title>New Architecture Uyumluluğunu Kontrol Et</title>
+          <actions>
+            <action>Fabric Components kullanımı kontrol et</action>
+            <action>TurboModules kullanımını incele</action>
+            <action>Legacy Bridge API kullanımlarını tespit et</action>
+            <action>app.json ve metro.config.js konfigürasyonlarını kontrol et</action>
+          </actions>
+        </step>
+      </steps>
+    </phase>
+
+    <phase name="Mimari Tasarım">
+      <description>
+        Mimarik kararlarını kodlamadan önce netleştir ve belgele:
+      </description>
+      <steps>
+        <step number="1">
+          <title>Component Hiyerarşisini Tasarla</title>
+          <actions>
+            <action>Atomic Design prensiplerine göre bileşenleri sınıflandır</action>
+            <action>Atomlar: En temel bileşenler (Button, Text, Icon)</action>
+            <action>Moleküller: Atomların birleşimi (SearchBar, CardHeader)</action>
+            <action>Organizmalar: Moleküllerin birleşimi (Card, ListItem)</action>
+            <action>Şablonlar: Sayfa düzenleri (ScreenLayout)</action>
+          </actions>
+        </step>
+
+        <step number="2">
+          <title>State Management Mimarisi</title>
+          <actions>
+            <action>Global state gereksinimlerini belirle</action>
+            <action>Local state vs global state ayrımını yap</action>
+            <action>State paylaşım stratejisini belirle</action>
+            <action>State güncelleme pattern'larını tanımla</action>
+          </actions>
+        </step>
+
+        <step number="3">
+          <title>Layout ve Responsive Tasarım</title>
+          <actions>
+            <action>Flexbox layout stratejisini belirle</action>
+            <action>Responsive breakpoint'lerini tanımla</action>
+            <action>SafeArea kullanım stratejisini belirle</action>
+            <action>Ekran boyutlarına göre layout varyasyonlarını planla</action>
+          </actions>
+        </step>
+
+        <step number="4">
+          <title>Design System Mimarisi</title>
+          <actions>
+            <action>Renk paleti ve tema yapısını belirle</action>
+            <action>Tipografi standartlarını tanımla</action>
+            <action>Spacing ve sizing sistemi oluştur</action>
+            <action>Component variant'larını planla</action>
+          </actions>
+        </step>
+      </steps>
+    </phase>
+
+    <phase name="Uygulama">
+      <description>
+        Expo SDK 52 ve React Native 18 New Architecture standartlarına uygun kodla:
+      </description>
+      <steps>
+        <step number="1">
+          <title>Component'leri Oluştur</title>
+          <actions>
+            <action>Component'i TypeScript ile tanımla (interface/type)</action>
+            <action>StyleSheet kullanarak stilleri tanımla (useMemo ile optimize et)</action>
+            <action>Performans optimizasyonları uygula (React.memo, useCallback)</action>
+            <action>Erişilebilirlik özelliklerini ekle (accessibilityLabel, accessibilityHint)</action>
+          </actions>
+        </step>
+
+        <step number="2">
+          <title>Layout'ları Uygula</title>
+          <actions>
+            <action>Flexbox ile responsive layout'lar oluştur</action>
+            <action>SafeAreaView ile güvenli alanları koru</action>
+            <action>useWindowDimensions ile responsive değerler hesapla</action>
+            <action>gap prop'unu kullan (React Native 0.71+)</action>
+          </actions>
+        </step>
+
+        <step number="3">
+          <title>New Architecture Entegrasyonu</title>
+          <actions>
+            <action>Fabric Components kullanımını teşvik et</action>
+            <action>TurboModules ile native modüller entegre et</action>
+            <action>useNativeDriver ile animasyonları optimize et</action>
+            <action>Concurrent Rendering özelliklerini kullan</action>
+          </actions>
+        </step>
+
+        <step number="4">
+          <title>State Management Uygulaması</title>
+          <actions>
+            <action>Context Provider'ları oluştur</action>
+            <action>Custom hooks ile state erişimini sağla</action>
+            <action>State güncelleme fonksiyonlarını tanımla</action>
+            <action>State persistence stratejilerini uygula</action>
+          </actions>
+        </step>
+      </steps>
+    </phase>
+
+    <phase name="Doğrulama ve Optimizasyon">
+      <description>
+        Uygulamanın doğru çalıştığını ve performanslı olduğunu doğrula:
+      </description>
+      <steps>
+        <step number="1">
+          <title>Mimari Doğrulama</title>
+          <actions>
+            <action>Component hiyerarşisi doğru mu?</action>
+            <action>State management tutarlı mı?</action>
+            <action>Layout'lar responsive mi?</action>
+            <action>Design system uyumu sağlanmış mı?</action>
+          </actions>
+        </step>
+
+        <step number="2">
+          <title>Performans Analizi</title>
+          <actions>
+            <action>Re-render sayılarını kontrol et</action>
+            <action>Memory kullanımını analiz et</action>
+            <action>Animation performansını test et</action>
+            <action>Native module performansını ölç</action>
+          </actions>
+        </step>
+
+        <step number="3">
+          <title>New Architecture Doğrulama</title>
+          <actions>
+            <action>Fabric Components doğru kullanılmış mı?</action>
+            <action>TurboModules entegrasyonu başarılı mı?</action>
+            <action>Legacy Bridge API kullanımları kaldırılmış mı?</action>
+            <action>Concurrent Rendering özellikleri aktif mi?</action>
+          </actions>
+        </step>
+      </steps>
+    </phase>
+  </workflow>
+
+  <critical_checks>
+    <check>Expo SDK 52 uyumluluğu sağlanmış mı?</check>
+    <check>React Native 18 New Architecture standartlarına uygun mu?</check>
+    <check>Component hiyerarşisi mantıklı ve ölçeklenebilir mi?</check>
+    <check>State management mimarisi tutarlı mı?</check>
+    <check>Layout'lar responsive ve ekran uyumlu mu?</check>
+    <check>Design system standartları karşılanmış mı?</check>
+    <check>Performans optimizasyonları uygulanmış mı?</check>
+    <check>Erişilebilirlik standartları sağlanmış mı?</check>
+    <check>Legacy Bridge API kullanımları kaldırılmış mı?</check>
+    <check>Fabric ve TurboModules avantajlarından yararlanılmış mı?</check>
+  </critical_checks>
+
+  <new_architecture_guidelines>
+    <guideline>
+      <title>Fabric Components</title>
+      <description>
+        New Architecture'de Fabric Components kullan:
+      </description>
+      <best_practices>
+        <practice>Native component'leri Fabric ile yeniden yaz</practice>
+        <practice>useNativeDriver ile animasyonları optimize et</practice>
+        <practice>Direct manipulation yerine Fabric API'lerini kullan</practice>
+        <practice>Legacy UIManager kullanımlarını kaldır</practice>
+      </best_practices>
+    </guideline>
+
+    <guideline>
+      <title>TurboModules</title>
+      <description>
+        Native modüller için TurboModules kullan:
+      </description>
+      <best_practices>
+        <practice>Legacy NativeModules yerine TurboModules kullan</practice>
+        <practice>JSI (JavaScript Interface) avantajlarından yararlan</practice>
+        <practice>Synchronous native calls için TurboModules tercih et</practice>
+        <practice>Native modül performansını optimize et</practice>
+      </best_practices>
+    </guideline>
+
+    <guideline>
+      <title>Concurrent Rendering</title>
+      <description>
+        React 18 Concurrent Rendering özelliklerini kullan:
+      </description>
+      <best_practices>
+        <practice>useTransition ile düşük öncelikli güncellemeleri yönet</practice>
+        <practice>useDeferredValue ile render gecikmesini optimize et</practice>
+        <practice>Strict Mode ile potansiyel sorunları tespit et</practice>
+        <practice>useId ile benzersiz ID'ler oluştur</practice>
+      </best_practices>
+    </guideline>
+  </new_architecture_guidelines>
+</instructions>

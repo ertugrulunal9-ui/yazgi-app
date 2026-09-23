@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<instructions>
+  <common_patterns>
+    <category name="Component Patterns">
+      <pattern>
+        <title>Compound Component Pattern</title>
+        <description>
+          İlişkili bileşenleri bir arada kullan:
+        </description>
+        <example>
+          <code><![CDATA[
+// Kullanım
+<Card>
+  <Card.Header>Başlık</Card.Header>
+  <Card.Body>İçerik</Card.Body>
+  <Card.Footer>Alt bilgi</Card.Footer>
+</Card>
+
+// Implementasyon
+const Card = ({ children }: { children: ReactNode }) => (
+  <View style={styles.card}>{children}</View>
+);
+Card.Header = ({ children }: { children: ReactNode }) => (
+  <View style={styles.header}>{children}</View>
+);
+Card.Body = ({ children }: { children: ReactNode }) => (
+  <View style={styles.body}>{children}</View>
+);
+Card.Footer = ({ children }: { children: ReactNode }) => (
+  <View style={styles.footer}>{children}</View>
+);
+          ]]></code>
+        </example>
+      </pattern>
+      <pattern>
+        <title>Render Props Pattern</title>
+        <description>
+          Bileşen davranışını render prop ile özelleştir:
+        </description>
+        <example>
+          <code><![CDATA[
+interface RenderPropsProps<T> {
+  data: T[];
+  render: (item: T, index: number) => ReactNode;
+}
+
+const RenderProps = <T,>({ data, render }: RenderPropsProps<T>) => (
+  <FlatList
+    data={data}
+    renderItem={({ item, index }) => render(item, index)}
+    keyExtractor={(item, index) => index.toString()}
+  />
+);
+          ]]></code>
+        </example>
+      </pattern>
+      <pattern>
+        <title>Control Props Pattern</title>
+        <description>
+          Bileşen durumunu dışarıdan kontrol et:
+        </description>
+        <example>
+          <code><![CDATA[
+interface ToggleProps {
+  isOn: boolean;
+  onToggle: (isOn: boolean) => void;
+}
+
+const Toggle = ({ isOn, onToggle }: ToggleProps) => (
+  <TouchableOpacity
+    style={[styles.toggle, isOn && styles.toggleOn]}
+    onPress={() => onToggle(!isOn)}
+  />
+);
+          ]]></code>
+        </example>
+      </pattern>
+    </category>
+    
+    <category name="Layout Patterns">
+      <pattern>
+        <title>Responsive Container</title>
+        <description>
+          Ekran boyutuna göre responsive layout:
+        </description>
+        <example>
+          <code><![CDATA[
+import { useWindowDimensions } from 'react-native';
+
+const ResponsiveContainer = ({ children }: { children: ReactNode }) => {
+  const { width, height } = useWindowDimensions();
+  const isTablet = width >= 768;
+  
+  return (
+    <View style={[
+      styles.container,
+      isTablet && styles.tabletContainer
+    ]}>
+      {children}
+    </View>
+  );
+};
+          ]]></code>
+        </example>
+      </pattern>
+      <pattern>
+        <title>Safe Screen Layout</title>
+        <description>
+          Status bar ve home indicator için güvenli alan:
+        </description>
+        <example>
+          <code><![CDATA[
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const SafeScreen = ({ children }: { children: ReactNode }) => {
+  const insets = useSafeAreaInsets();
+  
+  return (
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <View style={{ paddingBottom: insets.bottom }}>
+        {children}
+      </View>
+    </SafeAreaView>
+  );
+};
+          ]]></code>
+        </example>
+      </pattern>
+    </category>
+    
+    <category name="Animation Patterns">
+      <pattern>
+        <title>Animated Value Pattern</title>
+        <description>
+          Animated.Value kullanarak animasyon:
+        </description>
+        <example>
+          <code><![CDATA[
+const FadeInView = ({ children }: { children: ReactNode }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+  
+  return (
+    <Animated.View style={{ opacity: fadeAnim }}>
+      {children}
+    </Animated.View>
+  );
+};
+          ]]></code>
+        </example>
+      </pattern>
+      <pattern>
+        <title>Gesture Handler Pattern</title>
+        <description>
+          Gesture Handler ile kullanıcı etkileşimi:
+        </description>
+        <example>
+          <code><![CDATA[
+import { PanGestureHandler } from 'react-native-gesture-handler';
+
+const DraggableCard = () => {
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  
+  const gesture = Gesture.Pan()
+    .onUpdate((event) => {
+      translateX.value = event.translationX;
+      translateY.value = event.translationY;
+    });
+  
+  return (
+    <GestureDetector gesture={gesture}>
+      <Animated.View style={[
+        styles.card,
+        { transform: [{ translateX }, { translateY }] }
+      ]} />
+    </GestureDetector>
+  );
+};
+          ]]></code>
+        </example>
+      </pattern>
+    </category>
+    
+    <category name="Hook Patterns">
+      <pattern>
+        <title>Custom Hook Pattern</title>
+        <description>
+          Tekrar kullanılabilir mantık için custom hook:
+        </description>
+        <example>
+          <code><![CDATA[
+const useMediaQuery = (minWidth: number) => {
+  const { width } = useWindowDimensions();
+  return width >= minWidth;
+};
+
+// Kullanım
+const isTablet = useMediaQuery(768);
+          ]]></code>
+        </example>
+      </pattern>
+      <pattern>
+        <title>Theme Hook Pattern</title>
+        <description>
+          Tema yönetimi için custom hook:
+        </description>
+        <example>
+          <code><![CDATA[
+const useTheme = () => {
+  const isDark = useColorScheme() === 'dark';
+  
+  return useMemo(() => ({
+    colors: {
+      background: isDark ? '#1a1a1a' : '#ffffff',
+      text: isDark ? '#ffffff' : '#1a1a1a',
+      primary: '#6366f1',
+    },
+    isDark,
+  }), [isDark]);
+};
+          ]]></code>
+        </example>
+      </pattern>
+    </category>
+    
+    <category name="Form Patterns">
+      <pattern>
+        <title>Form Field Pattern</title>
+        <description>
+          Form alanı bileşeni:
+        </description>
+        <example>
+          <code><![CDATA[
+interface FormFieldProps {
+  label: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder?: string;
+  error?: string;
+}
+
+const FormField = ({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  error,
+}: FormFieldProps) => (
+  <View style={styles.field}>
+    <Text style={styles.label}>{label}</Text>
+    <TextInput
+      style={[styles.input, error && styles.inputError]}
+      value={value}
+      onChangeText={onChangeText}
+      placeholder={placeholder}
+      accessibilityLabel={label}
+    />
+    {error && <Text style={styles.error}>{error}</Text>}
+  </View>
+);
+          ]]></code>
+        </example>
+      </pattern>
+    </category>
+  </common_patterns>
+</instructions>

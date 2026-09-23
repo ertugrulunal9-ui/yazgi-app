@@ -6,9 +6,27 @@
  * work correctly together. These are the most sophisticated events in the game.
  */
 
-import { GameEvent, EventContext, Stats, GameState } from '../../src/types';
+import { GameEvent, EventContext, Stats, GameState, NPC } from '../../src/types';
 
 describe('Complex Event Validation', () => {
+  const createNpc = (overrides: Partial<NPC> = {}) => ({
+    id: 'npc_default',
+    name: 'NPC',
+    role: 'FRIEND' as const,
+    relationship: 50,
+    romance: 0,
+    gender: 'MALE' as const,
+    age: 10,
+    personality: 'FRIENDLY' as const,
+    traits: [],
+    metAge: 10,
+    metTurn: 1,
+    lastInteraction: 1,
+    sharedMemories: [],
+    isInPlayerGroup: false,
+    ...overrides,
+  });
+
   // Helper function to create mock context
   const createMockContext = (overrides: Partial<EventContext> = {}): EventContext => {
     const baseStats: Stats = {
@@ -42,6 +60,19 @@ describe('Complex Event Validation', () => {
       npcs: overrides.npcs || baseGameState.npcs!,
       memories: [],
       gameState: baseGameState as GameState,
+      personality: {
+        openness: 50,
+        courage: 50,
+        empathy: 50,
+        patience: 50,
+        conformity: 50,
+      },
+      stress: {
+        current: 20,
+        threshold: 100,
+        turnsSinceBreakdown: 0,
+        sources: [],
+      },
     } as EventContext;
   };
 
@@ -263,8 +294,8 @@ describe('Complex Event Validation', () => {
       const noPartnerContext = createMockContext({
         age: 16,
         npcs: [
-          { id: 'npc1', name: 'Ali', role: 'FRIEND', relationship: 60, romance: 0, gender: 'MALE' as const },
-          { id: 'npc2', name: 'Ayşe', role: 'ACQUAINTANCE', relationship: 30, romance: 0, gender: 'FEMALE' as const },
+          createNpc({ id: 'npc1', name: 'Ali', role: 'FRIEND', relationship: 60, gender: 'MALE' }),
+          createNpc({ id: 'npc2', name: 'Ayşe', role: 'ACQUAINTANCE', relationship: 30, gender: 'FEMALE' }),
         ],
       });
 
@@ -276,8 +307,8 @@ describe('Complex Event Validation', () => {
       const withPartnerContext = createMockContext({
         age: 16,
         npcs: [
-          { id: 'npc1', name: 'Elif', role: 'PARTNER', relationship: 80, romance: 100, gender: 'FEMALE' as const },
-          { id: 'npc2', name: 'Mehmet', role: 'FRIEND', relationship: 50, romance: 0, gender: 'MALE' as const },
+          createNpc({ id: 'npc1', name: 'Elif', role: 'PARTNER', relationship: 80, romance: 100, gender: 'FEMALE' }),
+          createNpc({ id: 'npc2', name: 'Mehmet', role: 'FRIEND', relationship: 50, gender: 'MALE' }),
         ],
       });
 

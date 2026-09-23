@@ -4,18 +4,14 @@
  */
 
 import React, { ReactNode, useRef } from 'react';
-import { View, Text, StyleSheet, TextStyle } from 'react-native';
+import { View, Text, StyleSheet, TextStyle, Platform } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
   withSpring,
   withSequence,
-  withRepeat,
   Easing,
-  interpolate,
-  runOnJS,
-  useDerivedValue,
 } from 'react-native-reanimated';
 import { triggerHaptic, successHaptic, errorHaptic } from './HapticFeedback';
 
@@ -33,7 +29,7 @@ interface FloatingNumberProps {
  */
 export const FloatingNumber: React.FC<FloatingNumberProps> = ({
   value,
-  type = 'neutral',
+  type,
   onComplete,
   color,
 }) => {
@@ -42,7 +38,16 @@ export const FloatingNumber: React.FC<FloatingNumberProps> = ({
   const scale = useSharedValue(0.5);
 
   const displayValue = value > 0 ? `+${value}` : `${value}`;
-  const defaultColor = value > 0 ? '#34d399' : value < 0 ? '#f87171' : '#9ca3af';
+  const defaultColor =
+    type === 'increase'
+      ? '#34d399'
+      : type === 'decrease'
+      ? '#f87171'
+      : value > 0
+      ? '#34d399'
+      : value < 0
+      ? '#f87171'
+      : '#9ca3af';
 
   const hasTriggeredHaptic = useRef(false);
   
@@ -74,7 +79,7 @@ export const FloatingNumber: React.FC<FloatingNumberProps> = ({
       clearTimeout(timer);
       hasTriggeredHaptic.current = false;
     };
-  }, [value]);
+  }, [opacity, onComplete, scale, translateY, value]);
 
   const animatedStyle = useAnimatedStyle(() => {
     const transformArray: any[] = [];
@@ -124,7 +129,7 @@ export const AnimatedStatBar: React.FC<AnimatedStatBarProps> = ({
       damping: 15,
       stiffness: 100,
     });
-  }, [value, maxValue]);
+  }, [maxValue, value, width]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     width: `${width.value}%`,
@@ -179,11 +184,7 @@ export const CountUpText: React.FC<CountUpTextProps> = React.memo(({
       animatedValue.value = withTiming(value, { duration });
       prevValueRef.current = value;
     }
-  }, [value, duration]);
-
-  const animatedStyle = useAnimatedStyle(() => {
-    return {};
-  });
+  }, [animatedValue, duration, value]);
 
   return (
     <Animated.Text style={style}>
@@ -266,7 +267,7 @@ export const FlashText: React.FC<FlashTextProps> = React.memo(({
         withSpring(1, { damping: 15, stiffness: 400 })
       );
     }
-  }, [flash]);
+  }, [flash, opacity, scale]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
@@ -285,6 +286,10 @@ export const FlashText: React.FC<FlashTextProps> = React.memo(({
          prevProps.children === nextProps.children;
 });
 
+CountUpText.displayName = 'CountUpText';
+StatChangeIndicator.displayName = 'StatChangeIndicator';
+FlashText.displayName = 'FlashText';
+
 const styles = StyleSheet.create({
   floatingNumber: {
     position: 'absolute',
@@ -295,9 +300,16 @@ const styles = StyleSheet.create({
   floatingText: {
     fontSize: 20,
     fontWeight: 'bold',
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
+    ...Platform.select({
+      web: {
+        textShadow: '2px 2px 4px rgba(0, 0, 0, 0.8)',
+      },
+      ios: {
+        textShadowColor: 'rgba(0, 0, 0, 0.8)',
+        textShadowOffset: { width: 2, height: 2 },
+        textShadowRadius: 4,
+      },
+    }),
   },
   statBarContainer: {
     width: '100%',
