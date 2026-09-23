@@ -4,12 +4,7 @@ module.exports = {
   ignorePatterns: [
     'coverage/',
     'android/',
-    'backend/',
     'node_modules/',
-    'ACHIEVEMENT_SYSTEM_EXAMPLE.tsx',
-    'app/index.tsx',
-    'src/config/USAGE_EXAMPLES.ts',
-    'vite.config.ts',
   ],
   overrides: [
     {

@@ -6,7 +6,7 @@ const path = require('path');
 const repoRoot = path.resolve(__dirname, '..', '..');
 const defaultInput = path.join(repoRoot, 'reports', 'qa', 'w3-t4-manual-results-input.json');
 const defaultOutput = path.join(repoRoot, 'reports', 'qa', 'w3-t4-manual-results-latest.md');
-const validationReportPath = path.join(repoRoot, 'W3-T4_PREMIUM_QA_VALIDATION_REPORT_2026-03-03.md');
+const validationReportPath = path.join(repoRoot, 'archive', 'W3-T4_PREMIUM_QA_VALIDATION_REPORT_2026-03-03.md');
 
 const P0_CASES = [
   'TC-P0-01',
