@@ -82,7 +82,11 @@ function collectAdvisoryUrls(name, vulnerabilities, cache, trail = new Set()) {
     }
   }
 
-  cache.set(name, advisoryUrls);
+  // Only top-level results are complete: nested results may have been cut
+  // short by a dependency cycle (e.g. metro <-> metro-config).
+  if (trail.size === 1) {
+    cache.set(name, advisoryUrls);
+  }
   return advisoryUrls;
 }
 

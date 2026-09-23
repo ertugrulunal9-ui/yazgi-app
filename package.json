@@ -131,7 +131,8 @@
       "minimatch": "^9.0.7"
     },
     "@expo/metro-config": {
-      "minimatch": "^9.0.7"
+      "minimatch": "^9.0.7",
+      "postcss": "^8.5.28"
     },
     "@typescript-eslint/typescript-estree": {
       "minimatch": "^9.0.7"
@@ -166,6 +167,7 @@
     },
     "test-exclude": {
       "minimatch": "^3.1.4"
-    }
+    },
+    "browserslist": "^4.29.0"
   }
 }
