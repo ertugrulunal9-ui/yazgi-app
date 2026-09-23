@@ -12,6 +12,7 @@ dist
 dist-ssr
 *.local
 .expo
+android/.kotlin/
 
 # Editor directories and files
 .vscode/*

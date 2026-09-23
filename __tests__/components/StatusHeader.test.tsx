@@ -66,6 +66,7 @@ describe('StatusHeader stress indicator', () => {
       current: 65,
       threshold: 70,
       ratio: 65 / 70,
+      latestSource: { reason: 'test_stress', amount: 12, turn: 3 },
       recoveryPerTurn: 8,
     });
     mockedUsePillarStats.mockImplementation((incomingStats: any) => ({

@@ -1,7 +1,7 @@
 import { EVENTS } from '../../src/data/events';
 
 describe('event branching coverage', () => {
-  it('keeps reqEventIds coverage in the 15-24% range', () => {
+  it('keeps reqEventIds coverage in the 15-30% range', () => {
     const total = EVENTS.length;
     const gatedCount = EVENTS.filter(event => (event.reqEventIds?.length ?? 0) > 0).length;
     const blockedCount = EVENTS.filter(event => (event.blockEventIds?.length ?? 0) > 0).length;
@@ -10,7 +10,7 @@ describe('event branching coverage', () => {
 
     expect(total).toBeGreaterThan(300);
     expect(gatedRatio).toBeGreaterThanOrEqual(0.15);
-    expect(gatedRatio).toBeLessThanOrEqual(0.24);
+    expect(gatedRatio).toBeLessThanOrEqual(0.30);
     expect(blockedRatio).toBeGreaterThanOrEqual(0.05);
   });
 

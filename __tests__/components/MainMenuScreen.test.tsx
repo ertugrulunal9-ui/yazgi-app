@@ -1,5 +1,5 @@
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { fireEvent, render } from '@testing-library/react-native';
 import { MainMenuScreen } from '../../src/screens/MainMenuScreen';
 import { zodiacInfo, zodiacInfoEn } from '../../src/utils/gameUtils';
 import { createInitialMetaProgression } from '../../src/utils/metaProgression';
@@ -47,6 +47,40 @@ const metrics = {
 const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 describe('MainMenuScreen zodiac panel', () => {
+  it('starts a randomized quick game without requiring the character form', () => {
+    const startNewGame = jest.fn();
+    const onGameStart = jest.fn();
+    const { getByTestId } = render(
+      <MainMenuScreen
+        theme={theme as any}
+        metrics={metrics as any}
+        locale="tr"
+        onGameStart={onGameStart}
+        startNewGame={startNewGame}
+        metaProgression={createInitialMetaProgression()}
+        metaProgressionLoaded
+        updateMetaProgression={jest.fn()}
+      />
+    );
+
+    fireEvent.press(getByTestId('quick-play-button'));
+
+    expect(startNewGame).toHaveBeenCalledTimes(1);
+    expect(startNewGame).toHaveBeenCalledWith(
+      expect.stringMatching(/\S+\s+\S+/),
+      expect.objectContaining({
+        firstName: expect.any(String),
+        lastName: expect.any(String),
+        birthCity: expect.any(String),
+        birthMonth: expect.any(Number),
+        birthDay: expect.any(Number),
+        zodiacSign: expect.any(String),
+      }),
+      expect.objectContaining({ quickPlay: true })
+    );
+    expect(onGameStart).toHaveBeenCalledTimes(1);
+  });
+
   it('renders zodiac personality, strength and challenge text', () => {
     const expectedZodiac = zodiacInfo.OGLAK;
     const { getByText } = render(

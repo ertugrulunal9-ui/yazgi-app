@@ -13,6 +13,7 @@ import { calculateSchoolReport } from '../utils/schoolLogic';
 import { tRuntime } from '../i18n/strings';
 import {
   handleEventChoice as logEventChoice,
+  logFirstChoice,
   logTraitFormed,
 } from '../utils/analyticsEvents';
 import {
@@ -31,6 +32,26 @@ export const useEvents = () => {
   const { gameState, stats, advanceTurnInContext, updateGameState, updateStats, setStats } = useGame();
   const { showFloatingText } = useUI();
   const turnMediatorRef = useRef(new TurnMediator());
+  const firstChoiceLoggedRef = useRef(false);
+  const firstChoiceWindowStartedAtRef = useRef(Date.now());
+
+  useEffect(() => {
+    const isFreshRun = (
+      gameState.totalTurns === 0
+      && gameState.eventChoiceHistory.length === 0
+      && gameState.currentEvent === null
+      && (gameState.phase === 'SETUP' || gameState.phase === 'HUB')
+    );
+    if (!isFreshRun) return;
+
+    firstChoiceLoggedRef.current = false;
+    firstChoiceWindowStartedAtRef.current = Date.now();
+  }, [
+    gameState.currentEvent,
+    gameState.eventChoiceHistory.length,
+    gameState.phase,
+    gameState.totalTurns,
+  ]);
 
   const {
     getCachedEligibleEvents,
@@ -191,6 +212,17 @@ export const useEvents = () => {
           maxEnergy: gameState.maxEnergy,
         },
       );
+
+      if (!firstChoiceLoggedRef.current && gameState.eventChoiceHistory.length === 0) {
+        firstChoiceLoggedRef.current = true;
+        void logFirstChoice({
+          eventId: turnResult.eventId,
+          choiceIndex: turnResult.choiceIndexForAnalytics,
+          age: gameState.age,
+          turn: gameState.turn,
+          elapsedMs: Date.now() - firstChoiceWindowStartedAtRef.current,
+        });
+      }
     }
 
     if (turnResult.newTraits.length > 0) {

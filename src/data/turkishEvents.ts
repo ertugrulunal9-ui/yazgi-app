@@ -89,7 +89,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
     id: 'tr_oyuncak_paylasim',
     tags: ['social', 'family'],
     text: "Parkta bir çocuk senin oyuncağını istiyor. Vermek istemiyorsun ama annen bakıyor...",
-    minAge: 2, maxAge: 5, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
+    minAge: 2, maxAge: 5, difficulty: 1, rarity: 'COMMON', isRepeatable: false,
     personalityCategory: 'MORAL',
     challengesAxis: 'empathy',
     choices: [
@@ -103,6 +103,12 @@ export const TURKISH_EVENTS: GameEvent[] = [
         stressEffect: 10,
         feedback: "Zor oldu ama verdin. Çocuk mutlu oldu, sen de biraz...",
         memory: { emotion: 'PRIDE', weight: 'LOW' },
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 9,
+          eventId: 'early_toy_share_cooperation_echo',
+          priority: 'HIGH',
+        }],
       },
       {
         id: 'oyuncak_tutma',
@@ -112,6 +118,12 @@ export const TURKISH_EVENTS: GameEvent[] = [
         personalityEffects: [{ axis: 'empathy', change: -3 }],
         stressEffect: -5,
         feedback: "Çocuk ağladı, annen utandı. Ama oyuncak senin!",
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 9,
+          eventId: 'early_toy_keep_boundaries_echo',
+          priority: 'HIGH',
+        }],
       },
     ],
   },
@@ -120,7 +132,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
     id: 'tr_gece_korkusu',
     tags: ['family', 'social'],
     text: "Gece karanlık çok korkunç. Yatağın altında bir şey var gibi...",
-    minAge: 3, maxAge: 6, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
+    minAge: 3, maxAge: 6, difficulty: 1, rarity: 'COMMON', isRepeatable: false,
     personalityCategory: 'RISK',
     challengesAxis: 'courage',
     choices: [
@@ -131,6 +143,12 @@ export const TURKISH_EVENTS: GameEvent[] = [
         effect: { familyRelation: 5, energy: 10 },
         stressEffect: -10,
         feedback: "Anne geldi, sarıldı, şarkı söyledi. Rahatladın, uyudun.",
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 11,
+          eventId: 'early_night_fear_support_echo',
+          priority: 'HIGH',
+        }],
       },
       {
         id: 'korku_cesur',
@@ -142,6 +160,12 @@ export const TURKISH_EVENTS: GameEvent[] = [
         stressEffect: 15,
         feedback: "Baktın... toz ve eski oyuncaklar! Korkulacak bir şey yok. Cesur oldun!",
         memory: { emotion: 'PRIDE', weight: 'MEDIUM', customNote: 'Korkunu yendin' },
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 11,
+          eventId: 'early_night_fear_courage_echo',
+          priority: 'HIGH',
+        }],
       },
     ],
   },
@@ -854,7 +878,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
     id: 'tr_top_cama_vurma',
     tags: ['family', 'social'],
     text: "Top oynuyorsun. Top kaydı ve KOMŞUNUN CAMI! CAAAAAM! Top patladı ama cam kırılmadı...",
-    minAge: 5, maxAge: 7, difficulty: 3, rarity: 'UNCOMMON', isRepeatable: true,
+    minAge: 5, maxAge: 7, difficulty: 3, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'MORAL',
     challengesAxis: 'courage',
     choices: [
@@ -867,6 +891,12 @@ export const TURKISH_EVENTS: GameEvent[] = [
         stressEffect: 5,
         feedback: "Kaçtın! Ama komşu görmüş. Gelip söyledi. Hem azarlandın hem korkak oldun.",
         memory: { emotion: 'GUILT', weight: 'HIGH' },
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 12,
+          eventId: 'early_window_hide_accountability_echo',
+          priority: 'HIGH',
+        }],
       },
       {
         id: 'cam_ozur',
@@ -878,6 +908,12 @@ export const TURKISH_EVENTS: GameEvent[] = [
         stressEffect: 20,
         feedback: "Çok korkuyordun ama gittin, özür diledin! Komşu affetti - 'Dürüst çocuk' dedi!",
         memory: { emotion: 'PRIDE', weight: 'HIGH', customNote: 'Hatan için sorumluluk aldın' },
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 12,
+          eventId: 'early_window_apology_trust_echo',
+          priority: 'HIGH',
+        }],
       },
     ],
   },

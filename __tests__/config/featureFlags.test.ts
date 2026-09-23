@@ -109,7 +109,7 @@ describe('featureFlags', () => {
       MICRO_GOALS: true,
       NPC_RICH_FEEDBACK: true,
       UNDO_MECHANIC: true,
-      PREMIUM_SUBSCRIPTION: true,
+      PREMIUM_SUBSCRIPTION: false,
     });
   });
 });

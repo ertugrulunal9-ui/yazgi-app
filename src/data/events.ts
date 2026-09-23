@@ -15,6 +15,7 @@ import { NPC_QUESTLINE_EVENTS } from './npcQuestlineEvents';
 import { NPC_CHECKIN_EVENTS } from './npcCheckInEvents';
 import { CLIFFHANGER_EVENTS } from './cliffhangerEvents';
 import { BUTTERFLY_EFFECT_EVENTS } from './butterflyEffectEvents';
+import { EARLY_CONSEQUENCE_EVENTS } from './earlyConsequenceEvents';
 import { ITEM_UNLOCK_EVENTS } from './itemUnlockEvents';
 import { SOCIAL_GROUP_EVENTS } from './socialGroupEvents';
 import { applyProceduralEventBranching } from './eventBranchingEnhancer';
@@ -54,6 +55,7 @@ const BASE_EVENTS: GameEvent[] = [
   ...CLIFFHANGER_EVENTS,
   // Kelebek etkisi — geri dönüşü olmayan kararlar
   ...BUTTERFLY_EFFECT_EVENTS,
+  ...EARLY_CONSEQUENCE_EVENTS,
   ...ITEM_UNLOCK_EVENTS,
   ...SOCIAL_GROUP_EVENTS,
 ];

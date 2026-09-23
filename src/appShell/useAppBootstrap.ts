@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts } from 'expo-font';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Appearance } from 'react-native';
 import {
   initializeFeatureFlags,
@@ -11,9 +11,9 @@ import { getLoadingQuoteByAge } from '../data/loadingQuotes';
 import { DEFAULT_LOCALE } from '../i18n/strings';
 import type { AppLocale } from '../i18n/strings';
 import { analyticsService } from '../services/analytics';
+import { logAppOpen } from '../utils/analyticsEvents';
 import { requestAndResolveConsent } from '../services/consentService';
 import { initMonetization, setPersonalizedAdsEnabled as setMonetizationPersonalizedAdsEnabled } from '../services/monetization';
-import { requestPermissions as requestNotificationPermissions } from '../services/notificationService';
 import { initializeSubscriptions } from '../services/subscriptionManager';
 import {
   DEFAULT_UI_PREFS,
@@ -63,6 +63,7 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
   });
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [checkingOnboarding, setCheckingOnboarding] = useState(true);
+  const appOpenLoggedRef = useRef(false);
   const splashQuote = useMemo(() => getLoadingQuoteByAge(0, locale), [locale]);
 
   useEffect(() => {
@@ -124,10 +125,6 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
           console.warn('Monetization init failed:', error);
         });
 
-      requestNotificationPermissions().catch((error) => {
-        console.warn('Notification permissions request failed:', error);
-      });
-
       unsubscribeFlags = subscribeFeatureFlags((nextFlags) => {
         if (!nextFlags.PREMIUM_SUBSCRIPTION) {
           return;
@@ -150,6 +147,11 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
   useEffect(() => {
     if (!uiPrefsLoaded) return;
     analyticsService.setEnabled(uiPrefs.analyticsEnabled);
+
+    if (uiPrefs.analyticsEnabled && !appOpenLoggedRef.current) {
+      appOpenLoggedRef.current = true;
+      void logAppOpen();
+    }
   }, [uiPrefs.analyticsEnabled, uiPrefsLoaded]);
 
   useEffect(() => {

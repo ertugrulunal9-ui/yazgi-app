@@ -17,10 +17,10 @@ Yazgı, 0'dan 18 yaşına kadar bir hayatı yaşadığın Türkçe yaşam simül
 
 Ders mi çalışırsın, arkadaşlarınla mı takılırsın? Ailenle mi vakit geçirirsin, kendi yolunu mu çizersin? Zorlu anlarda doğruyu mu söylersin, yoksa kolay yolu mu seçersin?
 
-🎭 500'den fazla benzersiz olay
+🎭 400'den fazla benzersiz olay
 Her yaş döneminde seni bekleyen farklı olaylar — aile tartışmaları, okul sınavları, arkadaşlık krizleri, beklenmedik fırsatlar.
 
-🏁 47 farklı son
+🏁 35 farklı son
 Sıradan bir hayat mı yaşarsın, yoksa efsane olur musun? Her oyun farklı — ending galerisini doldur.
 
 🧠 Gelişen kişilik sistemi
@@ -44,10 +44,10 @@ Yazgi is a Turkish life simulation game where you live a life from age 0 to 18. 
 
 Study or hang out with friends? Spend time with family or carve your own path? Tell the truth when it's hard, or take the easy way out?
 
-🎭 500+ unique events
+🎭 400+ unique events
 Different events await you at every age — family conflicts, school exams, friendship crises, unexpected opportunities.
 
-🏁 47 different endings
+🏁 35 different endings
 Will you live an ordinary life, or become a legend? Every run is different — fill your ending gallery.
 
 🧠 Evolving personality system

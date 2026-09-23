@@ -25,8 +25,10 @@ import {
   getLocalizedZodiacInfo,
   getMaxDaysInMonth,
   NewGameBootstrapOptions,
+  QUICK_PLAY_START_AGE,
   turkishCities,
 } from '../utils/gameUtils';
+import { logQuickStart } from '../utils/analyticsEvents';
 import { getDensityMetrics, getThemeTokens } from '../utils/themeUtils';
 import { checkDailyLogin, getLegacyBonusBreakdown } from '../utils/metaProgression';
 import {
@@ -320,23 +322,22 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({
   }, [isFormReady, startGame, tStatic]);
 
   const handleQuickPlay = useCallback(() => {
-    if (!isFormReady) {
-      buttonPress();
-      Alert.alert(
-        tStatic('app.missingInfoTitle', undefined, 'Eksik Bilgi'),
-        tStatic('app.completeRequiredFields', undefined, 'Baslamak icin ad, soyad ve sehir gerekli.')
-      );
-      return;
-    }
-    const characterInfo = buildCharacterInfo();
+    buttonPress();
+    const characterInfo = isFormReady
+      ? buildCharacterInfo()
+      : generateRandomCharacter(locale);
     successHaptic();
+    void logQuickStart({
+      usedExistingCharacter: isFormReady,
+      startAge: QUICK_PLAY_START_AGE,
+    });
     startNewGame(
       `${characterInfo.firstName} ${characterInfo.lastName}`,
       characterInfo,
       { quickPlay: true, avatar }
     );
     onGameStart();
-  }, [avatar, buildCharacterInfo, isFormReady, onGameStart, startNewGame, tStatic]);
+  }, [avatar, buildCharacterInfo, isFormReady, locale, onGameStart, startNewGame]);
 
   const containerStyle = useMemo(() => ({
     flex: 1,
@@ -818,7 +819,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({
 
             <TouchableOpacity
                 onPress={handleQuickPlay}
-                disabled={!isFormReady}
+                testID="quick-play-button"
                 style={{
                   marginTop: 8,
                   borderRadius: 12,
@@ -828,19 +829,19 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({
                   backgroundColor: theme.surfaceOverlay,
                   justifyContent: 'center',
                   alignItems: 'center',
-                  opacity: isFormReady ? 1 : 0.55,
+                  opacity: 1,
                 }}
                 activeOpacity={0.85}
                 accessibilityRole="button"
-                accessibilityLabel={tStatic('app.quickPlay', undefined, 'Hizli Oyun - 13 Yastan Basla')}
+                accessibilityLabel={tStatic('app.quickPlay', undefined, 'Hemen Başla - Rastgele Karakter')}
               >
                 <Text style={{ color: theme.textSecondary, fontWeight: '700', fontSize: metrics.font - 1 }}>
-                  {tStatic('app.quickPlay', undefined, 'Hizli Oyun — 13 Yastan Basla')}
+                  {tStatic('app.quickPlay', undefined, 'Hemen Başla — Rastgele Karakter')}
                 </Text>
               </TouchableOpacity>
               {(metaProgression?.recentRuns?.length ?? 0) === 0 && (
                 <Text style={{ color: theme.textSecondary, fontSize: 11, textAlign: 'center', marginTop: 4 }}>
-                  {tStatic('app.quickPlayHint', undefined, 'Hizli oynamak isteyenler icin — 13 yasindan basla')}
+                  {tStatic('app.quickPlayHint', undefined, 'Form doldurmadan rastgele bir karakterle 13 yaşından başla')}
                 </Text>
               )}
           </ScrollView>

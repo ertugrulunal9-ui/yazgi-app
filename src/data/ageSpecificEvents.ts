@@ -770,7 +770,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
     id: 'tr_resim_yarisma',
     tags: ['art', 'creative'],
     text: "Öğretmen en güzel resmi seçecek! Herkes çiziyor. Sen ne çizeceksin?",
-    minAge: 4, maxAge: 6, difficulty: 1, rarity: 'COMMON', isRepeatable: true,
+    minAge: 4, maxAge: 6, difficulty: 1, rarity: 'COMMON', isRepeatable: false,
     personalityCategory: 'GROWTH',
     challengesAxis: 'openness',
     choices: [
@@ -783,6 +783,12 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         skillUpdates: { art: 2 },
         stressEffect: 5,
         feedback: "Herkes ev çizerken sen uzay gemisi çizdin! Öğretmen çok beğendi!",
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 13,
+          eventId: 'early_art_original_voice_echo',
+          priority: 'HIGH',
+        }],
       },
       {
         id: 'resim_herkes',
@@ -793,6 +799,12 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         skillUpdates: { art: 1 },
         stressEffect: -5,
         feedback: "Güzel bir ev çizdin. Kötü değildi ama birçok çocuk aynı şeyi çizmişti.",
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 13,
+          eventId: 'early_art_safe_pattern_echo',
+          priority: 'HIGH',
+        }],
       },
     ],
   },
@@ -885,6 +897,12 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         stressEffect: 10,
         feedback: "Adı Ali! Çok iyi anlaştınız. Teneffüste birlikte oynadınız!",
         memory: { emotion: 'PRIDE', weight: 'LOW' },
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 14,
+          eventId: 'school_new_friend_reunion_echo',
+          priority: 'HIGH',
+        }],
       },
       {
         id: 'yeni_ark_izle',
@@ -893,6 +911,12 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         effect: { intelligence: 2 },
         stressEffect: 0,
         feedback: "Başkaları yanına gitti. Sen fırsatı kaçırdın ama belki yarın...",
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 14,
+          eventId: 'school_new_friend_distance_echo',
+          priority: 'HIGH',
+        }],
       },
     ],
   },
@@ -901,7 +925,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
     id: 'tr_sinav_sonucu',
     tags: ['exam', 'school', 'karne'],
     text: "Öğretmen sınav kağıtlarını dağıtıyor! Kalbin çarpıyor... Kağıdını çevirdin...",
-    minAge: 7, maxAge: 9, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
+    minAge: 7, maxAge: 9, difficulty: 2, rarity: 'COMMON', isRepeatable: false,
     personalityCategory: 'SOCIAL',
     choices: [
       {
@@ -911,6 +935,12 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         effect: { intelligence: 3, charisma: 3, familyRelation: 5 },
         stressEffect: -10,
         feedback: "Not güzel! Eve koşarak gidip göstereceksin!",
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 14,
+          eventId: 'school_exam_pride_echo',
+          priority: 'HIGH',
+        }],
       },
       {
         id: 'sinav_kotu',
@@ -922,6 +952,12 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         stressEffect: 15,
         feedback: "Kağıdı çantanın dibine tıktın. Ama er ya da geç ortaya çıkacak...",
         memory: { emotion: 'GUILT', weight: 'LOW' },
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 14,
+          eventId: 'school_exam_hidden_echo',
+          priority: 'HIGH',
+        }],
       },
       {
         id: 'sinav_calis',
@@ -931,6 +967,12 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         personalityEffects: [{ axis: 'patience', change: 2 }],
         stressEffect: 5,
         feedback: "Kararını verdin: Bir dahakine mutlaka daha iyi olacak!",
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 14,
+          eventId: 'school_exam_recovery_echo',
+          priority: 'HIGH',
+        }],
       },
     ],
   },
@@ -1131,6 +1173,12 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         stressEffect: 20,
         feedback: "Gruba girmedin ama vicdanın rahat. Dışlanan çocuk sana minnettar.",
         memory: { emotion: 'PRIDE', weight: 'HIGH' },
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 14,
+          eventId: 'exclusion_stand_echo',
+          priority: 'HIGH',
+        }],
       },
       {
         id: 'grup_kabul',
@@ -1141,6 +1189,12 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         stressEffect: 5,
         feedback: "Gruba girdin ama o çocuğun yalnız kaldığını gördükçe içinden bir ses sızlıyor.",
         memory: { emotion: 'GUILT', weight: 'MEDIUM' },
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 14,
+          eventId: 'exclusion_belong_echo',
+          priority: 'HIGH',
+        }],
       },
     ],
   },
@@ -1161,6 +1215,12 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         personalityEffects: [{ axis: 'conformity', change: 3 }],
         stressEffect: 5,
         feedback: "Hesap açtın! Arkadaşlarını ekledin, fotoğraf paylaştın. Yeni bir dünya!",
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 15,
+          eventId: 'social_media_presence_echo',
+          priority: 'HIGH',
+        }],
       },
       {
         id: 'sosyal_bekle',
@@ -1170,6 +1230,12 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         personalityEffects: [{ axis: 'patience', change: 3 }],
         stressEffect: 5,
         feedback: "Arkadaşların dalga geçti ama ailen senin tarafında. Doğru zamanda olacak.",
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 15,
+          eventId: 'social_media_boundary_echo',
+          priority: 'HIGH',
+        }],
       },
       {
         id: 'sosyal_gizli',
@@ -1181,6 +1247,12 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         stressEffect: 15,
         feedback: "Gizlice açtın ama her an yakalanma korkusu... Stresli!",
         memory: { emotion: 'GUILT', weight: 'LOW' },
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 15,
+          eventId: 'social_media_secret_echo',
+          priority: 'HIGH',
+        }],
       },
     ],
   },
@@ -1299,6 +1371,12 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         stressEffect: 5,
         feedback: "Yeni arkadaşlar, yeni dersler! Her şey heyecan verici!",
         memory: { emotion: 'SATISFACTION', weight: 'LOW' },
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 15,
+          eventId: 'middle_school_open_echo',
+          priority: 'HIGH',
+        }],
       },
       {
         id: 'ortaokul_korku',
@@ -1308,6 +1386,12 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         personalityEffects: [{ axis: 'courage', change: -3 }],
         stressEffect: 15,
         feedback: "İlk günler zor geçti ama yavaş yavaş alışmaya başladın.",
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 15,
+          eventId: 'middle_school_fear_echo',
+          priority: 'HIGH',
+        }],
       },
       {
         id: 'ortaokul_hazirlan',
@@ -1317,6 +1401,12 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         personalityEffects: [{ axis: 'patience', change: 3 }],
         stressEffect: 0,
         feedback: "Her şey düzenli! İlk gün hazırlıklı gittin, öğretmenler etkilendi.",
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 15,
+          eventId: 'middle_school_prepare_echo',
+          priority: 'HIGH',
+        }],
       },
     ],
   },
@@ -1325,7 +1415,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
     id: 'tr_ogretmen_adaletsiz',
     tags: ['school', 'social'],
     text: "Öğretmenin seni suçsuz yere azarladı! Sınıfın önünde utandın. Haksızlık!",
-    minAge: 9, maxAge: 11, difficulty: 3, rarity: 'UNCOMMON', isRepeatable: true,
+    minAge: 9, maxAge: 11, difficulty: 3, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'CONFLICT',
     challengesAxis: 'courage',
     choices: [
@@ -1339,6 +1429,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         stressEffect: 20,
         feedback: "Sakin bir şekilde durumu anlattın. Öğretmen düşündü ve özür diledi!",
         memory: { emotion: 'PRIDE', weight: 'HIGH' },
+        futureEvents: [{ trigger: 'AGE', age: 16, eventId: 'teacher_unfair_voice_echo', priority: 'HIGH' }],
       },
       {
         id: 'ogretmen_sus',
@@ -1349,6 +1440,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         stressEffect: -5,
         feedback: "İçinden 'haksız' dedin ama sustun. Akşam eve gelince annene anlattın.",
         memory: { emotion: 'REGRET', weight: 'LOW' },
+        futureEvents: [{ trigger: 'AGE', age: 16, eventId: 'teacher_unfair_silence_echo', priority: 'HIGH' }],
       },
       {
         id: 'ogretmen_agla',
@@ -1357,6 +1449,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         effect: { charisma: -3, energy: -5 },
         stressEffect: -10,
         feedback: "Gözyaşlarını tutamadın. Bazı arkadaşların yanına geldi. Destekleri iyi geldi.",
+        futureEvents: [{ trigger: 'AGE', age: 16, eventId: 'teacher_unfair_support_echo', priority: 'HIGH' }],
       },
     ],
   },
@@ -1365,7 +1458,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
     id: 'tr_zorbalik_tanik',
     tags: ['social', 'school'],
     text: "Teneffüste büyük bir çocuk küçük birini itiyor, çantasını alıyor. Kimse bir şey yapmıyor...",
-    minAge: 9, maxAge: 11, difficulty: 3, rarity: 'UNCOMMON', isRepeatable: true,
+    minAge: 9, maxAge: 11, difficulty: 3, rarity: 'UNCOMMON', isRepeatable: false,
     personalityCategory: 'MORAL',
     challengesAxis: 'courage',
     choices: [
@@ -1379,6 +1472,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         stressEffect: 25,
         feedback: "Zorba şaşırdı, çantayı bıraktı. Küçük çocuk sana minnettar. Cesur bir hareket!",
         memory: { emotion: 'PRIDE', weight: 'HIGH' },
+        futureEvents: [{ trigger: 'AGE', age: 14, eventId: 'bullying_witness_intervene_echo', priority: 'HIGH' }],
       },
       {
         id: 'zorba_ogretmen',
@@ -1388,6 +1482,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         personalityEffects: [{ axis: 'empathy', change: 3 }],
         stressEffect: 10,
         feedback: "Öğretmen geldi, zorbayı azarladı. Doğru olanı yaptın, güvenli bir şekilde.",
+        futureEvents: [{ trigger: 'AGE', age: 14, eventId: 'bullying_witness_report_echo', priority: 'HIGH' }],
       },
       {
         id: 'zorba_ignore',
@@ -1398,6 +1493,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         stressEffect: 5,
         feedback: "Geçip gittin ama o çocuğun yüzü gözünün önünden gitmedi.",
         memory: { emotion: 'GUILT', weight: 'LOW' },
+        futureEvents: [{ trigger: 'AGE', age: 14, eventId: 'bullying_witness_ignore_echo', priority: 'HIGH' }],
       },
     ],
   },
@@ -1417,6 +1513,12 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         skillUpdates: { music: 5 },
         stressEffect: -5,
         feedback: "İlk akortlar zor ama ses çıkarmaya başladın! Bu işin başı.",
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 16,
+          eventId: 'hobby_music_echo',
+          priority: 'HIGH',
+        }],
       },
       {
         id: 'hobi_kodlama',
@@ -1426,6 +1528,12 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         skillUpdates: { coding: 5 },
         stressEffect: 5,
         feedback: "İlk programın: 'Merhaba Dünya!' Ekranda kendi yazdığın şeyi görmek harika!",
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 16,
+          eventId: 'hobby_coding_echo',
+          priority: 'HIGH',
+        }],
       },
       {
         id: 'hobi_spor',
@@ -1435,6 +1543,12 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         skillUpdates: { sports: 5, teamwork: 3 },
         stressEffect: -5,
         feedback: "Antrenmanlar zor ama takım ruhu muhteşem! Yeni arkadaşlar edindin.",
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 16,
+          eventId: 'hobby_sport_echo',
+          priority: 'HIGH',
+        }],
       },
       {
         id: 'hobi_resim',
@@ -1444,6 +1558,12 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         skillUpdates: { art: 5 },
         stressEffect: -10,
         feedback: "Fırçaları eline aldın, renklerin dünyasına daldın. Sakinleştirici!",
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 16,
+          eventId: 'hobby_art_echo',
+          priority: 'HIGH',
+        }],
       },
     ],
   },
@@ -1465,6 +1585,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         personalityEffects: [{ axis: 'patience', change: 5 }],
         stressEffect: 10,
         feedback: "Zor ama ailene güveniyorsun. Zamanı gelince alacaksın.",
+        futureEvents: [{ trigger: 'AGE', age: 15, eventId: 'phone_wait_echo', priority: 'HIGH' }],
       },
       {
         id: 'telefon_tartis',
@@ -1474,6 +1595,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         personalityEffects: [{ axis: 'conformity', change: -3 }],
         stressEffect: -5,
         feedback: "Tartıştınız. 'Herkes yaparsa sen de mi yaparsın?' Klasik anne cevabı...",
+        futureEvents: [{ trigger: 'AGE', age: 15, eventId: 'phone_conflict_echo', priority: 'HIGH' }],
       },
       {
         id: 'telefon_pazarlik',
@@ -1483,6 +1605,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         personalityEffects: [{ axis: 'patience', change: 3 }],
         stressEffect: 5,
         feedback: "Baban düşündü... 'Takdir belgesi getir, düşünelim.' Motivasyon buldum!",
+        futureEvents: [{ trigger: 'AGE', age: 15, eventId: 'phone_bargain_echo', priority: 'HIGH' }],
       },
     ],
   },
@@ -1491,7 +1614,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
     id: 'tr_ders_baskisi',
     tags: ['study', 'school'],
     text: "Sınav haftası! Annen 'Çalış!' diyor, baban 'Notların düşüyor!' diyor. Stres çok...",
-    minAge: 9, maxAge: 11, difficulty: 3, rarity: 'COMMON', isRepeatable: true,
+    minAge: 9, maxAge: 11, difficulty: 3, rarity: 'COMMON', isRepeatable: false,
     personalityCategory: 'GROWTH',
     challengesAxis: 'patience',
     choices: [
@@ -1504,6 +1627,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         personalityEffects: [{ axis: 'patience', change: 5 }],
         stressEffect: 15,
         feedback: "Her gün 2 saat çalıştın. Zor ama sistematik çalışma işe yaradı!",
+        futureEvents: [{ trigger: 'AGE', age: 16, eventId: 'study_pressure_plan_echo', priority: 'HIGH' }],
       },
       {
         id: 'ders_son_gece',
@@ -1512,6 +1636,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         effect: { intelligence: 3, discipline: -5, energy: -15 },
         stressEffect: -5,
         feedback: "Son gece gözlerini ovuşturarak çalıştın. Yarısını unuttun zaten...",
+        futureEvents: [{ trigger: 'AGE', age: 16, eventId: 'study_pressure_cram_echo', priority: 'HIGH' }],
       },
       {
         id: 'ders_arkadas',
@@ -1521,6 +1646,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         skillUpdates: { teamwork: 2 },
         stressEffect: 0,
         feedback: "Birbirinize sordunuz, anlatınız. Hem eğlenceli hem öğretici!",
+        futureEvents: [{ trigger: 'AGE', age: 16, eventId: 'study_pressure_together_echo', priority: 'HIGH' }],
       },
     ],
   },
@@ -1529,7 +1655,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
     id: 'tr_sir_saklama',
     tags: ['friend', 'social'],
     text: "En yakın arkadaşın sana bir sır söyledi. Ama başka bir arkadaşın da bu sırrı soruyor!",
-    minAge: 9, maxAge: 11, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
+    minAge: 9, maxAge: 11, difficulty: 2, rarity: 'COMMON', isRepeatable: false,
     personalityCategory: 'MORAL',
     challengesAxis: 'empathy',
     choices: [
@@ -1663,7 +1789,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
     id: 'tr_grup_projesi',
     tags: ['study', 'school', 'group'],
     text: "Öğretmen grup projesi verdi! 4 kişi bir grup. Ama grubundakiler çalışmıyor, her şeyi sen yapıyorsun...",
-    minAge: 9, maxAge: 11, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
+    minAge: 9, maxAge: 11, difficulty: 2, rarity: 'COMMON', isRepeatable: false,
     personalityCategory: 'CONFLICT',
     challengesAxis: 'patience',
     choices: [
@@ -1675,6 +1801,12 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         stressEffect: 15,
         feedback: "Proje mükemmel oldu ama sen bitik haldesin. Arkadaşlar bedava not aldı.",
         memory: { emotion: 'REGRET', weight: 'LOW' },
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 15,
+          eventId: 'school_project_overwork_echo',
+          priority: 'HIGH',
+        }],
       },
       {
         id: 'proje_uyar',
@@ -1686,6 +1818,12 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         skillUpdates: { teamwork: 3 },
         stressEffect: 10,
         feedback: "Liderlik yaptın! Herkes biraz çalıştı. Mükemmel değil ama adil.",
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 15,
+          eventId: 'school_project_leadership_echo',
+          priority: 'HIGH',
+        }],
       },
       {
         id: 'proje_ogretmen',
@@ -1694,6 +1832,12 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         effect: { discipline: 5, charisma: -5 },
         stressEffect: 5,
         feedback: "Öğretmen uyardı ama arkadaşların sana kızdı. 'İspiyoncu!' İçin rahat, dışın zor.",
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 15,
+          eventId: 'school_project_report_echo',
+          priority: 'HIGH',
+        }],
       },
     ],
   },
@@ -1702,7 +1846,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
     id: 'tr_arkadas_kus',
     tags: ['friend', 'social'],
     text: "En yakın arkadaşınla kavga ettiniz. 3 gündür konuşmuyorsunuz. Seni arıyor ama...",
-    minAge: 9, maxAge: 11, difficulty: 2, rarity: 'COMMON', isRepeatable: true,
+    minAge: 9, maxAge: 11, difficulty: 2, rarity: 'COMMON', isRepeatable: false,
     personalityCategory: 'SOCIAL',
     challengesAxis: 'empathy',
     choices: [
@@ -1716,6 +1860,12 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         stressEffect: 10,
         feedback: "Özür diledin, o da diledi. Arkadaşlık daha güçlü geri döndü!",
         memory: { emotion: 'PRIDE', weight: 'LOW' },
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 16,
+          eventId: 'friend_conflict_repair_echo',
+          priority: 'HIGH',
+        }],
       },
       {
         id: 'kus_bekle',
@@ -1725,6 +1875,12 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         personalityEffects: [{ axis: 'patience', change: -2 }],
         stressEffect: 5,
         feedback: "İnat ettin. Birkaç gün sonra barıştınız ama arada mesafe kaldı.",
+        futureEvents: [{
+          trigger: 'AGE',
+          age: 16,
+          eventId: 'friend_conflict_distance_echo',
+          priority: 'HIGH',
+        }],
       },
     ],
   },
@@ -1745,6 +1901,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         personalityEffects: [{ axis: 'openness', change: 3 }],
         stressEffect: -5,
         feedback: "Ailen anlattı, normal olduğunu söyledi. Rahatlayıcıydı.",
+        futureEvents: [{ trigger: 'AGE', age: 17, eventId: 'body_change_questions_echo', priority: 'HIGH' }],
       },
       {
         id: 'beden_utanc',
@@ -1753,6 +1910,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         effect: { discipline: 2 },
         stressEffect: 10,
         feedback: "Herkesin aynı şeyi yaşadığını bilmeden endişelendin. Sonra öğreneceksin.",
+        futureEvents: [{ trigger: 'AGE', age: 17, eventId: 'body_change_avoid_echo', priority: 'HIGH' }],
       },
       {
         id: 'beden_arastir',
@@ -1762,6 +1920,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         personalityEffects: [{ axis: 'openness', change: 2 }],
         stressEffect: 0,
         feedback: "Ergenlik hakkında bilgi edindin. Bilgi güçtür! Daha az endişelisin.",
+        futureEvents: [{ trigger: 'AGE', age: 17, eventId: 'body_change_research_echo', priority: 'HIGH' }],
       },
     ],
   },
@@ -1782,6 +1941,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         stressEffect: 5,
         feedback: "Sirke ve karbonat! Patladı! Herkes etkilendi. Bilim eğlenceli!",
         memory: { emotion: 'PRIDE', weight: 'LOW' },
+        futureEvents: [{ trigger: 'AGE', age: 16, eventId: 'science_fair_demo_echo', priority: 'HIGH' }],
       },
       {
         id: 'bilim_bitki',
@@ -1791,6 +1951,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         personalityEffects: [{ axis: 'patience', change: 3 }],
         stressEffect: 5,
         feedback: "3 hafta boyunca her gün bitki ölçtün, fotoğrafladın. Sabır ve bilim!",
+        futureEvents: [{ trigger: 'AGE', age: 16, eventId: 'science_fair_patience_echo', priority: 'HIGH' }],
       },
       {
         id: 'bilim_son_gun',
@@ -1799,6 +1960,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         effect: { intelligence: 2, discipline: -5 },
         stressEffect: -5,
         feedback: "Aceleyle bir poster yaptın. Kötü değildi ama olabilecek en iyisi de değildi.",
+        futureEvents: [{ trigger: 'AGE', age: 16, eventId: 'science_fair_last_minute_echo', priority: 'HIGH' }],
       },
     ],
   },

@@ -8,6 +8,7 @@ import { EVENTS } from '../data/events';
 import { calculateGoalAlignmentScore } from '../utils/eventSelection';
 import { getGoalChainStage } from '../data/goalChainEvents';
 import {
+  logDelayedConsequenceSeen,
   logGoalAlignmentScore,
   logMilestoneReached,
 } from '../utils/analyticsEvents';
@@ -82,6 +83,15 @@ export const useEventHelpers = () => {
     const selectedGoal = gameState.selectedGoal ?? null;
     const alignmentScore = calculateGoalAlignmentScore(event, selectedGoal);
     void logGoalAlignmentScore({ eventId: event.id, selectedGoal, alignmentScore, age, turn });
+
+    if (event.tags?.includes('scheduled_only') && event.tags.includes('followup')) {
+      void logDelayedConsequenceSeen({
+        sourceEventId: event.reqEventIds?.[0] ?? 'unknown',
+        targetEventId: event.id,
+        age,
+        turn,
+      });
+    }
 
     const stage = getGoalChainStage(event.id);
     if (stage && selectedGoal) {

@@ -29,7 +29,9 @@ export const FEATURE_FLAGS = {
   MICRO_GOALS: true,
   NPC_RICH_FEEDBACK: true,
   UNDO_MECHANIC: true,
-  PREMIUM_SUBSCRIPTION: true,
+  // Soft launch has one clear business model: ads. Keep subscriptions dark
+  // until purchase, restore and entitlement flows are release-ready together.
+  PREMIUM_SUBSCRIPTION: false,
 } as const;
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS;

@@ -530,6 +530,52 @@ export const logCustomEvent = async (eventName: string, data?: Record<string, an
   });
 };
 
+export const logQuickStart = async (meta: {
+  usedExistingCharacter: boolean;
+  startAge: number;
+}) => {
+  await logCustomEvent('quick_start', {
+    used_existing_character: meta.usedExistingCharacter,
+    start_age: meta.startAge,
+  });
+};
+
+export const logAppOpen = async () => {
+  await logCustomEvent('app_open', {
+    privacy_scope: 'analytics_opt_in',
+  });
+};
+
+export const logFirstChoice = async (meta: {
+  eventId: string;
+  choiceIndex: number;
+  age: number;
+  turn: number;
+  elapsedMs: number;
+}) => {
+  await logCustomEvent('first_choice', {
+    event_id: meta.eventId,
+    choice_index: meta.choiceIndex,
+    age: meta.age,
+    turn: meta.turn,
+    elapsed_ms: Math.max(0, Math.round(meta.elapsedMs)),
+  });
+};
+
+export const logDelayedConsequenceSeen = async (meta: {
+  sourceEventId: string;
+  targetEventId: string;
+  age: number;
+  turn: number;
+}) => {
+  await logCustomEvent('delayed_consequence_seen', {
+    source_event_id: meta.sourceEventId,
+    target_event_id: meta.targetEventId,
+    age: meta.age,
+    turn: meta.turn,
+  });
+};
+
 interface GoalAlignmentMeta {
   eventId: string;
   selectedGoal?: string | null;

@@ -6,6 +6,7 @@ import { Platform } from 'react-native';
 import SaveManager from '../save/SaveManager';
 import { isPremium as checkPremiumSubscription } from './subscriptionManager';
 import { devLog } from '../utils/devLogger';
+import { loadAdMobModule } from './adMobModule';
 
 export type AdType = 'rewarded' | 'interstitial';
 export type RewardType = 'energy' | 'intelligence' | 'money';
@@ -164,8 +165,7 @@ const optionalRequire = (moduleName: string): any => {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         return require('expo-constants');
       case 'react-native-google-mobile-ads':
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        return require('react-native-google-mobile-ads');
+        return loadAdMobModule();
       default:
         return null;
     }

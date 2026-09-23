@@ -29,6 +29,10 @@ import {
   showContextualRewardedAd,
 } from '../services/monetization';
 import {
+  requestPermissions as requestNotificationPermissions,
+  scheduleReengagement,
+} from '../services/notificationService';
+import {
   logRewardedAdRequested,
   logRewardedAdResult,
   logShareEvent,
@@ -49,9 +53,8 @@ import {
 } from '../animations';
 
 const MAX_AGE = 18;
-const LEGACY_BONUS_AD_POINTS = 15;
-
 type GameOverTab = 'ozet' | 'detay' | 'hikaye';
+type NotificationPromptState = 'idle' | 'requesting' | 'enabled' | 'unavailable';
 
 interface GameOverScreenProps {
   theme: ReturnType<typeof getThemeTokens>;
@@ -93,15 +96,14 @@ const firstSentence = (value: string): string => {
 export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, onRestart }) => {
   const { gameState, playerName, stats } = useGame();
   const { t } = useUI();
-  const { metaProgression, updateMetaProgression } = useMetaProgression();
+  const { metaProgression } = useMetaProgression();
   const safeMeta = metaProgression ?? createInitialMetaProgression();
 
   const [activeTab, setActiveTab] = useState<GameOverTab>('ozet');
   const [isSharing, setIsSharing] = useState(false);
   const [altEndingUnlocked, setAltEndingUnlocked] = useState(false);
   const [altEndingUnlocking, setAltEndingUnlocking] = useState(false);
-  const [legacyAdClaimed, setLegacyAdClaimed] = useState(false);
-  const [legacyAdClaiming, setLegacyAdClaiming] = useState(false);
+  const [notificationPromptState, setNotificationPromptState] = useState<NotificationPromptState>('idle');
   const [communityRunCount, setCommunityRunCount] = useState<number>(0);
 
   useEffect(() => {
@@ -294,49 +296,26 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
     }
   };
 
-  const handleLegacyBonusAd = async () => {
-    if (legacyAdClaiming || legacyAdClaimed) return;
-    setLegacyAdClaiming(true);
-    const remainingBefore = getRemainingRewardedAds();
-    void logRewardedAdRequested({
-      placement: 'legacy_bonus',
-      rewardType: 'currency',
-      remainingBefore,
-    });
-    try {
-      const adResult = await showContextualRewardedAd('legacy_bonus');
-      const remainingAfter = getRemainingRewardedAds();
-      if (!adResult.success) {
-        void logRewardedAdResult({
-          placement: 'legacy_bonus',
-          rewardType: 'currency',
-          success: false,
-          remainingAfter,
-          errorMessage: adResult.error,
-        });
-        Alert.alert(t('messages.adNotShown'), adResult.error || t('messages.tryAgain'));
-        return;
-      }
-      const newPoints = (safeMeta.totalLegacyPoints ?? 0) + LEGACY_BONUS_AD_POINTS;
-      const newLevel = Math.min(10, Math.floor(newPoints / 80));
-      updateMetaProgression({ ...safeMeta, totalLegacyPoints: newPoints, legacyLevel: newLevel });
-      setLegacyAdClaimed(true);
-      void logRewardedAdResult({
-        placement: 'legacy_bonus',
-        rewardType: 'currency',
-        success: true,
-        amount: LEGACY_BONUS_AD_POINTS,
-        remainingAfter,
-      });
-    } finally {
-      setLegacyAdClaiming(false);
-    }
-  };
-
   const handleRestart = () => {
     buttonPress();
     successHaptic();
     onRestart();
+  };
+
+  const handleEnableReminder = async () => {
+    if (notificationPromptState !== 'idle') return;
+    buttonPress();
+    setNotificationPromptState('requesting');
+
+    const granted = await requestNotificationPermissions();
+    if (!granted) {
+      setNotificationPromptState('unavailable');
+      return;
+    }
+
+    await scheduleReengagement(24);
+    setNotificationPromptState('enabled');
+    successHaptic();
   };
 
   const cardStyle = {
@@ -1028,26 +1007,36 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
             </Text>
           )}
 
-          {!legacyAdClaimed && (
+          {(notificationPromptState === 'idle' || notificationPromptState === 'requesting') && (
             <TouchableOpacity
-              onPress={handleLegacyBonusAd}
-              disabled={legacyAdClaiming}
+              onPress={handleEnableReminder}
+              disabled={notificationPromptState === 'requesting'}
+              accessibilityRole="button"
+              accessibilityLabel={t('buttons.enableReminder', undefined, 'Yarın yeni bir hayat için hatırlat')}
               style={{
                 paddingVertical: 10,
                 borderRadius: 10,
                 alignItems: 'center',
-                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                backgroundColor: theme.surfaceOverlay,
                 borderWidth: 1,
-                borderColor: '#f59e0b',
-                opacity: legacyAdClaiming ? 0.7 : 1,
+                borderColor: theme.accentBrand,
+                opacity: notificationPromptState === 'requesting' ? 0.7 : 1,
               }}
             >
-              <Text style={{ color: '#f59e0b', fontWeight: '700', fontSize: 13 }}>
-                {legacyAdClaiming
-                  ? t('ui.adLoading', undefined, 'Yükleniyor...')
-                  : t('buttons.legacyBonusAd', undefined, `+${LEGACY_BONUS_AD_POINTS} Miras Puanı Kazan`)}
+              <Text style={{ color: theme.accentBrand, fontWeight: '700', fontSize: 13 }}>
+                {notificationPromptState === 'requesting'
+                  ? t('buttons.enablingReminder', undefined, 'Bildirim izni bekleniyor...')
+                  : t('buttons.enableReminder', undefined, 'Yarın yeni bir hayat için hatırlat')}
               </Text>
             </TouchableOpacity>
+          )}
+
+          {(notificationPromptState === 'enabled' || notificationPromptState === 'unavailable') && (
+            <Text style={{ color: theme.textSecondary, fontSize: 12, textAlign: 'center' }}>
+              {notificationPromptState === 'enabled'
+                ? t('buttons.reminderEnabled', undefined, 'Hatırlatıcı açıldı')
+                : t('buttons.reminderUnavailable', undefined, 'Hatırlatıcı bu cihazda açılamadı')}
+            </Text>
           )}
 
           <ShimmerButton
