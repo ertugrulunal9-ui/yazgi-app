@@ -1,7 +1,10 @@
 {
   "policy": {
     "omitDev": true,
-    "failOnSeverity": ["high", "critical"]
+    "failOnSeverity": [
+      "high",
+      "critical"
+    ]
   },
   "allowedAdvisories": [
     {
@@ -63,6 +66,21 @@
       "url": "https://github.com/advisories/GHSA-4992-7rv2-5pvq",
       "package": "undici",
       "reason": "Build-time only. Pulled in by @expo/cli (Expo SDK 54) as HTTP client. Not bundled into the app or run on device. Fix blocked on Expo SDK upgrade."
+    },
+    {
+      "url": "https://github.com/advisories/GHSA-w3rx-r6r6-pgpr",
+      "package": "image-size",
+      "reason": "Build-time only. Pulled in by metro -> @expo/metro (Expo SDK 54) to read image dimensions while bundling local assets. Not bundled into the app or run on device. Fix is image-size 2.x, which metro 0.83 does not support; blocked on Expo SDK upgrade."
+    },
+    {
+      "url": "https://github.com/advisories/GHSA-5p2g-fcmc-qvqq",
+      "package": "image-size",
+      "reason": "Build-time only. Pulled in by metro -> @expo/metro (Expo SDK 54) to read image dimensions while bundling local assets. Not bundled into the app or run on device. Fix is image-size 2.x, which metro 0.83 does not support; blocked on Expo SDK upgrade."
+    },
+    {
+      "url": "https://github.com/advisories/GHSA-w5hq-g745-h8pq",
+      "package": "uuid",
+      "reason": "Build-time only (moderate). Pulled in by xcode -> @expo/config-plugins (Expo SDK 54) to generate Xcode project object IDs during prebuild; the vulnerable buffer-output path is not used. Not bundled into the app or run on device. Fix is uuid 11.x, a major bump xcode@3 does not support; blocked on Expo SDK upgrade."
     }
   ]
 }
