@@ -75,7 +75,7 @@ describe('SaveUtils - Critical Save/Load System', () => {
       const formatted = formatLastPlayed(oldDate);
       
       // Should be in Turkish date format (e.g., "15 Ara")
-      expect(formatted).toMatch(/\d{1,2}\s\w{3}/);
+      expect(formatted).toMatch(/\d{1,2}\s\p{L}{3}/u);
     });
 
     it('should handle edge case of exactly 1 hour', () => {
