@@ -4,7 +4,6 @@ android/build/
 coverage/
 reports/
 screenshots/
-audit.out
 *.md
 .claude/
 scripts/

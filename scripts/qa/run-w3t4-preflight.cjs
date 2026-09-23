@@ -98,7 +98,7 @@ function buildMarkdown(results) {
     '',
     hasFail
       ? 'Fix failing step(s) before manual sandbox QA execution.'
-      : 'Proceed with manual sandbox QA cases from `W3-T4_PREMIUM_QA_RUNBOOK_2026-03-03.md`.',
+      : 'Proceed with manual sandbox QA cases from `archive/W3-T4_PREMIUM_QA_RUNBOOK_2026-03-03.md`.',
     '',
   ].join('\n');
 }
