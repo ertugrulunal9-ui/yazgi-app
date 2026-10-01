@@ -406,6 +406,11 @@ class AnalyticsService {
       return;
     }
 
+    // Firebase may still be applying the opt-in setting. Sending now can lose
+    // app_open while native collection is disabled. Recheck consent after it
+    // settles so a queued event is discarded if permission was revoked.
+    await this.collectionPreferenceQueue;
+
     const sanitizedParams = this.sanitizeParams(params ?? {});
 
     if (isDev) {

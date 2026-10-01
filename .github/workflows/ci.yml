@@ -61,6 +61,9 @@ jobs:
       - name: Dependency Policy
         run: npm run deps:policy
 
+      - name: Android Release Configuration
+        run: npm run release:monetization:check
+
       - name: Security Audit (Prod Allowlist Gate)
         run: npm run audit:prod
 
