@@ -73,9 +73,12 @@ device. Preserve failed cases and their resolution history.
 ## Gate 3: analytics arrival and ordering
 
 This is the project's P0 measurement acceptance, separate from Play upload
-requirements. Use the same signed candidate on one dedicated test device and
-one fresh run. Dashboard results must be recorded by an operator with Firebase
-Analytics access.
+requirements. Use the same signed candidate on one dedicated test device.
+Because fresh Quick Start begins at age 13 while every currently tagged
+`followup` + `scheduled_only` source is available only through age 11, validate
+the funnel in two separate legitimate gameplay paths. Do not report them as a
+four-event same-run funnel or claim cross-run correlation. Dashboard results
+must be recorded by an operator with Firebase Analytics access.
 
 1. Enable DebugView for the connected device:
 
@@ -83,14 +86,28 @@ Analytics access.
    adb shell setprop debug.firebase.analytics.app com.yazgi.app
    ```
 
-2. With analytics opt-in OFF, cold launch and start a run. Confirm the four
-   custom funnel events below are absent; also inspect native automatic
-   collection before opt-in. Ad consent is separate from analytics opt-in.
-3. Enable analytics in Settings, force stop, and relaunch. Start one fresh
-   Quick Start run. Select a meaningful choice and play through a known
-   scheduled follow-up. Do not inject development events as release proof.
-4. In Firebase Analytics > DebugView, select this device and record the
-   chronological event stream and parameter details:
+2. With analytics opt-in OFF, cold launch and start a run. Confirm the custom
+   events below are absent; also inspect native automatic collection before
+   opt-in. Ad consent is separate from analytics opt-in.
+3. Enable analytics in Settings, force stop, and relaunch. Run **Path A**:
+   start one fresh Quick Start run, start a stopwatch at the visible launch,
+   select the first meaningful choice, then stop the stopwatch immediately
+   after that choice resolves. The measured launch-to-choice duration must be
+   under 90 seconds. This path verifies `app_open` → `quick_start` →
+   `first_choice`; it is not expected to produce a delayed consequence.
+4. In a separate fresh regular new game, run **Path B**. The available example
+   source is `butterfly_friend_moving_away` (ages 5–7, UNCOMMON, requires a
+   FRIEND NPC). If it appears, choose “Sarıl ve ağla, her şeyi söyle” to
+   schedule `butterfly_friend_farewell_open_echo` at age 10, or choose “Normal
+   davran, sanki hiç taşınmıyormuş gibi” to schedule
+   `butterfly_friend_farewell_silent_echo` at age 10. The source is random, so
+   observe the actual source choice and continue the same regular run until
+   its scheduled target is displayed. Record that the source choice preceded
+   the target, plus both event IDs and device event times. If the source does
+   not appear, record the attempt as unverified and repeat without injecting
+   events. This path does not emit `quick_start`.
+5. In Firebase Analytics > DebugView, select this device and record the
+   chronological event streams and parameter details for both paths:
 
    | Event | Required fields / acceptance |
    | --- | --- |
@@ -101,13 +118,18 @@ Analytics access.
 
    Filter `app_open` to `privacy_scope=analytics_opt_in` to distinguish the
    custom funnel opening from Firebase automatically collected app-open events.
-   The four custom events must arrive in that order without missing steps or
-   unexpected duplicates. Extra unrelated telemetry is allowed. Capture device event times
-   and the observed opening-to-first-choice duration. `elapsed_ms` currently
-   measures the gameplay hook's first-choice window, so it alone does not prove
-   opening-to-choice time below 90 seconds.
-5. Disable analytics and repeat actions; verify subsequent custom events stop.
-6. Remove device debug mode after the test:
+   For Path A, require `app_open` → `quick_start` → `first_choice` in order,
+   with no missing steps or unexpected duplicates. Path B separately verifies
+   that `delayed_consequence_seen` arrives for the observed source/target pair;
+   record `first_choice` for that fresh regular run if it is produced. Extra
+   unrelated telemetry is allowed. The event schema has no persisted run ID,
+   so do not join Path A and Path B into one user journey. `elapsed_ms`
+   measures the gameplay hook's first-choice window; use the stopwatch for the
+   launch-to-choice under-90-second check.
+6. Disable analytics and repeat actions; verify subsequent custom events stop.
+   Re-enable it, then revoke it again and verify later events stop after the
+   revocation takes effect. Keep ad consent separate from these checks.
+7. Remove device debug mode after the test:
 
    ```sh
    adb shell setprop debug.firebase.analytics.app .none.
