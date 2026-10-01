@@ -2,6 +2,31 @@
 
 Bu dokumanin amaci Yazgi projesinde guvenlik, stabilite ve surum yonetimini birlikte standartlastirmaktir.
 
+## Current release dependency assessment (2026-10-01)
+
+- Fresh production audit passes with the scoped Firestore override
+  `@grpc/grpc-js=1.13.6`. It fixes GHSA-m9gg-hp2v-232j and
+  GHSA-f596-whhp-79r4, added to GitHub's advisory database after the previous
+  release CI run. The audit allowlist was not expanded.
+- Firestore declares `~1.9.0`, so this override deliberately exceeds its minor
+  range while staying on gRPC major 1. Clean installation, the app test suite,
+  and Firebase/Firestore initialization/termination have been checked. Remove
+  the override when upstream accepts a patched dependency range.
+- The fresh gate reports two active high-severity allowlisted `image-size`
+  advisories: GHSA-5p2g-fcmc-qvqq and GHSA-w3rx-r6r6-pgpr. Existing allowlist
+  records are not proof that every listed advisory is still present.
+- Expo remains on SDK 54. SDK 57 is available in the registry (57.0.26 at this
+  assessment). Migrate in a separate branch following Expo's incremental SDK
+  upgrade procedure; verify native Android/Firebase/ads compatibility and a
+  fresh audit before removing exceptions. Availability alone does not prove
+  the upgrade resolves all advisories.
+- These current findings supersede the historical February audit attempt below.
+
+References:
+- https://github.com/advisories/GHSA-m9gg-hp2v-232j
+- https://github.com/advisories/GHSA-f596-whhp-79r4
+- https://docs.expo.dev/workflow/upgrading-expo-sdk-walkthrough/
+
 ## 1. Version Policy
 
 - `latest` etiketi kullanma.

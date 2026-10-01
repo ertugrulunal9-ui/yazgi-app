@@ -5,6 +5,7 @@ const path = require('node:path');
 
 const APP_JSON_PATH = path.join(process.cwd(), 'app.json');
 const EAS_JSON_PATH = path.join(process.cwd(), 'eas.json');
+const ANDROID_MANIFEST_PATH = path.join(process.cwd(), 'android', 'app', 'src', 'main', 'AndroidManifest.xml');
 
 const PLACEHOLDER_PATTERN = /(TODO|REPLACE|YOUR_|CHANGE_ME|<.*>|PLACEHOLDER)/i;
 const ADMOB_APP_ID_PATTERN = /^ca-app-pub-\d{16}~\d+$/;
@@ -67,6 +68,22 @@ const getPluginConfig = (expoConfig, pluginName) => {
     }
   }
   return {};
+};
+
+const getAndroidManifestAdmobAppId = () => {
+  if (!fs.existsSync(ANDROID_MANIFEST_PATH)) return '';
+
+  const manifest = fs.readFileSync(ANDROID_MANIFEST_PATH, 'utf8').replace(/<!--[\s\S]*?-->/g, '');
+  const metadataTags = manifest.match(/<meta-data\b[^>]*>/g) || [];
+  const getAttribute = (tag, name) => {
+    const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return tag.match(new RegExp(`\\b${escapedName}\\s*=\\s*(["'])(.*?)\\1`))?.[2] || '';
+  };
+
+  const appIdTag = metadataTags.find(
+    (tag) => getAttribute(tag, 'android:name') === 'com.google.android.gms.ads.APPLICATION_ID'
+  );
+  return normalize(getAttribute(appIdTag || '', 'android:value'));
 };
 
 const assertRequiredIdentifier = ({
@@ -159,6 +176,7 @@ const main = () => {
   ]);
 
   if (shouldCheckAndroid) {
+    const nativeAndroidAppId = getAndroidManifestAdmobAppId();
     assertRequiredIdentifier({
       label: 'AdMob Android app ID',
       value: androidAppId.value,
@@ -167,6 +185,19 @@ const main = () => {
       pattern: ADMOB_APP_ID_PATTERN,
       testSet: ADMOB_TEST_APP_IDS,
     });
+    assertRequiredIdentifier({
+      label: 'Native Android AdMob app ID',
+      value: nativeAndroidAppId,
+      source: 'android/app/src/main/AndroidManifest.xml',
+      errors,
+      pattern: ADMOB_APP_ID_PATTERN,
+      testSet: ADMOB_TEST_APP_IDS,
+    });
+    if (nativeAndroidAppId && androidAppId.value && nativeAndroidAppId !== androidAppId.value) {
+      errors.push(
+        'Native Android AdMob app ID does not match plugins.react-native-google-mobile-ads.androidAppId'
+      );
+    }
     assertRequiredIdentifier({
       label: 'AdMob Android rewarded unit ID',
       value: rewardedAndroid.value,

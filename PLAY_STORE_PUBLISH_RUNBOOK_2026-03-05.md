@@ -3,6 +3,18 @@
 Date: 5 March 2026  
 Owner: Product + Dev + QA
 
+## Current Android soft-launch scope (2026-10-01)
+
+For the current ads-only Android launch, follow
+[Android release acceptance](ANDROID_RELEASE_ACCEPTANCE.md). It requires a
+signed production AAB accepted by Play internal testing, physical-device smoke
+evidence, and observed Firebase analytics ordering. Premium subscriptions are
+dark (`PREMIUM_SUBSCRIPTION=false`); the purchase/restore requirements below
+apply only when subscriptions are enabled in a later release. Keep iOS outside
+the current launch decision. The premium kill-switch below does not roll back
+an ads-only Android binary; retain a known-good release and use Play's rollout
+controls for the candidate.
+
 ## 1. Config Gate
 
 Run before any production build:

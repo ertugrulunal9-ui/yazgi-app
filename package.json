@@ -168,6 +168,9 @@
     "test-exclude": {
       "minimatch": "^3.1.4"
     },
-    "browserslist": "^4.29.0"
+    "browserslist": "^4.29.0",
+    "@firebase/firestore": {
+      "@grpc/grpc-js": "1.13.6"
+    }
   }
 }
