@@ -99,8 +99,10 @@ Analytics access.
    | `first_choice` | `event_id`, `choice_index`, `age`, `turn`, finite nonnegative `elapsed_ms`; once for this fresh run |
    | `delayed_consequence_seen` | Correct `source_event_id`, `target_event_id`, `age`, `turn` for the displayed follow-up |
 
-   The four events must arrive in that order without missing steps or unexpected
-   duplicates. Extra unrelated telemetry is allowed. Capture device event times
+   Filter `app_open` to `privacy_scope=analytics_opt_in` to distinguish the
+   custom funnel opening from Firebase automatically collected app-open events.
+   The four custom events must arrive in that order without missing steps or
+   unexpected duplicates. Extra unrelated telemetry is allowed. Capture device event times
    and the observed opening-to-first-choice duration. `elapsed_ms` currently
    measures the gameplay hook's first-choice window, so it alone does not prove
    opening-to-choice time below 90 seconds.

@@ -84,4 +84,5 @@ jobs:
       - name: Simulation Guardrail
         env:
           SIMULATION_RUNS: 100
+          SIMULATION_SEED: '12345'
         run: npm run simulate:ci

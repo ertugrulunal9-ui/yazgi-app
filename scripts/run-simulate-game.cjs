@@ -20,10 +20,36 @@ require.extensions['.ts'] = function registerTs(module, filename) {
 
 global.__DEV__ = false;
 
+const ciMode = process.argv.includes('--ci');
+// Reuse the established FateEngine deterministic-test seed as the CI baseline.
+const DEFAULT_CI_SEED = 12345;
+const requestedSeed = process.env.SIMULATION_SEED;
+const activeSeed = requestedSeed === undefined || requestedSeed.trim() === ''
+  ? (ciMode ? DEFAULT_CI_SEED : null)
+  : Number(requestedSeed);
+
+const createSeededRandom = (seed) => {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6D2B79F5) | 0;
+    let value = state;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+};
+
+if (activeSeed !== null) {
+  if (!Number.isInteger(activeSeed) || activeSeed < 0 || activeSeed > 0xFFFFFFFF) {
+    throw new Error('SIMULATION_SEED must be an unsigned 32-bit integer.');
+  }
+  Math.random = createSeededRandom(activeSeed);
+  console.log(`[simulate${ciMode ? ':ci' : ''}] Seed: ${activeSeed}`);
+}
+
 const simulationModule = require(path.resolve(__dirname, '../src/tests/simulateGame.ts'));
 const runCount = Number(process.env.SIMULATION_RUNS || 50);
 const runCountSafe = Number.isFinite(runCount) && runCount > 0 ? Math.floor(runCount) : 50;
-const ciMode = process.argv.includes('--ci');
 const DEFAULT_CI_THRESHOLDS = {
   // Tuned after Phase 5 balance updates: BALANCED profile now lands around 62-84.
   balancedMinSuccess: 60,
