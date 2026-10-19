@@ -38,6 +38,8 @@ import {
   logShareEvent,
 } from '../utils/analyticsEvents';
 import { LifeGoal, PersonalityTendency } from '../types';
+import type { Choice, EventMemory } from '../types';
+import { getEventById } from '../hooks/useEvents/shared';
 import { normalizePersonalityState } from '../systems/PersonalityMomentumEngine';
 import { RunCard } from '../components/RunCard';
 import {
@@ -91,6 +93,29 @@ const firstSentence = (value: string): string => {
   if (!normalized) return '';
   const match = normalized.match(/^[^.!?]+[.!?]?/);
   return match ? match[0].trim() : normalized;
+};
+
+const MEMORY_LABEL_MAX_LENGTH = 60;
+
+// Anı etiketi: oyuncunun seçtiği cevap; yoksa olay metninin ilk cümlesi (ham event id gösterilmez)
+const getMemoryLabel = (
+  mem: EventMemory,
+  t: (key: string, params?: Record<string, string | number | boolean>, fallback?: string) => string,
+): string => {
+  const evt = getEventById(mem.eventId);
+  const choice = evt?.choices.find(
+    (c): c is Choice => typeof c !== 'function' && c.id === mem.choiceId,
+  );
+  if (choice) {
+    return choice.textKey ? t(choice.textKey, undefined, choice.text) : choice.text;
+  }
+  if (evt && typeof evt.text === 'string') {
+    const text = firstSentence(evt.textKey ? t(evt.textKey, undefined, evt.text) : evt.text);
+    return text.length > MEMORY_LABEL_MAX_LENGTH
+      ? `${text.slice(0, MEMORY_LABEL_MAX_LENGTH - 1).trimEnd()}…`
+      : text;
+  }
+  return t(`events.${mem.eventId}.memory`, undefined, t('endings.turningPoints.fallback', undefined, 'Bir karar anı'));
 };
 
 export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, onRestart }) => {
@@ -754,7 +779,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                         <View key={mem.id} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 }}>
                           <Text style={{ color: '#4ade80', fontSize: 13, marginRight: 6 }}>{'\u2B50'}</Text>
                           <Text style={{ color: theme.textSecondary, fontSize: 12, flex: 1, lineHeight: 17 }}>
-                            {t(`events.${mem.eventId}.memory`, undefined, mem.eventId.replace(/_/g, ' '))}
+                            {getMemoryLabel(mem, t)}
                             {mem.age ? ` — ${mem.age} ${t('character.ageUnit', undefined, 'ya\u015f\u0131nda')}` : ''}
                           </Text>
                         </View>
@@ -763,7 +788,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                         <View key={mem.id} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 }}>
                           <Text style={{ color: '#fb923c', fontSize: 13, marginRight: 6 }}>{'\u26A0\uFE0F'}</Text>
                           <Text style={{ color: theme.textSecondary, fontSize: 12, flex: 1, lineHeight: 17 }}>
-                            {t(`events.${mem.eventId}.memory`, undefined, mem.eventId.replace(/_/g, ' '))}
+                            {getMemoryLabel(mem, t)}
                             {mem.age ? ` — ${mem.age} ${t('character.ageUnit', undefined, 'ya\u015f\u0131nda')}` : ''}
                           </Text>
                         </View>
@@ -843,7 +868,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                             </View>
                             <View style={{ flex: 1 }}>
                               <Text numberOfLines={1} style={{ color: theme.textPrimary, fontWeight: '600', fontSize: 13 }}>
-                                {mem.eventId.replace(/_/g, ' ')}
+                                {getMemoryLabel(mem, t)}
                               </Text>
                               <Text style={{ color: theme.textSecondary, fontSize: 11, marginTop: 1 }}>
                                 {mem.age} {t('character.ageUnit')} — {EMOTION_LABEL[mem.emotion] ?? mem.emotion}
@@ -1074,7 +1099,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
           topMemories={(gameState.memories || [])
             .filter(memory => memory.weight === 'HIGH' || memory.weight === 'MEDIUM')
             .slice(0, 3)
-            .map(memory => memory.eventId.replace(/_/g, ' '))}
+            .map(memory => getMemoryLabel(memory, t))}
           finalStats={stats}
           endingEmoji={ENDING_ID_LOOKUP[endingResolution.id]?.icon}
           finalScore={finalScore}

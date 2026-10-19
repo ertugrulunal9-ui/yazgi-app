@@ -175,21 +175,42 @@ export const CountUpText: React.FC<CountUpTextProps> = React.memo(({
   prefix = '',
   suffix = '',
 }) => {
-  const animatedValue = useSharedValue(0);
-  const prevValueRef = useRef(value);
+  // Shared value render sırasında okunduğunda ekran güncellenmiyordu (sayı 0'da kalıyordu);
+  // sayım React state + requestAnimationFrame ile yapılır, ilk mount'ta da 0'dan değere sayar.
+  const [displayValue, setDisplayValue] = React.useState(0);
+  const currentValueRef = useRef(0);
 
   React.useEffect(() => {
-    // Değer değiştiğinde animasyonu başlat
-    if (prevValueRef.current !== value) {
-      animatedValue.value = withTiming(value, { duration });
-      prevValueRef.current = value;
+    const from = currentValueRef.current;
+    if (from === value || duration <= 0) {
+      currentValueRef.current = value;
+      setDisplayValue(value);
+      return undefined;
     }
-  }, [animatedValue, duration, value]);
+
+    const startedAt = Date.now();
+    let frame: number | null = null;
+    const tick = () => {
+      const progress = Math.min(1, (Date.now() - startedAt) / duration);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const next = from + (value - from) * eased;
+      currentValueRef.current = next;
+      setDisplayValue(next);
+      if (progress < 1) {
+        frame = requestAnimationFrame(tick);
+      }
+    };
+    frame = requestAnimationFrame(tick);
+
+    return () => {
+      if (frame !== null) cancelAnimationFrame(frame);
+    };
+  }, [duration, value]);
 
   return (
-    <Animated.Text style={style}>
-      {prefix}{Math.round(animatedValue.value)}{suffix}
-    </Animated.Text>
+    <Text style={style}>
+      {prefix}{Math.round(displayValue)}{suffix}
+    </Text>
   );
 }, (prevProps, nextProps) => {
   // Memoization için özel karşılaştırma

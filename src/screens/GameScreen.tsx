@@ -127,6 +127,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     id: string;
     message: string;
     type: 'success' | 'error' | 'info' | 'warning';
+    silent?: boolean;
   }[]>([]);
   const [traitChipVisible, setTraitChipVisible] = useState(false);
   const [traitChipTraits, setTraitChipTraits] = useState<string[]>([]);
@@ -154,11 +155,12 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
   const toastDismissDelayMs = 350;
   const enqueueToast = useCallback((
     message: string,
-    type: 'success' | 'error' | 'info' | 'warning' = 'success'
+    type: 'success' | 'error' | 'info' | 'warning' = 'success',
+    options?: { silent?: boolean }
   ) => {
     const id = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     setToasts(prev => {
-      const next = [...prev, { id, message, type }];
+      const next = [...prev, { id, message, type, silent: options?.silent }];
       const maxToasts = 4;
       return next.length > maxToasts ? next.slice(-maxToasts) : next;
     });
@@ -236,8 +238,18 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
   useEffect(() => {
     if (gameState.age > previousAgeRef.current) {
       levelUp();
+      // İlk koşu reklamsız: oyuncu ilk hayatını bitirmeden geçiş reklamı gösterilmez
+      const isFirstRun = (gameState.metaProgression?.totalRunsCompleted ?? 0) === 0;
       void (async () => {
         void logInterstitialOpportunity({ placement: 'age_transition' });
+        if (isFirstRun) {
+          void logInterstitialResult({
+            placement: 'age_transition',
+            shown: false,
+            reason: 'first_run_grace',
+          });
+          return;
+        }
         const interstitial = await showInterstitialAdDetailed();
         void logInterstitialResult({
           placement: 'age_transition',
@@ -263,7 +275,8 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     const current = gameState.totalTurns ?? 0;
     if (current > previousTotalTurnsRef.current) {
       previousTotalTurnsRef.current = current;
-      enqueueToast(t('ui.autosave.saved', undefined, 'Kaydedildi'), 'info');
+      // Her turda çıkar; ses/titreşim çalarsa anlamlı geri bildirimleri bastırır
+      enqueueToast(t('ui.autosave.saved', undefined, 'Kaydedildi'), 'info', { silent: true });
     }
   }, [gameState.totalTurns, enqueueToast, t]);
 
@@ -727,6 +740,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
           visible
           message={toast.message}
           type={toast.type}
+          silent={toast.silent}
           style={{ top: 60 + index * toastOffsetStep }}
           onClose={() => setToasts(prev => prev.filter(item => item.id !== toast.id))}
         />

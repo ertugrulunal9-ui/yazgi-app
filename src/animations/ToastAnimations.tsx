@@ -33,6 +33,8 @@ interface ToastProps {
   duration?: number;
   style?: ViewStyle;
   onClose?: () => void;
+  /** true ise ses/titreşim çalmaz (ör. otomatik kayıt bildirimi) */
+  silent?: boolean;
 }
 
 /**
@@ -46,6 +48,7 @@ export const Toast: React.FC<ToastProps> = React.memo(({
   duration = 3000,
   style,
   onClose,
+  silent = false,
 }) => {
   const translateY = useSharedValue(position === 'top' ? -100 : 100);
   const opacity = useSharedValue(0);
@@ -70,7 +73,7 @@ export const Toast: React.FC<ToastProps> = React.memo(({
     if (visible) {
       // Haptic feedback - sadece bir kez tetikle
       if (!hasTriggeredHaptic.current) {
-        successHaptic();
+        if (!silent) successHaptic();
         hasTriggeredHaptic.current = true;
       }
 
@@ -110,7 +113,7 @@ export const Toast: React.FC<ToastProps> = React.memo(({
     }
     
     return undefined;
-  }, [animationType, duration, hideToast, opacity, scale, translateY, visible]);
+  }, [animationType, duration, hideToast, opacity, scale, silent, translateY, visible]);
 
   const animatedStyle = useAnimatedStyle(() => {
     const transformArray: any[] = [];
@@ -225,12 +228,14 @@ export const MessageToast: React.FC<{
   type?: 'success' | 'error' | 'info' | 'warning';
   onClose?: () => void;
   style?: ViewStyle;
+  silent?: boolean;
 }> = React.memo(({
   visible,
   message,
   type = 'info',
   onClose,
   style,
+  silent = false,
 }) => {
   const typeColors = {
     success: { bg: '#065f46', border: '#059669', text: '#34d399' },
@@ -247,6 +252,7 @@ export const MessageToast: React.FC<{
       animationType="slideIn"
       position="top"
       onClose={onClose}
+      silent={silent}
       style={StyleSheet.flatten([
         styles.messageToast,
         {
@@ -265,7 +271,8 @@ export const MessageToast: React.FC<{
   return prevProps.visible === nextProps.visible &&
          prevProps.type === nextProps.type &&
          prevProps.message === nextProps.message &&
-         prevProps.style === nextProps.style;
+         prevProps.style === nextProps.style &&
+         prevProps.silent === nextProps.silent;
 });
 
 /**

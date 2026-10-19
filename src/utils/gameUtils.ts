@@ -173,16 +173,9 @@ const FAST_START_BASELINE = {
   discipline: 5,
 } as const;
 
-const QUICK_PLAY_BASELINE = {
-  health: 45,
-  intelligence: 35,
-  charisma: 28,
-  discipline: 22,
-  energy: 70,
-  money: 20,
-} as const;
-
-export const QUICK_PLAY_START_AGE = 13;
+// Hızlı Başla da 0 yaşından başlar: erken çocukluk kararları ve geri dönen sonuçları bu koşuda da yaşanır.
+// Yalnızca karakter formu ve çocukluk prologu atlanır; başlangıç statları normal oyunla aynıdır.
+export const QUICK_PLAY_START_AGE = 0;
 
 const canUseFastStart = (options?: NewGameBootstrapOptions): boolean => {
   const legacyPerksEnabled = options?.legacyPerksEnabled ?? isFeatureEnabled('LEGACY_PERKS');
@@ -193,18 +186,7 @@ const canUseFastStart = (options?: NewGameBootstrapOptions): boolean => {
 // Not: 0 yaş için cap'ler düşük olduğundan başlangıç değerleri buna uygun ayarlanmalı
 // age=0 için: health cap=30, intelligence/charisma/discipline cap=30
 export const getInitialStats = (options?: NewGameBootstrapOptions): Stats => {
-  if (options?.quickPlay) {
-    return {
-      health: QUICK_PLAY_BASELINE.health,
-      intelligence: QUICK_PLAY_BASELINE.intelligence,
-      charisma: QUICK_PLAY_BASELINE.charisma,
-      discipline: QUICK_PLAY_BASELINE.discipline,
-      money: QUICK_PLAY_BASELINE.money,
-      energy: QUICK_PLAY_BASELINE.energy,
-      familyRelation: BALANCE_CONTRACT.initialStats.familyRelation,
-    };
-  }
-  const useFastStart = canUseFastStart(options);
+  const useFastStart = !options?.quickPlay && canUseFastStart(options);
   const health = useFastStart
     ? FAST_START_BASELINE.health
     : BALANCE_CONTRACT.initialStats.health; // 0 yas cap'i 30, baslangic bunun altinda olmali

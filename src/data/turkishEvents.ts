@@ -97,7 +97,6 @@ export const TURKISH_EVENTS: GameEvent[] = [
         id: 'oyuncak_paylas',
         text: "Paylaş",
         choiceType: 'CHALLENGE',
-        reqPersonality: [{ axis: 'empathy', max: 50 }],
         effect: { charisma: 5, familyRelation: 5 },
         personalityEffects: [{ axis: 'empathy', change: 5 }],
         stressEffect: 10,
