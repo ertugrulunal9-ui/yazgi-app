@@ -1,4 +1,4 @@
-import { GameEvent, LifeGoal, Stats } from '../types';
+import { ConditionalOutcome, GameEvent, LifeGoal, Stats } from '../types';
 
 interface GoalChoiceTemplate {
   id: string;
@@ -6,6 +6,8 @@ interface GoalChoiceTemplate {
   feedback: string;
   effect: Partial<Stats>;
   stressEffect: number;
+  /** Şansa bağlı sonuçlar (isteğe bağlı): koşula uyanlar arasından ağırlıkla biri seçilir. */
+  conditionalOutcomes?: ConditionalOutcome[];
 }
 
 interface GoalEventTemplate {
@@ -53,6 +55,9 @@ const buildGoalEvent = (goal: LifeGoal, template: GoalEventTemplate): GameEvent 
       effect: template.boldChoice.effect,
       stressEffect: template.boldChoice.stressEffect,
       feedback: template.boldChoice.feedback,
+      ...(template.boldChoice.conditionalOutcomes
+        ? { conditionalOutcomes: template.boldChoice.conditionalOutcomes }
+        : {}),
     },
   ],
 });
@@ -125,6 +130,39 @@ const ACADEMIC_EVENTS: GoalEventTemplate[] = [
       effect: { intelligence: 8, discipline: 1, health: -2, energy: -9 },
       stressEffect: 10,
       feedback: 'Sert bir çıkış yaptın; büyük gelişim ama yüksek yorgunluk.',
+      // Şansa bağlı sonuç: disiplin < 55 ise başarısızlık da mümkün, < 35 ise çok daha olası.
+      conditionalOutcomes: [
+        {
+          id: 'goal_academic_olympiad_bold_success',
+          condition: () => true,
+          weight: 1,
+          statChanges: { intelligence: 9, discipline: 2, health: -2, energy: -9 },
+          stressEffect: 8,
+          memoryEmotion: 'PRIDE',
+          memoryWeight: 'MEDIUM',
+          feedback: 'Zor soruların ilkinde takıldın ama pes etmeden farklı bir yol denedin. Çözüm oturunca gerisi akmaya başladı; elemeyi güçlü bir puanla geçtin.',
+        },
+        {
+          id: 'goal_academic_olympiad_bold_fail',
+          condition: (ctx) => ctx.stats.discipline < 55,
+          weight: 1,
+          statChanges: { intelligence: 2, discipline: -2, health: -3, energy: -12 },
+          stressEffect: 14,
+          memoryEmotion: 'REGRET',
+          memoryWeight: 'MEDIUM',
+          feedback: 'Planın olmadan en zor sorulara daldın ve ilk saatte gücünü tükettin. Süre dolarken yarım kalan çözümlere bakakaldın; puanın elemeye yetmedi.',
+        },
+        {
+          id: 'goal_academic_olympiad_bold_fail_hard',
+          condition: (ctx) => ctx.stats.discipline < 35,
+          weight: 1,
+          statChanges: { intelligence: 1, discipline: -4, health: -4, energy: -15 },
+          stressEffect: 18,
+          memoryEmotion: 'REGRET',
+          memoryWeight: 'HIGH',
+          feedback: 'İlk sorunun ardından moralin bozuldu ve üst üste üç soruyu boş bıraktın. Sınavdan çıkarken başın ağrıyordu; sonucu bir süre kafandan atamadın.',
+        },
+      ],
     },
   },
 ];
@@ -269,6 +307,39 @@ const CREATIVE_EVENTS: GoalEventTemplate[] = [
       effect: { charisma: 7, money: 80, discipline: 1, energy: -8 },
       stressEffect: 10,
       feedback: 'Büyük etki yarattın; tempo çok yüksekti.',
+      // Şansa bağlı sonuç: cesaret < 55 ise başarısızlık da mümkün, < 35 ise çok daha olası.
+      conditionalOutcomes: [
+        {
+          id: 'goal_creative_release_bold_success',
+          condition: () => true,
+          weight: 1,
+          statChanges: { charisma: 8, money: 100, discipline: 1, energy: -8 },
+          stressEffect: 8,
+          memoryEmotion: 'PRIDE',
+          memoryWeight: 'MEDIUM',
+          feedback: 'Çalışmanı herkese açtığın gün paylaşımlar yağmaya başladı. Yorumların çoğu övgüydü, birkaç kişi de satın almak için yazdı.',
+        },
+        {
+          id: 'goal_creative_release_bold_fail',
+          condition: (ctx) => ctx.personality.courage < 55,
+          weight: 1,
+          statChanges: { charisma: -4, discipline: -1, energy: -10 },
+          stressEffect: 14,
+          memoryEmotion: 'REGRET',
+          memoryWeight: 'MEDIUM',
+          feedback: 'Yayınladığın gün gelen ilk yorumlar sertti ve konu hızla büyüdü. Bir süre çalışmana bakmaya cesaret edemedin, ama aldığın eleştiriler aklında kaldı.',
+        },
+        {
+          id: 'goal_creative_release_bold_fail_hard',
+          condition: (ctx) => ctx.personality.courage < 35,
+          weight: 1,
+          statChanges: { charisma: -7, discipline: -2, energy: -12 },
+          stressEffect: 18,
+          memoryEmotion: 'REGRET',
+          memoryWeight: 'HIGH',
+          feedback: 'Paylaşımın birkaç kişi tarafından alay edilerek yeniden paylaşıldı. Bir süre hesabını kapatıp kendi köşene çekilmek istedin.',
+        },
+      ],
     },
   },
 ];
@@ -341,6 +412,39 @@ const WEALTH_EVENTS: GoalEventTemplate[] = [
       effect: { money: 210, charisma: 2, discipline: 1, familyRelation: -1, energy: -8 },
       stressEffect: 10,
       feedback: 'Büyük bir kazanç ihtimali yakaladın, riskin de büyüdü.',
+      // Şansa bağlı sonuç: zekâ < 55 ise başarısızlık da mümkün, < 35 ise çok daha olası.
+      conditionalOutcomes: [
+        {
+          id: 'goal_wealth_investor_bold_success',
+          condition: () => true,
+          weight: 1,
+          statChanges: { money: 240, charisma: 2, discipline: 1, familyRelation: -1, energy: -8 },
+          stressEffect: 8,
+          memoryEmotion: 'PRIDE',
+          memoryWeight: 'MEDIUM',
+          feedback: 'Rakamların netti ve yatırımcılar yüksek çarpanı makul buldu. Pazarlığı kazanıp beklediğinden büyük bir destekle ayrıldın.',
+        },
+        {
+          id: 'goal_wealth_investor_bold_fail',
+          condition: (ctx) => ctx.stats.intelligence < 55,
+          weight: 1,
+          statChanges: { money: -60, charisma: -1, energy: -10 },
+          stressEffect: 14,
+          memoryEmotion: 'REGRET',
+          memoryWeight: 'MEDIUM',
+          feedback: 'Yatırımcılar çarpanı sorgulayınca rakamların birbirini tutmadığı ortaya çıktı. Görüşme erken bitti ve hazırlık için yaptığın masraflar boşa gitti.',
+        },
+        {
+          id: 'goal_wealth_investor_bold_fail_hard',
+          condition: (ctx) => ctx.stats.intelligence < 35,
+          weight: 1,
+          statChanges: { money: -120, charisma: -3, familyRelation: -2, energy: -12 },
+          stressEffect: 18,
+          memoryEmotion: 'REGRET',
+          memoryWeight: 'HIGH',
+          feedback: 'Daha ilk sorularda hesaplarının yanlış olduğunu fark ettin ve toplantıdan eli boş çıktın. Bunu ailene anlatmak ağır geldi.',
+        },
+      ],
     },
   },
 ];
