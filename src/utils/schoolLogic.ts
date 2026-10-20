@@ -16,6 +16,16 @@ export interface SchoolReport {
   averageGrade: number;
 }
 
+/**
+ * Sınavına girilmeyen ders için otomatik not katkısı: karakterin zekâsına göre
+ * "ortalama bir sınav performansı" (+4..+8). Girilen iyi bir sınav (+10..+15)
+ * her zaman daha kârlı kalır; atlamak ise sınıf tekrarına mahkûm etmez.
+ */
+export const getSkippedExamGradeBonus = (intelligence: number): number => {
+  const expectedAccuracy = Math.min(0.75, Math.max(0.35, 0.35 + intelligence / 200));
+  return Math.round(expectedAccuracy * 10);
+};
+
 export const calculateSchoolReport = (stats: Stats, gameState: any): SchoolGrades => {
   // ===============================
   // YENİ DENGE SİSTEMİ

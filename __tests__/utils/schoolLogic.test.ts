@@ -3,7 +3,7 @@
  * Tests grade calculation and school system.
  */
 
-import { calculateSchoolReport, getLetterGrade } from '../../src/utils/schoolLogic';
+import { calculateSchoolReport, getLetterGrade, getSkippedExamGradeBonus } from '../../src/utils/schoolLogic';
 import { Stats } from '../../src/types';
 
 describe('School Logic', () => {
@@ -128,5 +128,15 @@ describe('School Logic', () => {
       expect(getLetterGrade(30)).toBe('F');
       expect(getLetterGrade(59)).toBe('F');
     });
+  });
+});
+
+describe('getSkippedExamGradeBonus', () => {
+  it('gives an average-exam bonus that grows with intelligence but stays below a good exam', () => {
+    expect(getSkippedExamGradeBonus(0)).toBe(4);
+    expect(getSkippedExamGradeBonus(40)).toBe(6);
+    expect(getSkippedExamGradeBonus(100)).toBe(8);
+    // İyi bir EASY sınav en az 10 verir; atlamak hiçbir zaman bundan kârlı olmaz
+    expect(getSkippedExamGradeBonus(1000)).toBeLessThan(10);
   });
 });

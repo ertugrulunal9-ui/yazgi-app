@@ -236,6 +236,18 @@ export function buildChapterSummary(
   };
 }
 
+/** Yaş özetinde gösterilecek bir şey var mı? Boş ("sakin geçen") yıllar için modal açılmaz. */
+export function hasMilestoneContent(milestone: AgeMilestoneSummary): boolean {
+  return (
+    milestone.traitsGained.length > 0
+    || milestone.traitsLost.length > 0
+    || milestone.keyMemories.length > 0
+    || Object.keys(milestone.statDeltas).length > 0
+    || milestone.npcChanges.length > 0
+    || Boolean(milestone.academicHighlight)
+  );
+}
+
 export function buildAgeMilestone(input: MilestoneBuilderInput): AgeMilestoneSummary {
   const {
     age, prevStats, currentStats,

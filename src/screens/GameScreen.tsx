@@ -73,6 +73,7 @@ import { GoalTracker } from '../components/GoalTracker';
 import { isFeatureEnabled } from '../config/featureFlags';
 import type { AgeMilestoneSummary, ChapterSummary } from '../types/game';
 import { getCurrentChapter, getLocalizedChapterName } from '../utils/gameUtils';
+import { hasMilestoneContent } from '../utils/milestoneBuilder';
 import { CHAPTERS } from '../config/gameBalance';
 
 interface GameScreenProps {
@@ -287,6 +288,11 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
 
     const lastSummary = summaries[summaries.length - 1];
     if (!shownMilestoneAgesRef.current.has(lastSummary.age)) {
+      // Sakin geçen yıllar için ayrı bir pencere açma; olay akışı kesilmesin
+      if (!hasMilestoneContent(lastSummary)) {
+        shownMilestoneAgesRef.current.add(lastSummary.age);
+        return;
+      }
       setCurrentMilestoneToShow(lastSummary);
     }
   }, [gameState.ageMilestoneSummaries]);

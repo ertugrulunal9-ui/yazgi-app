@@ -78,12 +78,14 @@ export const uiStrings: DomainStrings = {
       },
       examPeriod: {
         title: 'Sınav Donemi',
-        subtitle: 'Karne aciklanmadan once tum sinavlara girmelisin!',
+        subtitle: 'Sınavlar isteğe bağlı: girdiklerin notunu yükseltebilir, girmediklerin bilgine göre otomatik hesaplanır.',
         progressText: '{completed}/{total} sınav tamamlandi',
         completedStatus: 'Tamamlandi',
         takeExamStatus: 'Sinava gir',
         viewReport: 'Karneye Bak',
         completeAllWarning: 'Karne gormek icin tum sinavlari tamamla',
+        skipAll: 'Sınavlara girmeden karneyi gör',
+        skipRemaining: 'Kalanları atla ve karneyi gör',
         reportPreviewCta: 'Not Tahminini Gör',
         reportPreviewHint: 'Reklam izle ve mini karne tahmini al',
       },
@@ -538,8 +540,6 @@ export const uiStrings: DomainStrings = {
         turningPoint: 'Dönüm Noktası',
         criticalDecision: 'Kritik Karar',
         blockedPaths: 'Bu seçim bazı kapıları kapattı. Farklı bir yolda ne olurdu?',
-        accessibilityText: 'Olay metni',
-        types: {
         echo: {
           title: 'Geçmişten bir yankı',
           line: '{age} yaşında seçtiğin: “{choice}”',
@@ -558,6 +558,8 @@ export const uiStrings: DomainStrings = {
           skill: '{skill} becerin henüz yetmiyor',
           family: 'Ailenin durumu buna izin vermiyor',
         },
+        accessibilityText: 'Olay metni',
+        types: {
           social: 'Sosyal',
           risk: 'Risk',
           moral: 'Ahlak',
@@ -815,12 +817,14 @@ export const uiStrings: DomainStrings = {
       },
       examPeriod: {
         title: 'Exam Period',
-        subtitle: 'You need to take every exam before report cards are announced!',
+        subtitle: 'Exams are optional: taking them can raise your grades; skipped ones are graded for you.',
         progressText: '{completed}/{total} exams completed',
         completedStatus: 'Completed',
         takeExamStatus: 'Take exam',
         viewReport: 'View Report Card',
         completeAllWarning: 'Complete all exams to view your report card',
+        skipAll: 'View report card without exams',
+        skipRemaining: 'Skip the rest and view report card',
         reportPreviewCta: 'View Grade Forecast',
         reportPreviewHint: 'Watch an ad to preview your likely report card',
       },
@@ -1281,10 +1285,6 @@ export const uiStrings: DomainStrings = {
         turningPoint: 'Turning Point',
         criticalDecision: 'Critical Decision',
         blockedPaths: 'This choice closed some doors. What might have happened on a different path?',
-        accessibilityText: 'Event text',
-        types: {
-          social: 'Social',
-          risk: 'Risk',
         echo: {
           title: 'An echo from your past',
           line: 'At age {age} you chose: “{choice}”',
@@ -1303,6 +1303,10 @@ export const uiStrings: DomainStrings = {
           skill: 'Your {skill} skill is not there yet',
           family: 'Your family situation does not allow this',
         },
+        accessibilityText: 'Event text',
+        types: {
+          social: 'Social',
+          risk: 'Risk',
           moral: 'Moral',
           conflict: 'Conflict',
           breakdown: 'Breakdown',
