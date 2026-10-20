@@ -291,4 +291,7 @@ export interface ScheduledEvent {
   condition?: string;
   priority: 'HIGH' | 'NORMAL' | number;
   sourceEventId?: string;
+  /** Bu olayı zamanlayan seçim ve o anki yaş — yankı kartında gösterilir */
+  sourceChoiceId?: string;
+  sourceAge?: number;
 }

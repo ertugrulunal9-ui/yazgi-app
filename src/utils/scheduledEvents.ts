@@ -191,3 +191,26 @@ export const pickScheduledEvent = (dueEvents: ScheduledEvent[]): ScheduledEvent 
   const index = Math.floor(Math.random() * pool.length);
   return pool[index] || null;
 };
+
+/**
+ * Zamanlanmış olay bir seçimin yankısıysa (kaynak seçim + yaş biliniyorsa)
+ * olay ekranındaki yankı kartı için neden-sonuç bağını döner; değilse null.
+ */
+export const buildEchoCausalLink = (
+  scheduledEvent: ScheduledEvent | null | undefined,
+): { sourceEventId: string; narrativeLine: string; emotion: string; sourceChoiceId: string; sourceAge: number } | null => {
+  if (
+    !scheduledEvent?.sourceEventId
+    || !scheduledEvent.sourceChoiceId
+    || typeof scheduledEvent.sourceAge !== 'number'
+  ) {
+    return null;
+  }
+  return {
+    sourceEventId: scheduledEvent.sourceEventId,
+    sourceChoiceId: scheduledEvent.sourceChoiceId,
+    sourceAge: scheduledEvent.sourceAge,
+    narrativeLine: '',
+    emotion: 'NEUTRAL',
+  };
+};

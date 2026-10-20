@@ -540,6 +540,24 @@ export const uiStrings: DomainStrings = {
         blockedPaths: 'Bu seçim bazı kapıları kapattı. Farklı bir yolda ne olurdu?',
         accessibilityText: 'Olay metni',
         types: {
+        echo: {
+          title: 'Geçmişten bir yankı',
+          line: '{age} yaşında seçtiğin: “{choice}”',
+        },
+        locked: {
+          title: 'Sana kapalı yollar',
+          a11yPrefix: 'Kilitli seçenek',
+          personality: {
+            openness: { min: 'Bunun için yeterince dışa dönük değilsin', max: 'Bunu yapamayacak kadar dışa dönüksün' },
+            courage: { min: 'Bunun için yeterince cesur değilsin', max: 'Bunu yapamayacak kadar gözü karasın' },
+            empathy: { min: 'Bunun için yeterince fedakâr değilsin', max: 'Bunu yapamayacak kadar fedakârsın' },
+            patience: { min: 'Bunun için yeterince sabırlı değilsin', max: 'Bunu yapamayacak kadar sabırlısın' },
+            conformity: { min: 'Bunun için yeterince isyankâr değilsin', max: 'Bunu yapamayacak kadar isyankârsın' },
+          },
+          stat: '{stat} en az {value} olmalı',
+          skill: '{skill} becerin henüz yetmiyor',
+          family: 'Ailenin durumu buna izin vermiyor',
+        },
           social: 'Sosyal',
           risk: 'Risk',
           moral: 'Ahlak',
@@ -1267,6 +1285,24 @@ export const uiStrings: DomainStrings = {
         types: {
           social: 'Social',
           risk: 'Risk',
+        echo: {
+          title: 'An echo from your past',
+          line: 'At age {age} you chose: “{choice}”',
+        },
+        locked: {
+          title: 'Paths closed to you',
+          a11yPrefix: 'Locked choice',
+          personality: {
+            openness: { min: 'You are not outgoing enough for this', max: 'You are too outgoing to do this' },
+            courage: { min: 'You are not brave enough for this', max: 'You are too reckless to do this' },
+            empathy: { min: 'You are not selfless enough for this', max: 'You are too selfless to do this' },
+            patience: { min: 'You are not patient enough for this', max: 'You are too patient to do this' },
+            conformity: { min: 'You are not rebellious enough for this', max: 'You are too rebellious to do this' },
+          },
+          stat: '{stat} must be at least {value}',
+          skill: 'Your {skill} skill is not there yet',
+          family: 'Your family situation does not allow this',
+        },
           moral: 'Moral',
           conflict: 'Conflict',
           breakdown: 'Breakdown',

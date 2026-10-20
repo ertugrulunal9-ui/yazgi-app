@@ -371,6 +371,9 @@ export interface GameState {
     sourceEventId: string;
     narrativeLine: string;
     emotion: string;
+    /** Doluysa bu olay, o yaşta verilen bir seçimin zamanlanmış yankısıdır */
+    sourceChoiceId?: string;
+    sourceAge?: number;
   } | null;
 
   // --- V4 alanları ---

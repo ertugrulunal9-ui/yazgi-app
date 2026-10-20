@@ -17,6 +17,7 @@ export const EventScreen: React.FC = React.memo(() => {
     gameState,
     stats,
     choicesToRender,
+    lockedChoices,
     resolveChoice,
     handleChoice,
     handleContinue,
@@ -34,6 +35,7 @@ export const EventScreen: React.FC = React.memo(() => {
     isBreakdownEvent,
     isDramaticEvent,
     eventText,
+    echo,
   } = useEventScreenController();
 
   const overlayStyle = useMemo(() => ({
@@ -115,6 +117,7 @@ export const EventScreen: React.FC = React.memo(() => {
           isBreakdownEvent={isBreakdownEvent}
           breakdownShakeX={breakdownShakeX}
           causalLink={gameState.currentCausalLink}
+          echo={echo}
         />
 
         <SwipeChoiceDeck
@@ -126,6 +129,7 @@ export const EventScreen: React.FC = React.memo(() => {
           personalityState={gameState.personalityState}
           eventId={gameState.currentEvent.id}
           eventRarity={gameState.currentEvent.rarity}
+          lockedChoices={lockedChoices}
         />
       </ScrollView>
     </View>

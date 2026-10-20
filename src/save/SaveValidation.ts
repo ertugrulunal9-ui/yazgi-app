@@ -247,6 +247,8 @@ export const ScheduledEventSchema = z.object({
   condition: z.string().optional(),
   priority: z.union([z.enum(['HIGH', 'NORMAL']), z.number().int().min(0)]),
   sourceEventId: z.string().optional(),
+  sourceChoiceId: z.string().optional(),
+  sourceAge: z.number().optional(),
 });
 
 export const ActiveStoryArcSchema = z.object({

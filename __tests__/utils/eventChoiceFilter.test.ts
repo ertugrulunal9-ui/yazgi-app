@@ -1,4 +1,4 @@
-import { getChoicesToRender } from '../../src/utils/eventChoiceFilter';
+import { describeLockReason, getChoicesToRender, getLockedChoices } from '../../src/utils/eventChoiceFilter';
 import {
   Choice,
   EventContext,
@@ -298,5 +298,52 @@ describe('eventChoiceFilter', () => {
       'passes npc role',
       'passes event history',
     ]);
+  });
+
+  describe('getLockedChoices', () => {
+    const args = (currentEvent: GameEvent | null) => ({
+      currentEvent,
+      resolveChoice,
+      personality: basePersonality,
+      stats: baseStats,
+      family: baseFamily,
+      skills: baseSkills,
+      npcRoles,
+      eventChoiceSet,
+    });
+
+    it('lists personality/stat/skill/family locks with reasons but hides history and NPC locks', () => {
+      const event = makeEvent([
+        makeChoice({ text: 'open' }),
+        makeChoice({ text: 'too kind', reqPersonality: [{ axis: 'empathy', max: 30 }] }),
+        makeChoice({ text: 'not brave', reqPersonality: [{ axis: 'courage', min: 70 }] }),
+        makeChoice({ text: 'not smart', reqStats: { intelligence: 90 } }),
+        makeChoice({ text: 'no skill', reqSkills: { music: 80 } }),
+        makeChoice({ text: 'not rich', reqFamily: { wealth: ['RICH'] } }),
+        makeChoice({ text: 'secret history', reqEventIds: ['never_happened'] }),
+        makeChoice({ text: 'secret npc', reqNPCRole: 'RIVAL' as NPCRole }),
+      ]);
+
+      const locked = getLockedChoices(args(event));
+
+      expect(locked.map(item => [item.choice.text, item.reason])).toEqual([
+        ['too kind', { kind: 'personality', axis: 'empathy', bound: 'max' }],
+        ['not brave', { kind: 'personality', axis: 'courage', bound: 'min' }],
+        ['not smart', { kind: 'stats', stat: 'intelligence', min: 90 }],
+        ['no skill', { kind: 'skills', skill: 'music', min: 80 }],
+        ['not rich', { kind: 'family' }],
+      ]);
+      expect(locked.every(item => describeLockReason(item.reason).length > 0)).toBe(true);
+    });
+
+    it('returns nothing when every choice is locked (all are shown instead)', () => {
+      const event = makeEvent([
+        makeChoice({ text: 'a', reqStats: { intelligence: 99 } }),
+        makeChoice({ text: 'b', reqStats: { charisma: 99 } }),
+      ]);
+
+      expect(getLockedChoices(args(event))).toEqual([]);
+      expect(getLockedChoices(args(null))).toEqual([]);
+    });
   });
 });

@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Dimensions } from 'react-native';
-import { eventStart, buttonPress, importantDecision, badOutcomeHaptic, milestoneHaptic } from '../animations';
+import { eventStart, echoReveal, buttonPress, importantDecision, badOutcomeHaptic, milestoneHaptic } from '../animations';
 import { Choice, EventContext } from '../types';
 import { useGame } from '../context/GameContext';
 import { useEvents } from './useEvents';
 import { useFloatingTexts, usePlayerStats } from './useGameSelectors';
 import { getEventChoiceSet } from '../utils/gameStateAdapter';
-import { getChoicesToRender } from '../utils/eventChoiceFilter';
+import { getChoicesToRender, getLockedChoices } from '../utils/eventChoiceFilter';
+import { getEventById } from './useEvents/shared';
+import { tRuntime } from '../i18n/strings';
 import { getRemainingRewardedAds, isPremium, showContextualRewardedAd } from '../services/monetization';
 import { logRewardedAdRequested, logRewardedAdResult } from '../utils/analyticsEvents';
 import { isFeatureEnabled } from '../config/featureFlags';
@@ -309,11 +311,26 @@ export const useEventScreenController = () => {
     if (isDramaticEvent && !isBreakdownEvent) milestoneHaptic();
   }, [gameState.currentEvent?.id, isBreakdownEvent, isDramaticEvent]);
 
+  // Olay geçmişteki bir seçimin zamanlanmış yankısıysa: hangi yaşta ne seçildiği
+  const echo = useMemo(() => {
+    const link = gameState.currentCausalLink;
+    if (!link || typeof link.sourceAge !== 'number' || !link.sourceChoiceId) return null;
+    const sourceChoice = getEventById(link.sourceEventId)?.choices.find(
+      (c): c is Choice => typeof c !== 'function' && c.id === link.sourceChoiceId,
+    );
+    if (!sourceChoice) return null;
+    return {
+      age: link.sourceAge,
+      choiceText: sourceChoice.textKey ? tRuntime(sourceChoice.textKey, undefined, sourceChoice.text) : sourceChoice.text,
+    };
+  }, [gameState.currentCausalLink]);
+
   useEffect(() => {
     if (gameState.phase === 'EVENT' && gameState.currentEvent?.id) {
-      eventStart();
+      if (echo) echoReveal();
+      else eventStart();
     }
-  }, [gameState.currentEvent?.id, gameState.phase]);
+  }, [echo, gameState.currentEvent?.id, gameState.phase]);
 
   useEffect(() => {
     if (!isBreakdownEvent) {
@@ -346,7 +363,7 @@ export const useEventScreenController = () => {
 
   const eventChoiceSet = useMemo(() => getEventChoiceSet(gameState), [gameState]);
 
-  const choicesToRender = useMemo(() => getChoicesToRender({
+  const choiceFilterArgs = useMemo(() => ({
     currentEvent: gameState.currentEvent,
     resolveChoice,
     personality: gameState.personality,
@@ -356,6 +373,8 @@ export const useEventScreenController = () => {
     npcRoles: gameState.npcs.map(npc => npc.role),
     eventChoiceSet,
   }), [eventChoiceSet, gameState.currentEvent, gameState.family, gameState.npcs, gameState.personality, gameState.skills, resolveChoice, stats]);
+  const choicesToRender = useMemo(() => getChoicesToRender(choiceFilterArgs), [choiceFilterArgs]);
+  const lockedChoices = useMemo(() => getLockedChoices(choiceFilterArgs), [choiceFilterArgs]);
 
   const eventText = useMemo(() => (
     gameState.currentEvent ? resolveEventText(gameState.currentEvent) : null
@@ -365,6 +384,7 @@ export const useEventScreenController = () => {
     gameState,
     stats,
     choicesToRender,
+    lockedChoices,
     resolveChoice,
     handleChoice,
     handleContinue,
@@ -382,5 +402,6 @@ export const useEventScreenController = () => {
     isBreakdownEvent,
     isDramaticEvent,
     eventText,
+    echo,
   };
 };

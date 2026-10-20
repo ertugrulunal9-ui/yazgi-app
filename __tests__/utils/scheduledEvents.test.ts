@@ -1,4 +1,4 @@
-import { getDueScheduledEvents, pickScheduledEvent, tickScheduledEvents } from '../../src/utils/scheduledEvents';
+import { buildEchoCausalLink, getDueScheduledEvents, pickScheduledEvent, tickScheduledEvents } from '../../src/utils/scheduledEvents';
 import { ScheduledEvent } from '../../src/types';
 
 describe('Scheduled Events Utils', () => {
@@ -43,5 +43,19 @@ describe('Scheduled Events Utils', () => {
     randomSpy.mockRestore();
 
     expect(picked?.id).toBe('high_1');
+  });
+
+  it('builds an echo causal link only when source event, choice and age are known', () => {
+    const echo = buildEchoCausalLink({
+      id: 's1', eventId: 'echo_evt', triggerAge: 9, priority: 'HIGH',
+      sourceEventId: 'tr_oyuncak_paylasim', sourceChoiceId: 'oyuncak_paylas', sourceAge: 3,
+    });
+    expect(echo).toEqual(expect.objectContaining({
+      sourceEventId: 'tr_oyuncak_paylasim', sourceChoiceId: 'oyuncak_paylas', sourceAge: 3,
+    }));
+
+    // Eski kayıtlar (seçim/yaş bilgisi yok) ve hub aksiyonları yankı kartı üretmez
+    expect(buildEchoCausalLink({ id: 's2', eventId: 'e', priority: 'NORMAL', sourceEventId: 'x' })).toBeNull();
+    expect(buildEchoCausalLink(null)).toBeNull();
   });
 });

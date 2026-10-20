@@ -112,6 +112,12 @@ export const turnAdvance = () => audioManager.playSFX('turn_advance');
 /** Event start SFX. */
 export const eventStart = () => audioManager.playSFX('event_start');
 
+/** Geçmiş bir seçimin yankısı ortaya çıkınca: kendine ait ses + orta titreşim. */
+export const echoReveal = () => {
+  void triggerHaptic('medium');
+  void audioManager.playSFX('echo_reveal');
+};
+
 /** Positive grade SFX. */
 export const gradeGood = () => audioManager.playSFX('grade_good');
 
