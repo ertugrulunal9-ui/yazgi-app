@@ -312,6 +312,7 @@ export const BUTTERFLY_EFFECT_EVENTS: GameEvent[] = [
         id: 'friend_silent_echo_reach_out',
         text: 'Ailesinden iletişim adresini iste',
         effect: { charisma: 3, discipline: 2, energy: -5 },
+        stressEffect: 5,
         feedback: 'Yıllar önce sustuğun yerde bu kez ilk adımı attın. Gecikmiş de olsa vedanı tamamladın.',
         personalityEffects: [{ axis: 'courage', change: 4 }, { axis: 'openness', change: 2 }],
         memory: { emotion: 'SATISFACTION', weight: 'HIGH' },

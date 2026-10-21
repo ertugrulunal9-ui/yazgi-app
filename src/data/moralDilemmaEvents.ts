@@ -1559,7 +1559,7 @@ export const MORAL_DILEMMA_EVENTS: GameEvent[] = [
         text: "Yerine koy, doğru olan bu",
         choiceType: 'CHALLENGE',
         reqPersonality: [{ axis: 'empathy', max: 50 }],
-        effect: { discipline: 10 },
+        effect: { discipline: 10, energy: -5 },
         personalityEffects: [{ axis: 'empathy', change: 8 }],
         stressEffect: 10,
         feedback: "Zor oldu ama koydun. Belki bir gün kendin alırsın.",

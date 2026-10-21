@@ -60,7 +60,7 @@ export const NPC_CHECKIN_EVENTS: GameEvent[] = [
     personalityCategory: 'GROWTH',
     text: (_ctx, npcName) => `${npcName} "Yarın sınav var, beraber tekrar yapalım mı?" diye sordu.`,
     choices: [
-      { text: 'Beraber çalışalım', effect: { intelligence: 2, discipline: 1 }, feedback: 'Ortak tekrar ikinize de iyi geldi.', npcRelationChange: 6 },
+      { text: 'Beraber çalışalım', effect: { intelligence: 2, discipline: 1 }, feedback: 'Ortak tekrar ikinize de iyi geldi.', npcRelationChange: 6, stressEffect: 2 },
       { text: 'Notlarımı yollarım', effect: { intelligence: 1 }, feedback: 'Destek oldun ama bir araya gelmediniz.', npcRelationChange: 3 },
       { text: 'Vaktim yok de', effect: { discipline: 1 }, feedback: 'Önceliğini korudun ama mesafe arttı.', npcRelationChange: -5 },
     ],
@@ -73,7 +73,7 @@ export const NPC_CHECKIN_EVENTS: GameEvent[] = [
     personalityCategory: 'MORAL',
     text: (_ctx, npcName) => `${npcName} "Bugün moralim çok bozuk" diye yazdı.`,
     choices: [
-      { text: 'Dinlemeyi teklif et', effect: { charisma: 2, familyRelation: 1 }, feedback: 'Dinledin, güven arttı.', npcRelationChange: 9, stressEffect: -3 },
+      { text: 'Dinlemeyi teklif et', effect: { charisma: 2, familyRelation: -1 }, feedback: 'Dinledin, güven arttı.', npcRelationChange: 9, stressEffect: -3 },
       { text: 'Kısa bir moral mesajı gönder', effect: { charisma: 1 }, feedback: 'Yine de destek oldun.', npcRelationChange: 4 },
       { text: 'Konuyu değiştir', effect: {}, feedback: 'Duygularını ciddiye almadığını düşündü.', npcRelationChange: -8, stressEffect: 4 },
     ],

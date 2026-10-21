@@ -40,6 +40,7 @@ const friendshipEvents: GameEvent[] = [
       {
         text: '🤫 "Söz veriyorum, güvenebilirsin bana"',
         effect: { charisma: 5 },
+        stressEffect: 4,
         npcRelationChange: 15,
         personalityEffects: [{ axis: 'empathy', change: 3 }],
         memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Arkadaşının sırrı' },
@@ -76,6 +77,7 @@ const friendshipEvents: GameEvent[] = [
       {
         text: '😊 Ailesiyle sıcak bir sohbet kur',
         effect: { charisma: 9 },
+        stressEffect: 3,
         npcRelationChange: 12,
         personalityEffects: [{ axis: 'openness', change: 3 }],
         memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Arkadaşının evinde akşamyemeği' },
@@ -146,6 +148,7 @@ const friendshipEvents: GameEvent[] = [
       {
         text: '🕵️ Gizlice gerçeği araştır',
         effect: { intelligence: 2, charisma: 1 },
+        stressEffect: 4,
         npcRelationChange: 10,
         personalityEffects: [{ axis: 'openness', change: 1 }],
         futureEvents: [{ trigger: 'TURNS', eventId: 'npcq_friend_adventure', turnsLater: 2 }],
@@ -568,6 +571,7 @@ const rivalryEvents: GameEvent[] = [
       {
         text: '🤝 "Bu saçmalık, taraf falan yok"',
         effect: { charisma: 4 },
+        stressEffect: 3,
         npcRelationChange: 8,
         personalityEffects: [{ axis: 'empathy', change: 3 }],
         feedback: 'Olgunlugun herkesi sasirtti. Gerilim biraz azaldi.',
@@ -603,7 +607,7 @@ const rivalryEvents: GameEvent[] = [
       },
       {
         text: '🤝 Fair play — iyi bir yarışma olsun',
-        effect: { charisma: 5 },
+        effect: { charisma: 5, discipline: -2 },
         npcRelationChange: 10,
         personalityEffects: [{ axis: 'empathy', change: 2 }],
         feedback: 'Sportmen tavrın herkesin takdirini kazandı. Rakibin bile saygı duydu.',
@@ -624,6 +628,7 @@ const rivalryEvents: GameEvent[] = [
       {
         text: '🤝 Elini uzat: "İyi yarışmaydı ki"',
         effect: { charisma: 6 },
+        stressEffect: 3,
         npcRelationChange: 15,
         personalityEffects: [{ axis: 'empathy', change: 3 }],
         feedback: 'Elini sıktı. Belki dost olamazsınız ama artık saygınız var.',
@@ -726,6 +731,7 @@ const rivalryEvents: GameEvent[] = [
       {
         text: '🧘 Bırak — nefret seni tüketiyor',
         effect: { charisma: 3, health: 2 },
+        stressEffect: 3,
         npcRelationChange: 5,
         personalityEffects: [{ axis: 'empathy', change: 2 }],
         feedback: 'İçindeki öfkeyi bıraktın. Rahatladınız.',
