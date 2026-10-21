@@ -1,11 +1,13 @@
 import { SchoolGrades, Family, Stats } from '../types';
 import { tRuntime } from '../i18n/strings';
 
+// D, karnedeki geçme sınırıyla (ortalama >= 50 "sınıfı geçti") aynı yerden başlar;
+// aksi halde 50-59 alan öğrenci "geçti" yazarken harf notu "F" görünüyordu.
 export const getLetterGrade = (score: number): string => {
   if (score >= 90) return 'A';
   if (score >= 80) return 'B';
   if (score >= 70) return 'C';
-  if (score >= 60) return 'D';
+  if (score >= 50) return 'D';
   return 'F';
 };
 

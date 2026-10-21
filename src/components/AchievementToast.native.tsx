@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { getAchievement } from '../systems/achievementDefinitions';
+import { tRuntime } from '../i18n/strings';
 
 interface AchievementToastProps {
   achievementIds: string[];
@@ -14,6 +15,14 @@ const rarityColors = {
   EPIC: '#a855f7',
   LEGENDARY: '#f59e0b',
 } as const;
+
+// Ham "COMMON" yerine oyuncunun dilinde nadirlik etiketi
+const RARITY_LABEL_KEYS: Record<keyof typeof rarityColors, string> = {
+  COMMON: 'achievements.rarityCommon',
+  RARE: 'achievements.rarityRare',
+  EPIC: 'achievements.rarityEpic',
+  LEGENDARY: 'achievements.rarityLegendary',
+};
 
 export const AchievementToast: React.FC<AchievementToastProps> = ({
   achievementIds,
@@ -70,7 +79,7 @@ export const AchievementToast: React.FC<AchievementToastProps> = ({
           <View style={styles.titleWrap}>
             <Text style={styles.titleText}>{achievement.name}</Text>
             <Text style={[styles.rarityText, { color: rarityColor }]}>
-              {achievement.rarity.toUpperCase()}
+              {tRuntime(RARITY_LABEL_KEYS[achievement.rarity] ?? '', undefined, achievement.rarity).toLocaleUpperCase()}
             </Text>
           </View>
         </View>
@@ -80,10 +89,10 @@ export const AchievementToast: React.FC<AchievementToastProps> = ({
         {achievement.reward && (
           <View style={styles.rewardRow}>
             {achievement.reward.money ? (
-              <Text style={styles.rewardText}>+{achievement.reward.money} money</Text>
+              <Text style={styles.rewardText}>{tRuntime('achievements.moneyReward', { amount: achievement.reward.money }, `+${achievement.reward.money} TL`)}</Text>
             ) : null}
             {achievement.reward.stats ? (
-              <Text style={styles.rewardText}>+stat bonus</Text>
+              <Text style={styles.rewardText}>{tRuntime('achievements.statBoost')}</Text>
             ) : null}
             {achievement.reward.item ? (
               <Text style={styles.rewardText}>{achievement.reward.item}</Text>

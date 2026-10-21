@@ -71,6 +71,7 @@ export const EventScreen: React.FC = React.memo(() => {
         currentEvent={gameState.currentEvent}
         selectedChoice={selectedChoice}
         stats={stats}
+        age={gameState.age}
         personality={gameState.personality}
         skills={gameState.skills}
         fate={gameState.fate}

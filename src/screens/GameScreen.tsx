@@ -72,9 +72,12 @@ import { SessionRecapModal } from '../components/SessionRecapModal';
 import { GoalTracker } from '../components/GoalTracker';
 import { isFeatureEnabled } from '../config/featureFlags';
 import type { AgeMilestoneSummary, ChapterSummary } from '../types/game';
-import { getCurrentChapter, getLocalizedChapterName } from '../utils/gameUtils';
+import { getCurrentChapter, getLocalizedChapterName, getStatCap } from '../utils/gameUtils';
 import { hasMilestoneContent } from '../utils/milestoneBuilder';
 import { CHAPTERS } from '../config/gameBalance';
+
+// Kritik sağlık eşiği yaşa göre tavanın %20'si (yetişkinde 20); bebeklikte tavan 30 olduğu için sabit 20 yanlış alarm veriyordu
+const isHealthCriticalForAge = (health: number, age: number): boolean => health <= getStatCap(age, 'health') * 0.2;
 
 interface GameScreenProps {
   onPhaseChange: (tab: AppTab) => void;
@@ -95,7 +98,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     getPlayerGroups,
   } = useNPCs();
   const previousAgeRef = useRef(gameState.age);
-  const previousHealthCriticalRef = useRef(stats.health <= 20);
+  const previousHealthCriticalRef = useRef(isHealthCriticalForAge(stats.health, gameState.age));
 
   const {
     unlockedAchievements,
@@ -263,7 +266,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
   }, [gameState.age]);
 
   useEffect(() => {
-    const isCritical = stats.health <= 20;
+    const isCritical = isHealthCriticalForAge(stats.health, gameState.age);
     if (isCritical && !previousHealthCriticalRef.current) {
       healthCritical();
     }
