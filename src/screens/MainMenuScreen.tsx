@@ -841,7 +841,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({
               </TouchableOpacity>
               {(metaProgression?.recentRuns?.length ?? 0) === 0 && (
                 <Text style={{ color: theme.textSecondary, fontSize: 11, textAlign: 'center', marginTop: 4 }}>
-                  {tStatic('app.quickPlayHint', undefined, 'Form doldurmadan rastgele bir karakterle 13 yaşından başla')}
+                  {tStatic('app.quickPlayHint', undefined, 'Form doldurmadan rastgele bir karakterle hemen başla')}
                 </Text>
               )}
           </ScrollView>

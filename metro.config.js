@@ -9,10 +9,13 @@ config.resolver.platforms = Array.from(new Set([...(config.resolver.platforms ||
 
 // Startup performance: defer module initialization to first use.
 // This significantly reduces JS startup time for large data files (events, etc).
-config.transformer.getTransformOptions = async () => ({
+// Web'de kapalı: inline require, react-native-worklets'in platform kontrolünde
+// (`globalThis.__RUNTIME_KIND === require('../runtimeKind').RuntimeKind.ReactNative`)
+// global'i modül yüklenmeden okutuyor; web native yola düşüp WorkletsError ile açılışta çöküyordu.
+config.transformer.getTransformOptions = async (_entryPoints, options) => ({
   transform: {
     experimentalImportSupport: false,
-    inlineRequires: true,
+    inlineRequires: options?.platform !== 'web',
   },
 });
 

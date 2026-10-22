@@ -56,7 +56,8 @@ class AudioManager {
         // Configure audio mode
         await setAudioModeAsync({
           playsInSilentMode: true,
-          shouldPlayInBackground: true,
+          // false: uygulama arka plana geçince expo-audio müziği duraklatır, öne gelince sürdürür
+          shouldPlayInBackground: false,
           interruptionMode: 'duckOthers',
           shouldRouteThroughEarpiece: false,
         });

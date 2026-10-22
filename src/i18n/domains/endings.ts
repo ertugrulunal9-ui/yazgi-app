@@ -57,6 +57,7 @@ export const endingsStrings: DomainStrings = {
       },
       turningPoints: {
         title: 'Dönüm Noktaları',
+        fallback: 'Bir karar anı',
       },
       narrativeWeight: {
         title: 'Seni Şekillendiren Anlar',
@@ -161,6 +162,7 @@ export const endingsStrings: DomainStrings = {
       },
       turningPoints: {
         title: 'Turning Points',
+        fallback: 'A moment of choice',
       },
       narrativeWeight: {
         title: 'Moments That Shaped You',
