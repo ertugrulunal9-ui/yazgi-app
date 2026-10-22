@@ -17,7 +17,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { Choice, PersonalityState, Stats } from '../types';
-import { selectionHaptic, importantDecision } from '../animations';
+import { selectionHaptic } from '../animations';
 import { getMomentumDialogueTag } from '../utils/momentumDialogue';
 import { generateTradeoffHint } from '../utils/tradeoffHints';
 import { tRuntime, getRuntimeLocale } from '../i18n/strings';
@@ -87,8 +87,8 @@ export const SwipeChoiceCard: React.FC<SwipeChoiceCardProps> = React.memo(({
   const translateX = useSharedValue(0);
   const isGestureActive = useSharedValue(false);
 
+  // Onay titreşimi tek yerden (useEventScreenController.handleChoice) gelir
   const onSwipeRight = () => {
-    importantDecision();
     onSelect();
   };
 

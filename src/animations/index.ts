@@ -23,6 +23,8 @@ export {
   healthCritical,
   traitGainHaptic,
   badOutcomeHaptic,
+  goodOutcomeFeedback,
+  choiceCommit,
   fateTokenHaptic,
   ageTransitionHaptic,
   milestoneHaptic,

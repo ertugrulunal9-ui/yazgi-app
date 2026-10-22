@@ -42,6 +42,7 @@ interface UseAppBootstrapResult {
   setThemeMode: (themeMode: ThemeMode) => void;
   setDensityMode: (densityMode: DensityMode) => void;
   toggleReduceMotion: () => void;
+  toggleHaptics: () => void;
   setAnalyticsEnabled: (enabled: boolean) => void;
   setPersonalizedAdsEnabled: (enabled: boolean) => void;
 }
@@ -241,6 +242,10 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
     setUiPrefs(prev => ({ ...prev, reduceMotion: !prev.reduceMotion }));
   }, []);
 
+  const toggleHaptics = useCallback(() => {
+    setUiPrefs(prev => ({ ...prev, hapticsEnabled: !prev.hapticsEnabled }));
+  }, []);
+
   const setAnalyticsEnabled = useCallback((enabled: boolean) => {
     setUiPrefs(prev => ({ ...prev, analyticsEnabled: enabled }));
   }, []);
@@ -263,6 +268,7 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
     setThemeMode,
     setDensityMode,
     toggleReduceMotion,
+    toggleHaptics,
     setAnalyticsEnabled,
     setPersonalizedAdsEnabled,
   };

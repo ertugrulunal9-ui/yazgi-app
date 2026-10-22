@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Dimensions } from 'react-native';
-import { eventStart, echoReveal, buttonPress, importantDecision, badOutcomeHaptic, milestoneHaptic } from '../animations';
+import { eventStart, echoReveal, choiceCommit, badOutcomeHaptic, goodOutcomeFeedback, milestoneHaptic } from '../animations';
 import { Choice, EventContext } from '../types';
 import { useGame } from '../context/GameContext';
 import { useEvents } from './useEvents';
@@ -82,8 +82,8 @@ export const useEventScreenController = () => {
     const resolved = typeof choice === 'function' ? resolveChoice(choice) : choice;
     lastSelectedChoiceRef.current = { choice: resolved, index: choiceIndex };
 
-    buttonPress();
-    importantDecision();
+    // Tek onay titreşimi; basma tıkı düğmenin kendisinden gelir (önceden 3 tık + 5 titreşim üst üste biniyordu)
+    choiceCommit();
 
     const turnResult = handleEventChoice(choice, choiceIndex);
     const momentumFeedback = turnResult.momentumFeedback;
@@ -128,7 +128,6 @@ export const useEventScreenController = () => {
     if (elapsed < MIN_RESULT_DISPLAY_TIME || continueHandledRef.current) return;
 
     continueHandledRef.current = true;
-    buttonPress();
     continueAfterResult();
   }, [continueAfterResult]);
 
@@ -359,8 +358,11 @@ export const useEventScreenController = () => {
 
   useEffect(() => {
     if (gameState.phase !== 'RESULT' || !gameState.lastResult?.changes) return;
-    const hasNegative = Object.values(gameState.lastResult.changes).some(v => typeof v === 'number' && v < 0);
-    if (hasNegative) badOutcomeHaptic();
+    const values = Object.values(gameState.lastResult.changes).filter((v): v is number => typeof v === 'number');
+    const net = values.reduce((sum, v) => sum + v, 0);
+    // Net kayıpta olumsuz, net kazançta olumlu ses/titreşim (önceden yalnızca kötü sonuç ses çıkarıyordu)
+    if (values.some(v => v < 0) && net <= 0) badOutcomeHaptic();
+    else if (net > 0) goodOutcomeFeedback();
   }, [gameState.phase, gameState.lastResult]);
 
   const eventChoiceSet = useMemo(() => getEventChoiceSet(gameState), [gameState]);

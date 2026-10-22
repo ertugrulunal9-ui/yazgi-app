@@ -127,6 +127,23 @@ const getPlayerIcon = (age: number): IconName => {
   return 'account-circle-outline';
 };
 
+/** Stat çubuğu değişince yeni değere kayarak gelir (önceden anında atlıyordu). */
+const AnimatedMiniFill: React.FC<{ percent: number; color: string }> = ({ percent, color }) => {
+  const target = clamp(percent, 0, 100);
+  const progress = useRef(new Animated.Value(target)).current;
+
+  useEffect(() => {
+    Animated.timing(progress, {
+      toValue: target,
+      duration: 450,
+      useNativeDriver: false,
+    }).start();
+  }, [progress, target]);
+
+  const width = progress.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] });
+  return <Animated.View style={[styles.miniFill, { backgroundColor: color, width }]} />;
+};
+
 const StatMeter: React.FC<StatMeterProps> = ({
   icon,
   label,
@@ -158,15 +175,7 @@ const StatMeter: React.FC<StatMeterProps> = ({
     </View>
     <Text style={[styles.statValue, { color: theme.textPrimary }]}>{valueText}</Text>
     <View style={[styles.miniBar, { backgroundColor: theme.border }]}>
-      <View
-        style={[
-          styles.miniFill,
-          {
-            backgroundColor: barColor,
-            width: `${clamp(percent, 0, 100)}%`,
-          },
-        ]}
-      />
+      <AnimatedMiniFill percent={percent} color={barColor} />
     </View>
   </TouchableOpacity>
 );

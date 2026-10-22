@@ -24,6 +24,7 @@ import { AnalyticsTracker } from './AnalyticsTracker';
 import { AppNavigator } from './AppNavigator';
 import { SettingsPanel } from './SettingsPanel';
 import { useAppBootstrap } from './useAppBootstrap';
+import { setFeedbackPreferences } from '../utils/feedbackPreferences';
 import { t as translateStatic } from '../i18n/strings';
 import { canOpenPremiumPaywall } from '../services/subscriptionManager';
 import {
@@ -105,9 +106,15 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
     setThemeMode,
     setDensityMode,
     toggleReduceMotion,
+    toggleHaptics,
     setAnalyticsEnabled,
     setPersonalizedAdsEnabled,
   } = useAppBootstrap();
+
+  // Ayarlar'daki hareket/titreşim tercihlerini React dışı yardımcılara ulaştır
+  useEffect(() => {
+    setFeedbackPreferences({ reduceMotion: uiPrefs.reduceMotion, hapticsEnabled: uiPrefs.hapticsEnabled });
+  }, [uiPrefs.reduceMotion, uiPrefs.hapticsEnabled]);
   const tStatic = useCallback(
     (key: string, params?: Record<string, string | number | boolean>, fallback?: string) =>
       translateStatic(locale, key, params, fallback),
@@ -623,6 +630,7 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
         onThemeChange={setThemeMode}
         onDensityChange={setDensityMode}
         onToggleMotion={toggleReduceMotion}
+        onToggleHaptics={toggleHaptics}
         onAnalyticsEnabledChange={setAnalyticsEnabled}
         onPersonalizedAdsEnabledChange={setPersonalizedAdsEnabled}
         onSoundMuteChange={handleSoundMuteChange}

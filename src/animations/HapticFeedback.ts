@@ -156,6 +156,21 @@ export const badOutcomeHaptic = async (): Promise<void> => {
   }
 };
 
+/** Seçim onayı: tek güçlü titreşim (basma tıkı düğmenin kendisinden gelir). */
+export const choiceCommit = () => triggerHaptic('heavy');
+
+/** Net olumlu sonuç: başarı titreşimi + kazanç sesi (olumsuz sonucun karşılığı). */
+export const goodOutcomeFeedback = async (): Promise<void> => {
+  try {
+    if (Platform.OS !== 'web') {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+    await audioManager.playSFX('stat_gain');
+  } catch (error) {
+    devLog.warn('Haptic feedback failed:', error);
+  }
+};
+
 /** Fate token pattern (haptics only). */
 export const fateTokenHaptic = async (): Promise<void> => {
   if (Platform.OS === 'web') return;

@@ -5,7 +5,8 @@
  */
 
 import React, { ReactNode } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Animated, Platform } from 'react-native';
+import { isReduceMotionPreferred } from '../utils/feedbackPreferences';
 
 export type TransitionType = 
   | 'fade'
@@ -96,103 +97,78 @@ export const ScreenTransition: React.FC<ScreenTransitionProps> = React.memo(({
          prevProps.type === nextProps.type;
 });
 
+type EnterFrom = 'up' | 'down' | 'left' | 'right';
+
+const ENTER_DISTANCE = 12;
+const ENTER_DURATION_MS = 320;
+const STAGGER_STEP_MS = 60;
+
 /**
- * Fade In Down animasyonu
- * NOT: children her zaman yeniden render edilmeli, memo kaldırıldı
+ * Gerçek giriş animasyonu: opaklık 0→1 ve kısa bir kayma. Önceki sürüm gecikmeden
+ * sonra opaklığı anında 1 yapıyordu (görünürde animasyon yoktu).
  */
-export const FadeInDownView: React.FC<{ children: ReactNode; delay?: number }> = ({
+const EnterView: React.FC<{ children: ReactNode; delay?: number; from: EnterFrom }> = ({
   children,
   delay = 0,
+  from,
 }) => {
-  const [opacity, setOpacity] = React.useState(0);
+  // "Hareketi azalt" açıksa içerik doğrudan görünür, kayma olmaz
+  const reduceMotion = isReduceMotionPreferred();
+  const progress = React.useRef(new Animated.Value(reduceMotion ? 1 : 0)).current;
 
   React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setOpacity(1);
-    }, delay);
-    return () => clearTimeout(timer);
-  }, [delay]);
+    if (reduceMotion) return undefined;
+    const animation = Animated.timing(progress, {
+      toValue: 1,
+      duration: ENTER_DURATION_MS,
+      delay,
+      useNativeDriver: Platform.OS !== 'web',
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [delay, progress, reduceMotion]);
+
+  const offset = from === 'up' || from === 'left' ? ENTER_DISTANCE : -ENTER_DISTANCE;
+  const translate = progress.interpolate({ inputRange: [0, 1], outputRange: [offset, 0] });
+  const transform = from === 'left' || from === 'right'
+    ? [{ translateX: translate }]
+    : [{ translateY: translate }];
 
   return (
-    <View style={{ opacity }}>
+    <Animated.View style={{ opacity: progress, transform }}>
       {children}
-    </View>
+    </Animated.View>
   );
 };
+
+/**
+ * Fade In Down animasyonu
+ */
+export const FadeInDownView: React.FC<{ children: ReactNode; delay?: number }> = ({ children, delay = 0 }) => (
+  <EnterView delay={delay} from="down">{children}</EnterView>
+);
 
 /**
  * Fade In Up animasyonu
- * NOT: children her zaman yeniden render edilmeli, memo kaldırıldı
  */
-export const FadeInUpView: React.FC<{ children: ReactNode; delay?: number }> = ({
-  children,
-  delay = 0,
-}) => {
-  const [opacity, setOpacity] = React.useState(0);
-
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setOpacity(1);
-    }, delay);
-    return () => clearTimeout(timer);
-  }, [delay]);
-
-  return (
-    <View style={{ opacity }}>
-      {children}
-    </View>
-  );
-};
+export const FadeInUpView: React.FC<{ children: ReactNode; delay?: number }> = ({ children, delay = 0 }) => (
+  <EnterView delay={delay} from="up">{children}</EnterView>
+);
 
 /**
  * Fade In Left animasyonu
+ * (memo kaldırıldı: yalnızca delay'e bakan karşılaştırma çocuk güncellemelerini yutuyordu)
  */
-export const FadeInLeftView: React.FC<{ children: ReactNode; delay?: number }> = React.memo(({
-  children,
-  delay = 0,
-}) => {
-  const [opacity, setOpacity] = React.useState(0);
-
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setOpacity(1);
-    }, delay);
-    return () => clearTimeout(timer);
-  }, [delay]);
-
-  return (
-    <View style={{ opacity }}>
-      {children}
-    </View>
-  );
-}, (prevProps, nextProps) => {
-  return prevProps.delay === nextProps.delay;
-});
+export const FadeInLeftView: React.FC<{ children: ReactNode; delay?: number }> = ({ children, delay = 0 }) => (
+  <EnterView delay={delay} from="left">{children}</EnterView>
+);
 
 /**
  * Fade In Right animasyonu
  */
-export const FadeInRightView: React.FC<{ children: ReactNode; delay?: number }> = React.memo(({
-  children,
-  delay = 0,
-}) => {
-  const [opacity, setOpacity] = React.useState(0);
-
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setOpacity(1);
-    }, delay);
-    return () => clearTimeout(timer);
-  }, [delay]);
-
-  return (
-    <View style={{ opacity }}>
-      {children}
-    </View>
-  );
-}, (prevProps, nextProps) => {
-  return prevProps.delay === nextProps.delay;
-});
+export const FadeInRightView: React.FC<{ children: ReactNode; delay?: number }> = ({ children, delay = 0 }) => (
+  <EnterView delay={delay} from="right">{children}</EnterView>
+);
 
 /**
  * Basit Fade animasyonu
@@ -227,9 +203,9 @@ export const StaggeredFadeIn: React.FC<{
   return (
     <View style={styles.container}>
       {children.map((child, index) => (
-        <View key={index}>
+        <EnterView key={index} delay={index * STAGGER_STEP_MS} from="up">
           {child}
-        </View>
+        </EnterView>
       ))}
     </View>
   );

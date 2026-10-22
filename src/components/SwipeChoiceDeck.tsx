@@ -11,7 +11,7 @@ import { Choice, EventContext, EventRarity, PersonalityState } from '../types';
 import { useUI } from '../context/UIContext';
 import { ChoiceCard } from './ChoiceCard';
 import { AnimatedButton } from '../animations/ButtonAnimations';
-import { StaggeredFadeIn, buttonPress, importantDecision } from '../animations';
+import { StaggeredFadeIn } from '../animations';
 import { getMomentumDialogueTag } from '../utils/momentumDialogue';
 import { generateTradeoffHint } from '../utils/tradeoffHints';
 import { describeLockReason, LockedChoice } from '../utils/eventChoiceFilter';
@@ -147,11 +147,7 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
           return (
             <AnimatedButton
               key={index}
-              onPress={() => {
-                buttonPress();
-                importantDecision();
-                onChoiceSelected(choice, choiceIndex);
-              }}
+              onPress={() => onChoiceSelected(choice, choiceIndex)}
               animationType={isBreakdownEvent ? 'shake' : 'pressScale'}
               style={{
                 ...buttonFallbackStyles.button,
@@ -244,8 +240,6 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
         <AnimatedButton
           onPress={() => {
             if (swipeLocked) return;
-            buttonPress();
-            importantDecision();
             handleSelect(activeIndex);
           }}
           animationType="pressScale"

@@ -18,6 +18,7 @@ describe('themeUtils', () => {
       theme: 'dark',
       density: 'standard',
       reduceMotion: false,
+      hapticsEnabled: true,
       analyticsEnabled: false,
       personalizedAdsEnabled: false,
     });
