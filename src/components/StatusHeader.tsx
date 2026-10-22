@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated, TouchableOpacity, Modal, Pressable } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { InnerThoughtType, LifeGoal, Stats } from '../types';
-import type { AvatarConfig } from '../types/core';
+import type { AvatarConfig, PlayerGender } from '../types/core';
+import type { AvatarMood } from '../utils/avatarMood';
 import { Avatar } from './Avatar';
 import { MessageToast } from '../animations/ToastAnimations';
 import { usePillarStats, useStress } from '../hooks/useGameSelectors';
@@ -20,6 +21,8 @@ interface StatusHeaderProps {
   chapterName?: string;
   chapterEmoji?: string;
   avatar?: AvatarConfig;
+  gender?: PlayerGender;
+  avatarMood?: AvatarMood;
   innerThought?: string;
   innerThoughtType?: InnerThoughtType;
   stats: Stats;
@@ -382,6 +385,8 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
   chapterName,
   chapterEmoji,
   avatar,
+  gender,
+  avatarMood,
   innerThought,
   innerThoughtType,
   stats,
@@ -561,7 +566,7 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
       <View style={styles.heroSection}>
         <View style={[styles.avatarContainer, { backgroundColor: accentBg, borderColor: theme.border }]}>
           {avatar
-            ? <Avatar config={avatar} age={age} size={38} />
+            ? <Avatar config={avatar} age={age} gender={gender} mood={avatarMood} size={44} />
             : <MaterialCommunityIcons name={avatarIcon} size={26} color={theme.textPrimary} />
           }
         </View>
@@ -850,12 +855,13 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   avatarContainer: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
+    overflow: 'hidden',
   },
   infoContainer: {
     flex: 1,

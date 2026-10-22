@@ -75,6 +75,7 @@ import type { AgeMilestoneSummary, ChapterSummary } from '../types/game';
 import { getCurrentChapter, getLocalizedChapterName, getStatCap } from '../utils/gameUtils';
 import { hasMilestoneContent } from '../utils/milestoneBuilder';
 import { hasSpendableEnergy } from '../utils/endDayPrompt';
+import { getAvatarMood } from '../utils/avatarMood';
 import { CHAPTERS } from '../config/gameBalance';
 
 // Kritik sağlık eşiği yaşa göre tavanın %20'si (yetişkinde 20); bebeklikte tavan 30 olduğu için sabit 20 yanlış alarm veriyordu
@@ -403,6 +404,13 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
   );
   const riskPercent = riskData.total;
   const riskReasons = riskData.reasons;
+  const avatarMood = useMemo(() => getAvatarMood({
+    age: gameState.age,
+    stress: gameState.stress,
+    health: stats.health,
+    familyRelation: stats.familyRelation,
+  }), [gameState.age, gameState.stress, stats.health, stats.familyRelation]);
+  const playerGender = gameState.characterInfo?.gender;
   const careerPathActionsEnabled = isFeatureEnabled('CAREER_PATH_ACTIONS');
 
   // Calculate available categories based on age
@@ -632,6 +640,8 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
               chapterName={currentChapterName}
               chapterEmoji={currentChapter.emoji}
               avatar={gameState.avatar}
+              gender={playerGender}
+              avatarMood={avatarMood}
               innerThought={gameState.innerThought}
               innerThoughtType={gameState.innerThoughtType}
               stats={stats}
@@ -685,6 +695,9 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
                   achievementSummary={achievementSummary}
                   onOpenAchievements={() => setAchievementsOpen(true)}
                   statSnapshots={gameState.statSnapshots}
+                  avatar={gameState.avatar}
+                  gender={playerGender}
+                  avatarMood={avatarMood}
                 />
               </ScrollView>
             </TabContent.Screen>

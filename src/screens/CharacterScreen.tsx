@@ -3,6 +3,9 @@ import { View, Text, ViewStyle, TouchableOpacity } from 'react-native';
 import { FadeInUpView } from '../animations';
 import { getLetterGrade, calculateGradeAverage } from '../utils/schoolLogic';
 import { Family, FamilyEvolutionState, PersonalityState, Stats, Skills, SchoolGrades, TraitProgressData } from '../types';
+import type { AvatarConfig, PlayerGender } from '../types/core';
+import { Avatar, getAvatarAgeStage } from '../components/Avatar';
+import type { AvatarMood } from '../utils/avatarMood';
 import { ensureTextContrast } from '../utils/colorContrast';
 import { getFamilyAtmosphereLabel } from '../utils/familyNarrative';
 import { getTraitName } from '../data/traits';
@@ -40,6 +43,9 @@ interface CharacterScreenProps {
     percentage: number;
   };
   statSnapshots?: Array<{ age: number; stats: Stats }>;
+  avatar?: AvatarConfig;
+  gender?: PlayerGender;
+  avatarMood?: AvatarMood;
 }
 
 interface CharacterSectionProps {
@@ -180,6 +186,9 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
   onOpenAchievements,
   achievementSummary,
   statSnapshots,
+  avatar,
+  gender,
+  avatarMood = 'NORMAL',
 }) => {
   const [isTraitProgressExpanded, setIsTraitProgressExpanded] = useState(false);
 
@@ -244,6 +253,22 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
 
   return (
     <FadeInUpView delay={100}>
+      {avatar ? (
+        <View style={[cardStyle, { flexDirection: 'row', alignItems: 'center', gap: 16 }]}>
+          <Avatar config={avatar} age={age} gender={gender} mood={avatarMood} size={112} showRing />
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: theme.textPrimary, fontWeight: '700', fontSize: 18 }}>
+              {`${age} ${tRuntime('character.ageUnit')}`}
+            </Text>
+            <Text style={{ color: theme.textSecondary, fontSize: 14, marginTop: 4 }}>
+              {tRuntime(`character.screen.portrait.stages.${getAvatarAgeStage(age)}`)}
+            </Text>
+            <Text style={{ color: theme.textPrimary, fontSize: 14, fontWeight: '600', marginTop: 8 }}>
+              {tRuntime(`character.screen.portrait.moods.${avatarMood}`)}
+            </Text>
+          </View>
+        </View>
+      ) : null}
       <CharacterSection
         title={tRuntime('character.screen.sections.stats', undefined, 'Karakter Statlari')}
         icon={'\u{1F4CA}'}

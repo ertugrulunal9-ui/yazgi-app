@@ -572,7 +572,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({
               </Text>
               <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
                 {/* Avatar önizleme */}
-                <Avatar config={avatar} age={10} size={52} />
+                <Avatar config={avatar} age={10} gender={gender} size={52} />
 
                 <View style={{ flex: 1, gap: 8 }}>
                   {/* Saç */}

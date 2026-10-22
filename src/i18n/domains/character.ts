@@ -102,6 +102,21 @@ export const characterStrings: DomainStrings = {
           schoolGrades: 'Okul Notları',
           statHistory: 'Geçmiş',
         },
+        portrait: {
+          stages: {
+            BABY: 'Bebeklik',
+            PRESCHOOL: 'Okul öncesi',
+            PRIMARY: 'İlkokul',
+            TEEN: 'Ergenlik',
+            YOUNG: 'Gençlik',
+          },
+          moods: {
+            HAPPY: 'Keyfi yerinde',
+            NORMAL: 'Sakin',
+            SAD: 'Morali bozuk',
+            STRESSED: 'Stresli',
+          },
+        },
         momentumHint: 'Tutarlı seçimler ivme yaratır: özel olayler ve etiketli diyalog seçenekleri açılır.',
         momentumCard: {
           title: '{tendency} İvmesi',
@@ -262,6 +277,21 @@ export const characterStrings: DomainStrings = {
           passiveBonuses: 'Passive Bonuses',
           schoolGrades: 'School Grades',
           statHistory: 'History',
+        },
+        portrait: {
+          stages: {
+            BABY: 'Infancy',
+            PRESCHOOL: 'Preschool',
+            PRIMARY: 'Primary school',
+            TEEN: 'Teen years',
+            YOUNG: 'Young adult',
+          },
+          moods: {
+            HAPPY: 'In good spirits',
+            NORMAL: 'Calm',
+            SAD: 'Feeling down',
+            STRESSED: 'Stressed',
+          },
         },
         momentumHint: 'Consistent choices create momentum: special events and tagged dialog options unlock.',
         momentumCard: {
