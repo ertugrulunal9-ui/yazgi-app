@@ -1338,6 +1338,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
         conditionalOutcomes: [
           {
             id: 'yks_grind_success',
+            tone: 'positive',
             condition: () => true,
             weight: 1,
             statChanges: { intelligence: 12, health: -12, energy: -35, discipline: 6 },
@@ -1637,6 +1638,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
         conditionalOutcomes: [
           {
             id: 'kafe_go_rebel_success',
+            tone: 'positive',
             condition: () => true,
             weight: 1,
             statChanges: { charisma: 10, discipline: -10, familyRelation: -4, energy: -30 },

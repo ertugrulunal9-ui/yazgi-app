@@ -315,6 +315,8 @@ export const useEventScreenController = () => {
   const echo = useMemo(() => {
     const link = gameState.currentCausalLink;
     if (!link || typeof link.sourceAge !== 'number' || !link.sourceChoiceId) return null;
+    // Bağ yalnızca kendi olayında gösterilir (ör. araya giren toparlanma olayında değil)
+    if (link.targetEventId && link.targetEventId !== gameState.currentEvent?.id) return null;
     const sourceChoice = getEventById(link.sourceEventId)?.choices.find(
       (c): c is Choice => typeof c !== 'function' && c.id === link.sourceChoiceId,
     );
@@ -323,7 +325,7 @@ export const useEventScreenController = () => {
       age: link.sourceAge,
       choiceText: sourceChoice.textKey ? tRuntime(sourceChoice.textKey, undefined, sourceChoice.text) : sourceChoice.text,
     };
-  }, [gameState.currentCausalLink]);
+  }, [gameState.currentCausalLink, gameState.currentEvent?.id]);
 
   useEffect(() => {
     if (gameState.phase === 'EVENT' && gameState.currentEvent?.id) {

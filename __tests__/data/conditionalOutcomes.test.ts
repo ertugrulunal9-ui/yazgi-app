@@ -1,6 +1,6 @@
 import { EVENTS } from '../../src/data/events';
 import { validateEventPool } from '../../src/data/eventRegistry';
-import { resolveOutcome } from '../../src/systems/ConditionalOutcomeResolver';
+import { isPositiveOutcome, resolveOutcome } from '../../src/systems/ConditionalOutcomeResolver';
 import type { Choice, EventContext, GameEvent, Stats } from '../../src/types';
 import { enEventTranslations } from '../../src/i18n/events/en';
 import { getInitialGameState, getInitialStats } from '../../src/utils/gameUtils';
@@ -147,6 +147,12 @@ describe('conditionalOutcomes (şansa bağlı sonuçlar)', () => {
   it('her sonucun İngilizce metni var (EN oyuncu Türkçe metne düşmez)', () => {
     expectAll(({ event, choice }) => (choice.conditionalOutcomes ?? []).every(outcome => (
       Boolean(outcome.id && enEventTranslations[event.id]?.choices?.[choice.id ?? '']?.outcomes?.[outcome.id]?.feedback)
+    )));
+  });
+
+  it('kader ağırlığı başarıyı olumlu, başarısızlığı olumsuz sayar (enerji bedeli yönü bozmaz)', () => {
+    expectAll(({ choice }) => (choice.conditionalOutcomes ?? []).every(outcome => (
+      isPositiveOutcome(outcome) === Boolean(outcome.id?.endsWith('_success'))
     )));
   });
 });

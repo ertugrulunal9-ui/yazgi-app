@@ -198,7 +198,14 @@ export const pickScheduledEvent = (dueEvents: ScheduledEvent[]): ScheduledEvent 
  */
 export const buildEchoCausalLink = (
   scheduledEvent: ScheduledEvent | null | undefined,
-): { sourceEventId: string; narrativeLine: string; emotion: string; sourceChoiceId: string; sourceAge: number } | null => {
+): {
+  sourceEventId: string;
+  narrativeLine: string;
+  emotion: string;
+  sourceChoiceId: string;
+  sourceAge: number;
+  targetEventId: string;
+} | null => {
   if (
     !scheduledEvent?.sourceEventId
     || !scheduledEvent.sourceChoiceId
@@ -210,6 +217,7 @@ export const buildEchoCausalLink = (
     sourceEventId: scheduledEvent.sourceEventId,
     sourceChoiceId: scheduledEvent.sourceChoiceId,
     sourceAge: scheduledEvent.sourceAge,
+    targetEventId: scheduledEvent.eventId,
     narrativeLine: '',
     emotion: 'NEUTRAL',
   };

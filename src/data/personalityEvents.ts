@@ -719,6 +719,7 @@ export const PERSONALITY_EVENTS: GameEvent[] = [
         conditionalOutcomes: [
           {
             id: 'sinif_cesur_success',
+            tone: 'positive',
             condition: () => true,
             weight: 1,
             statChanges: { charisma: 12, energy: -18 },

@@ -1119,6 +1119,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
           },
           {
             id: 'kopya_reddet_fail',
+            tone: 'negative',
             condition: (ctx) => ctx.stats.charisma < 18,
             weight: 1,
             statChanges: { discipline: 6, charisma: -6 },
@@ -1229,6 +1230,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         conditionalOutcomes: [
           {
             id: 'gece_git_success',
+            tone: 'positive',
             condition: () => true,
             weight: 1,
             statChanges: { charisma: 11, energy: -12 },

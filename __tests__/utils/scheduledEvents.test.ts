@@ -52,6 +52,8 @@ describe('Scheduled Events Utils', () => {
     });
     expect(echo).toEqual(expect.objectContaining({
       sourceEventId: 'tr_oyuncak_paylasim', sourceChoiceId: 'oyuncak_paylas', sourceAge: 3,
+      // Kart yalnızca bu olayda gösterilir (araya giren toparlanma olayında değil)
+      targetEventId: 'echo_evt',
     }));
 
     // Eski kayıtlar (seçim/yaş bilgisi yok) ve hub aksiyonları yankı kartı üretmez
