@@ -728,6 +728,14 @@ export const autoSaveGame = async (data: { stats: Stats, gameState: GameState, p
   }
 };
 
+/**
+ * Stat, yaşa göre tavanın verilen oranının altında mı? Uyarılar için kullanılır:
+ * sabit eşikler (ör. sağlık < 30) tavanı 30 olan 0-6 yaşta sürekli "kritik" diyordu.
+ */
+export const isBelowCapRatio = (value: number, age: number, statKey: StatKey, ratio: number): boolean => (
+  value < getStatCap(age, statKey) * ratio
+);
+
 export const getStatCap = (age: number, statKey: StatKey, family?: Family | null, traitIds: string[] = []): number => {
   if (statKey === 'money') return Infinity;
 

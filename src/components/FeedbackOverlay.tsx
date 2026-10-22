@@ -8,6 +8,7 @@ import { FateTokenDisplay, hasNegativeOutcome } from './FateTokenDisplay';
 import { TraitProgressChip } from './TraitProgressChip';
 import { buildPrimaryFeedbackMessage, EventOutcomeSummary } from '../utils/feedbackPrioritizer';
 import { isFeatureEnabled } from '../config/featureFlags';
+import { isBelowCapRatio } from '../utils/gameUtils';
 
 const STAT_KEYS = ['health', 'energy', 'intelligence', 'charisma', 'discipline', 'money', 'familyRelation'] as const;
 const SKILL_KEYS = ['coding', 'music', 'sports', 'design', 'athletics', 'logic', 'reading', 'teamwork', 'art', 'writing', 'work_ethic', 'business'] as const;
@@ -33,6 +34,8 @@ interface FeedbackOverlayProps {
   currentEvent: GameEvent | null;
   selectedChoice: Choice | null;
   stats: Stats;
+  /** Uyarı eşikleri yaşa göre stat tavanından hesaplanır (verilmezse yetişkin) */
+  age?: number;
   personality: Personality;
   skills: Skills;
   fate: FateState | undefined;
@@ -57,6 +60,7 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
   currentEvent,
   selectedChoice,
   stats,
+  age = 18,
   personality,
   skills,
   fate,
@@ -150,7 +154,8 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
     const drivers: string[] = [];
 
     if (currentEvent?.personalityCategory) {
-      drivers.push(`${t('ui.feedbackOverlay.eventType')}${currentEvent.personalityCategory.toLowerCase()}`);
+      const categoryKey = currentEvent.personalityCategory.toLowerCase();
+      drivers.push(`${t('ui.feedbackOverlay.eventType')}${t(`ui.event.types.${categoryKey}`, undefined, categoryKey)}`);
     }
 
     if (currentEvent?.challengesAxis) {
@@ -203,7 +208,8 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
     const fateRoll = lastResult.fateRoll;
     if (fateRoll) {
       const outcomeLabel = FATE_OUTCOME_LABELS[fateRoll.outcome] ?? fateRoll.outcome;
-      drivers.push(`${t('ui.feedbackOverlay.fateInfluence')}${outcomeLabel} (${fateRoll.modifiedRoll})`);
+      // Ham zar değeri (0-1 ondalık) oyuncuya anlam taşımıyor; yalnızca sonuç etiketi gösterilir
+      drivers.push(`${t('ui.feedbackOverlay.fateInfluence')}${outcomeLabel}`);
     }
 
     return drivers.slice(0, 4);
@@ -218,7 +224,10 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
     return { topStatChanges: entries.slice(0, 3), restStatChanges: entries.slice(3) };
   }, [lastResult?.changes]);
 
-  const hasCriticalStats = stats.health < 30 || stats.discipline < 25;
+  const isHealthCritical = isBelowCapRatio(stats.health, age, 'health', 0.3);
+  // Disiplin uyarısı okul çağından itibaren anlamlı (bebeklikte disiplin 0'dan başlar)
+  const isDisciplineLow = age >= 7 && isBelowCapRatio(stats.discipline, age, 'discipline', 0.25);
+  const hasCriticalStats = isHealthCritical || isDisciplineLow;
 
   const rawFeedback = lastResult?.feedback || t('event.defaultFeedback');
   const wasDramatic = (currentEvent?.difficulty ?? 0) >= 4;
@@ -466,7 +475,7 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
               {hasCriticalStats && (
                 <View style={{ marginBottom: 8, paddingVertical: 7, paddingHorizontal: 10, backgroundColor: 'rgba(239,68,68,0.10)', borderRadius: 8, borderWidth: 1, borderColor: '#ef444450' }}>
                   <Text style={{ color: '#ef4444', fontSize: 13, fontWeight: '600' }}>
-                    {stats.health < 30
+                    {isHealthCritical
                       ? t('ui.feedbackOverlay.healthCritical', { value: Math.round(stats.health) })
                       : t('ui.feedbackOverlay.disciplineLow', { value: Math.round(stats.discipline) })}
                   </Text>

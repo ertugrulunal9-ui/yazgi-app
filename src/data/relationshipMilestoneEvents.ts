@@ -343,7 +343,7 @@ export const MILESTONE_EVENTS: GameEvent[] = [
       },
       {
         text: '💪 "Korkumuyorum!"',
-        effect: { discipline: 3 },
+        effect: { discipline: 3, charisma: -2 },
         feedback: 'Cesur duruyorsun ama bu savaş kolay olmayacak.',
         stressEffect: 10,
         personalityEffects: [{ axis: 'courage', change: 5 }],
@@ -372,7 +372,7 @@ export const MILESTONE_EVENTS: GameEvent[] = [
       },
       {
         text: '🤷 Hayat böyle',
-        effect: { discipline: 2 },
+        effect: { discipline: 2, charisma: -2 },
         feedback: 'Pragmatik davrandın. Ama içinde bir şey eksik.',
         stressEffect: 5,
         personalityEffects: [{ axis: 'patience', change: 3 }],

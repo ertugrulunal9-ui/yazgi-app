@@ -2,6 +2,7 @@ import type { EventContext, GameEvent, GameState, GameStateUpdate, Stats } from 
 import { selectCrisisEvent } from '../../data/crisisEvents';
 import {
   getDueScheduledEvents,
+  buildEchoCausalLink,
   isForcedScheduledEvent,
   pickScheduledEvent,
 } from '../../utils/scheduledEvents';
@@ -129,6 +130,7 @@ export const runSelectNewEvent = ({
         context,
       ),
       scheduledEvents: remainingScheduled,
+      currentCausalLink: buildEchoCausalLink(scheduled),
     });
     return true;
   };

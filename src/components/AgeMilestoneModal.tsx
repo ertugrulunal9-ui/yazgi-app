@@ -10,6 +10,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { Modal } from './ui/Modal';
 import { Typography } from './ui/Typography';
 import { Button } from './ui/Button';
+import { hasMilestoneContent } from '../utils/milestoneBuilder';
 import { useUI } from '../context/UIContext';
 import type { AgeMilestoneSummary } from '../types/game';
 import type { StatKey } from '../types/core';
@@ -34,13 +35,7 @@ export const AgeMilestoneModal: React.FC<Props> = ({ visible, milestone, onClose
   if (!milestone) return null;
 
   const statEntries = Object.entries(milestone.statDeltas) as [StatKey, number][];
-  const hasContent =
-    milestone.traitsGained.length > 0 ||
-    milestone.traitsLost.length > 0 ||
-    milestone.keyMemories.length > 0 ||
-    statEntries.length > 0 ||
-    milestone.npcChanges.length > 0 ||
-    milestone.academicHighlight;
+  const hasContent = hasMilestoneContent(milestone);
 
   return (
     <Modal

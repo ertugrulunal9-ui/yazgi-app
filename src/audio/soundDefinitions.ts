@@ -115,6 +115,14 @@ export const SFX_SOUNDS: SoundDefinition[] = [
     preload: true,
   },
   {
+    // Geçmiş bir seçimin geri döndüğü an (scripts/audio/generate-echo-reveal.py ile üretildi)
+    id: 'echo_reveal',
+    category: 'sfx',
+    path: require('../../assets/sounds/sfx/echo_reveal.wav'),
+    volume: 0.6,
+    preload: true,
+  },
+  {
     id: 'turn_advance',
     category: 'sfx',
     path: require('../../assets/sounds/sfx/turn_advance.wav'),

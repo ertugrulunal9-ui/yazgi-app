@@ -48,7 +48,9 @@ const ChoiceSchema = z.object({
     relatedNpcId: z.string().optional(),
     customNote: z.string().optional(),
   }).optional(),
-});
+  // conditionalOutcomes, personalityEffects, futureEvents vb. şemada tek tek tanımlı değil;
+  // passthrough olmadan __DEV__ build'lerinde bu alanlar sessizce silinir (prod ile fark yaratır).
+}).passthrough();
 
 // =================================================================
 // GAME EVENT SCHEMA
@@ -85,7 +87,7 @@ const GameEventSchema = z.object({
   personalityCategory: z.enum(['SOCIAL', 'RISK', 'MORAL', 'CONFLICT', 'GROWTH', 'BREAKDOWN']).optional(),
   milestoneLevel: z.enum(['MINOR', 'MAJOR']).optional(),
   isMilestoneEvent: z.boolean().optional(),
-}).refine(
+}).passthrough().refine(
   (e) => e.minAge <= e.maxAge,
   (e) => ({ message: `"${e.id}": minAge (${e.minAge}) maxAge'den (${e.maxAge}) büyük olamaz` }),
 );

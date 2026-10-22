@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Animated, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import Reanimated, { FadeInDown } from 'react-native-reanimated';
 import { FadeInUpView } from '../animations';
 import { Card, TypewriterText } from './ui';
 import { ensureTextContrast } from '../utils/colorContrast';
@@ -33,7 +34,11 @@ interface EventNarrativeProps {
   causalLink?: { narrativeLine: string; emotion: string } | null;
   /** Seçim yapıldıktan sonra kaç alternatif yolun kapandığını gösterir. */
   blockedPathCount?: number;
+  /** Olay geçmişteki bir seçimin yankısıysa: o yaş ve seçilen cevap */
+  echo?: { age: number; choiceText: string } | null;
 }
+
+const ECHO_COLOR = '#a78bfa';
 
 export const EventNarrative: React.FC<EventNarrativeProps> = React.memo(({
   event,
@@ -45,6 +50,7 @@ export const EventNarrative: React.FC<EventNarrativeProps> = React.memo(({
   breakdownShakeX,
   causalLink,
   blockedPathCount,
+  echo,
 }) => {
   const eventVisual = EVENT_VISUALS[event.personalityCategory || ''] || {
     color: theme.accentEvent,
@@ -116,6 +122,40 @@ export const EventNarrative: React.FC<EventNarrativeProps> = React.memo(({
             </Text>
           </View>
 
+          {echo && (
+            <Reanimated.View
+              entering={FadeInDown.duration(450).delay(150)}
+              accessible
+              accessibilityRole="text"
+              accessibilityLabel={`${tRuntime('ui.event.echo.title')}. ${tRuntime('ui.event.echo.line', { age: echo.age, choice: echo.choiceText })}`}
+              style={{
+                backgroundColor: `${ECHO_COLOR}1f`,
+                borderColor: `${ECHO_COLOR}66`,
+                borderWidth: 1,
+                borderRadius: 10,
+                paddingVertical: 8,
+                paddingHorizontal: 10,
+                marginBottom: 10,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                <Feather name="rotate-ccw" size={13} color={ECHO_COLOR} />
+                <Text style={{
+                  color: ECHO_COLOR,
+                  fontSize: 11,
+                  fontWeight: '800',
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.8,
+                }}>
+                  {tRuntime('ui.event.echo.title')}
+                </Text>
+              </View>
+              <Text style={{ color: theme.textPrimary, fontSize: 13, lineHeight: 18 }}>
+                {tRuntime('ui.event.echo.line', { age: echo.age, choice: echo.choiceText })}
+              </Text>
+            </Reanimated.View>
+          )}
+
           {isDramaticEvent && (
             <View style={{
               backgroundColor: 'rgba(217, 119, 6, 0.12)',
@@ -168,7 +208,7 @@ export const EventNarrative: React.FC<EventNarrativeProps> = React.memo(({
             </View>
           )}
 
-          {causalLink && (
+          {causalLink?.narrativeLine && !echo && (
             <Text style={{
               color: theme.textSecondary,
               fontSize: 13,

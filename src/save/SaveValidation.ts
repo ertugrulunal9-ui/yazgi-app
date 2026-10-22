@@ -247,6 +247,8 @@ export const ScheduledEventSchema = z.object({
   condition: z.string().optional(),
   priority: z.union([z.enum(['HIGH', 'NORMAL']), z.number().int().min(0)]),
   sourceEventId: z.string().optional(),
+  sourceChoiceId: z.string().optional(),
+  sourceAge: z.number().optional(),
 });
 
 export const ActiveStoryArcSchema = z.object({
@@ -442,6 +444,16 @@ export const GameStateSchema = z.object({
     continuationEventId: z.string().optional(),
     sourceEventId: z.string().optional(),
   }).optional(),
+
+  // Aktif olayın neden-sonuç/yankı bağı; şemada olmazsa kayıt yüklenince yankı kartı kaybolur
+  currentCausalLink: z.object({
+    sourceEventId: z.string(),
+    narrativeLine: z.string(),
+    emotion: z.string(),
+    sourceChoiceId: z.string().optional(),
+    sourceAge: z.number().optional(),
+    targetEventId: z.string().optional(),
+  }).nullable().optional(),
 
   // Meta progression (cross-run)
   metaProgression: MetaProgressionSchema.optional(),

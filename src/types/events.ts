@@ -100,6 +100,12 @@ export interface ConditionalOutcome {
   id?: string;
   condition: (ctx: EventContext) => boolean;
   weight: number;
+  /**
+   * Kader ağırlığı için sonucun olumlu mu olumsuz mu sayılacağı. Verilmezse
+   * statChanges toplamına bakılır; enerji gibi bedeller iyi bir sonucu eksiye
+   * çekebildiği için kazanç/kayıp net değilse açıkça belirtilmelidir.
+   */
+  tone?: 'positive' | 'negative';
   statChanges: Partial<Stats>;
   feedback: string;
   feedbackKey?: string;
@@ -291,4 +297,7 @@ export interface ScheduledEvent {
   condition?: string;
   priority: 'HIGH' | 'NORMAL' | number;
   sourceEventId?: string;
+  /** Bu olayı zamanlayan seçim ve o anki yaş — yankı kartında gösterilir */
+  sourceChoiceId?: string;
+  sourceAge?: number;
 }

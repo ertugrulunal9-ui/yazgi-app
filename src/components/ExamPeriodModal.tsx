@@ -59,7 +59,7 @@ export const ExamPeriodModal: React.FC<ExamPeriodModalProps> = ({
   const subtitle = tRuntime(
     'app.examPeriod.subtitle',
     undefined,
-    'Karne aciklanmadan once tum sinavlara girmelisin!'
+    'Sınavlar isteğe bağlı: girdiklerin notunu yükseltebilir, girmediklerin bilgine göre otomatik hesaplanır.'
   );
   const progressText = tRuntime(
     'app.examPeriod.progressText',
@@ -69,11 +69,10 @@ export const ExamPeriodModal: React.FC<ExamPeriodModalProps> = ({
   const completedStatus = tRuntime('app.examPeriod.completedStatus', undefined, 'Tamamlandi');
   const takeExamStatus = tRuntime('app.examPeriod.takeExamStatus', undefined, 'Sinava gir');
   const viewReport = tRuntime('app.examPeriod.viewReport', undefined, 'Karneye Bak');
-  const completeAllWarning = tRuntime(
-    'app.examPeriod.completeAllWarning',
-    undefined,
-    'Karne gormek icin tum sinavlari tamamla'
-  );
+  // Sınavlar isteğe bağlı: kalanlar atlanırsa notlar statlardan otomatik hesaplanır
+  const skipLabel = completedCount === 0
+    ? tRuntime('app.examPeriod.skipAll', undefined, 'Sınavlara girmeden karneyi gör')
+    : tRuntime('app.examPeriod.skipRemaining', undefined, 'Kalanları atla ve karneyi gör');
   const previewTitle = tRuntime('app.examPeriod.reportPreviewCta', undefined, 'Not Tahminini Gor');
   const previewSubtitle = tRuntime(
     'app.examPeriod.reportPreviewHint',
@@ -181,10 +180,15 @@ export const ExamPeriodModal: React.FC<ExamPeriodModalProps> = ({
               </Text>
             </TouchableOpacity>
           ) : (
-            <View style={styles.warningBox}>
-              <Feather name="alert-circle" size={18} color="#f59e0b" />
-              <Text style={styles.warningText}>{completeAllWarning}</Text>
-            </View>
+            <TouchableOpacity
+              style={styles.skipButton}
+              onPress={onClose}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+            >
+              <Feather name="skip-forward" size={16} color="#cbd5e1" />
+              <Text style={styles.skipButtonText}>{skipLabel}</Text>
+            </TouchableOpacity>
           )}
         </View>
       </View>
@@ -371,21 +375,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-  warningBox: {
-    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+  skipButton: {
     borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.35)',
-    borderRadius: 10,
+    borderColor: 'rgba(148, 163, 184, 0.45)',
+    borderRadius: 12,
+    paddingVertical: 12,
     paddingHorizontal: 12,
-    paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
   },
-  warningText: {
-    color: '#fcd34d',
-    fontSize: 12,
-    fontWeight: '600',
-    flex: 1,
+  skipButtonText: {
+    color: '#cbd5e1',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

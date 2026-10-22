@@ -296,3 +296,19 @@ describe('Default values', () => {
     expect(DEFAULT_FAMILY_EVOLUTION.yearsAtHighRelation).toBe(0);
   });
 });
+
+describe('GameStateSchema currentCausalLink', () => {
+  it('keeps the active echo link so the echo card survives save/load', () => {
+    const link = {
+      sourceEventId: 'tr_oyuncak_paylasim',
+      narrativeLine: '',
+      emotion: 'NEUTRAL',
+      sourceChoiceId: 'oyuncak_paylas',
+      sourceAge: 3,
+      targetEventId: 'early_toy_share_cooperation_echo',
+    };
+    const parsed = GameStateSchema.parse({ currentCausalLink: link });
+    expect(parsed.currentCausalLink).toEqual(link);
+    expect(GameStateSchema.parse({ currentCausalLink: null }).currentCausalLink).toBeNull();
+  });
+});

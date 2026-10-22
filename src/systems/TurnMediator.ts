@@ -436,6 +436,7 @@ export class TurnMediator {
           condition: config.condition,
           priority: config.priority ?? 'NORMAL',
           sourceEventId: eventId,
+          ...(choice.id ? { sourceChoiceId: choice.id, sourceAge: gameState.age } : {}),
         })),
       ]
       : (gameState.scheduledEvents || []);
