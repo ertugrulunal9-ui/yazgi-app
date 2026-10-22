@@ -140,6 +140,10 @@ export const getLockedChoices = ({
     if (failedPersonality) {
       const value = personality[failedPersonality.axis];
       const bound = failedPersonality.min !== undefined && value < failedPersonality.min ? 'min' : 'max';
+      // "max" şartları düşük eksenli karakterlere ayrılmış gelişim seçenekleridir; kilitli
+      // gösterildiklerinde "Bunu yapamayacak kadar fedakârsın" gibi anlamsız okunuyorlar.
+      // Bu yüzden yalnızca doğal okunan "min" kilitleri ("yeterince cesur değilsin") gösterilir.
+      if (bound === 'max') continue;
       locked.push({ choice: resolved, reason: { kind: 'personality', axis: failedPersonality.axis, bound } });
       continue;
     }

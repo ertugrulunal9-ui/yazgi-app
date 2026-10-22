@@ -312,7 +312,7 @@ describe('eventChoiceFilter', () => {
       eventChoiceSet,
     });
 
-    it('lists personality/stat/skill/family locks with reasons but hides history and NPC locks', () => {
+    it('lists min-personality/stat/skill/family locks with reasons; hides max-personality, history and NPC locks', () => {
       const event = makeEvent([
         makeChoice({ text: 'open' }),
         makeChoice({ text: 'too kind', reqPersonality: [{ axis: 'empathy', max: 30 }] }),
@@ -327,7 +327,6 @@ describe('eventChoiceFilter', () => {
       const locked = getLockedChoices(args(event));
 
       expect(locked.map(item => [item.choice.text, item.reason])).toEqual([
-        ['too kind', { kind: 'personality', axis: 'empathy', bound: 'max' }],
         ['not brave', { kind: 'personality', axis: 'courage', bound: 'min' }],
         ['not smart', { kind: 'stats', stat: 'intelligence', min: 90 }],
         ['no skill', { kind: 'skills', skill: 'music', min: 80 }],
