@@ -59,9 +59,20 @@ const CHOICE_TYPE_LABELS: Record<string, { tr: string; en: string }> = {
   BREAKDOWN:  { tr: 'Kriz',    en: 'Crisis'  },
 };
 
-const UNCERTAIN_COLOR = '#facc15';
+export const UNCERTAIN_COLOR = '#facc15';
 
-const STAT_ICONS: Partial<Record<keyof Stats, { icon: string }>> = {
+/** Seçim türünün rengi ve (nötr değilse) kısa etiketi; düğme ve kaydırmalı kart ortak kullanır. */
+export const getChoiceTypeBadge = (choice: Choice): { color: string; label: string | null } => {
+  const choiceType = choice.choiceType || 'NEUTRAL';
+  return {
+    color: CHOICE_TYPE_COLORS[choiceType] ?? CHOICE_TYPE_COLORS.NEUTRAL,
+    label: choiceType !== 'NEUTRAL'
+      ? (CHOICE_TYPE_LABELS[choiceType]?.[getRuntimeLocale() === 'tr' ? 'tr' : 'en'] ?? choiceType)
+      : null,
+  };
+};
+
+export const STAT_ICONS: Partial<Record<keyof Stats, { icon: string }>> = {
   health: { icon: 'heart' },
   intelligence: { icon: 'book' },
   charisma: { icon: 'star' },
@@ -169,11 +180,7 @@ export const SwipeChoiceCard: React.FC<SwipeChoiceCardProps> = React.memo(({
     ),
   }));
 
-  const choiceType = choice.choiceType || 'NEUTRAL';
-  const choiceTypeColor = CHOICE_TYPE_COLORS[choiceType];
-  const choiceTypeLabel = choiceType !== 'NEUTRAL'
-    ? (CHOICE_TYPE_LABELS[choiceType]?.[getRuntimeLocale() === 'tr' ? 'tr' : 'en'] ?? choiceType)
-    : null;
+  const { color: choiceTypeColor, label: choiceTypeLabel } = getChoiceTypeBadge(choice);
   // Sonucu şansa ve karaktere bağlı seçenek (conditionalOutcomes)
   const isUncertain = (choice.conditionalOutcomes?.length ?? 0) > 0;
   const uncertainLabel = tRuntime('events.swipe.uncertain', undefined, 'Şansa bağlı');
@@ -196,7 +203,7 @@ export const SwipeChoiceCard: React.FC<SwipeChoiceCardProps> = React.memo(({
       <Animated.View style={[styles.cardContainer, cardAnimatedStyle]}>
         <View style={[styles.card, {
           backgroundColor: theme.surfaceBase,
-          borderColor: theme.border,
+          borderColor: choiceTypeLabel ? `${choiceTypeColor}66` : theme.border,
           padding: metrics.pad,
         }]}>
           {/* Swipe indicators */}
@@ -251,7 +258,8 @@ export const SwipeChoiceCard: React.FC<SwipeChoiceCardProps> = React.memo(({
           {/* Choice text */}
           <Text style={[styles.choiceText, {
             color: theme.textPrimary,
-            fontSize: metrics.font,
+            fontSize: metrics.font + 2,
+            lineHeight: metrics.font + 9,
           }]}>
             {choice.text}
           </Text>

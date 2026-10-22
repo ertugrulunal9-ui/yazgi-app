@@ -7,8 +7,10 @@ import { SwipeChoiceDeck } from '../components/SwipeChoiceDeck';
 import { EventNarrative } from '../components/EventNarrative';
 import { FeedbackOverlay } from '../components/FeedbackOverlay';
 import { FateIndicator } from '../components/FateIndicator';
+import { EventPlayerBar } from '../components/EventPlayerBar';
 import { isFeatureEnabled } from '../config/featureFlags';
 import { useEventScreenController } from '../hooks/useEventScreenController';
+import { getAvatarMood } from '../utils/avatarMood';
 
 export const EventScreen: React.FC = React.memo(() => {
   const { theme, metrics, t } = useUI();
@@ -48,10 +50,18 @@ export const EventScreen: React.FC = React.memo(() => {
     backgroundColor: theme.appBg,
   }), [theme.appBg]);
 
+  // Üst şerit ayarlar düğmesinin soluna oturduğu için eski 60px boşluğa gerek yok.
   const scrollContentStyle = useMemo(() => ({
-    paddingTop: Math.max(insets.top + 20, 60),
+    paddingTop: Math.max(insets.top + 12, 16),
     paddingBottom: Math.max(insets.bottom + 20, 40),
   }), [insets.bottom, insets.top]);
+
+  const avatarMood = useMemo(() => getAvatarMood({
+    age: gameState.age,
+    stress: gameState.stress,
+    health: stats.health,
+    familyRelation: stats.familyRelation,
+  }), [gameState.age, gameState.stress, stats.health, stats.familyRelation]);
 
   const scrollViewStyle = useMemo(() => ({
     flex: 1 as const,
@@ -101,6 +111,15 @@ export const EventScreen: React.FC = React.memo(() => {
         overScrollMode="never"
         bounces={false}
       >
+        <EventPlayerBar
+          avatar={gameState.avatar}
+          gender={gameState.characterInfo?.gender}
+          mood={avatarMood}
+          age={gameState.age}
+          name={gameState.characterInfo?.firstName}
+          theme={theme}
+        />
+
         {isFeatureEnabled('FATE_TRANSPARENCY') && gameState.fate && (
           <FateIndicator
             fateState={gameState.fate}

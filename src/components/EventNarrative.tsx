@@ -75,10 +75,10 @@ export const EventNarrative: React.FC<EventNarrativeProps> = React.memo(({
 
   const eventTextStyle = useMemo(() => ({
     color: theme.textPrimary,
-    fontSize: 16,
-    fontWeight: '700' as const,
-    marginBottom: 12,
-    lineHeight: 22,
+    fontSize: 17,
+    fontWeight: '600' as const,
+    marginBottom: 4,
+    lineHeight: 25,
   }), [theme.textPrimary]);
 
   return (
@@ -88,34 +88,46 @@ export const EventNarrative: React.FC<EventNarrativeProps> = React.memo(({
           style={[
             cardStyle,
             {
-              borderColor: isDramaticEvent ? '#d97706' : eventColor,
-              borderLeftWidth: isDramaticEvent ? 3 : 4,
+              borderColor: isDramaticEvent ? '#d97706' : `${eventColor}88`,
               borderWidth: isDramaticEvent ? 2 : 1,
               overflow: 'hidden',
             },
           ]}
         >
+          {/* Olay türünün renginde başlık bandı (kartın kenarlarına taşar) */}
           <View
             style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 44,
-              backgroundColor: `${eventColor}12`,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 10,
+              marginTop: -metrics.pad,
+              marginHorizontal: -metrics.pad,
+              marginBottom: 14,
+              paddingHorizontal: metrics.pad,
+              paddingVertical: 10,
+              backgroundColor: `${eventColor}26`,
+              borderBottomWidth: 1,
+              borderBottomColor: `${eventColor}55`,
             }}
-          />
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 6 }}>
-            <Feather name={eventVisual.icon} size={14} color={eventColor} />
+          >
+            <View style={{
+              width: 28,
+              height: 28,
+              borderRadius: 14,
+              backgroundColor: `${eventColor}33`,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Feather name={eventVisual.icon} size={15} color={eventColor} />
+            </View>
             <Text
               allowFontScaling
               style={{
                 color: eventColor,
-                fontSize: 12,
-                fontWeight: '700',
+                fontSize: 14,
+                fontWeight: '800',
                 fontFamily: theme.fontHeading,
-                textTransform: 'uppercase',
-                letterSpacing: 0.5,
+                letterSpacing: 0.3,
               }}
             >
               {eventLabel}
@@ -142,10 +154,9 @@ export const EventNarrative: React.FC<EventNarrativeProps> = React.memo(({
                 <Feather name="rotate-ccw" size={13} color={ECHO_COLOR} />
                 <Text style={{
                   color: ECHO_COLOR,
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: '800',
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.8,
+                  letterSpacing: 0.3,
                 }}>
                   {tRuntime('ui.event.echo.title')}
                 </Text>
@@ -172,10 +183,9 @@ export const EventNarrative: React.FC<EventNarrativeProps> = React.memo(({
               </Text>
               <Text style={{
                 color: '#d97706',
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: '800',
-                textTransform: 'uppercase',
-                letterSpacing: 1,
+                letterSpacing: 0.3,
               }}>
                 {(event.tags ?? []).includes('turning_point')
                 ? tRuntime('ui.event.turningPoint')
