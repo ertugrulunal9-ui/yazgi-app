@@ -26,7 +26,7 @@ import { buildTraitChangeFeedback } from '../utils/traitFeedback';
 import { BUFF_RULES, CONSUMABLE_CONFIG } from '../config/gameBalance';
 import { isFeatureEnabled } from '../config/featureFlags';
 
-const TURN_LIMITED_ACTIONS = new Set(['baby_eat', 'baby_sleep', 'ask_allowance']);
+export const TURN_LIMITED_ACTIONS = new Set(['baby_eat', 'baby_sleep', 'ask_allowance']);
 const BASE_MONEY_GAIN_MULTIPLIER_BY_WEALTH: Record<'MIDDLE' | 'RICH', number> = {
   MIDDLE: 1,
   RICH: 1.15,

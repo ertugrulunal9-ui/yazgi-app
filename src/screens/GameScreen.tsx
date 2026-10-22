@@ -74,6 +74,7 @@ import { isFeatureEnabled } from '../config/featureFlags';
 import type { AgeMilestoneSummary, ChapterSummary } from '../types/game';
 import { getCurrentChapter, getLocalizedChapterName, getStatCap } from '../utils/gameUtils';
 import { hasMilestoneContent } from '../utils/milestoneBuilder';
+import { hasSpendableEnergy } from '../utils/endDayPrompt';
 import { CHAPTERS } from '../config/gameBalance';
 
 // Kritik sağlık eşiği yaşa göre tavanın %20'si (yetişkinde 20); bebeklikte tavan 30 olduğu için sabit 20 yanlış alarm veriyordu
@@ -367,19 +368,6 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     claimExamPrepBoostAd,
   });
 
-  const {
-    daySummaryVisible,
-    daySummaryVarietyBonus,
-    handleEndDay,
-    handleDaySummaryContinue,
-  } = useModalOrchestration({
-    pendingReportCard: gameState.pendingReportCard,
-    schoolGrades: gameState.schoolGrades,
-    actionHistory: gameState.actionHistory || [],
-    advanceTurn,
-    t,
-  });
-
   const cardStyle = useMemo(() => ({
     backgroundColor: theme.surfaceBase,
     borderRadius: 16,
@@ -427,6 +415,43 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
       { careerPathActionsEnabled }
     );
   }, [careerPathActionsEnabled, gameState.age, gameState.selectedGoal, locale]);
+
+  const canSpendEnergy = useMemo(() => hasSpendableEnergy({
+    categories: availableCategories,
+    age: gameState.age,
+    turn: gameState.turn,
+    energy: stats.energy,
+    money: stats.money,
+    skills: gameState.skills,
+    actionHistory: gameState.actionHistory || [],
+    inventory: gameState.inventory || [],
+    familyWealth: gameState.family?.wealth,
+  }), [
+    availableCategories,
+    gameState.age,
+    gameState.turn,
+    stats.energy,
+    stats.money,
+    gameState.skills,
+    gameState.actionHistory,
+    gameState.inventory,
+    gameState.family?.wealth,
+  ]);
+
+  const {
+    daySummaryVisible,
+    daySummaryVarietyBonus,
+    handleEndDay,
+    handleDaySummaryContinue,
+    handleDaySummaryCancel,
+  } = useModalOrchestration({
+    pendingReportCard: gameState.pendingReportCard,
+    schoolGrades: gameState.schoolGrades,
+    actionHistory: gameState.actionHistory || [],
+    hasSpendableEnergy: canSpendEnergy,
+    advanceTurn,
+    t,
+  });
 
   const selectedCategory = useMemo(
     () => availableCategories.find(category => category.id === selectedCategoryId) ?? null,
@@ -856,6 +881,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
         stats={stats}
         theme={theme}
         onContinue={handleDaySummaryContinue}
+        onCancel={handleDaySummaryCancel}
       />
 
       {isFeatureEnabled('MILESTONE_SUMMARY') && currentMilestoneToShow && (

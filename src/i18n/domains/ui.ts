@@ -69,7 +69,9 @@ export const uiStrings: DomainStrings = {
       summaryIntelligence: 'Zekâ',
       summaryVarietyBonus: 'Cesitlilik Bonusu',
       summaryVarietyBonusValue: '+{bonus} tum temel stat',
-      summaryContinue: 'Devam Et',
+      summaryContinue: 'Yine de Günü Bitir',
+      summaryBack: 'Geri Dön',
+      summaryEnergyLeftHint: 'Hâlâ enerjin var; bir şey daha yapabilirsin.',
       energyState: {
         energetic: 'Enerjik',
         normal: 'Dengede',
@@ -809,7 +811,9 @@ export const uiStrings: DomainStrings = {
       summaryIntelligence: 'Intelligence',
       summaryVarietyBonus: 'Variety Bonus',
       summaryVarietyBonusValue: '+{bonus} all core stats',
-      summaryContinue: 'Continue',
+      summaryContinue: 'End Day Anyway',
+      summaryBack: 'Go Back',
+      summaryEnergyLeftHint: 'You still have energy; you could do one more thing.',
       energyState: {
         energetic: 'Energetic',
         normal: 'Normal',

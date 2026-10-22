@@ -13,6 +13,8 @@ interface UseModalOrchestrationOptions {
   pendingReportCard: boolean;
   schoolGrades: SchoolGrades;
   actionHistory: Array<{ actionId: string; turn: number }>;
+  /** Oyuncu harcayabileceği enerjiyi bırakıyorsa gün özeti onay olarak açılır. */
+  hasSpendableEnergy: boolean;
   advanceTurn: () => void;
   t: TranslateFn;
 }
@@ -22,12 +24,14 @@ interface UseModalOrchestrationResult {
   daySummaryVarietyBonus: number;
   handleEndDay: () => void;
   handleDaySummaryContinue: () => void;
+  handleDaySummaryCancel: () => void;
 }
 
 export const useModalOrchestration = ({
   pendingReportCard,
   schoolGrades,
   actionHistory,
+  hasSpendableEnergy,
   advanceTurn,
   t,
 }: UseModalOrchestrationOptions): UseModalOrchestrationResult => {
@@ -58,14 +62,7 @@ export const useModalOrchestration = ({
     previousReportCardRef.current = pendingReportCard;
   }, [pendingReportCard, schoolGrades]);
 
-  const handleEndDay = useCallback(() => {
-    buttonPress();
-    selectionHaptic();
-    setDaySummaryVisible(true);
-  }, []);
-
-  const handleDaySummaryContinue = useCallback(() => {
-    setDaySummaryVisible(false);
+  const finishDay = useCallback(() => {
     turnAdvance();
     try {
       advanceTurn();
@@ -74,10 +71,30 @@ export const useModalOrchestration = ({
     }
   }, [advanceTurn, t]);
 
+  const handleEndDay = useCallback(() => {
+    buttonPress();
+    if (!hasSpendableEnergy) {
+      finishDay();
+      return;
+    }
+    selectionHaptic();
+    setDaySummaryVisible(true);
+  }, [finishDay, hasSpendableEnergy]);
+
+  const handleDaySummaryContinue = useCallback(() => {
+    setDaySummaryVisible(false);
+    finishDay();
+  }, [finishDay]);
+
+  const handleDaySummaryCancel = useCallback(() => {
+    setDaySummaryVisible(false);
+  }, []);
+
   return {
     daySummaryVisible,
     daySummaryVarietyBonus,
     handleEndDay,
     handleDaySummaryContinue,
+    handleDaySummaryCancel,
   };
 };
