@@ -3981,4 +3981,123 @@ export const enEventTranslationsOverrides: EventTranslationCatalog = {
     text: "A high-stress exam memory intersects with your sense of pride.",
   },
 
+  // Short-term echoes (src/data/shortTermEchoEvents.ts) — first-session payoffs
+  early_first_word_mom_echo: {
+    text: "Every evening your mom now holds you and hums the same song. Ever since you said 'Mom', the two of you have had a little ritual.",
+    choices: {
+      first_word_mom_echo_sing: {
+        text: 'Sing along with her',
+        feedback: 'You mixed up the words, but your mom burst out laughing. This song is yours now.',
+      },
+      first_word_mom_echo_dad: {
+        text: 'Call your dad over too',
+        feedback: 'You pulled your dad into the hug. The song became a trio this time; you got a bit tired, but you were so happy.',
+      },
+    },
+  },
+  early_first_word_dad_echo: {
+    text: "Your dad still tells everyone about the day you said 'Dad'. Today he carried you to the park on his shoulders for the first time.",
+    choices: {
+      first_word_dad_echo_shoulders: {
+        text: 'Stay up on his shoulders and look around',
+        feedback: 'Everything looked different from up there! You held onto his hair and counted the birds.',
+      },
+      first_word_dad_echo_run: {
+        text: 'Ask to get down and run on the grass',
+        feedback: 'You slid down and ran across the grass. Your dad chased after you until you were both out of breath.',
+      },
+    },
+  },
+  early_daycare_cry_echo: {
+    text: "Your second week at daycare. At the door you still don't want to let go of your mom's hand, but the teacher who comforted you on day one is waving at you.",
+    choices: {
+      daycare_cry_echo_teacher: {
+        text: "Take the teacher's hand",
+        feedback: "This time you didn't cry like on the first day. The teacher took you to the coloring table, and you waved goodbye to your mom.",
+      },
+      daycare_cry_echo_cling: {
+        text: 'Hold on tight to your mom',
+        feedback: 'You cried again and your mom was late for work. But after nap time you got a little more used to it.',
+      },
+    },
+  },
+  early_daycare_play_echo: {
+    text: "The kid you met in the toy corner at daycare ran up to you today: 'Will you come to my birthday party?'",
+    choices: {
+      daycare_play_echo_yes: {
+        text: 'Say yes, beaming',
+        feedback: 'At the party you got cake all over your face and everyone laughed. You made your first real friend!',
+      },
+      daycare_play_echo_shy: {
+        text: "Hide shyly behind your mom",
+        feedback: 'You were shy, but your mom took the invitation. At the party you stood in the corner at first, then slowly joined the games.',
+      },
+    },
+  },
+  early_sibling_love_echo: {
+    text: 'Your little sibling is crawling now. Today, with everyone in the room, they came straight to you and reached out their arms.',
+    choices: {
+      sibling_love_echo_hug: {
+        text: 'Pick them up',
+        feedback: "They were heavy, but you didn't let go. Your mom took a photo; it turns out you're their favorite person!",
+      },
+      sibling_love_echo_toy: {
+        text: 'Give them your favorite toy',
+        feedback: 'You gave away your favorite toy. Your sibling stuck it straight in their mouth; it stung a little, but then you laughed.',
+      },
+    },
+  },
+  early_sibling_jealous_echo: {
+    text: "Your little sibling is crawling now and reaching for your toys. While your mom fusses over them again, that old jealousy stirs inside you.",
+    choices: {
+      sibling_jealous_echo_share: {
+        text: 'Play with the toy together',
+        feedback: 'Swallowing the jealousy was hard, but you knocked the tower down together and your sibling giggled. Your mom hugged you both.',
+      },
+      sibling_jealous_echo_grab: {
+        text: 'Snatch the toy away',
+        feedback: 'The toy stayed with you, but your sibling started crying and your mom sent you to your room. Something felt bitter inside.',
+      },
+    },
+  },
+  early_lie_confess_echo: {
+    text: "You knocked over a glass and milk spread across the rug. Your mom's look says: 'You told the truth about the vase. Will you do it again?'",
+    choices: {
+      lie_confess_echo_truth: {
+        text: 'Tell the truth again',
+        feedback: "'I spilled it.' Your mom stroked your hair: 'I trust you.' You cleaned the rug together.",
+      },
+      lie_confess_echo_hide: {
+        text: 'Put a cushion over the stain',
+        feedback: "You felt relieved for a moment. But that evening your mom lifted the cushion and found the stain: 'Didn't you always tell the truth?' This time she was more hurt.",
+      },
+    },
+  },
+  early_lie_cat_echo: {
+    text: "You said the cat broke the vase. Today your mom put the cat out on the balcony for 'misbehaving'; it's meowing at the glass.",
+    choices: {
+      lie_cat_echo_confess: {
+        text: 'Tell your mom the truth about the vase',
+        feedback: "Your voice shaking, you told her everything. She was angry at first, then let the cat back in and said, 'Thank you for telling me.' A weight lifted off you.",
+      },
+      lie_cat_echo_silent: {
+        text: 'Stay quiet',
+        feedback: 'The cat stayed on the balcony until evening. Every meow made something tighten inside you.',
+      },
+    },
+  },
+  early_lie_silent_echo: {
+    text: "While vacuuming, your mom found a small piece of the vase. 'I still wonder who broke this,' she said, and looked at you.",
+    choices: {
+      lie_silent_echo_confess: {
+        text: "Say 'I broke it'",
+        feedback: "Your mom took a deep breath: 'Better late than never.' She was clearly a little hurt, but you slept soundly that night.",
+      },
+      lie_silent_echo_shrug: {
+        text: 'Shrug',
+        feedback: "Your mom didn't say anything, but you could tell from her look that she knew. The guilt grew a little bigger.",
+      },
+    },
+  },
+
 };
