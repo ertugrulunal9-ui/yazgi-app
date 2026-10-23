@@ -19,24 +19,24 @@ interface ShareMilestone {
 }
 
 const TRAIT_SHARE_TEMPLATES = [
-  "{traitName} trait'ini kazandim! Yazgi'da kaderimi yaziyorum.",
-  'Yeni ozellik acildi: {traitName}! Bu hayat farkli olacak.',
-  "{traitName} ile gucleniyorum. Yazgi'da her seciminiz onemli.",
+  "{traitName} trait'ini kazandım! Yazgı'da kaderimi yazıyorum.",
+  'Yeni özellik açıldı: {traitName}! Bu hayat farklı olacak.',
+  "{traitName} ile güçleniyorum. Yazgı'da her seçiminiz önemli.",
 ];
 
 const ACHIEVEMENT_SHARE_TEMPLATES = [
-  "Gizli basarim acildi! Yazgi'da kendi hikayeni yaz.",
-  "Bunu bulmak kolay degildi! Yazgi'da gizli sonlar seni bekliyor.",
+  "Gizli başarım açıldı! Yazgı'da kendi hikayeni yaz.",
+  "Bunu bulmak kolay değildi! Yazgı'da gizli sonlar seni bekliyor.",
 ];
 
 const ROMANCE_SHARE_TEMPLATES = [
-  "Ilk ask... Yazgi'da duygusal anlar seni bekliyor.",
-  "Kalbim carpti! Yazgi'da her iliski farkli.",
+  "İlk aşk... Yazgı'da duygusal anlar seni bekliyor.",
+  "Kalbim çarptı! Yazgı'da her ilişki farklı.",
 ];
 
 const FATE_SHARE_TEMPLATES = [
-  "Kader bana {outcome}! Yazgi'da sans faktorunu hisset.",
-  "{outcome} - Kader tokeni kazandim! Yazgi'da kaderini sen yaz.",
+  "Kader bana {outcome}! Yazgı'da şans faktörünü hisset.",
+  "{outcome} - Kader tokeni kazandım! Yazgı'da kaderini sen yaz.",
 ];
 
 const pickTemplateByIndex = (

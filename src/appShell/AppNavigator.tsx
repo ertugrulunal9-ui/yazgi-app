@@ -128,7 +128,7 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({
           }),
         }}
         onPress={onToggleSettings}
-        accessibilityLabel={tStatic('app.openSettings', 'Ayarlari ac')}
+        accessibilityLabel={tStatic('app.openSettings', 'Ayarları aç')}
         accessibilityRole="button"
       >
         <Feather name="settings" color={theme.textPrimary} size={22} />

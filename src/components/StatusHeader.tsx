@@ -96,7 +96,7 @@ const getStressReliefHint = (band: StressBand, t: TranslateFn): string | null =>
   return t(
     'ui.statusHeader.stressReliefActionsHint',
     undefined,
-    "Ipucu: Sosyal sekmesinde NPC etkilesimleri stresi dusurur."
+    "İpucu: Sosyal sekmesinde NPC etkileşimleri stresi düşürür."
   );
 };
 
@@ -186,8 +186,8 @@ const StatMeter: React.FC<StatMeterProps> = ({
 const getDreamHint = (progress: number, statHint: string, t: TranslateFn): string => {
   if (progress >= 100) return t('ui.statusHeader.dreamComplete');
   if (progress >= 71) return t('ui.statusHeader.dreamAlmost');
-  if (progress >= 31) return t('ui.statusHeader.dreamMid', { statHint }, 'Iyi gidiyorsun! {statHint} biraz daha guclendir.');
-  return t('ui.statusHeader.dreamStart', { statHint }, 'Yolun basindasin. {statHint} gelistirmeye odaklan.');
+  if (progress >= 31) return t('ui.statusHeader.dreamMid', { statHint }, 'İyi gidiyorsun! {statHint} biraz daha güçlendir.');
+  return t('ui.statusHeader.dreamStart', { statHint }, 'Yolun başındasın. {statHint} geliştirmeye odaklan.');
 };
 
 const getRiskName = (risk: number, t: TranslateFn): string => {

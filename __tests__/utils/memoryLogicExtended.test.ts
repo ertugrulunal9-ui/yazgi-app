@@ -78,7 +78,7 @@ describe('memoryLogic extended', () => {
 
     jest.spyOn(Math, 'random').mockReturnValue(0);
     const negative = getRandomMemoryText(walletMemories, 'NEGATIVE');
-    expect(negative).toContain('cuzdan');
+    expect(negative).toContain('cüzdan');
 
     const positive = getRandomMemoryText(walletMemories, 'POSITIVE');
     expect(positive).toContain('teslim');
@@ -95,7 +95,7 @@ describe('memoryLogic extended', () => {
 
     jest.spyOn(Math, 'random').mockReturnValue(0);
     const generic = getRandomMemoryText(memories, 'POSITIVE');
-    expect(generic).toContain('4 yil once');
+    expect(generic).toContain('4 yıl önce');
   });
 
   it('returns base text for short/empty/reference/unstable scenarios', () => {
@@ -183,7 +183,7 @@ describe('memoryLogic extended', () => {
       ],
       { eventId: lowRollEvent, currentAge: 14, currentTurn: 7, personalityCategory: 'RISK' }
     );
-    expect(unknownEmotionText).toContain('kisa bir iz');
+    expect(unknownEmotionText).toContain('kısa bir iz');
   });
 
   it('builds life reflection with mixed/pride/regret dominant themes', () => {

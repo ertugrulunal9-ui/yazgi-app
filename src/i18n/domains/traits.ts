@@ -6,7 +6,7 @@ export const traitsStrings: DomainStrings = {
       progressChip: 'Özellik ilerledi: {label}',
       progress: {
         title: 'Özellik Formasyonu',
-        nearComplete: 'Tamamlanmaya yakin',
+        nearComplete: 'Tamamlanmaya yakın',
         locked: 'Kilitli',
         empty: 'Henüz takip edilen bir özellik formasyonu yok.',
       },

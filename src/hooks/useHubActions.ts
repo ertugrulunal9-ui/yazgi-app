@@ -80,7 +80,7 @@ export const useHubActions = ({
           t('dialogs.outOfEnergy.title', undefined, 'Enerjin bitti'),
           t('dialogs.outOfEnergy.description', undefined, 'Bir reklam izleyerek +25 enerji kazanmak ister misin?'),
           [
-            { text: t('buttons.decline', undefined, 'Vazgec'), style: 'cancel' },
+            { text: t('buttons.decline', undefined, 'Vazgeç'), style: 'cancel' },
             {
               text: t('buttons.watchAd', undefined, 'Reklam Izle'),
               onPress: () => {
@@ -165,7 +165,7 @@ export const useHubActions = ({
       const socialResult = meetNewNPC();
       if (socialResult.success && socialResult.npc) {
         enqueueToast(
-          t('messages.metNPC', { name: socialResult.npc.name }, '{name} ile tanistin!'),
+          t('messages.metNPC', { name: socialResult.npc.name }, '{name} ile tanıştın!'),
           'success'
         );
       }

@@ -88,9 +88,9 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
     return () => clearInterval(interval);
   }, [eventId, isBreakdownEvent, eventRarity]);
   const lockCountdownText = swipeLocked ? `${Math.ceil(lockRemainingMs / 1000)}s` : '';
-  const swipeChoiceHint = tRuntime('events.swipe.choiceHint', undefined, 'Bu secim karakterini etkiler');
-  const selectHint = tRuntime('events.swipe.selectHint', undefined, 'Bu secimi onayla');
-  const selectText = tRuntime('events.swipe.select', undefined, 'Sec');
+  const swipeChoiceHint = tRuntime('events.swipe.choiceHint', undefined, 'Bu seçim karakterini etkiler');
+  const selectHint = tRuntime('events.swipe.selectHint', undefined, 'Bu seçimi onayla');
+  const selectText = tRuntime('events.swipe.select', undefined, 'Seç');
 
   const resolvedChoices = useMemo(
     () => choices.map(c => resolveChoice(c)),
@@ -295,12 +295,12 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
             ? tRuntime(
               'events.swipe.waitToDecide',
               { seconds: lockCountdownText },
-              `Karar vermek icin ${lockCountdownText} bekle`
+              `Karar vermek için ${lockCountdownText} bekle`
             )
             : tRuntime(
               'events.swipe.selectAria',
               { text: resolvedChoices[activeIndex]?.text ?? '' },
-              `Sec: ${resolvedChoices[activeIndex]?.text ?? ''}`
+              `Seç: ${resolvedChoices[activeIndex]?.text ?? ''}`
             )}
           accessibilityHint={selectHint}
         >

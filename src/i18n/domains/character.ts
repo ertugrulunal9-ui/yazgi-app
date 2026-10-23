@@ -173,7 +173,7 @@ export const characterStrings: DomainStrings = {
           average: 'Genel Ortalama',
           hint: 'Notlarını yükseltmek için Okul kategorisinden ders çalış veya sınavlara gir.',
         },
-        statHistoryEmpty: 'Yeterli veri yok - daha fazla yaş gec.',
+        statHistoryEmpty: 'Yeterli veri yok - daha fazla yaş geç.',
       },
     },
   },

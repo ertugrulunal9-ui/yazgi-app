@@ -249,7 +249,7 @@ export const shareAchievement = (achievement: Achievement): string => {
     : tRuntime(
       'social.share.achievementUnlocked',
       { name: localizedAchievementName, icon: achievement.icon },
-      `🏆 Yazgi'da "${localizedAchievementName}" basarisini actim! ${achievement.icon}`
+      `🏆 Yazgı'da "${localizedAchievementName}" başarısını açtım! ${achievement.icon}`
     );
   const hashtags = locale === 'en'
     ? ['Yazgi', 'Achievement', 'LifeSimulator']

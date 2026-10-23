@@ -124,8 +124,8 @@ const SocialHeader: React.FC<SocialHeaderProps> = ({ onBack, theme }) => (
         },
       ]}
       accessibilityRole="button"
-      accessibilityLabel={tRuntime('social.screen.backAria', undefined, 'Hub ekranina don')}
-      accessibilityHint={tRuntime('social.screen.backHint', undefined, 'Sosyal ekrandan cikarak ana oyun ekranina doner')}
+      accessibilityLabel={tRuntime('social.screen.backAria', undefined, 'Hub ekranına dön')}
+      accessibilityHint={tRuntime('social.screen.backHint', undefined, 'Sosyal ekrandan çıkarak ana oyun ekranına döner')}
     >
       <Text style={[styles.backButtonText, { color: theme.textPrimary }]}>
         {'\u2190'} {tRuntime('social.screen.back', undefined, 'Geri')}
@@ -135,7 +135,7 @@ const SocialHeader: React.FC<SocialHeaderProps> = ({ onBack, theme }) => (
     <View style={styles.titleContainer}>
       <View style={[styles.titleBadge, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}>
         <Text style={[styles.titleText, { color: theme.textPrimary }]}>
-          {'\u{1F465}'} {tRuntime('social.screen.title', undefined, 'Sosyal Cevre')}
+          {'\u{1F465}'} {tRuntime('social.screen.title', undefined, 'Sosyal Çevre')}
         </Text>
       </View>
     </View>
@@ -186,8 +186,8 @@ const SocialNPCCard: React.FC<SocialNPCCardProps> = React.memo(({
       accessibilityRole="button"
       accessibilityLabel={`${npc.name}, ${roleConfig.name}`}
       accessibilityHint={selected
-        ? tRuntime('social.screen.npcSelectedHint', undefined, 'Kart acik, etkilesim secenekleri asagida')
-        : tRuntime('social.screen.npcDefaultHint', undefined, 'Detaylari ve etkilesim seceneklerini acar')}
+        ? tRuntime('social.screen.npcSelectedHint', undefined, 'Kart açık, etkileşim seçenekleri aşağıda')
+        : tRuntime('social.screen.npcDefaultHint', undefined, 'Detayları ve etkileşim seçeneklerini açar')}
       accessibilityState={{ selected }}
     >
       <View style={styles.npcHeader}>
@@ -228,11 +228,11 @@ const SocialNPCCard: React.FC<SocialNPCCardProps> = React.memo(({
       {selected ? (
         <View style={styles.actionButtons}>
           <Text style={[styles.actionTitle, { color: theme.textPrimary }]}>
-            {tRuntime('social.screen.selectInteraction', undefined, 'Etkilesim Sec:')}
+            {tRuntime('social.screen.selectInteraction', undefined, 'Etkileşim Seç:')}
           </Text>
           {availableInteractions.length === 0 ? (
             <Text style={[styles.noInteractionsText, { color: theme.textSecondary }]}>
-              {tRuntime('social.screen.noInteractions', undefined, 'Henuz etkilesim seceneklerin yok. Biraz daha buyumelisin.')}
+              {tRuntime('social.screen.noInteractions', undefined, 'Henüz etkileşim seçeneklerin yok. Biraz daha büyümelisin.')}
             </Text>
           ) : (
             <View style={styles.actionGrid}>
@@ -282,7 +282,7 @@ const SocialNPCCard: React.FC<SocialNPCCardProps> = React.memo(({
                         },
                         `${option.description}. ${energyCostText}${moneyCostText ? ` ${moneyCostText}` : ''} harcar`
                       )
-                      : tRuntime('social.screen.actionHintLocked', undefined, 'Bu etkilesim su an kilitli, kaynaklarin yetersiz')}
+                      : tRuntime('social.screen.actionHintLocked', undefined, 'Bu etkileşim şu an kilitli, kaynakların yetersiz')}
                     accessibilityState={{ disabled: !affordable }}
                   >
                     <Text style={styles.actionIcon}>{option.icon}</Text>
@@ -379,7 +379,7 @@ const SocialScreenRoot: React.FC<SocialScreenProps> = ({
     if (result.success) {
       if (onOfferRelationshipBoostAd) {
         Alert.alert(
-          tRuntime('social.screen.successTitle', undefined, 'Basarili'),
+          tRuntime('social.screen.successTitle', undefined, 'Başarılı'),
           result.message,
           [
             {
@@ -397,7 +397,7 @@ const SocialScreenRoot: React.FC<SocialScreenProps> = ({
           ]
         );
       } else {
-        Alert.alert(tRuntime('social.screen.successTitle', undefined, 'Basarili'), result.message);
+        Alert.alert(tRuntime('social.screen.successTitle', undefined, 'Başarılı'), result.message);
       }
     } else {
       Alert.alert(tRuntime('social.screen.errorTitle', undefined, 'Hata'), result.message);
@@ -409,8 +409,8 @@ const SocialScreenRoot: React.FC<SocialScreenProps> = ({
     const result = onMeetNew();
     if (result.success && result.npc) {
       Alert.alert(
-        tRuntime('social.screen.newContactTitle', undefined, 'Yeni Tanisma'),
-        tRuntime('social.screen.newContactMessage', { npcName: result.npc.name }, '{npcName} ile tanistin!')
+        tRuntime('social.screen.newContactTitle', undefined, 'Yeni Tanışma'),
+        tRuntime('social.screen.newContactMessage', { npcName: result.npc.name }, '{npcName} ile tanıştın!')
       );
     }
   }, [onMeetNew]);
@@ -475,15 +475,15 @@ const SocialScreenRoot: React.FC<SocialScreenProps> = ({
         onPress={handleMeetNew}
         disabled={currentEnergy < 12}
         accessibilityRole="button"
-        accessibilityLabel={tRuntime('social.screen.meetNewAria', undefined, 'Yeni biri ile tanis')}
+        accessibilityLabel={tRuntime('social.screen.meetNewAria', undefined, 'Yeni biri ile tanış')}
         accessibilityHint={currentEnergy < 12
-          ? tRuntime('social.screen.meetNewHintDisabled', undefined, 'Bu aksiyon icin en az 12 enerji gerekir')
-          : tRuntime('social.screen.meetNewHintEnabled', undefined, 'Yeni bir NPC ile tanismani saglar')}
+          ? tRuntime('social.screen.meetNewHintDisabled', undefined, 'Bu aksiyon için en az 12 enerji gerekir')
+          : tRuntime('social.screen.meetNewHintEnabled', undefined, 'Yeni bir NPC ile tanışmanı sağlar')}
         accessibilityState={{ disabled: currentEnergy < 12 }}
       >
         <Text style={styles.meetNewIcon}>{'\u{1F44B}'}</Text>
         <View>
-          <Text style={styles.meetNewText}>{tRuntime('social.screen.meetNewLabel', undefined, 'Yeni Biri ile Tanis')}</Text>
+          <Text style={styles.meetNewText}>{tRuntime('social.screen.meetNewLabel', undefined, 'Yeni Biri ile Tanış')}</Text>
           <Text style={styles.meetNewCost}>{tRuntime('social.screen.meetNewCost', undefined, '\u26A112 enerji')}</Text>
         </View>
       </TouchableOpacity>
@@ -494,10 +494,10 @@ const SocialScreenRoot: React.FC<SocialScreenProps> = ({
     <View style={[styles.emptyState, { backgroundColor: theme.surfaceBase }]}>
       <Text style={styles.emptyEmoji}>{'\u{1F465}'}</Text>
       <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>
-        {tRuntime('social.screen.emptyTitle', undefined, 'Henuz kimseyi tanimiyorsun')}
+        {tRuntime('social.screen.emptyTitle', undefined, 'Henüz kimseyi tanımıyorsun')}
       </Text>
       <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
-        {tRuntime('social.screen.emptySubtitle', undefined, '"Yeni Biri ile Tanis" butonuna tikla.')}
+        {tRuntime('social.screen.emptySubtitle', undefined, '"Yeni Biri ile Tanış" butonuna tıkla.')}
       </Text>
     </View>
   ), [theme]);

@@ -69,7 +69,7 @@ export const TabBar: React.FC<TabBarProps> = ({
             ]}
             accessibilityRole="button"
             accessibilityLabel={tab.label}
-            accessibilityHint={`${tab.label} sekmesine gecer`}
+            accessibilityHint={`${tab.label} sekmesine geçer`}
             accessibilityState={{ selected: isActive }}
           >
             <Feather

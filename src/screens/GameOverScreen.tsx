@@ -443,7 +443,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                     {'\u{1F5DD}\uFE0F'} {t(
                       'endings.discoveredCount',
                       { discovered: discoveredEndingCount, total: TOTAL_ENDING_COUNT },
-                      '{discovered} / {total} son kesfedildi'
+                      '{discovered} / {total} son keşfedildi'
                     )}
                   </Text>
                 </FadeInUpView>
@@ -491,7 +491,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
 
                 <FadeInUpView delay={150}>
                   <Text style={{ color: theme.textSecondary, fontFamily: theme.fontBody, textAlign: 'center', marginBottom: 8 }}>
-                    {t('endings.completedAge', { name: playerName, age: MAX_AGE }, '{name} {age} yasini tamamladi')}
+                    {t('endings.completedAge', { name: playerName, age: MAX_AGE }, '{name} {age} yaşını tamamladı')}
                   </Text>
                 </FadeInUpView>
 
@@ -612,13 +612,13 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                       {t('endings.legacy')}
                     </Text>
                     <Text style={{ color: theme.textPrimary, marginBottom: 4 }}>
-                      {t('endings.runLegacyPoints', { points: runLegacyPoints }, 'Bu kosu: +{points} miras puani')}
+                      {t('endings.runLegacyPoints', { points: runLegacyPoints }, 'Bu koşu: +{points} miras puanı')}
                     </Text>
                     <Text style={{ color: theme.textSecondary, marginBottom: 2 }}>
                       {t(
                         'endings.totalRunsLevel',
                         { runs: safeMeta.totalRunsCompleted, level: safeMeta.legacyLevel },
-                        'Toplam kosu: {runs} | Seviye: {level}'
+                        'Toplam koşu: {runs} | Seviye: {level}'
                       )}
                     </Text>
                     <Text style={{ color: theme.textSecondary }}>
@@ -679,7 +679,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                         {t(
                           'endings.unexpectedPath',
                           { inferred: inferredGoalLabel },
-                          'Beklenmedik Yol: secilen hedeften farkli olarak {inferred} rotasinda daha guclu bir profil olusturdun.'
+                          'Beklenmedik Yol: seçilen hedeften farklı olarak {inferred} rotasında daha güçlü bir profil oluşturdun.'
                         )}
                       </Text>
                     )}

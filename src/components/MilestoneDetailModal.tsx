@@ -168,7 +168,7 @@ export const MilestoneDetailModal: React.FC<MilestoneDetailModalProps> = ({
 
             <View style={styles.benefitContainer}>
               <Text style={styles.benefitTitle}>
-                {tRuntime('skillTree.modal.rewards', undefined, 'Kazanc')}
+                {tRuntime('skillTree.modal.rewards', undefined, 'Kazanç')}
               </Text>
               {milestone.benefits.map((benefit, index) => (
                 <View key={index} style={styles.benefitItem}>

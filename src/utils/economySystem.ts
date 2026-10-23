@@ -68,7 +68,7 @@ export const JOB_CATALOG: JobAction[] = [
   },
   {
     id: 'job_dog_walking',
-    name: 'Komsu Kopegini Gezdir',
+    name: 'Komşu Köpeğini Gezdir',
     minAge: 10,
     maxAge: 14,
     moneyReward: 20,

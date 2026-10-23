@@ -57,7 +57,7 @@ describe('TraitProgressPanel', () => {
 
     expect(getByText('4/5')).toBeTruthy();
     expect(getByText('2/4')).toBeTruthy();
-    expect(getByText('Tamamlanmaya yakin')).toBeTruthy();
+    expect(getByText('Tamamlanmaya yakın')).toBeTruthy();
     expect(getByText('Kilitli')).toBeTruthy();
   });
 

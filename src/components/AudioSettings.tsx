@@ -20,10 +20,10 @@ export const AudioSettings: React.FC<AudioSettingsProps> = ({ isOpen, onClose })
       <View style={styles.backdrop}>
         <View style={styles.card}>
           <Text style={styles.title}>
-            {tRuntime('app.audioSettingsTitle', undefined, 'Ses Ayarlari')}
+            {tRuntime('app.audioSettingsTitle', undefined, 'Ses Ayarları')}
           </Text>
           <Text style={styles.description}>
-            {tRuntime('app.audioSettingsDescription', undefined, 'Bu ekran mobil surumde kullanilmiyor.')}
+            {tRuntime('app.audioSettingsDescription', undefined, 'Bu ekran mobil sürümde kullanılmıyor.')}
           </Text>
           <TouchableOpacity style={styles.button} onPress={onClose}>
             <Text style={styles.buttonText}>

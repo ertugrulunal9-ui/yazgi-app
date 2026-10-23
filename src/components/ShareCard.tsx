@@ -40,25 +40,25 @@ const TIER_GRADIENTS: Record<CareerResult['type'], [string, string, string]> = {
 };
 
 const TIER_SHARE_TEXTS: Record<CareerResult['type'], string> = {
-  LEGENDARY: '18 yilda efsane oldum. Sen de dene!',
-  SUCCESS: 'Hayatim guzel gitti. Seninki nasil olur?',
-  NORMAL: 'Fena degildi. Ama bir dahaki sefere...',
+  LEGENDARY: '18 yılda efsane oldum. Sen de dene!',
+  SUCCESS: 'Hayatım güzel gitti. Seninki nasıl olur?',
+  NORMAL: 'Fena değildi. Ama bir dahaki sefere...',
   FAILURE: 'Bu hayat beni yendi. Tekrar deniyorum!',
 };
 
 const ZODIAC_LABELS: Record<ZodiacSign, string> = {
-  KOC: 'Koc',
-  BOGA: 'Boga',
-  IKIZLER: 'Ikizler',
-  YENGEC: 'Yengec',
+  KOC: 'Koç',
+  BOGA: 'Boğa',
+  IKIZLER: 'İkizler',
+  YENGEC: 'Yengeç',
   ASLAN: 'Aslan',
-  BASAK: 'Basak',
+  BASAK: 'Başak',
   TERAZI: 'Terazi',
   AKREP: 'Akrep',
   YAY: 'Yay',
-  OGLAK: 'Oglak',
+  OGLAK: 'Oğlak',
   KOVA: 'Kova',
-  BALIK: 'Balik',
+  BALIK: 'Balık',
 };
 
 const ZODIAC_COLORS: Record<ZodiacSign, string> = {

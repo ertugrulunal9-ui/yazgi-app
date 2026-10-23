@@ -15,7 +15,7 @@ export interface MomentumDialogueTag {
 }
 
 const TENDENCY_LABELS: Record<PersonalityTendency, string> = {
-  HELPFUL: 'Yardimsever',
+  HELPFUL: 'Yardımsever',
   PRAGMATIC: 'Kurnaz',
   AGGRESSIVE: 'Sert',
 };

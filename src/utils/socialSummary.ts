@@ -32,55 +32,55 @@ const buildNPCNarrative = (npc: NPC): string => {
       return tRuntime(
         'social.epilogue.templates.PARTNER',
         { name: npc.name, metAge: npc.metAge, yearsKnown },
-        `${npc.name} ile ${npc.metAge} yasinda tanistin. ${yearsKnown} yil boyunca birlikte buyudunuz ve mezuniyette el ele tutuyordunuz.`
+        `${npc.name} ile ${npc.metAge} yaşında tanıştın. ${yearsKnown} yıl boyunca birlikte büyüdünüz ve mezuniyette el ele tutuyordunuz.`
       );
     case 'BEST_FRIEND':
       return memCount > 2
         ? tRuntime(
           'social.epilogue.templates.BEST_FRIEND_MEMORIES',
           { name: npc.name, metAge: npc.metAge, memCount },
-          `${npc.name}, ${npc.metAge} yasindan beri yaninda. ${memCount} ortak aniniz var, o senin kardesin.`
+          `${npc.name}, ${npc.metAge} yaşından beri yanında. ${memCount} ortak anınız var, o senin kardeşin.`
         )
         : tRuntime(
           'social.epilogue.templates.BEST_FRIEND',
           { name: npc.name, metAge: npc.metAge },
-          `${npc.name} ile ${npc.metAge} yasindan beri birbirinize bagli kaldiniz.`
+          `${npc.name} ile ${npc.metAge} yaşından beri birbirinize bağlı kaldınız.`
         );
     case 'CRUSH':
       return tRuntime(
         'social.epilogue.templates.CRUSH',
         { name: npc.name },
-        `${npc.name} ile aranizda bir seyler var ama henuz netlesmediniz.`
+        `${npc.name} ile aranızda bir şeyler var ama henüz netleşmediniz.`
       );
     case 'FRIEND':
       return yearsKnown >= 5
         ? tRuntime(
           'social.epilogue.templates.FRIEND_LONG',
           { name: npc.name, yearsKnown },
-          `${npc.name} ile ${yearsKnown} yildir arkadassiniz. Iyi gunleri paylastiniz.`
+          `${npc.name} ile ${yearsKnown} yıldır arkadaşsınız. İyi günleri paylaştınız.`
         )
         : tRuntime(
           'social.epilogue.templates.FRIEND_SHORT',
           { name: npc.name },
-          `${npc.name} ile ara sira takiliyorsun. Iyi bir arkadas ama derin bir bag kuramadin.`
+          `${npc.name} ile ara sıra takılıyorsun. İyi bir arkadaş ama derin bir bağ kuramadın.`
         );
     case 'RIVAL':
       return tRuntime(
         'social.epilogue.templates.RIVAL',
         { name: npc.name, metAge: npc.metAge },
-        `${npc.name} ile ${npc.metAge} yasinda yollariniz ayrildi. Hala birbirinize soguk bakiyorsunuz.`
+        `${npc.name} ile ${npc.metAge} yaşında yollarınız ayrıldı. Hala birbirinize soğuk bakıyorsunuz.`
       );
     case 'ENEMY':
       return tRuntime(
         'social.epilogue.templates.ENEMY',
         { name: npc.name, hateScore: Math.abs(npc.relationship) },
-        `${npc.name} ile aran hic duzelmedi. ${Math.abs(npc.relationship)} puan nefret biriktirdiniz.`
+        `${npc.name} ile aran hiç düzelmedi. ${Math.abs(npc.relationship)} puan nefret biriktirdiniz.`
       );
     default:
       return tRuntime(
         'social.epilogue.templates.DEFAULT',
         { name: npc.name },
-        `${npc.name} ile yollariniz kesisti ama derin bir bag kuramadin.`
+        `${npc.name} ile yollarınız kesişti ama derin bir bağ kuramadın.`
       );
   }
 };

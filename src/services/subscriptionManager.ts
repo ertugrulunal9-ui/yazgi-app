@@ -242,15 +242,15 @@ const isPremiumFeatureEnabled = (): boolean => isFeatureEnabled('PREMIUM_SUBSCRI
 export const PRODUCTS: SubscriptionProduct[] = [
   {
     id: 'yazgi_premium_monthly',
-    title: 'Aylik Premium',
-    description: 'Reklamsiz deneyim, sinirsiz geri al, ozel eventler',
+    title: 'Aylık Premium',
+    description: 'Reklamsız deneyim, sınırsız geri al, özel eventler',
     price: '$2.99',
     period: 'monthly',
   },
   {
     id: 'yazgi_premium_yearly',
-    title: 'Yillik Premium',
-    description: 'Ayliga gore %44 tasarruf',
+    title: 'Yıllık Premium',
+    description: 'Aylığa göre %44 tasarruf',
     price: '$19.99',
     period: 'yearly',
   },

@@ -152,7 +152,7 @@ const buildForcedFateFeedback = (
     return tRuntime(
       'feedback.fateTokenUsed',
       { outcome: nextLabel },
-      `Token kullandin: yeni kaderin ${nextLabel}.`
+      `Token kullandın: yeni kaderin ${nextLabel}.`
     );
   }
 
@@ -161,7 +161,7 @@ const buildForcedFateFeedback = (
     return tRuntime(
       'feedback.fateTokenFixed',
       { outcome: nextLabel },
-      `Token kullandin: kader sonucun ${nextLabel} olarak sabitlendi.`
+      `Token kullandın: kader sonucun ${nextLabel} olarak sabitlendi.`
     );
   }
 
@@ -172,7 +172,7 @@ const buildForcedFateFeedback = (
     return tRuntime(
       'feedback.fateTokenImproved',
       { from: previousLabel, to: nextLabel },
-      `Token sayesinde sansin dondu: ${previousLabel} -> ${nextLabel}`
+      `Token sayesinde şansın döndü: ${previousLabel} -> ${nextLabel}`
     );
   }
 
@@ -210,7 +210,7 @@ const buildMomentumFeedback = (
         : tRuntime(
           'feedback.momentum.strengthening',
           { tendency: tendencyLabel },
-          `${tendencyLabel} ritmi gucleniyor!`
+          `${tendencyLabel} ritmi güçleniyor!`
         ));
 
     return {
@@ -244,7 +244,7 @@ const buildMomentumFeedback = (
         feedbackText: tRuntime(
           'feedback.momentum.streakBroken',
           { tendency: tendencyLabel },
-          `${tendencyLabel} ritmi kirildi!`
+          `${tendencyLabel} ritmi kırıldı!`
         ),
       };
     }

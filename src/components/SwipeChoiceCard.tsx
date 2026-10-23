@@ -186,7 +186,7 @@ export const SwipeChoiceCard: React.FC<SwipeChoiceCardProps> = React.memo(({
   const uncertainLabel = tRuntime('events.swipe.uncertain', undefined, 'Şansa bağlı');
   const dialogueTag = getMomentumDialogueTag(choice, personalityState);
   const tradeoffHint = dialogueTag ? null : generateTradeoffHint(choice);
-  const swipeHint = tRuntime('events.swipe.swipeHint', undefined, 'kaydir');
+  const swipeHint = tRuntime('events.swipe.swipeHint', undefined, 'kaydır');
 
   // Stat ipuçları: yalnızca hangi statların etkileneceği gösterilir; yön ve miktar
   // sonuç ekranına kadar gizli kalır (seçim "yeşil olana bas"a dönüşmesin diye).

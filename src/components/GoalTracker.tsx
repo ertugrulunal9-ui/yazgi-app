@@ -54,7 +54,7 @@ export const GoalTracker: React.FC<GoalTrackerProps> = React.memo(({
       {seasonGoal && !seasonGoal.completed && (
         <View style={[styles.seasonCard, { borderColor: theme.accentBrand }]}>
           <Text style={[styles.seasonLabel, { color: theme.accentBrand }]}>
-            {tRuntime('goals.tracker.seasonGoal', undefined, 'Yillik Hedef')}
+            {tRuntime('goals.tracker.seasonGoal', undefined, 'Yıllık Hedef')}
           </Text>
           <Text style={[styles.goalDesc, { color: theme.textPrimary }]} numberOfLines={1}>
             {tRuntime(seasonGoal.descriptionKey, undefined, formatGoalIdFallback(seasonGoal.id))}

@@ -24,11 +24,11 @@ export const LIFE_GOAL_META: Record<LifeGoal, LifeGoalMeta> = {
     label: 'Sporcu Yol',
     shortLabel: 'Atletik',
     accentColor: '#22c55e',
-    statHint: 'Saglik + Disiplin',
+    statHint: 'Sağlık + Disiplin',
   },
   CREATIVE: {
-    label: 'Yaratici Yol',
-    shortLabel: 'Yaratici',
+    label: 'Yaratıcı Yol',
+    shortLabel: 'Yaratıcı',
     accentColor: '#f97316',
     statHint: 'Karizma + Zeka',
   },
@@ -158,11 +158,11 @@ const GOAL_EFFECTS: Record<LifeGoal, Choice['effect']> = {
 const getGoalFeedback = (goal: LifeGoal): string => {
   const key = GOAL_KEY_PATHS[goal].feedback;
   const fallbackByGoal: Record<LifeGoal, string> = {
-    ACADEMIC: 'Kendine net bir akademik rota cizdin.',
-    ATHLETIC: 'Sporcu hedefin artik yol haritan oldu.',
-    CREATIVE: 'Yaratici hedefin icin risk almayi kabul ettin.',
-    WEALTH: 'Finansal hedefin artik kararlarini yonlendiriyor.',
-    SOCIAL: 'Insan odakli bir gelecek plani yaptin.',
+    ACADEMIC: 'Kendine net bir akademik rota çizdin.',
+    ATHLETIC: 'Sporcu hedefin artık yol haritan oldu.',
+    CREATIVE: 'Yaratıcı hedefin için risk almayı kabul ettin.',
+    WEALTH: 'Finansal hedefin artık kararlarını yönlendiriyor.',
+    SOCIAL: 'İnsan odaklı bir gelecek planı yaptın.',
   };
   return tRuntime(key, undefined, fallbackByGoal[goal]);
 };
@@ -175,7 +175,7 @@ const buildGoalChoice = (
   }
 ): Choice => {
   const prefix = options?.prefix ?? 'goal_select';
-  const textPrefix = options?.textPrefix ?? tRuntime('goals.selectPrefix', undefined, 'Hedefi sec:');
+  const textPrefix = options?.textPrefix ?? tRuntime('goals.selectPrefix', undefined, 'Hedefi seç:');
   const localizedMeta = getLifeGoalMeta(goal) ?? LIFE_GOAL_META[goal];
 
   return {
@@ -192,7 +192,7 @@ export const buildInitialLifeGoalEvent = (): GameEvent => ({
   text: tRuntime(
     'goals.lifeGoalEventText',
     undefined,
-    '10 yasina girdin. Artik gelecekte neyin pesinden kosacagina karar vermelisin.'
+    '10 yaşına girdin. Artık gelecekte neyin peşinden koşacağına karar vermelisin.'
   ),
   minAge: 10,
   maxAge: 99,
@@ -223,20 +223,20 @@ export const buildPivotLifeGoalEvent = (
 
   const keepChoice: Choice = {
     id: 'goal_keep_current',
-    text: tRuntime('goals.keepCurrent', { currentLabel }, `${currentLabel} hedefine sadik kal`),
+    text: tRuntime('goals.keepCurrent', { currentLabel }, `${currentLabel} hedefine sadık kal`),
     effect: { discipline: 2, energy: -2 },
     setSelectedGoal: currentGoal,
     feedback: tRuntime(
       'goals.keepCurrentFeedback',
       undefined,
-      'Planini degistirmedin. Bundan sonra tercihlerin daha kritik olacak.'
+      'Planını değiştirmedin. Bundan sonra tercihlerin daha kritik olacak.'
     ),
   };
 
   const pivotChoices = alternatives.map((goal, index) => {
     const textPrefix = index === 0 && goal === suggestedGoal
-      ? tRuntime('goals.pivotSuggested', { suggestedLabel }, `Rota degistir (${suggestedLabel})`)
-      : tRuntime('goals.pivotUpdate', undefined, 'Hedefi guncelle:');
+      ? tRuntime('goals.pivotSuggested', { suggestedLabel }, `Rota değiştir (${suggestedLabel})`)
+      : tRuntime('goals.pivotUpdate', undefined, 'Hedefi güncelle:');
     return buildGoalChoice(goal, {
       prefix: 'goal_pivot',
       textPrefix,
@@ -251,7 +251,7 @@ export const buildPivotLifeGoalEvent = (
         currentLabel,
         gap: Math.round(mismatchGap),
       },
-      `${currentLabel} hedefinle mevcut gelisimin arasinda ciddi bir fark olustu (fark: ${Math.round(mismatchGap)}). Yeni bir rota secmek ister misin?`
+      `${currentLabel} hedefinle mevcut gelişimin arasında ciddi bir fark oluştu (fark: ${Math.round(mismatchGap)}). Yeni bir rota seçmek ister misin?`
     ),
     minAge: 16,
     maxAge: 99,

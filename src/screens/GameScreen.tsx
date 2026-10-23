@@ -742,15 +742,15 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
                 onPress={handleEndDay}
                 style={[endDayButtonStyle, { pointerEvents: isInteractionLocked ? 'none' : 'auto' }]}
                 accessibilityRole="button"
-                accessibilityLabel={t('game.endDay', undefined, 'Gunu Bitir')}
-                accessibilityHint={t('game.endDayHint', undefined, 'Siradaki tura gecer')}
+                accessibilityLabel={t('game.endDay', undefined, 'Günü Bitir')}
+                accessibilityHint={t('game.endDayHint', undefined, 'Sıradaki tura geçer')}
               >
                 <Text style={{
                   color: isInteractionLocked ? theme.textSecondary : '#ffffff',
                   fontSize: 16,
                   fontWeight: '700',
                 }}>
-                  {t('game.endDay', undefined, 'Gunu Bitir')}
+                  {t('game.endDay', undefined, 'Günü Bitir')}
                 </Text>
               </TouchableOpacity>
             </View>

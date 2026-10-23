@@ -84,10 +84,10 @@ export const endingsStrings: DomainStrings = {
         runSummary: '{age} yaş • Uyum: %{compatibility} • {date}',
       },
       shareCard: {
-        keyMoments: 'Onemli Anlar',
+        keyMoments: 'Önemli Anlar',
         finalStatus: 'Son Durum',
         pointsAbbr: 'puan',
-        defaultSummary: 'Hayatim inisli cikisli bir yoldu.',
+        defaultSummary: 'Hayatım inişli çıkışlı bir yoldu.',
         scarAgeLabel: '({age} yaşında)',
       },
       personalities: {

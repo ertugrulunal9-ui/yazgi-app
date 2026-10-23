@@ -131,7 +131,7 @@ export const hasCriticalBurdenCrossed = (currentRisk: number, previousRisk: numb
 
 export const buildForcedRecoveryEvent = (): GameEvent => ({
   id: FORCED_RECOVERY_EVENT_ID,
-  text: 'Nefesin daraldi. Kisa bir mola ile toparlanabilirsin.',
+  text: 'Nefesin daraldı. Kısa bir mola ile toparlanabilirsin.',
   textKey: buildEventTextKey(FORCED_RECOVERY_EVENT_ID),
   minAge: 0,
   maxAge: 99,
@@ -143,10 +143,10 @@ export const buildForcedRecoveryEvent = (): GameEvent => ({
   choices: [
     {
       id: 'forced_recovery_breath',
-      text: 'Kisa bir mola ver',
+      text: 'Kısa bir mola ver',
       textKey: buildChoiceTextKey(FORCED_RECOVERY_EVENT_ID, 'forced_recovery_breath'),
       effect: { energy: FORCED_RECOVERY_ENERGY_GAIN, health: 2 },
-      feedback: 'Biraz dinlendin. Nefesin ve enerjin toparlaniyor.',
+      feedback: 'Biraz dinlendin. Nefesin ve enerjin toparlanıyor.',
       feedbackKey: buildChoiceFeedbackKey(FORCED_RECOVERY_EVENT_ID, 'forced_recovery_breath'),
       choiceType: 'PASSIVE',
     },

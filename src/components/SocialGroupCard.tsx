@@ -14,8 +14,8 @@ interface SocialGroupCardProps {
 const GROUP_TYPE_LABELS: Record<SocialGroup['type'], string> = {
   CLIQUE: 'Clique',
   CLUB: 'Kulup',
-  FRIEND_GROUP: 'Arkadas',
-  STUDY_GROUP: 'Calisma',
+  FRIEND_GROUP: 'Arkadaş',
+  STUDY_GROUP: 'Çalışma',
 };
 
 const GROUP_TYPE_COLORS: Record<SocialGroup['type'], string> = {
@@ -80,9 +80,9 @@ export const SocialGroupCard: React.FC<SocialGroupCardProps> = ({
               paddingVertical: 6,
             }}
             accessibilityRole="button"
-            accessibilityLabel="Grubu birak"
+            accessibilityLabel="Grubu bırak"
           >
-            <Text style={{ color: '#ef4444', fontSize: 12, fontWeight: '700' }}>Grubu Birak</Text>
+            <Text style={{ color: '#ef4444', fontSize: 12, fontWeight: '700' }}>Grubu Bırak</Text>
           </TouchableOpacity>
         )}
       </View>

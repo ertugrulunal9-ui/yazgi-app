@@ -74,7 +74,7 @@ export const useEventScreenController = () => {
     AccessibilityInfo?.announceForAccessibility?.(feedback);
     const changeCount = Object.values(gameState.lastResult?.changes || {}).filter(value => Number(value) !== 0).length;
     if (changeCount > 0) {
-      AccessibilityInfo?.announceForAccessibility?.(`${changeCount} stat degisti`);
+      AccessibilityInfo?.announceForAccessibility?.(`${changeCount} stat değişti`);
     }
   }, [gameState.phase, gameState.lastResult]);
 
@@ -105,7 +105,7 @@ export const useEventScreenController = () => {
 
     if (momentumFeedback.unlockedNow) {
       showFloatingText(
-        `${momentumFeedback.tendencyLabel} yolu acildi!`,
+        `${momentumFeedback.tendencyLabel} yolu açıldı!`,
         SCREEN_WIDTH * 0.22,
         165,
         '#fcd34d',
@@ -214,7 +214,7 @@ export const useEventScreenController = () => {
         const undone = undoLastChoice();
         if (!undone) {
           showFloatingText(
-            'Geri alma su an kullanilamiyor.',
+            'Geri alma şu an kullanılamıyor.',
             SCREEN_WIDTH * 0.2,
             118,
             '#fda4af',
@@ -237,7 +237,7 @@ export const useEventScreenController = () => {
 
       if (!adResult.success) {
         showFloatingText(
-          adResult.error || 'Reklam gosterilemedi.',
+          adResult.error || 'Reklam gösterilemedi.',
           SCREEN_WIDTH * 0.2,
           118,
           '#fda4af',
@@ -256,7 +256,7 @@ export const useEventScreenController = () => {
       const undone = undoLastChoice();
       if (!undone) {
         showFloatingText(
-          'Geri alma verisi bulunamadi.',
+          'Geri alma verisi bulunamadı.',
           SCREEN_WIDTH * 0.2,
           118,
           '#fda4af',
@@ -282,7 +282,7 @@ export const useEventScreenController = () => {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown undo error';
       showFloatingText(
-        'Geri alma sirasinda hata olustu.',
+        'Geri alma sırasında hata oluştu.',
         SCREEN_WIDTH * 0.2,
         118,
         '#fda4af',

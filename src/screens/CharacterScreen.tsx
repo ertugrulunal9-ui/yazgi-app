@@ -122,7 +122,7 @@ const getFamilyWealthLabel = (wealth: Family['wealth']): string => {
     case 'POOR':
       return tRuntime('character.screen.family.wealth.POOR', undefined, 'Dar Gelirli');
     case 'RICH':
-      return tRuntime('character.screen.family.wealth.RICH', undefined, 'Varlikli');
+      return tRuntime('character.screen.family.wealth.RICH', undefined, 'Varlıklı');
     default:
       return tRuntime('character.screen.family.wealth.MIDDLE', undefined, 'Orta Halli');
   }
@@ -270,7 +270,7 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
         </View>
       ) : null}
       <CharacterSection
-        title={tRuntime('character.screen.sections.stats', undefined, 'Karakter Statlari')}
+        title={tRuntime('character.screen.sections.stats', undefined, 'Karakter Statları')}
         icon={'\u{1F4CA}'}
         cardStyle={cardStyle}
         theme={theme}
@@ -348,7 +348,7 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
           {tRuntime(
             'character.screen.momentumHint',
             undefined,
-            'Tutarli secimler ivme yaratir: ozel eventler ve etiketli diyalog secenekleri acilir.'
+            'Tutarlı seçimler ivme yaratır: özel eventler ve etiketli diyalog seçenekleri açılır.'
           )}
         </Text>
       </CharacterSection>
@@ -397,14 +397,14 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
                 {tRuntime(
                   'character.screen.family.allowanceBase',
                   { amount: family.allowance },
-                  `Harclik Baz Tutari: \u20BA${family.allowance} / istek`
+                  `Harçlık Baz Tutarı: \u20BA${family.allowance} / istek`
                 )}
               </Text>
               <Text style={{ color: theme.textSecondary, fontSize: 11, marginTop: 4 }}>
                 {tRuntime(
                   'character.screen.family.allowanceNote',
                   undefined,
-                  'Not: Gercek miktar aile dinamikleri ve iliski puanina gore degisir.'
+                  'Not: Gerçek miktar aile dinamikleri ve ilişki puanına göre değişir.'
                 )}
               </Text>
             </View>
@@ -413,7 +413,7 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
       ) : null}
 
       <CharacterSection
-        title={tRuntime('character.screen.sections.traits', undefined, 'Ozellikler')}
+        title={tRuntime('character.screen.sections.traits', undefined, 'Özellikler')}
         icon={'\u2728'}
         cardStyle={cardStyle}
         theme={theme}
@@ -439,7 +439,7 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
           </View>
         ) : (
           <Text style={{ color: theme.textSecondary, fontStyle: 'italic' }}>
-            {tRuntime('character.screen.noTraits', undefined, 'Henuz ozellik kazanmadin')}
+            {tRuntime('character.screen.noTraits', undefined, 'Henüz özellik kazanmadın')}
           </Text>
         )}
 
@@ -461,10 +461,10 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
                 marginBottom: isTraitProgressExpanded ? 10 : 0,
               }}
               accessibilityRole="button"
-              accessibilityLabel={tRuntime('traits.progress.title', undefined, 'Ozellik Formasyonu')}
+              accessibilityLabel={tRuntime('traits.progress.title', undefined, 'Özellik Formasyonu')}
             >
               <Text style={{ color: theme.textPrimary, fontWeight: '700', fontSize: 13 }}>
-                {tRuntime('traits.progress.title', undefined, 'Ozellik Formasyonu')}
+                {tRuntime('traits.progress.title', undefined, 'Özellik Formasyonu')}
               </Text>
               <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: '700' }}>
                 {isTraitProgressExpanded ? '▲' : '▼'}
@@ -480,7 +480,7 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
 
       {achievementSummary ? (
         <CharacterSection
-          title={tRuntime('character.screen.sections.achievements', undefined, 'Basarilar')}
+          title={tRuntime('character.screen.sections.achievements', undefined, 'Başarılar')}
           icon={'\u{1F3C6}'}
           cardStyle={cardStyle}
           theme={theme}
@@ -491,14 +491,14 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
                 {tRuntime(
                   'character.screen.achievements.unlockedSummary',
                   { unlocked: achievementSummary.unlocked, total: achievementSummary.total },
-                  `${achievementSummary.unlocked}/${achievementSummary.total} Acildi`
+                  `${achievementSummary.unlocked}/${achievementSummary.total} Açıldı`
                 )}
               </Text>
               <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 4 }}>
                 {tRuntime(
                   'character.screen.achievements.completion',
                   { percentage: achievementSummary.percentage },
-                  `%${achievementSummary.percentage} tamamlandi`
+                  `%${achievementSummary.percentage} tamamlandı`
                 )}
               </Text>
             </View>
@@ -529,12 +529,12 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
                 backgroundColor: theme.surfaceOverlay,
                 alignItems: 'center',
               }}
-              accessibilityLabel={tRuntime('character.screen.achievements.openAria', undefined, 'Basarilari goruntule')}
-              accessibilityHint={tRuntime('character.screen.achievements.openHint', undefined, 'Acilan panelde tum basarimlarini ve ilerlemeni gosterir')}
+              accessibilityLabel={tRuntime('character.screen.achievements.openAria', undefined, 'Başarıları görüntüle')}
+              accessibilityHint={tRuntime('character.screen.achievements.openHint', undefined, 'Açılan panelde tüm başarımlarını ve ilerlemeni gösterir')}
               accessibilityRole="button"
             >
               <Text style={{ color: theme.textPrimary, fontWeight: '700', fontSize: 13 }}>
-                {tRuntime('character.screen.achievements.openButton', undefined, 'Basarilari Gor')}
+                {tRuntime('character.screen.achievements.openButton', undefined, 'Başarıları Gör')}
               </Text>
             </TouchableOpacity>
           ) : null}
@@ -582,17 +582,17 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
           </View>
         ) : (
           <Text style={{ color: theme.textSecondary, fontStyle: 'italic' }}>
-            {tRuntime('character.screen.noPassiveBonuses', undefined, 'Henuz pasif bonus yok')}
+            {tRuntime('character.screen.noPassiveBonuses', undefined, 'Henüz pasif bonus yok')}
           </Text>
         )}
         <Text style={{ color: theme.textSecondary, fontSize: 11, marginTop: 10, fontStyle: 'italic' }}>
-          {'\u{1F4A1}'} {tRuntime('character.screen.passiveBonusHint', undefined, 'Bonuslar beceri seviyelerine gore otomatik uygulanir.')}
+          {'\u{1F4A1}'} {tRuntime('character.screen.passiveBonusHint', undefined, 'Bonuslar beceri seviyelerine göre otomatik uygulanır.')}
         </Text>
       </CharacterSection>
 
       {age >= 7 ? (
         <CharacterSection
-          title={tRuntime('character.screen.sections.schoolGrades', undefined, 'Okul Notlari')}
+          title={tRuntime('character.screen.sections.schoolGrades', undefined, 'Okul Notları')}
           icon={'\u{1F4DA}'}
           cardStyle={cardStyle}
           theme={theme}
@@ -698,7 +698,7 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
               {'\u{1F4A1}'} {tRuntime(
                 'character.screen.school.hint',
                 undefined,
-                'Notlarini yukseltmek icin Okul kategorisinden ders calis veya sinavlara gir.'
+                'Notlarını yükseltmek için Okul kategorisinden ders çalış veya sınavlara gir.'
               )}
             </Text>
           </View>

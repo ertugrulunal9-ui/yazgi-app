@@ -21,7 +21,7 @@ export const HIGH_MOMENTUM_THRESHOLD = MOMENTUM_CONSTANTS.HIGH_MOMENTUM_THRESHOL
 const TENDENCIES: PersonalityTendency[] = ['HELPFUL', 'PRAGMATIC', 'AGGRESSIVE'];
 
 export const MOMENTUM_TENDENCY_LABELS: Record<PersonalityTendency, string> = {
-  HELPFUL: 'Yardimsever',
+  HELPFUL: 'Yardımsever',
   PRAGMATIC: 'Pragmatik',
   AGGRESSIVE: 'Agresif',
 };
