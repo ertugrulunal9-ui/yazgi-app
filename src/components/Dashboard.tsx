@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
+import { Text } from './ui/LocaleText';
 import { Stats, GameState } from '../types';
 import { calculateGradeAverage } from '../utils/schoolLogic';
 import { tRuntime } from '../i18n/strings';

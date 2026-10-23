@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Modal, TouchableOpacity, ScrollView, StyleSheet, Pressable } from 'react-native';
+import { View, Modal, TouchableOpacity, ScrollView, StyleSheet, Pressable } from 'react-native';
+import { Text } from './ui/LocaleText';
 import { NPC } from '../types';
 import { Feather } from '@expo/vector-icons';
 import { getLocalizedInteractionRestriction, InteractionType } from '../constants/interactionRestrictions';

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { getAchievement } from '../systems/achievementDefinitions';
 import { tRuntime } from '../i18n/strings';
+import { toUpperLocale } from '../utils/localeText';
 
 interface AchievementToastProps {
   achievementIds: string[];
@@ -79,7 +80,7 @@ export const AchievementToast: React.FC<AchievementToastProps> = ({
           <View style={styles.titleWrap}>
             <Text style={styles.titleText}>{achievement.name}</Text>
             <Text style={[styles.rarityText, { color: rarityColor }]}>
-              {tRuntime(RARITY_LABEL_KEYS[achievement.rarity] ?? '', undefined, achievement.rarity).toLocaleUpperCase()}
+              {toUpperLocale(tRuntime(RARITY_LABEL_KEYS[achievement.rarity] ?? '', undefined, achievement.rarity))}
             </Text>
           </View>
         </View>

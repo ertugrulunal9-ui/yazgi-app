@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
+import { Text } from './ui/LocaleText';
 import type { NPC, SocialGroup } from '../types';
 import type { ThemeTokens } from '../utils/themeUtils';
 import { NPCCard } from './NPCCard';

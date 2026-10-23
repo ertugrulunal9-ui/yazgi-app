@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from './ui/LocaleText';
 import { StatKey } from '../types';
 import { tRuntime } from '../i18n/strings';
 import { useRuntimeLocale } from '../i18n/useRuntimeLocale';

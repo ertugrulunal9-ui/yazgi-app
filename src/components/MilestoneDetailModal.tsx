@@ -1,5 +1,6 @@
 import React from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Modal, View, TouchableOpacity, StyleSheet } from 'react-native';
+import { Text } from './ui/LocaleText';
 import { Feather } from '@expo/vector-icons';
 import { getThemeTokens } from '../utils/themeUtils';
 import { tRuntime } from '../i18n/strings';

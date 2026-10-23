@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { Text } from './ui/LocaleText';
 import { Stats, StatKey, Family, GameState, Talent } from '../types';
 import StatBar from './StatBar';
 import { getStatCap } from '../utils/gameUtils';

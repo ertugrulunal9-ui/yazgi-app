@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, Alert, ListRenderItemInfo } from 'react-native';
+import { View, TouchableOpacity, FlatList, StyleSheet, Alert, ListRenderItemInfo } from 'react-native';
+import { Text } from './ui/LocaleText';
 import type { NPC, Skills, SocialGroup } from '../types';
 import { getThemeTokens, getDensityMetrics } from '../utils/themeUtils';
 import { selectionHaptic, buttonPress } from '../animations/HapticFeedback';

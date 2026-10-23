@@ -4,7 +4,8 @@
  */
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from './ui/LocaleText';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 // Reanimated reserved for future card stack animations
 import { Choice, EventContext, EventRarity, PersonalityState } from '../types';

@@ -30,6 +30,7 @@ import {
 } from '../utils/gameUtils';
 import { logQuickStart } from '../utils/analyticsEvents';
 import { getDensityMetrics, getThemeTokens } from '../utils/themeUtils';
+import { toUpperLocale } from '../utils/localeText';
 import { checkDailyLogin, getLegacyBonusBreakdown } from '../utils/metaProgression';
 import {
   FadeInDownView,
@@ -688,7 +689,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({
                 }}
               >
                 <Text style={{ color: theme.accentBrand, fontWeight: '800', marginBottom: 6 }}>
-                  {zodiac.emoji} {zodiac.name.toUpperCase()}  {'\u2022'}  {zodiac.dateRange}
+                  {zodiac.emoji} {toUpperLocale(zodiac.name)}  {'\u2022'}  {zodiac.dateRange}
                 </Text>
                 <Text style={{ color: theme.textPrimary, fontSize: 13, lineHeight: 20, marginBottom: 6 }}>
                   "{zodiac.personality}"

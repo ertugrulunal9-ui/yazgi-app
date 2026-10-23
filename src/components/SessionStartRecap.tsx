@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Modal, StyleSheet } from 'react-native';
+import { Text } from './ui/LocaleText';
 import { useUI } from '../context/UIContext';
 import { getThemeTokens } from '../utils/themeUtils';
 import { MetaProgression } from '../types';

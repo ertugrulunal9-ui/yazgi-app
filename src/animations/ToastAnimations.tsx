@@ -5,7 +5,8 @@
  */
 
 import React, { ReactNode, useCallback, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ViewStyle, Platform } from 'react-native';
+import { View, StyleSheet, ViewStyle, Platform } from 'react-native';
+import { Text } from '../components/ui/LocaleText';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,

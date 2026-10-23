@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import { Text } from './ui/LocaleText';
 import { FadeInUpView } from '../animations';
 import { AnimatedButton } from '../animations/ButtonAnimations';
 import { Choice, FateState, GameEvent, Personality, ResultData, Skills, Stats } from '../types';

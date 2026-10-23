@@ -6,7 +6,8 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from './ui/LocaleText';
 import type { MicroGoal, SeasonGoal } from '../types/game';
 import { tRuntime } from '../i18n/strings';
 import type { ThemeTokens } from '../utils/themeUtils';

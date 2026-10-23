@@ -1,5 +1,6 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
+import { Text } from './ui/LocaleText';
 import ViewShot from 'react-native-view-shot';
 import type { CareerResult, Stats } from '../types';
 import type { ThemeTokens } from '../utils/themeUtils';

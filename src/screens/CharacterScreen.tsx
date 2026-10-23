@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, ViewStyle, TouchableOpacity } from 'react-native';
+import { View, ViewStyle, TouchableOpacity } from 'react-native';
+import { Text } from '../components/ui/LocaleText';
 import { FadeInUpView } from '../animations';
 import { getLetterGrade, calculateGradeAverage } from '../utils/schoolLogic';
 import { Family, FamilyEvolutionState, PersonalityState, Stats, Skills, SchoolGrades, TraitProgressData } from '../types';
