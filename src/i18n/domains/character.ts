@@ -94,7 +94,7 @@ export const characterStrings: DomainStrings = {
       screen: {
         sections: {
           stats: 'Karakter Statları',
-          momentum: 'Davranışsal İvme',
+          momentum: 'Eğilimlerin',
           family: 'Aile Durumu',
           traits: 'Özellikler',
           achievements: 'Başarılar',
@@ -117,12 +117,13 @@ export const characterStrings: DomainStrings = {
             STRESSED: 'Stresli',
           },
         },
-        momentumHint: 'Tutarlı seçimler ivme yaratır: özel olayler ve etiketli diyalog seçenekleri açılır.',
+        momentumHint: 'Aynı yönde seçtikçe eğilimin güçlenir; güçlü eğilimler özel olaylar açar.',
         momentumCard: {
-          title: '{tendency} İvmesi',
-          streak: 'Seri: {count}',
-          specialPathUnlocked: 'Özel Yol Açık',
-          specialPathLocked: 'Yol Kilidi Kapalı',
+          title: '{tendency}',
+          effect: '+%{percent} etki',
+          streak: 'Üst üste {count} seçim',
+          specialPathUnlocked: 'Özel yol açıldı',
+          specialPathLocked: 'Özel yol için devam et',
         },
         family: {
           economic: 'Ekonomik',
@@ -270,7 +271,7 @@ export const characterStrings: DomainStrings = {
       screen: {
         sections: {
           stats: 'Character Stats',
-          momentum: 'Behavioral Momentum',
+          momentum: 'Your Tendencies',
           family: 'Family Status',
           traits: 'Traits',
           achievements: 'Achievements',
@@ -293,12 +294,13 @@ export const characterStrings: DomainStrings = {
             STRESSED: 'Stressed',
           },
         },
-        momentumHint: 'Consistent choices create momentum: special events and tagged dialog options unlock.',
+        momentumHint: 'Choose the same way and that tendency grows; strong ones unlock special events.',
         momentumCard: {
-          title: '{tendency} Momentum',
-          streak: 'Streak: {count}',
-          specialPathUnlocked: 'Special Path Unlocked',
-          specialPathLocked: 'Path Locked',
+          title: '{tendency}',
+          effect: '+{percent}% effect',
+          streak: '{count} in a row',
+          specialPathUnlocked: 'Special path open',
+          specialPathLocked: 'Keep going to unlock',
         },
         family: {
           economic: 'Economic',

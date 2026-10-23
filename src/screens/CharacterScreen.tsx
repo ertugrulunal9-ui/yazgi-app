@@ -335,8 +335,8 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
       </CharacterSection>
 
       <CharacterSection
-        title={tRuntime('character.screen.sections.momentum', undefined, 'Davranissal Ivme')}
-        icon=">>"
+        title={tRuntime('character.screen.sections.momentum', undefined, 'Eğilimlerin')}
+        icon={'\u{1F9ED}'}
         cardStyle={cardStyle}
         theme={theme}
       >

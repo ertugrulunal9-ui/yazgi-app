@@ -196,7 +196,11 @@ export const ProgressBonus: React.FC<ProgressBonusProps> = ({
           className="text-xs font-bold"
           style={{ color: tone.textColor }}
         >
-          x{data.multiplier.toFixed(2)}
+          {tRuntime(
+            'character.screen.momentumCard.effect',
+            { percent: Math.max(0, Math.round((data.multiplier - 1) * 100)) },
+            `x${data.multiplier.toFixed(2)}`
+          )}
         </Text>
       </View>
 
