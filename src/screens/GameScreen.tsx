@@ -76,6 +76,7 @@ import { getCurrentChapter, getLocalizedChapterName, getStatCap } from '../utils
 import { hasMilestoneContent } from '../utils/milestoneBuilder';
 import { hasSpendableEnergy } from '../utils/endDayPrompt';
 import { getAvatarMood } from '../utils/avatarMood';
+import { countPendingEchoes } from '../utils/echoTrail';
 import { CHAPTERS } from '../config/gameBalance';
 
 // Kritik sağlık eşiği yaşa göre tavanın %20'si (yetişkinde 20); bebeklikte tavan 30 olduğu için sabit 20 yanlış alarm veriyordu
@@ -703,6 +704,8 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
                   avatar={gameState.avatar}
                   gender={playerGender}
                   avatarMood={avatarMood}
+                  echoLog={gameState.echoLog}
+                  pendingEchoes={countPendingEchoes(gameState.scheduledEvents)}
                 />
               </ScrollView>
             </TabContent.Screen>

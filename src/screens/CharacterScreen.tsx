@@ -3,7 +3,7 @@ import { View, ViewStyle, TouchableOpacity } from 'react-native';
 import { Text } from '../components/ui/LocaleText';
 import { FadeInUpView } from '../animations';
 import { getLetterGrade, calculateGradeAverage } from '../utils/schoolLogic';
-import { Family, FamilyEvolutionState, PersonalityState, Stats, Skills, SchoolGrades, TraitProgressData } from '../types';
+import { EchoTrailEntry, Family, FamilyEvolutionState, PersonalityState, Stats, Skills, SchoolGrades, TraitProgressData } from '../types';
 import type { AvatarConfig, PlayerGender } from '../types/core';
 import { Avatar, getAvatarAgeStage } from '../components/Avatar';
 import type { AvatarMood } from '../utils/avatarMood';
@@ -14,6 +14,7 @@ import { ProgressBonus } from '../components/ProgressBonus';
 import { TraitProgressPanel } from '../components/TraitProgressPanel';
 import { tRuntime } from '../i18n/strings';
 import { StatHistoryChart } from '../components/StatHistoryChart';
+import { EchoTrailList } from '../components/EchoTrailList';
 
 interface ThemeTokens {
   textPrimary: string;
@@ -47,6 +48,8 @@ interface CharacterScreenProps {
   avatar?: AvatarConfig;
   gender?: PlayerGender;
   avatarMood?: AvatarMood;
+  echoLog?: EchoTrailEntry[];
+  pendingEchoes?: number;
 }
 
 interface CharacterSectionProps {
@@ -190,6 +193,8 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
   avatar,
   gender,
   avatarMood = 'NORMAL',
+  echoLog,
+  pendingEchoes = 0,
 }) => {
   const [isTraitProgressExpanded, setIsTraitProgressExpanded] = useState(false);
 
@@ -270,6 +275,14 @@ const CharacterScreenRoot: React.FC<CharacterScreenProps> = ({
           </View>
         </View>
       ) : null}
+      <CharacterSection
+        title={tRuntime('character.screen.sections.echoTrail', undefined, 'Yazgı İzi')}
+        icon={'\u{1F9F5}'}
+        cardStyle={cardStyle}
+        theme={theme}
+      >
+        <EchoTrailList echoLog={echoLog} pendingCount={pendingEchoes} theme={theme} />
+      </CharacterSection>
       <CharacterSection
         title={tRuntime('character.screen.sections.stats', undefined, 'Karakter Statları')}
         icon={'\u{1F4CA}'}

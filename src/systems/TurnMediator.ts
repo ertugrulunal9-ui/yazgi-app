@@ -34,6 +34,7 @@ import { calculateOutcomeScore, updateAdaptivePacingStreak } from '../utils/even
 import { buildTraitChangeFeedback } from '../utils/traitFeedback';
 import { PACING_CONSTANTS } from '../constants/gameConstants';
 import { tRuntime } from '../i18n/strings';
+import { recordEchoTrail } from '../utils/echoTrail';
 
 export interface ChoiceContext {
   choice: Choice;
@@ -557,6 +558,8 @@ export class TurnMediator {
         personalityHistory: [...gameState.personalityHistory, ...triggerResults.personalityShifts],
         personalityState: momentumResult.nextState,
         memories: newMemories,
+        // Yazgı İzi: bu olay bir seçimin yankısıysa kayda geçer
+        echoLog: recordEchoTrail(gameState.echoLog, gameState.currentCausalLink, eventId, gameState.age),
         adaptivePacingStreak: nextAdaptivePacingStreak,
         fate: updatedFate,
         pendingCliffhanger,

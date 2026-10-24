@@ -445,6 +445,15 @@ export const GameStateSchema = z.object({
     sourceEventId: z.string().optional(),
   }).optional(),
 
+  // Yazgı İzi; şemada olmazsa kayıt yüklenince gerçekleşen yankılar silinir
+  echoLog: z.array(z.object({
+    sourceEventId: z.string(),
+    sourceChoiceId: z.string(),
+    sourceAge: z.number(),
+    eventId: z.string(),
+    age: z.number(),
+  })).optional(),
+
   // Aktif olayın neden-sonuç/yankı bağı; şemada olmazsa kayıt yüklenince yankı kartı kaybolur
   currentCausalLink: z.object({
     sourceEventId: z.string(),

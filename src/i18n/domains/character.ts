@@ -101,6 +101,13 @@ export const characterStrings: DomainStrings = {
           passiveBonuses: 'Pasif Bonuslar',
           schoolGrades: 'Okul Notları',
           statHistory: 'Geçmiş',
+          echoTrail: 'Yazgı İzi',
+        },
+        echoTrail: {
+          empty: 'Seçimlerin ileride geri dönecek. Döndüklerinde burada görünecekler.',
+          pending: 'Henüz geri dönmemiş {count} seçimin var.',
+          ages: '{from} yaşında → {to} yaşında',
+          choice: '“{choice}”',
         },
         portrait: {
           stages: {
@@ -278,6 +285,13 @@ export const characterStrings: DomainStrings = {
           passiveBonuses: 'Passive Bonuses',
           schoolGrades: 'School Grades',
           statHistory: 'History',
+          echoTrail: 'Fate Trail',
+        },
+        echoTrail: {
+          empty: 'Your choices will come back later. When they do, they show up here.',
+          pending: '{count} of your choices have not come back yet.',
+          ages: 'Age {from} → age {to}',
+          choice: '“{choice}”',
         },
         portrait: {
           stages: {

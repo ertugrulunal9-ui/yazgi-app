@@ -549,6 +549,7 @@ export const getInitialGameState = (options?: NewGameBootstrapOptions): GameStat
     eventChoiceHistory: [],
     memories: [],
     scheduledEvents: [],
+    echoLog: [],
     activeArcs: [],
     familyEvolution: { ...DEFAULT_FAMILY_EVOLUTION_STATE },
     inventory,

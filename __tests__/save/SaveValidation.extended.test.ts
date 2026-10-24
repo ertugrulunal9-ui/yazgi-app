@@ -312,3 +312,18 @@ describe('GameStateSchema currentCausalLink', () => {
     expect(GameStateSchema.parse({ currentCausalLink: null }).currentCausalLink).toBeNull();
   });
 });
+
+describe('GameStateSchema echoLog', () => {
+  it('keeps the fate trail across save/load and accepts old saves without it', () => {
+    const echoLog = [{
+      sourceEventId: 'tr_oyuncak_paylasim',
+      sourceChoiceId: 'oyuncak_paylas',
+      sourceAge: 3,
+      eventId: 'early_toy_share_cooperation_echo',
+      age: 9,
+    }];
+
+    expect(GameStateSchema.parse({ echoLog }).echoLog).toEqual(echoLog);
+    expect(GameStateSchema.parse({}).echoLog).toBeUndefined();
+  });
+});
