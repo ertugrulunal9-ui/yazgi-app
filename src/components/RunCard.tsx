@@ -13,6 +13,8 @@ interface RunCardProps {
   summary: string;
   topMemories: string[];
   finalStats: Stats;
+  /** Yazgı İzi'nden tek satır: en belirleyici yankı */
+  echoLine?: string;
   gameTitle?: string;
   endingEmoji?: string;
   finalScore?: number;
@@ -43,6 +45,7 @@ export const RunCard = React.forwardRef<ViewShot, RunCardProps>(({
   summary,
   topMemories,
   finalStats,
+  echoLine,
   gameTitle = 'Yazgi',
   endingEmoji,
   finalScore,
@@ -137,6 +140,26 @@ export const RunCard = React.forwardRef<ViewShot, RunCardProps>(({
           >
             {summary}
           </Text>
+
+          {/* Yazgı İzi: en belirleyici yankı */}
+          {echoLine ? (
+            <View style={{
+              borderRadius: 10,
+              backgroundColor: '#a78bfa1f',
+              borderWidth: 1,
+              borderColor: '#a78bfa66',
+              paddingVertical: 7,
+              paddingHorizontal: 9,
+              marginBottom: 10,
+              flexDirection: 'row',
+              gap: 6,
+            }}>
+              <Text style={{ fontSize: 11 }}>{'\u{1F9F5}'}</Text>
+              <Text numberOfLines={2} style={{ color: theme.textPrimary, fontSize: 11, lineHeight: 15, flex: 1 }}>
+                {echoLine}
+              </Text>
+            </View>
+          ) : null}
 
           {/* Anılar */}
           {memories.length > 0 && (

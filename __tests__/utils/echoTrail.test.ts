@@ -1,5 +1,5 @@
 import { countPendingEchoes, recordEchoTrail } from '../../src/utils/echoTrail';
-import { buildEchoTrailItems } from '../../src/utils/echoTrailView';
+import { buildEchoShareLine, buildEchoTrailItems, EchoTrailItem, pickDefiningEchoes } from '../../src/utils/echoTrailView';
 import { TurnMediator } from '../../src/systems/TurnMediator';
 import { setRuntimeLocale } from '../../src/i18n/strings';
 import { getInitialGameState, getInitialStats } from '../../src/utils/gameUtils';
@@ -78,6 +78,29 @@ describe('buildEchoTrailItems', () => {
       eventId: 'early_toy_share_cooperation_echo',
       age: 9,
     }])).toEqual([]);
+  });
+});
+
+describe('pickDefiningEchoes', () => {
+  const item = (sourceAge: number, age: number, choiceText = `c${sourceAge}`): EchoTrailItem => ({
+    key: `${sourceAge}-${age}`,
+    sourceAge,
+    age,
+    choiceText,
+    summary: 's',
+  });
+
+  it('keeps the longest-reaching echoes and tells them in age order', () => {
+    const items = [item(1, 2), item(3, 9), item(5, 7), item(2, 12), item(10, 11)];
+
+    expect(pickDefiningEchoes(items).map(i => `${i.sourceAge}->${i.age}`)).toEqual(['2->12', '3->9', '5->7']);
+  });
+
+  it('builds a one-line share text from the most defining echo, or nothing without echoes', () => {
+    setRuntimeLocale('tr');
+    expect(buildEchoShareLine([item(1, 2, 'Anne!'), item(3, 9, 'Paylaş')]))
+      .toBe('3 yaşındaki “Paylaş” seçimim 9 yaşımda geri döndü.');
+    expect(buildEchoShareLine([])).toBeNull();
   });
 });
 

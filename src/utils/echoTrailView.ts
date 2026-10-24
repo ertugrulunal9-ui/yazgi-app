@@ -30,6 +30,24 @@ const choiceTextOf = (event: GameEvent | undefined, choiceId: string): string =>
   return choice.textKey ? tRuntime(choice.textKey, undefined, choice.text) : choice.text;
 };
 
+/**
+ * En belirleyici yankılar: seçimle geri dönüşü arasındaki süre en uzun olanlar
+ * (eşitlikte daha geç gelen). Sonuç, hikâye gibi okunsun diye yaş sırasıyla döner.
+ */
+export const pickDefiningEchoes = (items: EchoTrailItem[], limit = 3): EchoTrailItem[] => (
+  [...items]
+    .sort((a, b) => (b.age - b.sourceAge) - (a.age - a.sourceAge) || b.age - a.age)
+    .slice(0, limit)
+    .sort((a, b) => a.sourceAge - b.sourceAge || a.age - b.age)
+);
+
+/** Paylaşım kartı için tek satır: en belirleyici yankı. */
+export const buildEchoShareLine = (items: EchoTrailItem[]): string | null => {
+  const [top] = pickDefiningEchoes(items, 1);
+  if (!top) return null;
+  return tRuntime('endings.shareCard.echoLine', { from: top.sourceAge, choice: top.choiceText, to: top.age });
+};
+
 /** Olayı ya da seçimi artık bulunamayan (ör. içerikten kaldırılmış) kayıtlar atlanır. */
 export const buildEchoTrailItems = (log: EchoTrailEntry[] | undefined): EchoTrailItem[] => (
   (log ?? []).flatMap((entry, index) => {

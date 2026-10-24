@@ -8,7 +8,7 @@ import { View } from 'react-native';
 import { Text } from './ui/LocaleText';
 import { tRuntime } from '../i18n/strings';
 import { ensureTextContrast } from '../utils/colorContrast';
-import { buildEchoTrailItems } from '../utils/echoTrailView';
+import { buildEchoTrailItems, EchoTrailItem } from '../utils/echoTrailView';
 import type { EchoTrailEntry } from '../types';
 
 // Olay ekranındaki yankı kartıyla aynı renk
@@ -16,6 +16,8 @@ const ECHO_COLOR = '#a78bfa';
 
 interface EchoTrailListProps {
   echoLog?: EchoTrailEntry[];
+  /** Verilirse kayıt yerine bu öğeler gösterilir (ör. oyun sonunda yalnızca en belirleyiciler) */
+  items?: EchoTrailItem[];
   pendingCount: number;
   theme: {
     textPrimary: string;
@@ -25,8 +27,8 @@ interface EchoTrailListProps {
   };
 }
 
-export const EchoTrailList: React.FC<EchoTrailListProps> = ({ echoLog, pendingCount, theme }) => {
-  const items = useMemo(() => buildEchoTrailItems(echoLog), [echoLog]);
+export const EchoTrailList: React.FC<EchoTrailListProps> = ({ echoLog, items: givenItems, pendingCount, theme }) => {
+  const items = useMemo(() => givenItems ?? buildEchoTrailItems(echoLog), [echoLog, givenItems]);
   const accent = ensureTextContrast(ECHO_COLOR, theme.surfaceBase, 4.5);
 
   return (
