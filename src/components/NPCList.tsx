@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from './ui/LocaleText';
 import { FlashList, ListRenderItem } from '@shopify/flash-list';
 import { NPC } from '../types';
 import { NPCCard } from './NPCCard';

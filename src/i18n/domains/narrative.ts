@@ -5,12 +5,12 @@ export const narrativeStrings: DomainStrings = {
     narrative: {
       choiceFallback: {
         text: 'Şu an bu durumda açık bir seçenek yok. Durumu kabul edip devam et.',
-        feedback: 'Kosullar netlesene kadar beklemeyi sectin. Hikaye bir sonraki adima akiyor.',
+        feedback: 'Koşullar netleşene kadar beklemeyi seçtin. Hikaye bir sonraki adıma akıyor.',
       },
       memory: {
         timing: {
-          lastYear: 'gecen yil',
-          yearsAgo: '{years} yil once',
+          lastYear: 'geçen yıl',
+          yearsAgo: '{years} yıl önce',
         },
         agePrefix: {
           current: 'Az önce',
@@ -18,76 +18,76 @@ export const narrativeStrings: DomainStrings = {
         },
         random: {
           foundWallet: {
-            negative: 'Buldugun o cuzdan sahnesi yeniden zihninde canlaniyor; vicdanin sizliyor.',
-            positive: 'Cuzdani sahibine teslim ettigin an aklina geliyor; doğru olanin agirligi hafifletiyor.',
+            negative: 'Bulduğun o cüzdan sahnesi yeniden zihninde canlanıyor; vicdanın sızlıyor.',
+            positive: 'Cüzdanı sahibine teslim ettiğin an aklına geliyor; doğru olanın ağırlığı hafifletiyor.',
           },
-          generic: '{timing} verdigin bir karar yine aklina dusuyor.',
+          generic: '{timing} verdiğin bir karar yine aklına düşüyor.',
         },
         emotionLine: {
-          regret: '{agePrefix} yaptigin bir secimin golgesi icini hafifce yokluyor.',
-          guilt: '{agePrefix} yasadigin bir sucluluk hissi sessizce geri donuyor.',
-          pride: '{agePrefix} gosterdigin cesaret bugun yine omurgani diklestiriyor.',
-          satisfaction: '{agePrefix} aldigin doğru karar icini yeniden sakinlestiriyor.',
-          neutral: '{agePrefix} bir ani zihninde kisa bir iz birakiyor.',
+          regret: '{agePrefix} yaptığın bir seçimin gölgesi içini hafifçe yokluyor.',
+          guilt: '{agePrefix} yaşadığın bir suçluluk hissi sessizce geri dönüyor.',
+          pride: '{agePrefix} gösterdiğin cesaret bugün yine omurganı dikleştiriyor.',
+          satisfaction: '{agePrefix} aldığın doğru karar içini yeniden sakinleştiriyor.',
+          neutral: '{agePrefix} bir anı zihninde kısa bir iz bırakıyor.',
         },
         decisionNarrative: {
           pride: '{age} yaşında gurur duydun.',
           regret: '{age} yaşında pişman oldun.',
-          guilt: '{age} yaşında sucluluk hissettin.',
+          guilt: '{age} yaşında suçluluk hissettin.',
           satisfaction: '{age} yaşında huzur buldun.',
           neutral: '{age} yaşında bir karar verdin.',
         },
         themeSummary: {
           pridePath: {
-            brave: 'Cesaretle dolu bir hayat yasadin. Korkularini yendin ve iz biraktin.',
-            empath: 'Insanlara dokunarak hayatini anlamli kildin.',
-            open: 'Yeni deneyimlere açık bir hayat surdun ve çok sey ogrendin.',
-            default: 'Basarilarla dolu bir yolculuk gecirdin. Her adim seni guclendirdi.',
+            brave: 'Cesaretle dolu bir hayat yaşadın. Korkularını yendin ve iz bıraktın.',
+            empath: 'İnsanlara dokunarak hayatını anlamlı kıldın.',
+            open: 'Yeni deneyimlere açık bir hayat sürdün ve çok şey öğrendin.',
+            default: 'Başarılarla dolu bir yolculuk geçirdin. Her adım seni güçlendirdi.',
           },
           regretPath: {
-            brave: 'Hatalar yaptin ama her seferinde ayaga kalktin. Bu cesaret seni tanımlıyor.',
-            empath: 'Pismanliklarin seni daha anlayisli bir insan yapti.',
-            default: 'Dususler ve dersler dolu bir yolculuk. Her hata seni olgunlastirdi.',
+            brave: 'Hatalar yaptın ama her seferinde ayağa kalktın. Bu cesaret seni tanımlıyor.',
+            empath: 'Pişmanlıkların seni daha anlayışlı bir insan yaptı.',
+            default: 'Düşüşler ve dersler dolu bir yolculuk. Her hata seni olgunlaştırdı.',
           },
-          mixedPath: 'Hem zaferler hem yenilgiler yasadin. Bu denge seni gercekten olgunlastirdi.',
+          mixedPath: 'Hem zaferler hem yenilgiler yaşadın. Bu denge seni gerçekten olgunlaştırdı.',
         },
         familyOpening: {
-          supportive: '{name} destekci bir ailede buyudu. Evin sicakligi, ona cesaret ve guven asiladi.',
-          strict: '{name} kurallarla dolu bir evde buyudu. Disiplin, hayatinin ilk dersi oldu.',
-          chaotic: '{name} kaotik bir evde buyudu. Duzensizlik icinde kendi yolunu bulmak zorunda kaldi.',
+          supportive: '{name} destekçi bir ailede büyüdü. Evin sıcaklığı, ona cesaret ve güven aşıladı.',
+          strict: '{name} kurallarla dolu bir evde büyüdü. Disiplin, hayatının ilk dersi oldu.',
+          chaotic: '{name} kaotik bir evde büyüdü. Düzensizlik içinde kendi yolunu bulmak zorunda kaldı.',
           default: '{name} bir çocuk olarak hayata başladı. Her gün yeni bir maceraydi.',
         },
         tendency: {
-          helpful: 'yardimsever',
+          helpful: 'yardımsever',
           pragmatic: 'pragmatik',
-          aggressive: 'savasci',
+          aggressive: 'savaşçı',
         },
         paragraph: {
-          earlyYears: 'Ilkokul ve ortaokul yillarinda onemli anlar yasadi. {lines}',
-          teenYears: 'Ergenlik, belirleyici secimlerle dolu gecti. {lines}',
-          personality: 'Yillar icinde kisiligi netlesti: {archetypeDesc} En belirgin ozelligi {highLabel} olmasi.',
-          tendencySuffix: 'Davranislarinda {tendency} egilim baskin oldu.',
+          earlyYears: 'İlkokul ve ortaokul yıllarında önemli anlar yaşadı. {lines}',
+          teenYears: 'Ergenlik, belirleyici seçimlerle dolu geçti. {lines}',
+          personality: 'Yıllar içinde kişiliği netleşti: {archetypeDesc} En belirgin özelliği {highLabel} olması.',
+          tendencySuffix: 'Davranışlarında {tendency} eğilim baskın oldu.',
         },
       },
       monologue: {
         npcQuote: '{npcName}: "{line}"',
         identity: {
           tendency: {
-            HELPFUL: 'İçindeki yardimsever ruh güçlü.',
-            PRAGMATIC: 'İçindeki pragmatik yan her gecen gün netlesiyor.',
-            AGGRESSIVE: 'İçindeki savasci ruh hâlâ canli.',
+            HELPFUL: 'İçindeki yardımsever ruh güçlü.',
+            PRAGMATIC: 'İçindeki pragmatik yan her geçen gün netleşiyor.',
+            AGGRESSIVE: 'İçindeki savaşçı ruh hâlâ canlı.',
           },
         },
         banks: {
           cliffhanger: [
-            '{title}... Aklim ondan cikmiyor.',
+            '{title}... Aklım ondan çıkmıyor.',
           ],
           crisis: {
             warning: [
-              'Son gunlerde her sey daha ağır geliyor. Biraz nefes almam lazim.',
+              'Son günlerde her şey daha ağır geliyor. Biraz nefes almam lazım.',
             ],
             severe: [
-              'Her sey ust uste biniyor. Bir adim geri atmazsam cokebilirim.',
+              'Her şey üst üste biniyor. Bir adım geri atmazsam çökebilirim.',
             ],
             critical: [
               'Zihnim bulaniklasiyor. Durup toparlanmam gerek.',
@@ -95,36 +95,36 @@ export const narrativeStrings: DomainStrings = {
           },
           mismatch: {
             ACADEMIC: [
-              'Akademik hedefimle son secimlerim uyusmuyor. Rotami yeniden dusunmeliyim.',
+              'Akademik hedefimle son seçimlerim uyuşmuyor. Rotamı yeniden düşünmeliyim.',
             ],
             ATHLETIC: [
-              'Spor hedefim var ama ritmim dusuyor. Disiplinimi geri kazanmaliyim.',
+              'Spor hedefim var ama ritmim düşüyor. Disiplinimi geri kazanmalıyım.',
             ],
             CREATIVE: [
-              'Yaratici hedefim var ama uretimim azaldi. Yeni bir ates yakmam gerek.',
+              'Yaratıcı hedefim var ama üretimim azaldı. Yeni bir ateş yakmam gerek.',
             ],
             WEALTH: [
-              'Maddi hedef koydum ama adimlarim yetersiz kaliyor. Plani netlestirmeliyim.',
+              'Maddi hedef koydum ama adımlarım yetersiz kalıyor. Planı netleştirmeliyim.',
             ],
             SOCIAL: [
-              'Sosyal hedefim var ama baglarim zayifladi. Daha bilincli iletisim kurmaliyim.',
+              'Sosyal hedefim var ama bağlarım zayıfladı. Daha bilinçli iletişim kurmalıyım.',
             ],
           },
           identity: {
             age7: [
-              '{age} yaşına girdin. {highLabel} yanin belirgin, {lowLabel} yanin ise seni zorluyor.',
+              '{age} yaşına girdin. {highLabel} yanın belirgin, {lowLabel} yanın ise seni zorluyor.',
             ],
             age10: [
-              '{age} yaşında kimligin netlesiyor: {highLabel}, ama ayni zamanda {lowLabel}.',
+              '{age} yaşında kimliğin netleşiyor: {highLabel}, ama aynı zamanda {lowLabel}.',
             ],
             age13: [
-              '{age} yaşında secimlerin agirlasti. {highLabel} tarafin güçlü, {lowLabel} tarafin sinavda.',
+              '{age} yaşında seçimlerin ağırlaştı. {highLabel} tarafın güçlü, {lowLabel} tarafın sınavda.',
             ],
             age15: [
               '{age} yaşında kendini daha iyi taniyorsun: {highLabel}, ama hâlâ {lowLabel}.',
             ],
             age17: [
-              '{age} yaşında son viraja girdin. {highLabel} seni ileri taşıyor, {lowLabel} iz birakiyor.',
+              '{age} yaşında son viraja girdin. {highLabel} seni ileri taşıyor, {lowLabel} iz bırakıyor.',
             ],
             age18: [
               '{age} yaşında hikayen olgunlasti. {highLabel} ve {lowLabel} birlikte seni tanımlıyor.',
@@ -132,63 +132,63 @@ export const narrativeStrings: DomainStrings = {
           },
           milestone: {
             age7: [
-              'Artik daha buyuksun. Yeni bir dönem başlıyor.',
+              'Artık daha büyüksün. Yeni bir dönem başlıyor.',
             ],
             age10: [
-              'Tek haneli yaslar geride kaldi. Icinde bir seyler degisiyor.',
+              'Tek haneli yaşlar geride kaldı. İçinde bir şeyler değişiyor.',
             ],
             age11: [
               'On ikiye yaklasiyorsun. Ritmin hizlaniyor.',
             ],
             age13: [
-              'Ergenlige girdin. Her sey daha karmasik hissettiriyor.',
+              'Ergenliğe girdin. Her şey daha karmaşık hissettiriyor.',
             ],
             age15: [
-              'Lise ortasindasin. Kim olacagina dair sorular buyuyor.',
+              'Lise ortasındasın. Kim olacağına dair sorular büyüyor.',
             ],
             age17: [
-              'Son bir yilin kaldi. Kararlarin agirligi artiyor.',
+              'Son bir yılın kaldı. Kararların ağırlığı artıyor.',
             ],
             age18: [
-              'On sekizdesin. Yeni bir hayatin esigindesin.',
+              'On sekizdesin. Yeni bir hayatın eşiğindesin.',
             ],
           },
           fate: {
             BLESSED: [
-              'Kader bu turde yaninda gibi duruyor.',
+              'Kader bu turde yanında gibi duruyor.',
             ],
             CURSED: [
-              'Kader bu turde sert bir sınav aciyor.',
+              'Kader bu turde sert bir sınav açıyor.',
             ],
           },
           memoryRecall: {
             REGRET: [
-              'O karar hâlâ aklindan tam cikmiyor.',
+              'O karar hâlâ aklından tam çıkmıyor.',
             ],
             GUILT: [
-              'O andaki sucluluk hissi geri geliyor.',
+              'O andaki suçluluk hissi geri geliyor.',
             ],
             PRIDE: [
-              'O anki doğru durusun icini tekrar isitiyor.',
+              'O anki doğru duruşun içini tekrar ısıtıyor.',
             ],
             SATISFACTION: [
-              'O kararin verdigi huzur hâlâ sende.',
+              'O kararın verdiği huzur hâlâ sende.',
             ],
             NEUTRAL: [
-              'Gecmisten bir an kisa bir iz birakiyor.',
+              'Geçmişten bir an kısa bir iz bırakıyor.',
             ],
           },
           trait: {
             progress: [
-              '{traitName} tarafin adim adim güçleniyor.',
+              '{traitName} tarafın adım adım güçleniyor.',
             ],
             strong: [
-              '{traitName} artik kimliginin merkezine yerlesti.',
+              '{traitName} artık kimliğinin merkezine yerleşti.',
             ],
           },
           momentum: {
             HELPFUL: [
-              'Yardimsever ritmin güçleniyor.',
+              'Yardımsever ritmin güçleniyor.',
             ],
             PRAGMATIC: [
               'Pragmatik ritmin güçleniyor.',
@@ -200,84 +200,84 @@ export const narrativeStrings: DomainStrings = {
         },
       },
       causal: {
-        pride: 'Gecmisteki cesur karar bugunku kapiyi acti.',
-        satisfaction: 'Gecmisteki bilincli adim bugun meyve verdi.',
-        regret: 'Gecmisteki secimin golgesi bugune uzandi.',
-        guilt: 'Vicdani agirlik tasiyan an bugun yeniden karsina çıktı.',
-        neutral: 'Gecmisteki seçim bugune bir bag kurdu.',
+        pride: 'Geçmişteki cesur karar bugünkü kapıyı açtı.',
+        satisfaction: 'Geçmişteki bilinçli adım bugün meyve verdi.',
+        regret: 'Geçmişteki seçimin gölgesi bugüne uzandı.',
+        guilt: 'Vicdani ağırlık taşıyan an bugün yeniden karşına çıktı.',
+        neutral: 'Geçmişteki seçim bugüne bir bağ kurdu.',
       },
       causalTemplates: {
         pride: [
-          'Gecmiste verdigin cesur karar bu kapiyi acti.',
-          'O an doğru olani yaptin; ?imdi o an sana geri donuyor.',
-          'Gururla verdigin karar bugunu getirdi.',
-          'Yillar once gogsunu kabartan o an, bugun burada yankilaniyor.',
-          'Korkuna ragmen verdigin karar, ?imdi onunde yeni bir yol aciyor.',
-          'O gunki cesaretinin meyvesini ?imdi topluyorsun.',
+          'Geçmişte verdiğin cesur karar bu kapıyı açtı.',
+          'O an doğru olanı yaptın; şimdi o an sana geri dönüyor.',
+          'Gururla verdiğin karar bugünü getirdi.',
+          'Yıllar önce göğsünü kabartan o an, bugün burada yankılanıyor.',
+          'Korkuna rağmen verdiğin karar, şimdi önünde yeni bir yol açıyor.',
+          'O günkü cesaretinin meyvesini şimdi topluyorsun.',
         ],
         satisfaction: [
-          'Gecmiste aldigin doğru karar bugun meyvesini veriyor.',
-          'O seçim bosa gitmemisti. ?imdi anliyorsun neden.',
-          'Bilincli bir adim atmistin; sonucu bu.',
-          'Icin rahat sekilde verdigin karar seni bugun bu noktaya tasidi.',
-          'O gün doğru olani secmistin. Bugun bunu anliyorsun.',
-          'Huzurla aldigin karar sessizce koklendi; ?imdi filizleniyor.',
+          'Geçmişte aldığın doğru karar bugün meyvesini veriyor.',
+          'O seçim boşa gitmemişti. Şimdi anlıyorsun neden.',
+          'Bilinçli bir adım atmıştın; sonucu bu.',
+          'İçin rahat şekilde verdiğin karar seni bugün bu noktaya taşıdı.',
+          'O gün doğru olanı seçmiştin. Bugün bunu anlıyorsun.',
+          'Huzurla aldığın karar sessizce köklendi; şimdi filizleniyor.',
         ],
         regret: [
-          'Gecmiste verdigin bir karar bugunu sekillendiriyor.',
-          'O an yaptigin secimin golgesi hâlâ uzerinde.',
-          'Pismanligini tasidigin o karar, bugun karsina çıkıyor.',
-          'Farkli secseydin ne olurdu diye dusundugun an, bugun seni buluyor.',
-          'Geride biraktigini sandigin karar hiç gitmemisti aslinda.',
-          'O yolun seni nereye goturecegini artik goruyorsun.',
+          'Geçmişte verdiğin bir karar bugünü şekillendiriyor.',
+          'O an yaptığın seçimin gölgesi hâlâ üzerinde.',
+          'Pişmanlığını taşıdığın o karar, bugün karşına çıkıyor.',
+          'Farklı seçseydin ne olurdu diye düşündüğün an, bugün seni buluyor.',
+          'Geride bıraktığını sandığın karar hiç gitmemişti aslında.',
+          'O yolun seni nereye götüreceğini artık görüyorsun.',
         ],
         guilt: [
-          'Sucluluk duydugun o anin agirligi bugun geri döndü.',
-          'Gecmiste yapamadigin ya da yanlis yaptigin bir sey seni burada buluyor.',
-          'O an vicdanini sizlatan seçim bugun karsina çıktı.',
-          'Yuzlesmekten kactigin an ?imdi seni bekliyor.',
-          'Vicdanin hiç unutmamisti; ?imdi o anin hesabi soruluyor.',
-          'O gün verdigin karar icinde bir yuk birakmisti. ?imdi o yuk konusuyor.',
+          'Suçluluk duyduğun o anın ağırlığı bugün geri döndü.',
+          'Geçmişte yapamadığın ya da yanlış yaptığın bir şey seni burada buluyor.',
+          'O an vicdanını sızlatan seçim bugün karşına çıktı.',
+          'Yüzleşmekten kaçtığın an şimdi seni bekliyor.',
+          'Vicdanın hiç unutmamıştı; şimdi o anın hesabı soruluyor.',
+          'O gün verdiğin karar içinde bir yük bırakmıştı. Şimdi o yük konuşuyor.',
         ],
         neutral: [
-          'Gecmiste yasananlar bugunu buraya getirdi.',
-          'O zamanki karar bugun bir kapi araladi.',
-          'Hayatinin ilerleyen bir noktasinda bu ani hatirlayacaksin.',
-          'Gecmisin bugunle sessizce konustugu anlardan birindesin.',
-          'O gün attigin adim, bugunku yolu dosedi.',
+          'Geçmişte yaşananlar bugünü buraya getirdi.',
+          'O zamanki karar bugün bir kapı araladı.',
+          'Hayatının ilerleyen bir noktasında bu anı hatırlayacaksın.',
+          'Geçmişin bugünle sessizce konuştuğu anlardan birindesin.',
+          'O gün attığın adım, bugünkü yolu döşedi.',
         ],
       },
       family: {
         thoughts: {
-          strictLowRelation: 'Babam yine kizacak. Her seyi doğru yapmam lazim.',
-          chaoticTeen: 'Keske evde biraz daha duzen olsa.',
+          strictLowRelation: 'Babam yine kızacak. Her şeyi doğru yapmam lazım.',
+          chaoticTeen: 'Keşke evde biraz daha düzen olsa.',
           supportiveHighRelation: 'Evde hata yapsam bile beni dinleyen biri var.',
-          poor: 'Arkadaslarimin yeni telefonu var... Bizim neden yok?',
-          rich: 'Herkes benden bir sey bekliyor gibi.',
-          strictWarmth: 'Evdeki ton değişti. Artik sadece emir degil, sohbet de var.',
+          poor: 'Arkadaşlarımın yeni telefonu var... Bizim neden yok?',
+          rich: 'Herkes benden bir şey bekliyor gibi.',
+          strictWarmth: 'Evdeki ton değişti. Artık sadece emir değil, sohbet de var.',
           crisis: 'Evdeki sessizlik bazen bagirmaktan daha ağır.',
           fallback: {
             strict: 'Evde kurallar net. Hata yaparsam hemen fark edilir.',
             chaotic: 'Evde herkes kendi ritminde. Plan yapmak zor.',
-            supportive: 'Ailem yanimda oldugunu hissettiriyor.',
+            supportive: 'Ailem yanımda olduğunu hissettiriyor.',
           },
         },
         atmosphere: {
           unknown: 'Belirsiz',
           crisis: 'Gerilimli Sessizlik',
-          softening: 'Yumusayan Otorite',
-          secure: 'Guvenli',
-          fragile: 'Kirilgan',
+          softening: 'Yumuşayan Otorite',
+          secure: 'Güvenli',
+          fragile: 'Kırılgan',
           strict: 'Disiplinli',
-          chaotic: 'Daginik',
+          chaotic: 'Dağınık',
           supportive: 'Destekleyici',
         },
       },
       eventTeaser: {
-        criticalDecision: 'Kritik bir karar yaklasiyor. Hazir misin?',
+        criticalDecision: 'Kritik bir karar yaklaşıyor. Hazır mısın?',
         breakdown: 'Bunaltici bir dönem başlıyor...',
         moral: 'Ahlaki bir ikilem seni bekliyor...',
-        risk: 'Riskli bir firsat kapida...',
+        risk: 'Riskli bir fırsat kapıda...',
         agePage: '{age} yaşında yeni bir sayfa açılıyor...',
       },
       npcReaction: {

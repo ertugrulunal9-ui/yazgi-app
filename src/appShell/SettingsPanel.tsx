@@ -31,6 +31,7 @@ interface SettingsPanelProps {
   onThemeChange: (theme: ThemeMode) => void;
   onDensityChange: (density: DensityMode) => void;
   onToggleMotion: () => void;
+  onToggleHaptics: () => void;
   onAnalyticsEnabledChange: (enabled: boolean) => void;
   onPersonalizedAdsEnabledChange: (enabled: boolean) => void;
   onSoundMuteChange: (muted: boolean) => void;
@@ -57,6 +58,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   onThemeChange,
   onDensityChange,
   onToggleMotion,
+  onToggleHaptics,
   onAnalyticsEnabledChange,
   onPersonalizedAdsEnabledChange,
   onSoundMuteChange,
@@ -311,6 +313,36 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   trackColor={{ false: theme.surfaceOverlay, true: MOTION_OPTION_COLOR }}
                   thumbColor={theme.surfaceRaised}
                   accessibilityLabel={t('settings.reduceMotion')}
+                />
+              </View>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingVertical: 14,
+                  paddingHorizontal: 16,
+                  borderRadius: 14,
+                  marginTop: 10,
+                  backgroundColor: theme.surfaceBase,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <Feather
+                    name="smartphone"
+                    color={uiPrefs.hapticsEnabled ? theme.textPrimary : theme.textSecondary}
+                    size={24}
+                  />
+                  <Text style={{ color: theme.textPrimary, fontSize: 16, fontWeight: '600' }}>
+                    {t('settings.haptics')}
+                  </Text>
+                </View>
+                <Switch
+                  value={uiPrefs.hapticsEnabled}
+                  onValueChange={onToggleHaptics}
+                  trackColor={{ false: theme.surfaceOverlay, true: MOTION_OPTION_COLOR }}
+                  thumbColor={theme.surfaceRaised}
+                  accessibilityLabel={t('settings.haptics')}
                 />
               </View>
             </View>

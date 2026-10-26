@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import { Text } from './ui/LocaleText';
 import { FadeInUpView } from '../animations';
 import { AnimatedButton } from '../animations/ButtonAnimations';
 import { Choice, FateState, GameEvent, Personality, ResultData, Skills, Stats } from '../types';
@@ -257,6 +258,50 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
           />
         </Card>
 
+        {/* Stat değişimleri Devam'ın üstünde: önceden düğmenin altında kaldığı için çoğu oyuncu görmüyordu */}
+        {topStatChanges.length > 0 && (
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ color: theme.accentStat, fontSize: 11, marginBottom: 8, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase' }}>
+              {t('event.statChanges')}
+            </Text>
+            {hasCriticalStats && (
+              <View style={{ marginBottom: 8, paddingVertical: 7, paddingHorizontal: 10, backgroundColor: 'rgba(239,68,68,0.10)', borderRadius: 8, borderWidth: 1, borderColor: '#ef444450' }}>
+                <Text style={{ color: '#ef4444', fontSize: 13, fontWeight: '600' }}>
+                  {isHealthCritical
+                    ? t('ui.feedbackOverlay.healthCritical', { value: Math.round(stats.health) })
+                    : t('ui.feedbackOverlay.disciplineLow', { value: Math.round(stats.discipline) })}
+                </Text>
+              </View>
+            )}
+            {topStatChanges.map(([key, val]) => (
+              <View key={key} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                <Text style={{ color: theme.textSecondary, fontSize: 14 }}>{STAT_LABELS[key] ?? key}</Text>
+                <Text style={{ color: val > 0 ? '#22c55e' : '#ef4444', fontSize: 17, fontWeight: '800' }}>
+                  {val > 0 ? '+' : ''}{Math.round(val)}
+                </Text>
+              </View>
+            ))}
+            {restStatChanges.length > 0 && (
+              <View>
+                <AnimatedButton
+                  onPress={() => setShowAllStatChanges(v => !v)}
+                  animationType="pressScale"
+                  style={{ paddingVertical: 4, marginTop: 2 }}
+                >
+                  <Text style={{ color: theme.textSecondary, fontSize: 12, textDecorationLine: 'underline' }}>
+                    {showAllStatChanges
+                      ? t('ui.feedbackOverlay.hideChanges')
+                      : t('ui.feedbackOverlay.showAllChanges', { count: restStatChanges.length })}
+                  </Text>
+                </AnimatedButton>
+                {showAllStatChanges && (
+                  <StatChange icon="S" changes={Object.fromEntries(restStatChanges)} labels={STAT_LABELS} />
+                )}
+              </View>
+            )}
+          </View>
+        )}
+
         {isFeatureEnabled('FATE_TRANSPARENCY') && lastResult?.fateRoll && (() => {
           const fr = lastResult.fateRoll;
           const outcomeLabel = FATE_OUTCOME_LABELS[fr.outcome] ?? fr.outcome;
@@ -464,49 +509,6 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
                   {msg}
                 </Text>
               ))}
-            </View>
-          )}
-
-          {topStatChanges.length > 0 && (
-            <View style={{ marginTop: 16 }}>
-              <Text style={{ color: theme.accentStat, fontSize: 11, marginBottom: 8, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase' }}>
-                {t('event.statChanges')}
-              </Text>
-              {hasCriticalStats && (
-                <View style={{ marginBottom: 8, paddingVertical: 7, paddingHorizontal: 10, backgroundColor: 'rgba(239,68,68,0.10)', borderRadius: 8, borderWidth: 1, borderColor: '#ef444450' }}>
-                  <Text style={{ color: '#ef4444', fontSize: 13, fontWeight: '600' }}>
-                    {isHealthCritical
-                      ? t('ui.feedbackOverlay.healthCritical', { value: Math.round(stats.health) })
-                      : t('ui.feedbackOverlay.disciplineLow', { value: Math.round(stats.discipline) })}
-                  </Text>
-                </View>
-              )}
-              {topStatChanges.map(([key, val]) => (
-                <View key={key} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
-                  <Text style={{ color: theme.textSecondary, fontSize: 14 }}>{STAT_LABELS[key] ?? key}</Text>
-                  <Text style={{ color: val > 0 ? '#22c55e' : '#ef4444', fontSize: 17, fontWeight: '800' }}>
-                    {val > 0 ? '+' : ''}{Math.round(val)}
-                  </Text>
-                </View>
-              ))}
-              {restStatChanges.length > 0 && (
-                <View>
-                  <AnimatedButton
-                    onPress={() => setShowAllStatChanges(v => !v)}
-                    animationType="pressScale"
-                    style={{ paddingVertical: 4, marginTop: 2 }}
-                  >
-                    <Text style={{ color: theme.textSecondary, fontSize: 12, textDecorationLine: 'underline' }}>
-                      {showAllStatChanges
-                        ? t('ui.feedbackOverlay.hideChanges')
-                        : t('ui.feedbackOverlay.showAllChanges', { count: restStatChanges.length })}
-                    </Text>
-                  </AnimatedButton>
-                  {showAllStatChanges && (
-                    <StatChange icon="S" changes={Object.fromEntries(restStatChanges)} labels={STAT_LABELS} />
-                  )}
-                </View>
-              )}
             </View>
           )}
 

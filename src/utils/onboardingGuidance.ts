@@ -84,19 +84,19 @@ export const hasBalancedOnboardingRoutine = (gameState: GameState): boolean => {
 const COHORT_DISPLAY_FALLBACK: Record<OnboardingCohort, { label: string; message: string }> = {
   SOCIALIZER: {
     label: 'Sosyal Kelebek',
-    message: 'Sosyal yonun cok guclu! Arkadasliklar kurarak ilerle.',
+    message: 'Sosyal yönün çok güçlü! Arkadaşlıklar kurarak ilerle.',
   },
   SCHOLAR: {
     label: 'Akademisyen',
-    message: 'Akademik yetenegin parliyor! Ders calismaya devam et.',
+    message: 'Akademik yeteneğin parlıyor! Ders çalışmaya devam et.',
   },
   STRIVER: {
-    label: 'Girisimci Ruh',
-    message: 'Is dunyasina yatkinsin! Calisarak kendini gelistir.',
+    label: 'Girişimci Ruh',
+    message: 'İş dünyasına yatkınsın! Çalışarak kendini geliştir.',
   },
   GENERALIST: {
-    label: 'Kesifci',
-    message: 'Dengeli oynuyorsun! Farkli alanlari kesfetmeye devam et.',
+    label: 'Keşifçi',
+    message: 'Dengeli oynuyorsun! Farklı alanları keşfetmeye devam et.',
   },
 };
 

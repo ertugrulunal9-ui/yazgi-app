@@ -74,10 +74,17 @@ import { isFeatureEnabled } from '../config/featureFlags';
 import type { AgeMilestoneSummary, ChapterSummary } from '../types/game';
 import { getCurrentChapter, getLocalizedChapterName, getStatCap } from '../utils/gameUtils';
 import { hasMilestoneContent } from '../utils/milestoneBuilder';
+import { hasSpendableEnergy } from '../utils/endDayPrompt';
+import { getAvatarMood } from '../utils/avatarMood';
+import { countPendingEchoes } from '../utils/echoTrail';
 import { CHAPTERS } from '../config/gameBalance';
 
 // Kritik sağlık eşiği yaşa göre tavanın %20'si (yetişkinde 20); bebeklikte tavan 30 olduğu için sabit 20 yanlış alarm veriyordu
 const isHealthCriticalForAge = (health: number, age: number): boolean => health <= getStatCap(age, 'health') * 0.2;
+
+// Risk hesabı mutlak eşikler kullanır (sağlık/disiplin 45, not 55, para); okul öncesinde stat tavanı 30
+// ve not/harçlık olmadığı için risk hep yüksek çıkıyordu. Bu yaştan önce yalnızca gösterilmez, hesap değişmez.
+const RISK_DISPLAY_MIN_AGE = 7;
 
 interface GameScreenProps {
   onPhaseChange: (tab: AppTab) => void;
@@ -367,19 +374,6 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     claimExamPrepBoostAd,
   });
 
-  const {
-    daySummaryVisible,
-    daySummaryVarietyBonus,
-    handleEndDay,
-    handleDaySummaryContinue,
-  } = useModalOrchestration({
-    pendingReportCard: gameState.pendingReportCard,
-    schoolGrades: gameState.schoolGrades,
-    actionHistory: gameState.actionHistory || [],
-    advanceTurn,
-    t,
-  });
-
   const cardStyle = useMemo(() => ({
     backgroundColor: theme.surfaceBase,
     borderRadius: 16,
@@ -413,8 +407,16 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     () => calculateEndingErrorDebt(gameState, stats),
     [gameState, stats]
   );
-  const riskPercent = riskData.total;
-  const riskReasons = riskData.reasons;
+  const showRisk = gameState.age >= RISK_DISPLAY_MIN_AGE;
+  const riskPercent = showRisk ? riskData.total : 0;
+  const riskReasons = showRisk ? riskData.reasons : [];
+  const avatarMood = useMemo(() => getAvatarMood({
+    age: gameState.age,
+    stress: gameState.stress,
+    health: stats.health,
+    familyRelation: stats.familyRelation,
+  }), [gameState.age, gameState.stress, stats.health, stats.familyRelation]);
+  const playerGender = gameState.characterInfo?.gender;
   const careerPathActionsEnabled = isFeatureEnabled('CAREER_PATH_ACTIONS');
 
   // Calculate available categories based on age
@@ -427,6 +429,43 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
       { careerPathActionsEnabled }
     );
   }, [careerPathActionsEnabled, gameState.age, gameState.selectedGoal, locale]);
+
+  const canSpendEnergy = useMemo(() => hasSpendableEnergy({
+    categories: availableCategories,
+    age: gameState.age,
+    turn: gameState.turn,
+    energy: stats.energy,
+    money: stats.money,
+    skills: gameState.skills,
+    actionHistory: gameState.actionHistory || [],
+    inventory: gameState.inventory || [],
+    familyWealth: gameState.family?.wealth,
+  }), [
+    availableCategories,
+    gameState.age,
+    gameState.turn,
+    stats.energy,
+    stats.money,
+    gameState.skills,
+    gameState.actionHistory,
+    gameState.inventory,
+    gameState.family?.wealth,
+  ]);
+
+  const {
+    daySummaryVisible,
+    daySummaryVarietyBonus,
+    handleEndDay,
+    handleDaySummaryContinue,
+    handleDaySummaryCancel,
+  } = useModalOrchestration({
+    pendingReportCard: gameState.pendingReportCard,
+    schoolGrades: gameState.schoolGrades,
+    actionHistory: gameState.actionHistory || [],
+    hasSpendableEnergy: canSpendEnergy,
+    advanceTurn,
+    t,
+  });
 
   const selectedCategory = useMemo(
     () => availableCategories.find(category => category.id === selectedCategoryId) ?? null,
@@ -607,6 +646,8 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
               chapterName={currentChapterName}
               chapterEmoji={currentChapter.emoji}
               avatar={gameState.avatar}
+              gender={playerGender}
+              avatarMood={avatarMood}
               innerThought={gameState.innerThought}
               innerThoughtType={gameState.innerThoughtType}
               stats={stats}
@@ -660,6 +701,11 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
                   achievementSummary={achievementSummary}
                   onOpenAchievements={() => setAchievementsOpen(true)}
                   statSnapshots={gameState.statSnapshots}
+                  avatar={gameState.avatar}
+                  gender={playerGender}
+                  avatarMood={avatarMood}
+                  echoLog={gameState.echoLog}
+                  pendingEchoes={countPendingEchoes(gameState.scheduledEvents)}
                 />
               </ScrollView>
             </TabContent.Screen>
@@ -704,15 +750,15 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
                 onPress={handleEndDay}
                 style={[endDayButtonStyle, { pointerEvents: isInteractionLocked ? 'none' : 'auto' }]}
                 accessibilityRole="button"
-                accessibilityLabel={t('game.endDay', undefined, 'Gunu Bitir')}
-                accessibilityHint={t('game.endDayHint', undefined, 'Siradaki tura gecer')}
+                accessibilityLabel={t('game.endDay', undefined, 'Günü Bitir')}
+                accessibilityHint={t('game.endDayHint', undefined, 'Sıradaki tura geçer')}
               >
                 <Text style={{
                   color: isInteractionLocked ? theme.textSecondary : '#ffffff',
                   fontSize: 16,
                   fontWeight: '700',
                 }}>
-                  {t('game.endDay', undefined, 'Gunu Bitir')}
+                  {t('game.endDay', undefined, 'Günü Bitir')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -856,6 +902,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
         stats={stats}
         theme={theme}
         onContinue={handleDaySummaryContinue}
+        onCancel={handleDaySummaryCancel}
       />
 
       {isFeatureEnabled('MILESTONE_SUMMARY') && currentMilestoneToShow && (

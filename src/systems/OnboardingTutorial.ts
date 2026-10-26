@@ -67,8 +67,8 @@ const getGoalVisionMessage = (
   isReturning: boolean
 ): string => {
   const goalMeta = getLifeGoalMeta(context?.selectedGoal ?? null);
-  const goalName = goalMeta?.shortLabel ?? 'guclu bir rota';
-  const keyStats = goalMeta?.statHint ?? 'temel statlarini';
+  const goalName = goalMeta?.shortLabel ?? 'güçlü bir rota';
+  const keyStats = goalMeta?.statHint ?? 'temel statlarını';
 
   if (isReturning) {
     return tRuntime(

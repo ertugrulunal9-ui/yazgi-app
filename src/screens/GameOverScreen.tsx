@@ -42,6 +42,10 @@ import type { Choice, EventMemory } from '../types';
 import { getEventById } from '../hooks/useEvents/shared';
 import { normalizePersonalityState } from '../systems/PersonalityMomentumEngine';
 import { RunCard } from '../components/RunCard';
+import { Avatar } from '../components/Avatar';
+import { EchoTrailList } from '../components/EchoTrailList';
+import { getAvatarMood } from '../utils/avatarMood';
+import { buildEchoShareLine, buildEchoTrailItems, pickDefiningEchoes } from '../utils/echoTrailView';
 import {
   FadeInDownView,
   FadeInUpView,
@@ -248,6 +252,17 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
     getEndingHints(safeMeta, compatibilityScore, dominantGoalPath)
   ), [safeMeta, compatibilityScore, dominantGoalPath]);
 
+  // Yazgı İzi: hayat boyunca geri dönen seçimler; Özet'te en belirleyicileri, paylaşım kartında biri
+  const echoItems = useMemo(() => buildEchoTrailItems(gameState.echoLog), [gameState.echoLog]);
+  const definingEchoes = useMemo(() => pickDefiningEchoes(echoItems), [echoItems]);
+  const echoShareLine = useMemo(() => buildEchoShareLine(echoItems), [echoItems]);
+  const finalMood = useMemo(() => getAvatarMood({
+    age: MAX_AGE,
+    stress: gameState.stress,
+    health: stats.health,
+    familyRelation: stats.familyRelation,
+  }), [gameState.stress, stats.health, stats.familyRelation]);
+
   const lifeStorySummary = useMemo(() => {
     const firstParagraph = lifeStory.paragraphs[0] || '';
     const sentence = firstSentence(firstParagraph);
@@ -432,6 +447,21 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                   </Text>
                 </FadeInDownView>
 
+                {gameState.avatar ? (
+                  <FadeInUpView delay={90}>
+                    <View style={{ alignItems: 'center', marginBottom: 12 }}>
+                      <Avatar
+                        config={gameState.avatar}
+                        age={MAX_AGE}
+                        gender={gameState.characterInfo?.gender}
+                        mood={finalMood}
+                        size={104}
+                        showRing
+                      />
+                    </View>
+                  </FadeInUpView>
+                ) : null}
+
                 <FadeInUpView delay={95}>
                   <Text style={{
                     color: theme.accentBrand,
@@ -443,7 +473,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                     {'\u{1F5DD}\uFE0F'} {t(
                       'endings.discoveredCount',
                       { discovered: discoveredEndingCount, total: TOTAL_ENDING_COUNT },
-                      '{discovered} / {total} son kesfedildi'
+                      '{discovered} / {total} son keşfedildi'
                     )}
                   </Text>
                 </FadeInUpView>
@@ -491,7 +521,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
 
                 <FadeInUpView delay={150}>
                   <Text style={{ color: theme.textSecondary, fontFamily: theme.fontBody, textAlign: 'center', marginBottom: 8 }}>
-                    {t('endings.completedAge', { name: playerName, age: MAX_AGE }, '{name} {age} yasini tamamladi')}
+                    {t('endings.completedAge', { name: playerName, age: MAX_AGE }, '{name} {age} yaşını tamamladı')}
                   </Text>
                 </FadeInUpView>
 
@@ -510,6 +540,28 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                     </Text>
                   </View>
                 </FadeInUpView>
+
+                {definingEchoes.length > 0 && (
+                  <FadeInUpView delay={250}>
+                    <View style={{
+                      marginBottom: 16,
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      backgroundColor: theme.surfaceOverlay,
+                      padding: metrics.pad,
+                    }}>
+                      <Text style={{ color: theme.textPrimary, fontWeight: '700', fontSize: 15 }}>
+                        {'\u{1F9F5}'} {t('character.screen.sections.echoTrail')}
+                      </Text>
+                      <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 4, marginBottom: 12 }}>
+                        {t('endings.echoTrail.count', { count: echoItems.length })}
+                        {echoItems.length > definingEchoes.length ? ` ${t('endings.echoTrail.defining')}:` : ''}
+                      </Text>
+                      <EchoTrailList items={definingEchoes} pendingCount={0} theme={theme} />
+                    </View>
+                  </FadeInUpView>
+                )}
 
                 <FadeInUpView delay={280}>
                   <View style={{ marginBottom: 16 }}>
@@ -612,13 +664,13 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                       {t('endings.legacy')}
                     </Text>
                     <Text style={{ color: theme.textPrimary, marginBottom: 4 }}>
-                      {t('endings.runLegacyPoints', { points: runLegacyPoints }, 'Bu kosu: +{points} miras puani')}
+                      {t('endings.runLegacyPoints', { points: runLegacyPoints }, 'Bu koşu: +{points} miras puanı')}
                     </Text>
                     <Text style={{ color: theme.textSecondary, marginBottom: 2 }}>
                       {t(
                         'endings.totalRunsLevel',
                         { runs: safeMeta.totalRunsCompleted, level: safeMeta.legacyLevel },
-                        'Toplam kosu: {runs} | Seviye: {level}'
+                        'Toplam koşu: {runs} | Seviye: {level}'
                       )}
                     </Text>
                     <Text style={{ color: theme.textSecondary }}>
@@ -679,7 +731,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
                         {t(
                           'endings.unexpectedPath',
                           { inferred: inferredGoalLabel },
-                          'Beklenmedik Yol: secilen hedeften farkli olarak {inferred} rotasinda daha guclu bir profil olusturdun.'
+                          'Beklenmedik Yol: seçilen hedeften farklı olarak {inferred} rotasında daha güçlü bir profil oluşturdun.'
                         )}
                       </Text>
                     )}
@@ -1101,6 +1153,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
             .slice(0, 3)
             .map(memory => getMemoryLabel(memory, t))}
           finalStats={stats}
+          echoLine={echoShareLine ?? undefined}
           endingEmoji={ENDING_ID_LOOKUP[endingResolution.id]?.icon}
           finalScore={finalScore}
           goalLabel={goalLabel}

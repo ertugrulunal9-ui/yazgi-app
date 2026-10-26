@@ -18,50 +18,50 @@ export const INTERACTION_AGE_RESTRICTIONS: Record<InteractionType, InteractionRe
   CHAT: {
     minAge: 3,
     label: 'Sohbet Et',
-    description: 'Dostca sohbet',
-    lockedMessage: 'Henuz konusmayi ogrenmedin',
+    description: 'Dostça sohbet',
+    lockedMessage: 'Henüz konuşmayı öğrenmedin',
   },
   HANGOUT: {
     minAge: 5,
     label: 'Takil',
-    description: 'Birlikte vakit gecir',
-    lockedMessage: 'Henuz disarida takilmak icin kucuksun',
+    description: 'Birlikte vakit geçir',
+    lockedMessage: 'Henüz dışarıda takılmak için küçüksün',
   },
   HELP: {
     minAge: 5,
-    label: 'Yardim Et',
-    description: 'Ihtiyacinda yardim',
-    lockedMessage: 'Henuz yardim edebilecek yasta degilsin',
+    label: 'Yardım Et',
+    description: 'İhtiyacında yardım',
+    lockedMessage: 'Henüz yardım edebilecek yaşta değilsin',
   },
   GIFT: {
     minAge: 6,
     label: 'Hediye Ver',
-    description: 'Ozel hediye',
-    lockedMessage: 'Hediye vermeyi henuz ogrenmedin',
+    description: 'Özel hediye',
+    lockedMessage: 'Hediye vermeyi henüz öğrenmedin',
   },
   STUDY: {
     minAge: 7,
-    label: 'Ders Calis',
+    label: 'Ders Çalış',
     description: 'Birlikte ders',
-    lockedMessage: 'Henuz okula baslamadin',
+    lockedMessage: 'Henüz okula başlamadın',
   },
   COMPETE: {
     minAge: 7,
     label: 'Yaris',
     description: 'Rekabet et',
-    lockedMessage: 'Yarismak icin biraz daha buyumelisin',
+    lockedMessage: 'Yarışmak için biraz daha büyümelisin',
   },
   GOSSIP: {
     minAge: 10,
     label: 'Dedikodu',
-    description: 'Baskalari hakkinda',
-    lockedMessage: 'Dedikodu yapmak icin cok kucuksun',
+    description: 'Başkaları hakkında',
+    lockedMessage: 'Dedikodu yapmak için çok küçüksün',
   },
   FLIRT: {
     minAge: 12,
-    label: 'Flort Et',
+    label: 'Flört Et',
     description: 'Romantik ilgi',
-    lockedMessage: 'Flort etmek icin ergenlige girmelisin',
+    lockedMessage: 'Flört etmek için ergenliğe girmelisin',
   },
 };
 
@@ -102,7 +102,7 @@ export const getAvailableInteractions = (playerAge: number): InteractionType[] =
 );
 
 export const getLockedMessage = (type: InteractionType): string => {
-  const fallback = INTERACTION_AGE_RESTRICTIONS[type]?.lockedMessage || 'Bu etkilesim kilitli';
+  const fallback = INTERACTION_AGE_RESTRICTIONS[type]?.lockedMessage || 'Bu etkileşim kilitli';
   const keyBase = INTERACTION_I18N_KEY_MAP[type];
   if (!keyBase) {
     return tRuntime('social.interactions.fallbackLocked', undefined, fallback);

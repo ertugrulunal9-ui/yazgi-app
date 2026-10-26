@@ -77,7 +77,7 @@ describe('familyNarrative', () => {
       evolution: DEFAULT_FAMILY_EVOLUTION_STATE,
     });
 
-    expect(thought).toContain('Babam yine kizacak');
+    expect(thought).toContain('Babam yine kızacak');
   });
 
   it('returns atmosphere labels for evolved families', () => {
@@ -90,6 +90,6 @@ describe('familyNarrative', () => {
       }
     );
 
-    expect(label).toBe('Yumusayan Otorite');
+    expect(label).toBe('Yumuşayan Otorite');
   });
 });

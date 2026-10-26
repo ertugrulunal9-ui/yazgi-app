@@ -46,6 +46,19 @@ jest.mock('expo-linear-gradient', () => ({
 
 jest.mock('react-native-qrcode-svg', () => 'QRCode');
 
+jest.mock('react-native-svg', () => ({
+  __esModule: true,
+  default: 'Svg',
+  Svg: 'Svg',
+  Circle: 'Circle',
+  ClipPath: 'ClipPath',
+  Defs: 'Defs',
+  Ellipse: 'Ellipse',
+  G: 'G',
+  Path: 'Path',
+  Rect: 'Rect',
+}));
+
 jest.mock('expo-constants', () => ({
   manifest: {},
 }));

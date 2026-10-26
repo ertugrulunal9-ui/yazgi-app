@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { Text } from './ui/LocaleText';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -74,28 +75,28 @@ interface MiniSkillCardProps {
 const MAIN_SKILLS: SkillConfig[] = [
   {
     key: 'coding',
-    title: 'Yazilim',
+    title: 'Yazılım',
     icon: '\u{1F4BB}',
     accent: '#0891b2',
     talent: 'CODING',
     milestones: [
-      { lvl: 30, text: 'Freelance Isler', desc: 'Basit web siteleri yaparak para kazanabilirsin.', benefits: ['+100$/proje kazanma', 'Evden calisma imkani'] },
-      { lvl: 50, text: 'Hackathon', desc: 'Zeka gerektiren ozel etkinlikler acilir.', benefits: ['Odullu yarismalar', 'Networking firsatlari'] },
-      { lvl: 70, text: 'Kidemli Muhendis', desc: 'Yazilim muhendisligi kariyeri garantilenir.', benefits: ['Yuksek maasli is firsatlari', 'Startup kurma sansi'] },
-      { lvl: 100, text: 'Teknoloji Devi', desc: 'Kendi sirketini kurma potansiyeli acilir.', benefits: ['Milyar dolarlik sirket kurma', 'Teknoloji lideri unvani'] },
+      { lvl: 30, text: 'Freelance Isler', desc: 'Basit web siteleri yaparak para kazanabilirsin.', benefits: ['+100$/proje kazanma', 'Evden çalışma imkanı'] },
+      { lvl: 50, text: 'Hackathon', desc: 'Zeka gerektiren özel etkinlikler açılır.', benefits: ['Ödüllü yarışmalar', 'Networking fırsatları'] },
+      { lvl: 70, text: 'Kıdemli Mühendis', desc: 'Yazılım mühendisliği kariyeri garantilenir.', benefits: ['Yüksek maaşlı iş fırsatları', 'Startup kurma şansı'] },
+      { lvl: 100, text: 'Teknoloji Devi', desc: 'Kendi şirketini kurma potansiyeli açılır.', benefits: ['Milyar dolarlık şirket kurma', 'Teknoloji lideri unvanı'] },
     ],
   },
   {
     key: 'music',
-    title: 'Muzik',
+    title: 'Müzik',
     icon: '\u{1F3B8}',
     accent: '#db2777',
     talent: 'MUSIC',
     milestones: [
-      { lvl: 30, text: 'Sokak Muzigi', desc: 'Sokakta gitar calarak harclik cikarirsin.', benefits: ['Gunluk harclik kazanma', 'Karizma artisi'] },
-      { lvl: 50, text: 'Bestekar', desc: 'Konservatuvar teklifi alma sansi dogar.', benefits: ['Muzik kariyeri yolu', 'Telif geliri'] },
-      { lvl: 85, text: 'Rockstar', desc: 'Dunyaca unlu bir muzisyen olma yolu acilir.', benefits: ['Konser gelirleri', 'Fan kitlesi'] },
-      { lvl: 100, text: 'Virtuoz', desc: 'Adini muzik tarihine yazdirirsin.', benefits: ['Efsane statusu', 'Muzik okulu acma'] },
+      { lvl: 30, text: 'Sokak Müziği', desc: 'Sokakta gitar çalarak harçlık çıkarırsın.', benefits: ['Günlük harçlık kazanma', 'Karizma artışı'] },
+      { lvl: 50, text: 'Bestekar', desc: 'Konservatuvar teklifi alma şansı doğar.', benefits: ['Müzik kariyeri yolu', 'Telif geliri'] },
+      { lvl: 85, text: 'Rockstar', desc: 'Dünyaca ünlü bir müzisyen olma yolu açılır.', benefits: ['Konser gelirleri', 'Fan kitlesi'] },
+      { lvl: 100, text: 'Virtüöz', desc: 'Adını müzik tarihine yazdırırsın.', benefits: ['Efsane statüsü', 'Müzik okulu açma'] },
     ],
   },
   {
@@ -105,10 +106,10 @@ const MAIN_SKILLS: SkillConfig[] = [
     accent: '#ea580c',
     talent: 'SPORTS',
     milestones: [
-      { lvl: 40, text: 'Okul Takimi', desc: 'Okul takimina secilme sansi dogar.', benefits: ['Popularite artisi', 'Burs imkani'] },
-      { lvl: 60, text: 'Kaptan', desc: 'Fiziksel olaylarda ustunluk saglarsin.', benefits: ['Liderlik bonusu', 'Fiziksel guc'] },
-      { lvl: 90, text: 'Milli Sporcu', desc: 'Olimpiyat seviyesinde kariyer yolu acilir.', benefits: ['Milli gelir', 'Ulke taninirligi'] },
-      { lvl: 100, text: 'Efsane', desc: 'Spor tarihinde iz birakirsin.', benefits: ['Efsane statu', 'Spor liderligi sansi'] },
+      { lvl: 40, text: 'Okul Takımı', desc: 'Okul takımına seçilme şansı doğar.', benefits: ['Popülarite artışı', 'Burs imkanı'] },
+      { lvl: 60, text: 'Kaptan', desc: 'Fiziksel olaylarda üstünlük sağlarsın.', benefits: ['Liderlik bonusu', 'Fiziksel güç'] },
+      { lvl: 90, text: 'Milli Sporcu', desc: 'Olimpiyat seviyesinde kariyer yolu açılır.', benefits: ['Milli gelir', 'Ülke tanınırlığı'] },
+      { lvl: 100, text: 'Efsane', desc: 'Spor tarihinde iz bırakırsın.', benefits: ['Efsane statü', 'Spor liderliği şansı'] },
     ],
   },
 ];
@@ -120,20 +121,20 @@ const OTHER_SKILLS: SkillConfig[] = [
     icon: '\u{1F3C3}',
     accent: '#22c55e',
     milestones: [
-      { lvl: 30, text: 'Dayaniklilik', desc: 'Spor aktivitelerinde enerji tasarrufu artar.', benefits: ['Spor enerji maliyeti azalir', 'Saglik kazanimi artar'] },
-      { lvl: 60, text: 'Formda', desc: 'Fiziksel dayanikliligin ust seviyeye cikar.', benefits: ['Disiplin artisinda bonus', 'Fiziksel guc artisi'] },
-      { lvl: 90, text: 'Elit Sporcu', desc: 'Spor kariyerlerinde zirveye yaklasilir.', benefits: ['Takim secmelerinde avantaj', 'Spor bursu sansi'] },
+      { lvl: 30, text: 'Dayanıklılık', desc: 'Spor aktivitelerinde enerji tasarrufu artar.', benefits: ['Spor enerji maliyeti azalır', 'Sağlık kazanımı artar'] },
+      { lvl: 60, text: 'Formda', desc: 'Fiziksel dayanıklılığın üst seviyeye çıkar.', benefits: ['Disiplin artışında bonus', 'Fiziksel güç artışı'] },
+      { lvl: 90, text: 'Elit Sporcu', desc: 'Spor kariyerlerinde zirveye yaklaşılır.', benefits: ['Takım seçmelerinde avantaj', 'Spor bursu şansı'] },
     ],
   },
   {
     key: 'logic',
-    title: 'Mantik',
+    title: 'Mantık',
     icon: '\u{1F9E9}',
     accent: '#0ea5e9',
     milestones: [
-      { lvl: 30, text: 'Hizli Kavrama', desc: 'Ders calisirken zeka artisi hizlanir.', benefits: ['Okul zeka artisi', 'Mat/Fen destegi'] },
-      { lvl: 60, text: 'Analitik Zihin', desc: 'Zor problemleri cozmek kolaylasir.', benefits: ['Sinavlarda avantaj', 'Not artisinda bonus'] },
-      { lvl: 90, text: 'Stratejist', desc: 'Akil oyunlarinda ustalasirsin.', benefits: ['Yuksek zeka bonusu', 'Ozel etkinlikler'] },
+      { lvl: 30, text: 'Hızlı Kavrama', desc: 'Ders çalışırken zeka artışı hızlanır.', benefits: ['Okul zeka artışı', 'Mat/Fen desteği'] },
+      { lvl: 60, text: 'Analitik Zihin', desc: 'Zor problemleri çözmek kolaylaşır.', benefits: ['Sınavlarda avantaj', 'Not artışında bonus'] },
+      { lvl: 90, text: 'Stratejist', desc: 'Akıl oyunlarında ustalaşırsın.', benefits: ['Yüksek zeka bonusu', 'Özel etkinlikler'] },
     ],
   },
   {
@@ -142,9 +143,9 @@ const OTHER_SKILLS: SkillConfig[] = [
     icon: '\u{1F4DA}',
     accent: '#a855f7',
     milestones: [
-      { lvl: 30, text: 'Hizli Okur', desc: 'Metinleri daha hizli kavrarsin.', benefits: ['Dil notu artisi', 'Kitap etkinlikleri'] },
-      { lvl: 60, text: 'Kulturlu', desc: 'Bilgi birikimin dikkat ceker.', benefits: ['Sosyal diyaloglarda avantaj', 'Arastirma firsatlari'] },
-      { lvl: 90, text: 'Bilge', desc: 'Derin analiz yetenegi kazanirsin.', benefits: ['Dil notu zirvesi', 'Ozel gorevler'] },
+      { lvl: 30, text: 'Hızlı Okur', desc: 'Metinleri daha hızlı kavrarsın.', benefits: ['Dil notu artışı', 'Kitap etkinlikleri'] },
+      { lvl: 60, text: 'Kültürlü', desc: 'Bilgi birikimin dikkat çeker.', benefits: ['Sosyal diyaloglarda avantaj', 'Araştırma fırsatları'] },
+      { lvl: 90, text: 'Bilge', desc: 'Derin analiz yetenegi kazanirsin.', benefits: ['Dil notu zirvesi', 'Özel görevler'] },
     ],
   },
   {
@@ -153,9 +154,9 @@ const OTHER_SKILLS: SkillConfig[] = [
     icon: '\u{1F91D}',
     accent: '#f97316',
     milestones: [
-      { lvl: 30, text: 'Uyum', desc: 'Takim calismalarinda verimin artar.', benefits: ['Sosyal enerji tasarrufu', 'Iliski artisi'] },
-      { lvl: 60, text: 'Kaptanlik', desc: 'Grup liderliginde one cikarsin.', benefits: ['Takim etkinliklerinde avantaj', 'Liderlik bonusu'] },
-      { lvl: 90, text: 'Birle�tirici', desc: 'Herkesi motive eden bir rol kazanirsin.', benefits: ['Yuksek iliski artisi', 'Zor etkinliklerde basari'] },
+      { lvl: 30, text: 'Uyum', desc: 'Takim calismalarinda verimin artar.', benefits: ['Sosyal enerji tasarrufu', 'İlişki artışı'] },
+      { lvl: 60, text: 'Kaptanlık', desc: 'Grup liderliğinde öne çıkarsın.', benefits: ['Takım etkinliklerinde avantaj', 'Liderlik bonusu'] },
+      { lvl: 90, text: 'Birleştirici', desc: 'Herkesi motive eden bir rol kazanırsın.', benefits: ['Yüksek ilişki artışı', 'Zor etkinliklerde başarı'] },
     ],
   },
   {
@@ -164,31 +165,31 @@ const OTHER_SKILLS: SkillConfig[] = [
     icon: '\u{1F3A8}',
     accent: '#ec4899',
     milestones: [
-      { lvl: 30, text: 'Estetik Goz', desc: 'Sanat aktivitelerinde karizma artar.', benefits: ['Karizma bonusu', 'Atolye etkinlikleri'] },
-      { lvl: 60, text: 'Sahne Isigi', desc: 'Yaraticiligin dikkat ceker.', benefits: ['Sergi firsati', 'Sanat etkinliklerinde bonus'] },
-      { lvl: 90, text: 'Usta Sanatci', desc: 'Sanat dunyasinda un kazanirsin.', benefits: ['Prestij artisi', 'Ozel projeler'] },
+      { lvl: 30, text: 'Estetik Göz', desc: 'Sanat aktivitelerinde karizma artar.', benefits: ['Karizma bonusu', 'Atölye etkinlikleri'] },
+      { lvl: 60, text: 'Sahne Isigi', desc: 'Yaratıcılığın dikkat çeker.', benefits: ['Sergi fırsatı', 'Sanat etkinliklerinde bonus'] },
+      { lvl: 90, text: 'Usta Sanatçı', desc: 'Sanat dünyasında ün kazanırsın.', benefits: ['Prestij artışı', 'Özel projeler'] },
     ],
   },
   {
     key: 'writing',
-    title: 'Yazarlik',
+    title: 'Yazarlık',
     icon: '\u270D\uFE0F',
     accent: '#ef4444',
     milestones: [
-      { lvl: 30, text: 'Kisa Hikaye', desc: 'Yazma aktivitelerinde hizlanirsin.', benefits: ['Yazma zeka bonusu', 'Blog firsati'] },
+      { lvl: 30, text: 'Kısa Hikaye', desc: 'Yazma aktivitelerinde hızlanırsın.', benefits: ['Yazma zeka bonusu', 'Blog fırsatı'] },
       { lvl: 60, text: 'Yazar', desc: 'Yazilarin ilgi gormeye baslar.', benefits: ['Yayin sansi', 'Yeni etkinlikler'] },
-      { lvl: 90, text: 'Romanci', desc: 'Genis kitlelere ulasirsin.', benefits: ['Yuksek zeka bonusu', 'Kitap teklifi'] },
+      { lvl: 90, text: 'Romancı', desc: 'Geniş kitlelere ulaşırsın.', benefits: ['Yüksek zeka bonusu', 'Kitap teklifi'] },
     ],
   },
   {
     key: 'work_ethic',
-    title: 'Caliskanlik',
+    title: 'Çalışkanlık',
     icon: '\u{1F4BC}',
     accent: '#64748b',
     milestones: [
-      { lvl: 30, text: 'Duzenli', desc: 'Calisma temposunu oturtursun.', benefits: ['Is enerji tasarrufu', 'Gelir artisi'] },
-      { lvl: 60, text: 'Guvenilir', desc: 'Is yerinde tercih edilirsin.', benefits: ['Terfi sansi', 'Kazanc bonusu'] },
-      { lvl: 90, text: 'Disiplin Ustasi', desc: 'Calisma disiplini zirveye cikar.', benefits: ['Yuksek gelir bonusu', 'Ozel is firsatlari'] },
+      { lvl: 30, text: 'Düzenli', desc: 'Çalışma temposunu oturtursun.', benefits: ['Is enerji tasarrufu', 'Gelir artışı'] },
+      { lvl: 60, text: 'Güvenilir', desc: 'Is yerinde tercih edilirsin.', benefits: ['Terfi şansı', 'Kazanç bonusu'] },
+      { lvl: 90, text: 'Disiplin Ustası', desc: 'Çalışma disiplini zirveye çıkar.', benefits: ['Yüksek gelir bonusu', 'Özel iş fırsatları'] },
     ],
   },
   {
@@ -197,20 +198,20 @@ const OTHER_SKILLS: SkillConfig[] = [
     icon: '\u{1F4C8}',
     accent: '#14b8a6',
     milestones: [
-      { lvl: 30, text: 'Pazarlikci', desc: 'Alisveriste fiyat dusurursun.', benefits: ['Indirim bonusu', 'Ek tasarruf'] },
-      { lvl: 60, text: 'Yatirimci', desc: 'Para yonetiminde ilerlersin.', benefits: ['Kazanc artisi', 'Yatirim firsatlari'] },
-      { lvl: 90, text: 'Girisimci', desc: 'Kendi isini kurma yolu acilir.', benefits: ['Buyuk gelir firsatlari', 'Ozel etkinlikler'] },
+      { lvl: 30, text: 'Pazarlıkçı', desc: 'Alışverişte fiyat düşürürsün.', benefits: ['Indirim bonusu', 'Ek tasarruf'] },
+      { lvl: 60, text: 'Yatırımcı', desc: 'Para yönetiminde ilerlersin.', benefits: ['Kazanç artışı', 'Yatırım fırsatları'] },
+      { lvl: 90, text: 'Girişimci', desc: 'Kendi işini kurma yolu açılır.', benefits: ['Büyük gelir fırsatları', 'Özel etkinlikler'] },
     ],
   },
   {
     key: 'design',
-    title: 'Tasarim',
+    title: 'Tasarım',
     icon: '\u{1F58C}\uFE0F',
     accent: '#fb7185',
     milestones: [
-      { lvl: 30, text: 'Gorsel Dusunce', desc: 'Tasarim islerinde hizlanirsin.', benefits: ['Tasarim karizma bonusu', 'Mini projeler'] },
-      { lvl: 60, text: 'Portfolyo', desc: 'Profesyonel isler gelmeye baslar.', benefits: ['Freelance isler', 'Daha iyi kazanc'] },
-      { lvl: 90, text: 'Yaratici Yonetmen', desc: 'Buyuk projelerde liderlik edersin.', benefits: ['Prestij artisi', 'Ozel projeler'] },
+      { lvl: 30, text: 'Görsel Düşünce', desc: 'Tasarım işlerinde hızlanırsın.', benefits: ['Tasarım karizma bonusu', 'Mini projeler'] },
+      { lvl: 60, text: 'Portfolyo', desc: 'Profesyonel işler gelmeye başlar.', benefits: ['Freelance işler', 'Daha iyi kazanç'] },
+      { lvl: 90, text: 'Yaratıcı Yönetmen', desc: 'Büyük projelerde liderlik edersin.', benefits: ['Prestij artışı', 'Özel projeler'] },
     ],
   },
 ];
@@ -319,7 +320,7 @@ export const SkillTree = React.memo<SkillTreeProps>(({
               backgroundColor: theme.surfaceRaised,
               borderColor: theme.border,
             }]}
-            accessibilityLabel={tSkill('backAria', 'Geri don')}
+            accessibilityLabel={tSkill('backAria', 'Geri dön')}
             accessibilityRole="button"
           >
             <Text style={[styles.backButtonText, { color: theme.textPrimary }]}>

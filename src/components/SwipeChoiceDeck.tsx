@@ -4,14 +4,16 @@
  */
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from './ui/LocaleText';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 // Reanimated reserved for future card stack animations
 import { Choice, EventContext, EventRarity, PersonalityState } from '../types';
 import { useUI } from '../context/UIContext';
 import { ChoiceCard } from './ChoiceCard';
+import { getChoiceTypeBadge, STAT_ICONS, UNCERTAIN_COLOR } from './SwipeChoiceCard';
 import { AnimatedButton } from '../animations/ButtonAnimations';
-import { StaggeredFadeIn, buttonPress, importantDecision } from '../animations';
+import { StaggeredFadeIn } from '../animations';
 import { getMomentumDialogueTag } from '../utils/momentumDialogue';
 import { generateTradeoffHint } from '../utils/tradeoffHints';
 import { describeLockReason, LockedChoice } from '../utils/eventChoiceFilter';
@@ -87,9 +89,9 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
     return () => clearInterval(interval);
   }, [eventId, isBreakdownEvent, eventRarity]);
   const lockCountdownText = swipeLocked ? `${Math.ceil(lockRemainingMs / 1000)}s` : '';
-  const swipeChoiceHint = tRuntime('events.swipe.choiceHint', undefined, 'Bu secim karakterini etkiler');
-  const selectHint = tRuntime('events.swipe.selectHint', undefined, 'Bu secimi onayla');
-  const selectText = tRuntime('events.swipe.select', undefined, 'Sec');
+  const swipeChoiceHint = tRuntime('events.swipe.choiceHint', undefined, 'Bu seçim karakterini etkiler');
+  const selectHint = tRuntime('events.swipe.selectHint', undefined, 'Bu seçimi onayla');
+  const selectText = tRuntime('events.swipe.select', undefined, 'Seç');
 
   const resolvedChoices = useMemo(
     () => choices.map(c => resolveChoice(c)),
@@ -144,14 +146,18 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
           const originalIndex = originalChoices.indexOf(choice);
           const choiceIndex = originalIndex >= 0 ? originalIndex : index;
           const buttonTradeoffHint = dialogueTag ? null : generateTradeoffHint(resolved);
+          const typeBadge = getChoiceTypeBadge(resolved);
+          const isUncertain = (resolved.conditionalOutcomes?.length ?? 0) > 0;
+          // Kaydırmalı kartla aynı kural: yalnızca hangi statların etkileneceği, yön/miktar değil
+          const statKeys = Object.entries(resolved.effect || {})
+            .filter(([key, val]) => typeof val === 'number' && val !== 0 && STAT_ICONS[key as keyof typeof STAT_ICONS])
+            .slice(0, 4)
+            .map(([key]) => key as keyof typeof STAT_ICONS);
+          const hasMeta = Boolean(typeBadge.label) || isUncertain || statKeys.length > 0;
           return (
             <AnimatedButton
               key={index}
-              onPress={() => {
-                buttonPress();
-                importantDecision();
-                onChoiceSelected(choice, choiceIndex);
-              }}
+              onPress={() => onChoiceSelected(choice, choiceIndex)}
               animationType={isBreakdownEvent ? 'shake' : 'pressScale'}
               style={{
                 ...buttonFallbackStyles.button,
@@ -163,31 +169,65 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
               accessibilityLabel={resolved.text}
               accessibilityHint={swipeChoiceHint}
             >
-              <View>
-                <Text style={[buttonFallbackStyles.buttonText, {
-                  color: theme.textPrimary,
-                  fontSize: metrics.font,
+              <View style={buttonFallbackStyles.row}>
+                <View style={[buttonFallbackStyles.letter, {
+                  borderColor: `${typeBadge.color}88`,
+                  backgroundColor: `${typeBadge.color}1f`,
                 }]}>
-                  {dialogueTag ? `${dialogueTag.tagText} ${resolved.text}` : resolved.text}
-                </Text>
-                {dialogueTag && (
-                  <Text style={[buttonFallbackStyles.tagSubtitle, { color: dialogueTag.textColor }]}>
-                    {dialogueTag.subtitle}
+                  <Text style={[buttonFallbackStyles.letterText, { color: typeBadge.color }]}>
+                    {String.fromCharCode(65 + index)}
                   </Text>
-                )}
-                {buttonTradeoffHint && (
-                  <Text style={[buttonFallbackStyles.tradeoffHint, { color: theme.textSecondary }]}>
-                    {buttonTradeoffHint}
+                </View>
+                <View style={buttonFallbackStyles.body}>
+                  <Text style={[buttonFallbackStyles.buttonText, {
+                    color: theme.textPrimary,
+                    fontSize: metrics.font,
+                  }]}>
+                    {dialogueTag ? `${dialogueTag.tagText} ${resolved.text}` : resolved.text}
                   </Text>
-                )}
-                {(resolved.conditionalOutcomes?.length ?? 0) > 0 && (
-                  <View style={buttonFallbackStyles.uncertainRow}>
-                    <Feather name="shuffle" size={11} color="#facc15" />
-                    <Text style={buttonFallbackStyles.uncertainText}>
-                      {tRuntime('events.swipe.uncertain', undefined, 'Şansa bağlı')}
+                  {dialogueTag && (
+                    <Text style={[buttonFallbackStyles.tagSubtitle, { color: dialogueTag.textColor }]}>
+                      {dialogueTag.subtitle}
                     </Text>
-                  </View>
-                )}
+                  )}
+                  {buttonTradeoffHint && (
+                    <Text style={[buttonFallbackStyles.tradeoffHint, { color: theme.textSecondary }]}>
+                      {buttonTradeoffHint}
+                    </Text>
+                  )}
+                  {hasMeta && (
+                    <View style={buttonFallbackStyles.metaRow}>
+                      {typeBadge.label && (
+                        <View style={[buttonFallbackStyles.chip, {
+                          borderColor: `${typeBadge.color}66`,
+                          backgroundColor: `${typeBadge.color}1f`,
+                        }]}>
+                          <Text style={[buttonFallbackStyles.chipText, { color: typeBadge.color }]}>{typeBadge.label}</Text>
+                        </View>
+                      )}
+                      {isUncertain && (
+                        <View style={[buttonFallbackStyles.chip, {
+                          borderColor: `${UNCERTAIN_COLOR}66`,
+                          backgroundColor: `${UNCERTAIN_COLOR}1f`,
+                        }]}>
+                          <Feather name="shuffle" size={10} color={UNCERTAIN_COLOR} />
+                          <Text style={[buttonFallbackStyles.chipText, { color: UNCERTAIN_COLOR }]}>
+                            {tRuntime('events.swipe.uncertain', undefined, 'Şansa bağlı')}
+                          </Text>
+                        </View>
+                      )}
+                      {statKeys.map(key => (
+                        <View
+                          key={key}
+                          style={[buttonFallbackStyles.statBadge, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}
+                        >
+                          <Feather name={STAT_ICONS[key]?.icon as any} size={12} color={theme.textSecondary} />
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+                <Feather name="chevron-right" size={18} color={theme.textSecondary} />
               </View>
             </AnimatedButton>
           );
@@ -244,8 +284,6 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
         <AnimatedButton
           onPress={() => {
             if (swipeLocked) return;
-            buttonPress();
-            importantDecision();
             handleSelect(activeIndex);
           }}
           animationType="pressScale"
@@ -258,12 +296,12 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
             ? tRuntime(
               'events.swipe.waitToDecide',
               { seconds: lockCountdownText },
-              `Karar vermek icin ${lockCountdownText} bekle`
+              `Karar vermek için ${lockCountdownText} bekle`
             )
             : tRuntime(
               'events.swipe.selectAria',
               { text: resolvedChoices[activeIndex]?.text ?? '' },
-              `Sec: ${resolvedChoices[activeIndex]?.text ?? ''}`
+              `Seç: ${resolvedChoices[activeIndex]?.text ?? ''}`
             )}
           accessibilityHint={selectHint}
         >
@@ -347,8 +385,57 @@ const lockedStyles = StyleSheet.create({
 
 const buttonFallbackStyles = StyleSheet.create({
   button: {
-    borderRadius: 12,
+    borderRadius: 14,
     marginBottom: 10,
+    borderWidth: 1,
+    minHeight: 72,
+  },
+  row: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  letter: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  letterText: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  body: {
+    flex: 1,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  chipText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  statBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 10,
     borderWidth: 1,
   },
   buttonText: {
@@ -365,16 +452,5 @@ const buttonFallbackStyles = StyleSheet.create({
     fontSize: 12,
     fontStyle: 'italic',
     opacity: 0.75,
-  },
-  uncertainRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 6,
-  },
-  uncertainText: {
-    color: '#facc15',
-    fontSize: 11,
-    fontWeight: '700',
   },
 });

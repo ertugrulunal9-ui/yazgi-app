@@ -224,7 +224,7 @@ describe('endingResolver', () => {
 
     expect(resolution.goal).toBe('ACADEMIC');
     expect(['SUCCESS', 'LEGENDARY']).toContain(resolution.tier);
-    expect(resolution.result.title).toMatch(/Tip|Hukuk|Muhendislik|Yazilim/);
+    expect(resolution.result.title).toMatch(/Tıp|Hukuk|Mühendislik|Yazılım/);
   });
 
   it('routes mismatch to surpriz kariyer instead of hard failure', () => {
@@ -264,7 +264,7 @@ describe('endingResolver', () => {
 
     expect(resolution.mismatchFailure).toBe(true);
     expect(resolution.tier).not.toBe('FAILURE');
-    expect(resolution.result.title).toContain('Surpriz');
+    expect(resolution.result.title).toContain('Sürpriz');
     expect(resolution.id).toBe('athletic_mismatch_failure');
   });
 
@@ -364,7 +364,7 @@ describe('endingResolver', () => {
 
     expect(resolution.mismatchFailure).toBe(true);
     expect(['SUCCESS', 'LEGENDARY']).toContain(resolution.tier);
-    expect(resolution.result.title).toContain('Surpriz');
+    expect(resolution.result.title).toContain('Sürpriz');
     expect(resolution.goal).toBe('ACADEMIC');
   });
 
@@ -423,8 +423,8 @@ describe('endingResolver', () => {
 
     const resolution = resolveEnding({ gameState, stats });
 
-    expect(resolution.result.influences?.some(line => line.includes('Cesitlilik cezasi'))).toBe(true);
-    expect(resolution.result.influences?.some(line => line.includes('Zorluk duzeltmesi'))).toBe(true);
+    expect(resolution.result.influences?.some(line => line.includes('Çeşitlilik cezası'))).toBe(true);
+    expect(resolution.result.influences?.some(line => line.includes('Zorluk düzeltmesi'))).toBe(true);
   });
 
   it('accepts achievement ids as a plain string list', () => {
@@ -437,7 +437,7 @@ describe('endingResolver', () => {
       achievements: ['rich', 'heartbreaker'],
     });
 
-    expect(resolution.result.description).toContain('Iliskilerde');
+    expect(resolution.result.description).toContain('İlişkilerde');
   });
 });
 

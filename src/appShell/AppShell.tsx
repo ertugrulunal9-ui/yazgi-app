@@ -24,6 +24,7 @@ import { AnalyticsTracker } from './AnalyticsTracker';
 import { AppNavigator } from './AppNavigator';
 import { SettingsPanel } from './SettingsPanel';
 import { useAppBootstrap } from './useAppBootstrap';
+import { setFeedbackPreferences } from '../utils/feedbackPreferences';
 import { t as translateStatic } from '../i18n/strings';
 import { canOpenPremiumPaywall } from '../services/subscriptionManager';
 import {
@@ -105,9 +106,15 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
     setThemeMode,
     setDensityMode,
     toggleReduceMotion,
+    toggleHaptics,
     setAnalyticsEnabled,
     setPersonalizedAdsEnabled,
   } = useAppBootstrap();
+
+  // Ayarlar'daki hareket/titreşim tercihlerini React dışı yardımcılara ulaştır
+  useEffect(() => {
+    setFeedbackPreferences({ reduceMotion: uiPrefs.reduceMotion, hapticsEnabled: uiPrefs.hapticsEnabled });
+  }, [uiPrefs.reduceMotion, uiPrefs.hapticsEnabled]);
   const tStatic = useCallback(
     (key: string, params?: Record<string, string | number | boolean>, fallback?: string) =>
       translateStatic(locale, key, params, fallback),
@@ -326,7 +333,7 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
   const handleResetGame = useCallback(() => {
     Alert.alert(
       tStatic('app.resetConfirmTitle', undefined, 'Emin misin?'),
-      tStatic('app.resetConfirmDescription', undefined, 'Oyun yeniden baslayacak. Kayit slotlarin silinmeyecek.'),
+      tStatic('app.resetConfirmDescription', undefined, 'Oyun yeniden başlayacak. Kayıt slotların silinmeyecek.'),
       [
         { text: tStatic('app.cancel', undefined, 'Iptal'), onPress: () => {} },
         {
@@ -527,13 +534,13 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
                   {tStatic(
                     'app.tutorial.intro',
                     undefined,
-                    'Ilk kez oynuyorsan kisa tutorial ile mekanikleri hizlica ogrenebilirsin.'
+                    'İlk kez oynuyorsan kısa tutorial ile mekanikleri hızlıca öğrenebilirsin.'
                   )}
                 </Text>
 
                 <TouchableOpacity
                   accessibilityRole="button"
-                  accessibilityLabel={tStatic('app.tutorial.startAria', undefined, 'Tutorialu baslat')}
+                  accessibilityLabel={tStatic('app.tutorial.startAria', undefined, 'Tutorialu başlat')}
                   onPress={handleStartOnboarding}
                   style={{
                     minHeight: 50,
@@ -550,7 +557,7 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
                     fontSize: 15,
                     fontWeight: '700',
                   }}>
-                    {tStatic('app.tutorial.start', undefined, "Tutorial'u Baslat")}
+                    {tStatic('app.tutorial.start', undefined, "Tutorial'u Başlat")}
                   </Text>
                 </TouchableOpacity>
 
@@ -576,7 +583,7 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
                     fontSize: 14,
                     fontWeight: '600',
                   }}>
-                    {tStatic('app.tutorial.skip', undefined, 'Skip ve Oyuna Gec')}
+                    {tStatic('app.tutorial.skip', undefined, 'Skip ve Oyuna Geç')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -623,6 +630,7 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
         onThemeChange={setThemeMode}
         onDensityChange={setDensityMode}
         onToggleMotion={toggleReduceMotion}
+        onToggleHaptics={toggleHaptics}
         onAnalyticsEnabledChange={setAnalyticsEnabled}
         onPersonalizedAdsEnabledChange={setPersonalizedAdsEnabled}
         onSoundMuteChange={handleSoundMuteChange}

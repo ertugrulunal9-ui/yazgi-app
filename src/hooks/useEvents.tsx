@@ -117,7 +117,7 @@ export const useEvents = () => {
           feedback: tRuntime(
             'events.fallback.continueFeedback',
             undefined,
-            'Bir hata olustu ama devam ediyorsun.',
+            'Bir hata oluştu ama devam ediyorsun.',
           ),
         };
       }
@@ -282,7 +282,7 @@ export const useEvents = () => {
       updateGameState({
         lastResult: {
           ...gameState.lastResult,
-          feedback: `${gameState.lastResult.feedback} Krizin etkilerinin bir kismini toparladin.`,
+          feedback: `${gameState.lastResult.feedback} Krizin etkilerinin bir kısmını toparladın.`,
         },
       });
     }

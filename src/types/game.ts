@@ -267,6 +267,15 @@ export interface EventState {
 // GAME STATE
 // =================================================================
 
+/** Yazgı İzi kaydı: hangi yaşta verilen hangi seçim, hangi yaşta hangi olayla geri döndü */
+export interface EchoTrailEntry {
+  sourceEventId: string;
+  sourceChoiceId: string;
+  sourceAge: number;
+  eventId: string;
+  age: number;
+}
+
 export interface GameState {
   age: number;
   turn: number;
@@ -365,6 +374,9 @@ export interface GameState {
 
   /** Kalıcı yara izleri — dramatik seçimlerin geri alınamaz sonuçları */
   scars?: ScarEffect[];
+
+  /** Yazgı İzi: gerçekleşen yankılar (bir seçimin yıllar sonra geri dönüşü), oluş sırasıyla */
+  echoLog?: EchoTrailEntry[];
 
   // Geçici: seçilen event'in geçmiş seçimlerle nedensel bağlantısı
   currentCausalLink?: {

@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, StatusBar, ScrollView } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Platform, StatusBar, ScrollView } from 'react-native';
+import { Text } from './ui/LocaleText';
 import { SchoolGrades, Family } from '../types';
 import { getLetterGrade, calculateGradeAverage } from '../utils/schoolLogic';
 import { tRuntime } from '../i18n/strings';

@@ -112,7 +112,7 @@ export const RewardedAdButton: React.FC<RewardedAdButtonProps> = ({
         return;
       }
 
-      const errorMessage = result.error || tRuntime('ads.adFailed', undefined, 'Reklam gosterilemedi');
+      const errorMessage = result.error || tRuntime('ads.adFailed', undefined, 'Reklam gösterilemedi');
       setError(errorMessage);
       void logRewardedAdResult({
         placement,
@@ -123,7 +123,7 @@ export const RewardedAdButton: React.FC<RewardedAdButtonProps> = ({
       });
       setTimeout(() => setError(null), 3000);
     } catch (err: any) {
-      const errorMessage = err?.message || tRuntime('ads.adError', undefined, 'Reklam hatasi');
+      const errorMessage = err?.message || tRuntime('ads.adError', undefined, 'Reklam hatası');
       setError(errorMessage);
       void logRewardedAdResult({
         placement,
@@ -164,11 +164,11 @@ export const RewardedAdButton: React.FC<RewardedAdButtonProps> = ({
         <View style={styles.textWrap}>
           <Text style={[styles.mainButtonText, { color: theme.textPrimary }]}>
             {loading
-              ? tRuntime('ads.loading', undefined, 'Yukleniyor...')
+              ? tRuntime('ads.loading', undefined, 'Yükleniyor...')
               : tRuntime('ads.watchAdForReward', undefined, 'Reklam Izle')} {plan.label}
           </Text>
           <Text style={[styles.subText, { color: theme.textSecondary }]}>
-            {tRuntime('ads.remaining', { remaining: remainingAds }, `${remainingAds} hak kaldi`)}
+            {tRuntime('ads.remaining', { remaining: remainingAds }, `${remainingAds} hak kaldı`)}
           </Text>
         </View>
 

@@ -22,13 +22,13 @@ const EXAM_INFO: Record<ExamSubject, {
   examType: ExamGameType;
 }> = {
   math: { labelKey: 'labels.grades.math', fallback: 'Matematik', emoji: '\u{1F522}', color: '#3b82f6', examType: 'MATH' },
-  turkish: { labelKey: 'labels.grades.turkish', fallback: 'Turkce', emoji: '\u{1F4DD}', color: '#8b5cf6', examType: 'TURKISH' },
+  turkish: { labelKey: 'labels.grades.turkish', fallback: 'Türkçe', emoji: '\u{1F4DD}', color: '#8b5cf6', examType: 'TURKISH' },
   science: { labelKey: 'labels.grades.science', fallback: 'Fen Bilgisi', emoji: '\u{1F52C}', color: '#10b981', examType: 'SCIENCE' },
-  language: { labelKey: 'labels.grades.language', fallback: 'Yabanci Dil', emoji: '\u{1F30D}', color: '#f59e0b', examType: 'ENGLISH' },
+  language: { labelKey: 'labels.grades.language', fallback: 'Yabancı Dil', emoji: '\u{1F30D}', color: '#f59e0b', examType: 'ENGLISH' },
   history: { labelKey: 'labels.grades.history', fallback: 'Tarih', emoji: '\u{1F4DC}', color: '#ec4899', examType: 'HISTORY' },
-  geography: { labelKey: 'labels.grades.geography', fallback: 'Cografya', emoji: '\u{1F5FA}\uFE0F', color: '#06b6d4', examType: 'GEOGRAPHY' },
-  art: { labelKey: 'labels.grades.art', fallback: 'Gorsel Sanatlar', emoji: '\u{1F3A8}', color: '#f97316', examType: 'ART' },
-  music: { labelKey: 'labels.grades.music', fallback: 'Muzik', emoji: '\u{1F3B5}', color: '#22c55e', examType: 'MUSIC' },
+  geography: { labelKey: 'labels.grades.geography', fallback: 'Coğrafya', emoji: '\u{1F5FA}\uFE0F', color: '#06b6d4', examType: 'GEOGRAPHY' },
+  art: { labelKey: 'labels.grades.art', fallback: 'Görsel Sanatlar', emoji: '\u{1F3A8}', color: '#f97316', examType: 'ART' },
+  music: { labelKey: 'labels.grades.music', fallback: 'Müzik', emoji: '\u{1F3B5}', color: '#22c55e', examType: 'MUSIC' },
 };
 
 export const ExamPeriodModal: React.FC<ExamPeriodModalProps> = ({
@@ -55,7 +55,7 @@ export const ExamPeriodModal: React.FC<ExamPeriodModalProps> = ({
   if (!visible) return null;
 
   const statusBarHeight = Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0;
-  const title = tRuntime('app.examPeriod.title', undefined, 'Sinav Donemi');
+  const title = tRuntime('app.examPeriod.title', undefined, 'Sınav Dönemi');
   const subtitle = tRuntime(
     'app.examPeriod.subtitle',
     undefined,
@@ -64,16 +64,16 @@ export const ExamPeriodModal: React.FC<ExamPeriodModalProps> = ({
   const progressText = tRuntime(
     'app.examPeriod.progressText',
     { completed: completedCount, total: totalCount },
-    `${completedCount}/${totalCount} sinav tamamlandi`
+    `${completedCount}/${totalCount} sınav tamamlandı`
   );
-  const completedStatus = tRuntime('app.examPeriod.completedStatus', undefined, 'Tamamlandi');
-  const takeExamStatus = tRuntime('app.examPeriod.takeExamStatus', undefined, 'Sinava gir');
+  const completedStatus = tRuntime('app.examPeriod.completedStatus', undefined, 'Tamamlandı');
+  const takeExamStatus = tRuntime('app.examPeriod.takeExamStatus', undefined, 'Sınava gir');
   const viewReport = tRuntime('app.examPeriod.viewReport', undefined, 'Karneye Bak');
   // Sınavlar isteğe bağlı: kalanlar atlanırsa notlar statlardan otomatik hesaplanır
   const skipLabel = completedCount === 0
     ? tRuntime('app.examPeriod.skipAll', undefined, 'Sınavlara girmeden karneyi gör')
     : tRuntime('app.examPeriod.skipRemaining', undefined, 'Kalanları atla ve karneyi gör');
-  const previewTitle = tRuntime('app.examPeriod.reportPreviewCta', undefined, 'Not Tahminini Gor');
+  const previewTitle = tRuntime('app.examPeriod.reportPreviewCta', undefined, 'Not Tahminini Gör');
   const previewSubtitle = tRuntime(
     'app.examPeriod.reportPreviewHint',
     undefined,

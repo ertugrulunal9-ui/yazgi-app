@@ -67,7 +67,8 @@ describe('Dashboard', () => {
       />
     );
 
-    expect(getByText(/Mina/)).toBeTruthy();
+    // Başlık stilinde büyük harf var; metin artık dile göre büyütülüyor ("i" → "İ")
+    expect(getByText(/MİNA/)).toBeTruthy();
     expect(getByText(/Custom thought/)).toBeTruthy();
   });
 

@@ -34,6 +34,7 @@ import { calculateOutcomeScore, updateAdaptivePacingStreak } from '../utils/even
 import { buildTraitChangeFeedback } from '../utils/traitFeedback';
 import { PACING_CONSTANTS } from '../constants/gameConstants';
 import { tRuntime } from '../i18n/strings';
+import { recordEchoTrail } from '../utils/echoTrail';
 
 export interface ChoiceContext {
   choice: Choice;
@@ -152,7 +153,7 @@ const buildForcedFateFeedback = (
     return tRuntime(
       'feedback.fateTokenUsed',
       { outcome: nextLabel },
-      `Token kullandin: yeni kaderin ${nextLabel}.`
+      `Token kullandın: yeni kaderin ${nextLabel}.`
     );
   }
 
@@ -161,7 +162,7 @@ const buildForcedFateFeedback = (
     return tRuntime(
       'feedback.fateTokenFixed',
       { outcome: nextLabel },
-      `Token kullandin: kader sonucun ${nextLabel} olarak sabitlendi.`
+      `Token kullandın: kader sonucun ${nextLabel} olarak sabitlendi.`
     );
   }
 
@@ -172,7 +173,7 @@ const buildForcedFateFeedback = (
     return tRuntime(
       'feedback.fateTokenImproved',
       { from: previousLabel, to: nextLabel },
-      `Token sayesinde sansin dondu: ${previousLabel} -> ${nextLabel}`
+      `Token sayesinde şansın döndü: ${previousLabel} -> ${nextLabel}`
     );
   }
 
@@ -210,7 +211,7 @@ const buildMomentumFeedback = (
         : tRuntime(
           'feedback.momentum.strengthening',
           { tendency: tendencyLabel },
-          `${tendencyLabel} ritmi gucleniyor!`
+          `${tendencyLabel} ritmi güçleniyor!`
         ));
 
     return {
@@ -244,7 +245,7 @@ const buildMomentumFeedback = (
         feedbackText: tRuntime(
           'feedback.momentum.streakBroken',
           { tendency: tendencyLabel },
-          `${tendencyLabel} ritmi kirildi!`
+          `${tendencyLabel} ritmi kırıldı!`
         ),
       };
     }
@@ -557,6 +558,8 @@ export class TurnMediator {
         personalityHistory: [...gameState.personalityHistory, ...triggerResults.personalityShifts],
         personalityState: momentumResult.nextState,
         memories: newMemories,
+        // Yazgı İzi: bu olay bir seçimin yankısıysa kayda geçer
+        echoLog: recordEchoTrail(gameState.echoLog, gameState.currentCausalLink, eventId, gameState.age),
         adaptivePacingStreak: nextAdaptivePacingStreak,
         fate: updatedFate,
         pendingCliffhanger,

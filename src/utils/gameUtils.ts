@@ -549,6 +549,7 @@ export const getInitialGameState = (options?: NewGameBootstrapOptions): GameStat
     eventChoiceHistory: [],
     memories: [],
     scheduledEvents: [],
+    echoLog: [],
     activeArcs: [],
     familyEvolution: { ...DEFAULT_FAMILY_EVOLUTION_STATE },
     inventory,
@@ -1402,55 +1403,55 @@ const buildNPCNarrative = (npc: NPC): string => {
       return tRuntime(
         'social.epilogue.templates.PARTNER',
         { name: npc.name, metAge: npc.metAge, yearsKnown },
-        `${npc.name} ile ${npc.metAge} yasinda tanistin. ${yearsKnown} yil boyunca birlikte buyudunuz ve mezuniyette el ele tutuyordunuz.`
+        `${npc.name} ile ${npc.metAge} yaşında tanıştın. ${yearsKnown} yıl boyunca birlikte büyüdünüz ve mezuniyette el ele tutuyordunuz.`
       );
     case 'BEST_FRIEND':
       return memCount > 2
         ? tRuntime(
           'social.epilogue.templates.BEST_FRIEND_MEMORIES',
           { name: npc.name, metAge: npc.metAge, memCount },
-          `${npc.name}, ${npc.metAge} yasindan beri yaninda. ${memCount} ortak aniniz var, o senin kardesin.`
+          `${npc.name}, ${npc.metAge} yaşından beri yanında. ${memCount} ortak anınız var, o senin kardeşin.`
         )
         : tRuntime(
           'social.epilogue.templates.BEST_FRIEND',
           { name: npc.name, metAge: npc.metAge },
-          `${npc.name} ile ${npc.metAge} yasindan beri birbirinize bagli kaldiniz.`
+          `${npc.name} ile ${npc.metAge} yaşından beri birbirinize bağlı kaldınız.`
         );
     case 'CRUSH':
       return tRuntime(
         'social.epilogue.templates.CRUSH',
         { name: npc.name },
-        `${npc.name} ile aranizda bir seyler var ama henuz netlesmediniz.`
+        `${npc.name} ile aranızda bir şeyler var ama henüz netleşmediniz.`
       );
     case 'FRIEND':
       return yearsKnown >= 5
         ? tRuntime(
           'social.epilogue.templates.FRIEND_LONG',
           { name: npc.name, yearsKnown },
-          `${npc.name} ile ${yearsKnown} yildir arkadassiniz. Iyi gunleri paylastiniz.`
+          `${npc.name} ile ${yearsKnown} yıldır arkadaşsınız. İyi günleri paylaştınız.`
         )
         : tRuntime(
           'social.epilogue.templates.FRIEND_SHORT',
           { name: npc.name },
-          `${npc.name} ile ara sira takiliyorsun. Iyi bir arkadas ama derin bir bag kuramadin.`
+          `${npc.name} ile ara sıra takılıyorsun. İyi bir arkadaş ama derin bir bağ kuramadın.`
         );
     case 'RIVAL':
       return tRuntime(
         'social.epilogue.templates.RIVAL',
         { name: npc.name, metAge: npc.metAge },
-        `${npc.name} ile ${npc.metAge} yasinda yollariniz ayrildi. Hala birbirinize soguk bakiyorsunuz.`
+        `${npc.name} ile ${npc.metAge} yaşında yollarınız ayrıldı. Hala birbirinize soğuk bakıyorsunuz.`
       );
     case 'ENEMY':
       return tRuntime(
         'social.epilogue.templates.ENEMY',
         { name: npc.name, hateScore: Math.abs(npc.relationship) },
-        `${npc.name} ile aran hic duzelmedi. ${Math.abs(npc.relationship)} puan nefret biriktirdiniz.`
+        `${npc.name} ile aran hiç düzelmedi. ${Math.abs(npc.relationship)} puan nefret biriktirdiniz.`
       );
     default:
       return tRuntime(
         'social.epilogue.templates.DEFAULT',
         { name: npc.name },
-        `${npc.name} ile yollariniz kesisti ama derin bir bag kuramadin.`
+        `${npc.name} ile yollarınız kesişti ama derin bir bağ kuramadın.`
       );
   }
 };
@@ -1947,8 +1948,8 @@ export const turkishCities = [
 ];
 
 export const turkishMonths = [
-  'Ocak', 'Subat', 'Mart', 'Nisan', 'Mayis', 'Haziran',
-  'Temmuz', 'Agustos', 'Eylul', 'Ekim', 'Kasim', 'Aralik',
+  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
 ];
 
 export const englishMonths = [
@@ -1966,100 +1967,100 @@ export const zodiacInfo: Record<ZodiacSign, {
   challenge: string;
 }> = {
   KOC: {
-    name: "Koc",
+    name: "Koç",
     emoji: "♈",
     dateRange: "21 Mart - 19 Nisan",
-    personality: "Riskte atak, buyumede hizli ama catismada cabuk alevlenen bir ruh.",
-    strength: "Cesaret ve hizli karar",
-    challenge: "Catismada sabir",
+    personality: "Riskte atak, büyümede hızlı ama çatışmada çabuk alevlenen bir ruh.",
+    strength: "Cesaret ve hızlı karar",
+    challenge: "Çatışmada sabır",
   },
   BOGA: {
-    name: "Boga",
+    name: "Boğa",
     emoji: "♉",
-    dateRange: "20 Nisan - 20 Mayis",
-    personality: "Degerlerine sadik, adim adim ilerleyen ve riskte frene basan bir karakter.",
-    strength: "Guven ve istikrar",
-    challenge: "Belirsizlikte cesur adim",
+    dateRange: "20 Nisan - 20 Mayıs",
+    personality: "Değerlerine sadık, adım adım ilerleyen ve riskte frene basan bir karakter.",
+    strength: "Güven ve istikrar",
+    challenge: "Belirsizlikte cesur adım",
   },
   IKIZLER: {
-    name: "Ikizler",
+    name: "İkizler",
     emoji: "♊",
-    dateRange: "21 Mayis - 20 Haziran",
-    personality: "Sosyallikte parlayan, firsati hizla yakalayan ama ilkesel dengede zorlanan bir zihin.",
-    strength: "Iletisim ve ceviklik",
-    challenge: "Degerlerde tutarlilik",
+    dateRange: "21 Mayıs - 20 Haziran",
+    personality: "Sosyallikte parlayan, fırsatı hızla yakalayan ama ilkesel dengede zorlanan bir zihin.",
+    strength: "İletişim ve çeviklik",
+    challenge: "Değerlerde tutarlılık",
   },
   YENGEC: {
-    name: "Yengec",
+    name: "Yengeç",
     emoji: "♋",
     dateRange: "21 Haziran - 22 Temmuz",
-    personality: "Vicdani guclu, insanlarla sicak bag kuran ama gerilimde geri cekilen bir kalp.",
-    strength: "Sefkat ve bag kurma",
-    challenge: "Catismada dayanma",
+    personality: "Vicdanı güçlü, insanlarla sıcak bağ kuran ama gerilimde geri çekilen bir kalp.",
+    strength: "Şefkat ve bağ kurma",
+    challenge: "Çatışmada dayanma",
   },
   ASLAN: {
     name: "Aslan",
     emoji: "♌",
-    dateRange: "23 Temmuz - 22 Agustos",
-    personality: "Sahnede guclu, catismada cesur ama vicdani dengede zorlanabilen bir liderlik enerjisi.",
+    dateRange: "23 Temmuz - 22 Ağustos",
+    personality: "Sahnede güçlü, çatışmada cesur ama vicdani dengede zorlanabilen bir liderlik enerjisi.",
     strength: "Liderlik ve etki",
-    challenge: "Empati ve olcululuk",
+    challenge: "Empati ve ölçülülük",
   },
   BASAK: {
-    name: "Basak",
+    name: "Başak",
     emoji: "♍",
-    dateRange: "23 Agustos - 22 Eylul",
-    personality: "Gelisimi sabirla isleyen, etik durusu koruyan ve riskte kontrollu kalan bir ruh.",
-    strength: "Disiplinli gelisim",
-    challenge: "Guvenli alandan cikmak",
+    dateRange: "23 Ağustos - 22 Eylül",
+    personality: "Gelişimi sabırla işleyen, etik duruşu koruyan ve riskte kontrollü kalan bir ruh.",
+    strength: "Disiplinli gelişim",
+    challenge: "Güvenli alandan çıkmak",
   },
   TERAZI: {
     name: "Terazi",
     emoji: "♎",
-    dateRange: "23 Eylul - 22 Ekim",
-    personality: "Sosyal dengeyi kuran, adalet duygusu yuksek ama sert gerilimde zorlanan bir karakter.",
-    strength: "Uzlasi ve adalet",
-    challenge: "Sert catismada karar",
+    dateRange: "23 Eylül - 22 Ekim",
+    personality: "Sosyal dengeyi kuran, adalet duygusu yüksek ama sert gerilimde zorlanan bir karakter.",
+    strength: "Uzlaşı ve adalet",
+    challenge: "Sert çatışmada karar",
   },
   AKREP: {
     name: "Akrep",
     emoji: "♏",
-    dateRange: "23 Ekim - 21 Kasim",
-    personality: "Catismada guclu, riskte cesur ama sosyal iliskilerde zorlanan bir ruh.",
-    strength: "Cesaret ve kararlilik",
-    challenge: "Empati ve baglanti",
+    dateRange: "23 Ekim - 21 Kasım",
+    personality: "Çatışmada güçlü, riskte cesur ama sosyal ilişkilerde zorlanan bir ruh.",
+    strength: "Cesaret ve kararlılık",
+    challenge: "Empati ve bağlantı",
   },
   YAY: {
     name: "Yay",
     emoji: "♐",
-    dateRange: "22 Kasim - 21 Aralik",
-    personality: "Kesfe acik, riskte istekli ve buyumeye odakli; deger dengesini korumakta zorlanan bir yolcu.",
-    strength: "Kesif cesareti",
+    dateRange: "22 Kasım - 21 Aralık",
+    personality: "Keşfe açık, riskte istekli ve büyümeye odaklı; değer dengesini korumakta zorlanan bir yolcu.",
+    strength: "Keşif cesareti",
     challenge: "Sorumlulukta istikrar",
   },
   OGLAK: {
-    name: "Oglak",
+    name: "Oğlak",
     emoji: "♑",
-    dateRange: "22 Aralik - 19 Ocak",
-    personality: "Uzun vadede sabirli, etik cizgisi guclu ve riskte temkinli bir stratejist.",
-    strength: "Sabir ve strateji",
+    dateRange: "22 Aralık - 19 Ocak",
+    personality: "Uzun vadede sabırlı, etik çizgisi güçlü ve riskte temkinli bir stratejist.",
+    strength: "Sabır ve strateji",
     challenge: "Cesur risk alma",
   },
   KOVA: {
     name: "Kova",
     emoji: "♒",
-    dateRange: "20 Ocak - 18 Subat",
-    personality: "Toplulukta yenilikci, riskte atik ama gerilimde mesafelenen bir vizyon.",
+    dateRange: "20 Ocak - 18 Şubat",
+    personality: "Toplulukta yenilikçi, riskte atik ama gerilimde mesafelenen bir vizyon.",
     strength: "Yenilik ve sosyal vizyon",
     challenge: "Gerilimde denge",
   },
   BALIK: {
-    name: "Balik",
+    name: "Balık",
     emoji: "♓",
-    dateRange: "19 Subat - 20 Mart",
-    personality: "Vicdani ve sosyal bagi guclu, catismada sinir cizmekte zorlanan duygusal bir ruh.",
+    dateRange: "19 Şubat - 20 Mart",
+    personality: "Vicdani ve sosyal bağı güçlü, çatışmada sınır çizmekte zorlanan duygusal bir ruh.",
     strength: "Empati ve sezgi",
-    challenge: "Catismada net sinir",
+    challenge: "Çatışmada net sınır",
   },
 };
 export const zodiacInfoEn: Record<ZodiacSign, {

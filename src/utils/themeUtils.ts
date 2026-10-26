@@ -7,6 +7,8 @@ export interface UIPrefs {
   theme: ThemeMode;
   density: DensityMode;
   reduceMotion: boolean;
+  /** Titreşim geri bildirimi (Ayarlar > Hareket) */
+  hapticsEnabled: boolean;
   analyticsEnabled: boolean;
   personalizedAdsEnabled: boolean;
 }
@@ -15,6 +17,7 @@ export const DEFAULT_UI_PREFS: UIPrefs = {
   theme: 'dark',
   density: 'standard',
   reduceMotion: false,
+  hapticsEnabled: true,
   analyticsEnabled: false,
   personalizedAdsEnabled: false,
 };

@@ -4,53 +4,53 @@ export const skillTreeStrings: DomainStrings = {
   tr: {
     skillTree: {
       title: 'Yetenekler',
-      otherSkills: 'Diger',
-      backAria: 'Geri don',
+      otherSkills: 'Diğer',
+      backAria: 'Geri dön',
       buttons: {
         back: 'Geri',
       },
       talentBadge: 'YETENEK',
-      milestones: 'Kilometre Taslari',
+      milestones: 'Kilometre Taşları',
       modal: {
         detailSuffix: 'Detay',
         statusOpen: 'Açık',
         statusLocked: 'Kilitli',
-        rewards: 'Kazanc',
+        rewards: 'Kazanç',
       },
       skills: {
         coding: {
-          title: 'Yazilim',
+          title: 'Yazılım',
           milestones: {
             0: {
-              text: 'Freelance Isler',
+              text: 'Freelance İşler',
               desc: 'Basit web siteleri yaparak para kazanabilirsin.',
               benefits: {
                 0: '+100$/proje kazanma',
-                1: 'Evden calisma imkani',
+                1: 'Evden çalışma imkanı',
               },
             },
             1: {
               text: 'Hackathon',
               desc: 'Zekâ gerektiren özel etkinlikler açılır.',
               benefits: {
-                0: 'Odullu yarismalar',
-                1: 'Networking firsatlari',
+                0: 'Ödüllü yarışmalar',
+                1: 'Networking fırsatları',
               },
             },
             2: {
-              text: 'Kidemli Muhendis',
-              desc: 'Yazilim muhendisligi kariyeri garantilenir.',
+              text: 'Kıdemli Mühendis',
+              desc: 'Yazılım mühendisliği kariyeri garantilenir.',
               benefits: {
-                0: 'Yuksek maasli is firsatlari',
-                1: 'Startup kurma sansi',
+                0: 'Yüksek maaşlı iş fırsatları',
+                1: 'Startup kurma şansı',
               },
             },
             3: {
               text: 'Teknoloji Devi',
-              desc: 'Kendi sirketini kurma potansiyeli açılır.',
+              desc: 'Kendi şirketini kurma potansiyeli açılır.',
               benefits: {
-                0: 'Milyar dolarlik sirket kurma',
-                1: 'Teknoloji lideri unvani',
+                0: 'Milyar dolarlık şirket kurma',
+                1: 'Teknoloji lideri unvanı',
               },
             },
           },
@@ -59,16 +59,16 @@ export const skillTreeStrings: DomainStrings = {
           title: 'Müzik',
           milestones: {
             0: {
-              text: 'Sokak Muzigi',
-              desc: 'Sokakta gitar calarak harclik cikarirsin.',
+              text: 'Sokak Müziği',
+              desc: 'Sokakta gitar çalarak harçlık çıkarırsın.',
               benefits: {
-                0: 'Gunluk harclik kazanma',
-                1: 'Karizma artisi',
+                0: 'Günlük harçlık kazanma',
+                1: 'Karizma artışı',
               },
             },
             1: {
               text: 'Bestekar',
-              desc: 'Konservatuvar teklifi alma sansi dogar.',
+              desc: 'Konservatuvar teklifi alma şansı doğar.',
               benefits: {
                 0: 'Müzik kariyeri yolu',
                 1: 'Telif geliri',
@@ -76,17 +76,17 @@ export const skillTreeStrings: DomainStrings = {
             },
             2: {
               text: 'Rockstar',
-              desc: 'Dunyaca unlu bir muzisyen olma yolu açılır.',
+              desc: 'Dünyaca ünlü bir müzisyen olma yolu açılır.',
               benefits: {
                 0: 'Konser gelirleri',
                 1: 'Fan kitlesi',
               },
             },
             3: {
-              text: 'Virtuoz',
-              desc: 'Adini müzik tarihine yazdirirsin.',
+              text: 'Virtüöz',
+              desc: 'Adını müzik tarihine yazdırırsın.',
               benefits: {
-                0: 'Efsane statusu',
+                0: 'Efsane statüsü',
                 1: 'Müzik okulu acma',
               },
             },
@@ -96,16 +96,16 @@ export const skillTreeStrings: DomainStrings = {
           title: 'Spor',
           milestones: {
             0: {
-              text: 'Okul Takimi',
-              desc: 'Okul takimina secilme sansi dogar.',
+              text: 'Okul Takımı',
+              desc: 'Okul takımına seçilme şansı doğar.',
               benefits: {
-                0: 'Popularite artisi',
-                1: 'Burs imkani',
+                0: 'Popülarite artışı',
+                1: 'Burs imkanı',
               },
             },
             1: {
               text: 'Kaptan',
-              desc: 'Fiziksel olaylarda ustunluk saglarsin.',
+              desc: 'Fiziksel olaylarda üstünlük sağlarsın.',
               benefits: {
                 0: 'Liderlik bonusu',
                 1: 'Fiziksel güç',
@@ -116,15 +116,15 @@ export const skillTreeStrings: DomainStrings = {
               desc: 'Olimpiyat seviyesinde kariyer yolu açılır.',
               benefits: {
                 0: 'Milli gelir',
-                1: 'Ulke taninirligi',
+                1: 'Ülke tanınırlığı',
               },
             },
             3: {
               text: 'Efsane',
-              desc: 'Spor tarihinde iz birakirsin.',
+              desc: 'Spor tarihinde iz bırakırsın.',
               benefits: {
-                0: 'Efsane statu',
-                1: 'Spor liderligi sansi',
+                0: 'Efsane statü',
+                1: 'Spor liderliği şansı',
               },
             },
           },
@@ -133,55 +133,55 @@ export const skillTreeStrings: DomainStrings = {
           title: 'Atletizm',
           milestones: {
             0: {
-              text: 'Dayaniklilik',
+              text: 'Dayanıklılık',
               desc: 'Spor aktivitelerinde enerji tasarrufu artar.',
               benefits: {
-                0: 'Spor enerji maliyeti azalir',
-                1: 'Sağlık kazanimi artar',
+                0: 'Spor enerji maliyeti azalır',
+                1: 'Sağlık kazanımı artar',
               },
             },
             1: {
               text: 'Formda',
-              desc: 'Fiziksel dayanikliligin ust seviyeye çıkar.',
+              desc: 'Fiziksel dayanıklılığın üst seviyeye çıkar.',
               benefits: {
-                0: 'Disiplin artisinda bonus',
-                1: 'Fiziksel güç artisi',
+                0: 'Disiplin artışında bonus',
+                1: 'Fiziksel güç artışı',
               },
             },
             2: {
               text: 'Elit Sporcu',
-              desc: 'Spor kariyerlerinde zirveye yaklasilir.',
+              desc: 'Spor kariyerlerinde zirveye yaklaşılır.',
               benefits: {
-                0: 'Takim secmelerinde avantaj',
-                1: 'Spor bursu sansi',
+                0: 'Takım seçmelerinde avantaj',
+                1: 'Spor bursu şansı',
               },
             },
           },
         },
         logic: {
-          title: 'Mantik',
+          title: 'Mantık',
           milestones: {
             0: {
-              text: 'Hizli Kavrama',
-              desc: 'Ders calisirken zekâ artisi hizlanir.',
+              text: 'Hızlı Kavrama',
+              desc: 'Ders çalışırken zekâ artışı hızlanır.',
               benefits: {
-                0: 'Okul zekâ artisi',
-                1: 'Mat/Fen destegi',
+                0: 'Okul zekâ artışı',
+                1: 'Mat/Fen desteği',
               },
             },
             1: {
               text: 'Analitik Zihin',
-              desc: 'Zor problemleri cozmek kolaylasir.',
+              desc: 'Zor problemleri çözmek kolaylaşır.',
               benefits: {
-                0: 'Sinavlarda avantaj',
-                1: 'Not artisinda bonus',
+                0: 'Sınavlarda avantaj',
+                1: 'Not artışında bonus',
               },
             },
             2: {
               text: 'Stratejist',
-              desc: 'Akil oyunlarinda ustalasirsin.',
+              desc: 'Akıl oyunlarında ustalaşırsın.',
               benefits: {
-                0: 'Yuksek zekâ bonusu',
+                0: 'Yüksek zekâ bonusu',
                 1: 'Özel etkinlikler',
               },
             },
@@ -191,24 +191,24 @@ export const skillTreeStrings: DomainStrings = {
           title: 'Okuma',
           milestones: {
             0: {
-              text: 'Hizli Okur',
-              desc: 'Metinleri daha hizli kavrarsin.',
+              text: 'Hızlı Okur',
+              desc: 'Metinleri daha hızlı kavrarsın.',
               benefits: {
-                0: 'Dil notu artisi',
+                0: 'Dil notu artışı',
                 1: 'Kitap etkinlikleri',
               },
             },
             1: {
-              text: 'Kulturlu',
-              desc: 'Bilgi birikimin dikkat ceker.',
+              text: 'Kültürlü',
+              desc: 'Bilgi birikimin dikkat çeker.',
               benefits: {
                 0: 'Sosyal diyaloglarda avantaj',
-                1: 'Arastirma firsatlari',
+                1: 'Araştırma fırsatları',
               },
             },
             2: {
               text: 'Bilge',
-              desc: 'Derin analiz yetenegi kazanirsin.',
+              desc: 'Derin analiz yeteneği kazanırsın.',
               benefits: {
                 0: 'Dil notu zirvesi',
                 1: 'Özel gorevler',
@@ -217,30 +217,30 @@ export const skillTreeStrings: DomainStrings = {
           },
         },
         teamwork: {
-          title: 'Takim',
+          title: 'Takım',
           milestones: {
             0: {
               text: 'Uyum',
-              desc: 'Takim calismalarinda verimin artar.',
+              desc: 'Takım çalışmalarında verimin artar.',
               benefits: {
                 0: 'Sosyal enerji tasarrufu',
-                1: 'İlişki artisi',
+                1: 'İlişki artışı',
               },
             },
             1: {
-              text: 'Kaptanlik',
-              desc: 'Grup liderliginde one cikarsin.',
+              text: 'Kaptanlık',
+              desc: 'Grup liderliğinde öne çıkarsın.',
               benefits: {
-                0: 'Takim etkinliklerinde avantaj',
+                0: 'Takım etkinliklerinde avantaj',
                 1: 'Liderlik bonusu',
               },
             },
             2: {
-              text: 'Birlestirici',
-              desc: 'Herkesi motive eden bir rol kazanirsin.',
+              text: 'Birleştirici',
+              desc: 'Herkesi motive eden bir rol kazanırsın.',
               benefits: {
-                0: 'Yuksek ilişki artisi',
-                1: 'Zor etkinliklerde basari',
+                0: 'Yüksek ilişki artışı',
+                1: 'Zor etkinliklerde başarı',
               },
             },
           },
@@ -249,85 +249,85 @@ export const skillTreeStrings: DomainStrings = {
           title: 'Sanat',
           milestones: {
             0: {
-              text: 'Estetik Goz',
+              text: 'Estetik Göz',
               desc: 'Sanat aktivitelerinde karizma artar.',
               benefits: {
                 0: 'Karizma bonusu',
-                1: 'Atolye etkinlikleri',
+                1: 'Atölye etkinlikleri',
               },
             },
             1: {
-              text: 'Sahne Isigi',
-              desc: 'Yaraticiligin dikkat ceker.',
+              text: 'Sahne Işığı',
+              desc: 'Yaratıcılığın dikkat çeker.',
               benefits: {
-                0: 'Sergi firsati',
+                0: 'Sergi fırsatı',
                 1: 'Sanat etkinliklerinde bonus',
               },
             },
             2: {
-              text: 'Usta Sanatci',
-              desc: 'Sanat dunyasinda un kazanirsin.',
+              text: 'Usta Sanatçı',
+              desc: 'Sanat dünyasında ün kazanırsın.',
               benefits: {
-                0: 'Prestij artisi',
+                0: 'Prestij artışı',
                 1: 'Özel projeler',
               },
             },
           },
         },
         writing: {
-          title: 'Yazarlik',
+          title: 'Yazarlık',
           milestones: {
             0: {
-              text: 'Kisa Hikaye',
-              desc: 'Yazma aktivitelerinde hizlanirsin.',
+              text: 'Kısa Hikaye',
+              desc: 'Yazma aktivitelerinde hızlanırsın.',
               benefits: {
                 0: 'Yazma zekâ bonusu',
-                1: 'Blog firsati',
+                1: 'Blog fırsatı',
               },
             },
             1: {
               text: 'Yazar',
-              desc: 'Yazilarin ilgi gormeye baslar.',
+              desc: 'Yazıların ilgi görmeye başlar.',
               benefits: {
-                0: 'Yayin sansi',
+                0: 'Yayın şansı',
                 1: 'Yeni etkinlikler',
               },
             },
             2: {
-              text: 'Romanci',
-              desc: 'Genis kitlelere ulasirsin.',
+              text: 'Romancı',
+              desc: 'Geniş kitlelere ulaşırsın.',
               benefits: {
-                0: 'Yuksek zekâ bonusu',
+                0: 'Yüksek zekâ bonusu',
                 1: 'Kitap teklifi',
               },
             },
           },
         },
         work_ethic: {
-          title: 'Caliskanlik',
+          title: 'Çalışkanlık',
           milestones: {
             0: {
-              text: 'Duzenli',
-              desc: 'Calisma temposunu oturtursun.',
+              text: 'Düzenli',
+              desc: 'Çalışma temposunu oturtursun.',
               benefits: {
-                0: 'Is enerji tasarrufu',
-                1: 'Gelir artisi',
+                0: 'İş enerji tasarrufu',
+                1: 'Gelir artışı',
               },
             },
             1: {
-              text: 'Guvenilir',
-              desc: 'Is yerinde tercih edilirsin.',
+              text: 'Güvenilir',
+              desc: 'İş yerinde tercih edilirsin.',
               benefits: {
-                0: 'Terfi sansi',
-                1: 'Kazanc bonusu',
+                0: 'Terfi şansı',
+                1: 'Kazanç bonusu',
               },
             },
             2: {
-              text: 'Disiplin Ustasi',
-              desc: 'Calisma disiplini zirveye çıkar.',
+              text: 'Disiplin Ustası',
+              desc: 'Çalışma disiplini zirveye çıkar.',
               benefits: {
-                0: 'Yuksek gelir bonusu',
-                1: 'Özel is firsatlari',
+                0: 'Yüksek gelir bonusu',
+                1: 'Özel iş fırsatları',
               },
             },
           },
@@ -336,55 +336,55 @@ export const skillTreeStrings: DomainStrings = {
           title: 'Is',
           milestones: {
             0: {
-              text: 'Pazarlikci',
-              desc: 'Alisveriste fiyat dusurursun.',
+              text: 'Pazarlıkçı',
+              desc: 'Alışverişte fiyat düşürürsün.',
               benefits: {
-                0: 'Indirim bonusu',
+                0: 'İndirim bonusu',
                 1: 'Ek tasarruf',
               },
             },
             1: {
-              text: 'Yatirimci',
-              desc: 'Para yonetiminde ilerlersin.',
+              text: 'Yatırımcı',
+              desc: 'Para yönetiminde ilerlersin.',
               benefits: {
-                0: 'Kazanc artisi',
-                1: 'Yatirim firsatlari',
+                0: 'Kazanç artışı',
+                1: 'Yatırım fırsatları',
               },
             },
             2: {
-              text: 'Girisimci',
-              desc: 'Kendi isini kurma yolu açılır.',
+              text: 'Girişimci',
+              desc: 'Kendi işini kurma yolu açılır.',
               benefits: {
-                0: 'Büyük gelir firsatlari',
+                0: 'Büyük gelir fırsatları',
                 1: 'Özel etkinlikler',
               },
             },
           },
         },
         design: {
-          title: 'Tasarim',
+          title: 'Tasarım',
           milestones: {
             0: {
-              text: 'Görsel Dusunce',
-              desc: 'Tasarim islerinde hizlanirsin.',
+              text: 'Görsel Düşünce',
+              desc: 'Tasarım işlerinde hızlanırsın.',
               benefits: {
-                0: 'Tasarim karizma bonusu',
+                0: 'Tasarım karizma bonusu',
                 1: 'Mini projeler',
               },
             },
             1: {
               text: 'Portfolyo',
-              desc: 'Profesyonel isler gelmeye baslar.',
+              desc: 'Profesyonel işler gelmeye başlar.',
               benefits: {
-                0: 'Freelance isler',
-                1: 'Daha iyi kazanc',
+                0: 'Freelance işler',
+                1: 'Daha iyi kazanç',
               },
             },
             2: {
-              text: 'Yaratici Yonetmen',
+              text: 'Yaratıcı Yönetmen',
               desc: 'Büyük projelerde liderlik edersin.',
               benefits: {
-                0: 'Prestij artisi',
+                0: 'Prestij artışı',
                 1: 'Özel projeler',
               },
             },

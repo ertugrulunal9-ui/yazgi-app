@@ -9,15 +9,15 @@ export const eventsDomainStrings: DomainStrings = {
     events: {
       fallback: {
         continueChoice: 'Devam Et',
-        continueFeedback: 'Bir hata olustu ama devam ediyorsun.',
+        continueFeedback: 'Bir hata oluştu ama devam ediyorsun.',
       },
       swipe: {
         choiceHint: 'Bu seçim karakterini etkiler',
-        selectHint: 'Bu secimi onayla',
+        selectHint: 'Bu seçimi onayla',
         select: 'Seç',
-        waitToDecide: 'Karar vermek icin {seconds} bekle',
+        waitToDecide: 'Karar vermek için {seconds} bekle',
         selectAria: 'Seç: {text}',
-        swipeHint: 'kaydir',
+        swipeHint: 'kaydır',
         affectedStats: 'Etkilenir: {stats}',
         uncertain: 'Şansa bağlı',
       },

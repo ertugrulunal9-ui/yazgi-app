@@ -84,11 +84,16 @@ export const endingsStrings: DomainStrings = {
         runSummary: '{age} yaş • Uyum: %{compatibility} • {date}',
       },
       shareCard: {
-        keyMoments: 'Onemli Anlar',
+        keyMoments: 'Önemli Anlar',
         finalStatus: 'Son Durum',
         pointsAbbr: 'puan',
-        defaultSummary: 'Hayatim inisli cikisli bir yoldu.',
+        defaultSummary: 'Hayatım inişli çıkışlı bir yoldu.',
         scarAgeLabel: '({age} yaşında)',
+        echoLine: '{from} yaşındaki “{choice}” seçimim {to} yaşımda geri döndü.',
+      },
+      echoTrail: {
+        count: 'Hayatında {count} seçimin geri döndü.',
+        defining: 'En belirleyici olanlar',
       },
       personalities: {
         HELPFUL: 'Kalbini açık tuttun. İnsanlara uzandın, onlar da sana geri döndü.',
@@ -194,6 +199,11 @@ export const endingsStrings: DomainStrings = {
         pointsAbbr: 'pts',
         defaultSummary: 'My life was a road of ups and downs.',
         scarAgeLabel: '(at age {age})',
+        echoLine: 'My “{choice}” choice at age {from} came back at age {to}.',
+      },
+      echoTrail: {
+        count: '{count} of your choices came back during your life.',
+        defining: 'The most defining ones',
       },
       personalities: {
         HELPFUL: 'You kept your heart open. You reached out to people, and they came back to you.',

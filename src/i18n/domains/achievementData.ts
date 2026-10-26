@@ -4,9 +4,9 @@ export const achievementDataStrings: DomainStrings = {
   tr: {
     achievementData: {
       // === ONBOARDING CHAIN ===
-      onboarding_chain_first_choice: { name: 'İlk Karar', description: 'İlk 3 oturumda ilk olay kararini ver' },
+      onboarding_chain_first_choice: { name: 'İlk Karar', description: 'İlk 3 oturumda ilk olay kararını ver' },
       onboarding_chain_cohort_path: { name: 'Kendine Uygun Yol', description: 'Cohort hedefindeki ilk aksiyonu tamamla' },
-      onboarding_chain_routine_builder: { name: 'Rutin Kurucu', description: 'İlk 3 oturumda dengeli bir rutin olustur' },
+      onboarding_chain_routine_builder: { name: 'Rutin Kurucu', description: 'İlk 3 oturumda dengeli bir rutin oluştur' },
 
       // === STATS CATEGORY ===
       genius: { name: 'Dahi', description: 'Zekâ 90\'a ulaş' },

@@ -260,4 +260,57 @@ export const SHORT_TERM_ECHO_EVENTS: GameEvent[] = [
       },
     ],
   },
+  // --- tr_ninni ---
+  {
+    id: 'early_lullaby_ritual_echo',
+    text: "Annenin o gece söylediği ninni artık her gecenin parçası. Bu akşam ninninin son hecesini sen söylemeye çalışıyorsun.",
+    minAge: 1,
+    maxAge: 4,
+    rarity: 'UNCOMMON',
+    personalityCategory: 'SOCIAL',
+    reqEventIds: ['tr_ninni'],
+    tags: ['followup', 'scheduled_only', 'short_echo', 'family'],
+    choices: [
+      {
+        id: 'lullaby_echo_sing',
+        text: 'Son heceyi sen söyle',
+        effect: { charisma: 3, familyRelation: 3 },
+        feedback: "'Ninni' yerine 'nin' dedin ama annen alkışladı. Artık her gece son söz senin.",
+        memory: { emotion: 'SATISFACTION', weight: 'HIGH' },
+      },
+      {
+        id: 'lullaby_echo_sleep',
+        text: 'Ninni bitmeden uyu',
+        effect: { health: 3, energy: 5 },
+        feedback: 'Daha ikinci kıtada gözlerin kapandı. Annen yorganını düzeltip alnından öptü.',
+        memory: { emotion: 'SATISFACTION', weight: 'MEDIUM' },
+      },
+    ],
+  },
+  {
+    id: 'early_self_soothe_echo',
+    text: "Artık gece uyandığında ağlamıyorsun. Battaniyeni sıkıca tutup tavandaki gölgeleri sayıyorsun. Annen sabah 'Ne uslu uyudun' diye şaşırıyor.",
+    minAge: 1,
+    maxAge: 4,
+    rarity: 'UNCOMMON',
+    personalityCategory: 'GROWTH',
+    reqEventIds: ['tr_ninni'],
+    tags: ['followup', 'scheduled_only', 'short_echo', 'family'],
+    choices: [
+      {
+        id: 'self_soothe_echo_shadows',
+        text: 'Gölgelerden hikaye uydur',
+        effect: { intelligence: 3, energy: -2 },
+        feedback: 'Gölgelerden bir fil, bir gemi, bir dev uydurdun. Kimseye anlatamadın ama kafanda koca bir dünya kurdun.',
+        memory: { emotion: 'SATISFACTION', weight: 'HIGH' },
+      },
+      {
+        id: 'self_soothe_echo_call',
+        text: 'Bu kez annene seslen',
+        effect: { familyRelation: 4 },
+        feedback: "Ağlamadan, sakin bir sesle 'Anne' dedin. Annen gelip yanına uzandı; ikiniz de gülerek uyudunuz.",
+        memory: { emotion: 'SATISFACTION', weight: 'MEDIUM' },
+      },
+    ],
+  },
 ];

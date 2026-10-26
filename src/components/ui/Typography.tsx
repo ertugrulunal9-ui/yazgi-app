@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleProp, StyleSheet, Text, TextProps, TextStyle } from 'react-native';
+import { StyleProp, StyleSheet, TextProps, TextStyle } from 'react-native';
+import { Text } from './LocaleText';
 import { useUI } from '../../context/UIContext';
 
 type TypographyVariant = 'h1' | 'h2' | 'body' | 'caption' | 'label';

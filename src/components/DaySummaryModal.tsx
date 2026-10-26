@@ -1,6 +1,7 @@
 /**
  * DaySummaryModal — Gün sonu özet ekranı.
- * Oyuncu "Günü Bitir" dediğinde kısa bir özet gösterir, ardından tur ilerler.
+ * Oyuncu harcayabileceği enerjiyi bırakarak "Günü Bitir" dediğinde onay olarak açılır:
+ * kısa özet + geri dönüp enerjiyi kullanma seçeneği. Enerji bittiyse gösterilmez.
  */
 
 import React, { useMemo } from 'react';
@@ -20,6 +21,7 @@ interface DaySummaryModalProps {
   stats: Stats;
   theme: any;
   onContinue: () => void;
+  onCancel: () => void;
 }
 
 const getEnergyState = (energy: number, maxEnergy: number): 'energetic' | 'normal' | 'tired' | 'exhausted' => {
@@ -48,6 +50,7 @@ export const DaySummaryModal: React.FC<DaySummaryModalProps> = ({
   stats,
   theme,
   onContinue,
+  onCancel,
 }) => {
   const energyState = useMemo(() => getEnergyState(energy, maxEnergy), [energy, maxEnergy]);
   const energyColor = useMemo(() => getEnergyColor(energy, maxEnergy), [energy, maxEnergy]);
@@ -55,6 +58,8 @@ export const DaySummaryModal: React.FC<DaySummaryModalProps> = ({
   const summaryTitle = tRuntime('app.summaryTitle');
   const dayCompleted = tRuntime('app.dayCompleted', { age });
   const summaryContinue = tRuntime('app.summaryContinue');
+  const summaryBack = tRuntime('app.summaryBack');
+  const energyLeftHint = tRuntime('app.summaryEnergyLeftHint');
 
   const summaryItems = useMemo(() => {
     const items: { icon: string; label: string; value: string; color: string }[] = [
@@ -110,10 +115,10 @@ export const DaySummaryModal: React.FC<DaySummaryModalProps> = ({
       transparent
       animationType="fade"
       visible={visible}
-      onRequestClose={onContinue}
+      onRequestClose={onCancel}
     >
       <View style={styles.root}>
-        <Pressable style={styles.backdrop} onPress={onContinue} />
+        <Pressable style={styles.backdrop} onPress={onCancel} />
         <View style={[styles.card, { backgroundColor: theme.surfaceBase, borderColor: theme.border }]}>
           <View style={[styles.handle, { backgroundColor: theme.border }]} />
 
@@ -122,6 +127,9 @@ export const DaySummaryModal: React.FC<DaySummaryModalProps> = ({
           </Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
             {dayCompleted}
+          </Text>
+          <Text style={[styles.hint, { color: energyColor }]}>
+            {energyLeftHint}
           </Text>
 
           <View style={styles.itemsContainer}>
@@ -151,6 +159,14 @@ export const DaySummaryModal: React.FC<DaySummaryModalProps> = ({
             accessibilityLabel={summaryContinue}
           >
             <Text style={styles.continueText}>{summaryContinue}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={onCancel}
+            style={styles.backButton}
+            accessibilityRole="button"
+            accessibilityLabel={summaryBack}
+          >
+            <Text style={[styles.backText, { color: theme.textSecondary }]}>{summaryBack}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -197,7 +213,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'center',
     marginTop: 4,
-    marginBottom: 16,
+    marginBottom: 8,
+  },
+  hint: {
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 12,
   },
   itemsContainer: {
     marginBottom: 16,
@@ -231,5 +253,14 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '700',
+  },
+  backButton: {
+    paddingVertical: 12,
+    marginTop: 4,
+    alignItems: 'center',
+  },
+  backText: {
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

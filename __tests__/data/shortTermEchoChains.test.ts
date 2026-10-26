@@ -8,7 +8,7 @@ import { enEventTranslations } from '../../src/i18n/events/en';
 const sourceById = new Map([...TURKISH_EVENTS, ...AGE_SPECIFIC_EVENTS].map(event => [event.id, event]));
 const targetById = new Map(SHORT_TERM_ECHO_EVENTS.map(event => [event.id, event]));
 
-const SHORT_ECHO_SOURCE_IDS = ['tr_ilk_kelime', 'tr_kres_ilk_gun', 'tr_kardes_gelmis', 'tr_ilk_yalan'] as const;
+const SHORT_ECHO_SOURCE_IDS = ['tr_ilk_kelime', 'tr_kres_ilk_gun', 'tr_kardes_gelmis', 'tr_ilk_yalan', 'tr_ninni'] as const;
 
 const staticChoices = (event: GameEvent): Choice[] => event.choices.flatMap(choice => (
   typeof choice === 'function' ? [] : [choice]

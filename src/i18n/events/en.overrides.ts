@@ -10,6 +10,10 @@ export const enEventTranslationsOverrides: EventTranslationCatalog = {
         text: 'Try to run!',
         feedback: "You tumble, then pop right back up. That's one determined little hero.",
       },
+      adim_el: {
+        text: "Don't let go of Mom's hand",
+        feedback: "You held on tight to your mom's finger and walked all the way across the room. You took your time, but you never fell.",
+      },
     },
   },
   tr_ilk_kelime: {
@@ -100,6 +104,10 @@ export const enEventTranslationsOverrides: EventTranslationCatalog = {
       tuvalet_basari: {
         text: 'Use the potty',
         feedback: "Huge applause, songs, maybe even a reward. You're officially a big kid now.",
+      },
+      tuvalet_bekle: {
+        text: "I'm not ready yet",
+        feedback: "Your mom didn't push: 'It'll happen when it's time.' A month later you walked to the potty all by yourself.",
       },
     },
   },
@@ -4100,4 +4108,139 @@ export const enEventTranslationsOverrides: EventTranslationCatalog = {
     },
   },
 
+  // Opening events (ages 1-2) and their echoes
+  tr_dis_bugdayi: {
+    text: "Your first tooth is in! Grandma cooked tooth wheat and sprinkled grain over your head. Now a pen, a stethoscope and a handful of coins are laid out in front of you. Everyone holds their breath: which one will you reach for?",
+    choices: {
+      dis_kalem: {
+        text: 'Grab the pen',
+        feedback: "You grabbed the pen and put it straight in your mouth. Grandpa announced to everyone, 'This one will study!'",
+      },
+      dis_stetoskop: {
+        text: 'Reach for the stethoscope',
+        feedback: "You tried to wrap the stethoscope around your neck. Grandma cried with joy: 'This one will be a doctor!'",
+      },
+      dis_para: {
+        text: 'Play with the coins',
+        feedback: "You jingled the coins and giggled. Your uncle said 'A merchant in the making!' and dropped them into your piggy bank.",
+      },
+    },
+  },
+  tr_ninni: {
+    text: "You woke up in the middle of the night. The dark room looks huge and the curtains are moving. Your lips tremble; you're about to cry.",
+    choices: {
+      ninni_agla: {
+        text: 'Cry so Mom comes',
+        feedback: "Your mom came with sleepy eyes, picked you up and sang a lullaby. There wasn't a hint of complaint in her voice.",
+      },
+      ninni_kendin: {
+        text: 'Hug your blanket and calm down',
+        feedback: "You wound the edge of your blanket around your fingers and slowly calmed down. Nobody noticed, but you learned something.",
+      },
+    },
+  },
+  tr_bayram_misafir: {
+    text: "On the morning of the holiday the house is full of guests. Aunties pass you from lap to lap, pinch your cheeks and say 'Bless you!'",
+    choices: {
+      bayram_gulumse: {
+        text: 'Smile at everyone',
+        feedback: 'You giggled in every lap. You were worn out by evening, but your piggy bank filled up with holiday money.',
+      },
+      bayram_saklan: {
+        text: "Hide behind Mom's skirt",
+        feedback: "Only your eyes peeked out from behind your mom's skirt. The aunties said 'So shy'; your mom didn't hand you to anyone.",
+      },
+    },
+  },
+  tr_ilk_kasik: {
+    text: "You're in your high chair. Mom put the spoon in your hand: 'Come on, feed yourself!' There's already yogurt everywhere.",
+    choices: {
+      kasik_kendin: {
+        text: 'Try to feed yourself',
+        feedback: 'Half the yogurt went in your mouth, half on your eyebrows. Mom took a photo; it hung in the living room for years.',
+      },
+      kasik_annen: {
+        text: 'Hand the spoon back to Mom',
+        feedback: "Mom flew the spoon into your mouth shouting 'Here comes the plane!' The bowl was empty and you slept with a full tummy.",
+      },
+    },
+  },
+  tr_cee_oyunu: {
+    text: "Your uncle covers his face with his hands... and opens them with a 'Peekaboo!' It surprises you every single time.",
+    choices: {
+      cee_gul: {
+        text: 'Burst out laughing',
+        feedback: "You laughed so hard you got the hiccups. Your uncle said, 'This kid's laugh lights up the whole house.'",
+      },
+      cee_sen: {
+        text: 'Cover your own face',
+        feedback: "You covered your face with your little hands, then opened them: 'Peekaboo!' Your uncle pretended to be surprised; this time the game was yours.",
+      },
+    },
+  },
+  early_lullaby_ritual_echo: {
+    text: "The lullaby your mom sang that night is now part of every night. This evening you try to sing its last syllable yourself.",
+    choices: {
+      lullaby_echo_sing: {
+        text: 'Sing the last syllable',
+        feedback: "You said 'lul' instead of 'lullaby', but your mom clapped. Now the last word is yours every night.",
+      },
+      lullaby_echo_sleep: {
+        text: 'Fall asleep before it ends',
+        feedback: 'Your eyes closed by the second verse. Your mom tucked in your blanket and kissed your forehead.',
+      },
+    },
+  },
+  early_self_soothe_echo: {
+    text: "You no longer cry when you wake at night. You hold your blanket tight and count the shadows on the ceiling. In the morning your mom is surprised: 'You slept so well!'",
+    choices: {
+      self_soothe_echo_shadows: {
+        text: 'Make up stories from the shadows',
+        feedback: 'You made an elephant, a ship and a giant out of the shadows. You could not tell anyone, but you built a whole world in your head.',
+      },
+      self_soothe_echo_call: {
+        text: 'Call your mom this time',
+        feedback: "Without crying, you said 'Mom' in a calm voice. She came and lay down next to you; you both fell asleep laughing.",
+      },
+    },
+  },
+  echo_dis_bugdayi_kalem: {
+    text: "Your teacher read your essay out loud to the class. That evening your mom smiles: 'You grabbed the pen at your tooth wheat party too, remember?'",
+    choices: {
+      echo_kalem_yarisma: {
+        text: 'Enter the essay contest',
+        feedback: 'You gave your weekends to writing. You got an honorable mention, and your name went up on the school board.',
+      },
+      echo_kalem_defter: {
+        text: 'Keep your writing to yourself',
+        feedback: "You bought a notebook and write a page every night. Nobody reads it, but you get a little better with every page.",
+      },
+    },
+  },
+  echo_dis_bugdayi_stetoskop: {
+    text: "In PE a friend fell and cut their knee. While everyone froze, you were the first to run over. Hearing this, Grandma says: 'Well, this one did pick the stethoscope at the tooth wheat party.'",
+    choices: {
+      echo_steto_kurs: {
+        text: 'Sign up for a first aid course',
+        feedback: "When the course ended you hung your certificate in your room. You are now the school's unofficial nurse.",
+      },
+      echo_steto_arkadas: {
+        text: 'Stay with your friend',
+        feedback: 'You walked them to the nurse, telling jokes so they would not be scared. You have been best friends ever since.',
+      },
+    },
+  },
+  echo_dis_bugdayi_para: {
+    text: "You broke open your piggy bank: every coin since your tooth wheat party is there. Your uncle laughs: 'I told you, a merchant in the making!'",
+    choices: {
+      echo_para_bileklik: {
+        text: 'Buy beads and sell bracelets',
+        feedback: 'You sold bracelets at recess. Not all of them went, but you saw your first profit; the bead marks on your fingers became your pride.',
+      },
+      echo_para_hediye: {
+        text: 'Buy your mom a present',
+        feedback: 'With everything in the piggy bank you bought your mom a headscarf. She wore it on holidays for years.',
+      },
+    },
+  },
 };

@@ -8,19 +8,19 @@ import { getDominantTendency, normalizePersonalityState } from '../systems/Perso
 
 export const MOMENTUM_STREAK_LEVEL_HINTS: Record<PersonalityTendency, Record<'BUILDING' | 'ACTIVE' | 'POWERFUL', string>> = {
   HELPFUL: {
-    BUILDING: 'Son zamanlarda daha yardimsever kararlar veriyorsun.',
-    ACTIVE: 'Yardimsever tarafin belirginlesiyor, insanlar bunu hissediyor.',
-    POWERFUL: 'Yardimsever karakterin artik imzan haline geliyor.',
+    BUILDING: 'Son zamanlarda daha yardımsever kararlar veriyorsun.',
+    ACTIVE: 'Yardımsever tarafın belirginleşiyor, insanlar bunu hissediyor.',
+    POWERFUL: 'Yardımsever karakterin artık imzan haline geliyor.',
   },
   PRAGMATIC: {
-    BUILDING: 'Kararlarinda planli bir tutarlilik olusuyor.',
-    ACTIVE: 'Pragmatik bakisin olaylari daha net yonlendiriyor.',
-    POWERFUL: 'Pragmatik refleksin zor anlarda seni tasiyan eksen oldu.',
+    BUILDING: 'Kararlarında planlı bir tutarlılık oluşuyor.',
+    ACTIVE: 'Pragmatik bakışın olayları daha net yönlendiriyor.',
+    POWERFUL: 'Pragmatik refleksin zor anlarda seni taşıyan eksen oldu.',
   },
   AGGRESSIVE: {
-    BUILDING: 'Sinirlarini daha sert cizmeye basladin.',
-    ACTIVE: 'Sert tavrin etkisini giderek daha fazla hissettiriyor.',
-    POWERFUL: 'Agresif refleksin artik karakterinin baskin tonu haline geldi.',
+    BUILDING: 'Sınırlarını daha sert çizmeye başladın.',
+    ACTIVE: 'Sert tavrın etkisini giderek daha fazla hissettiriyor.',
+    POWERFUL: 'Agresif refleksin artık karakterinin baskın tonu haline geldi.',
   },
 };
 

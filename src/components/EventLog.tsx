@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, ListRenderItemInfo } from 'react-native';
+import { View, FlatList, StyleSheet, ListRenderItemInfo } from 'react-native';
+import { Text } from './ui/LocaleText';
 import { LogEntry } from '../types';
 import { tRuntime } from '../i18n/strings';
 import { useRuntimeLocale } from '../i18n/useRuntimeLocale';

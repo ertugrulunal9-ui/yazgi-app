@@ -1,5 +1,6 @@
 import React from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Modal, View, TouchableOpacity, StyleSheet } from 'react-native';
+import { Text } from './ui/LocaleText';
 import { Feather } from '@expo/vector-icons';
 import { getThemeTokens } from '../utils/themeUtils';
 import { tRuntime } from '../i18n/strings';
@@ -168,7 +169,7 @@ export const MilestoneDetailModal: React.FC<MilestoneDetailModalProps> = ({
 
             <View style={styles.benefitContainer}>
               <Text style={styles.benefitTitle}>
-                {tRuntime('skillTree.modal.rewards', undefined, 'Kazanc')}
+                {tRuntime('skillTree.modal.rewards', undefined, 'Kazanç')}
               </Text>
               {milestone.benefits.map((benefit, index) => (
                 <View key={index} style={styles.benefitItem}>

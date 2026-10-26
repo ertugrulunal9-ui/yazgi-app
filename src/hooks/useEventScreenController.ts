@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Dimensions } from 'react-native';
-import { eventStart, echoReveal, buttonPress, importantDecision, badOutcomeHaptic, milestoneHaptic } from '../animations';
+import { eventStart, echoReveal, choiceCommit, badOutcomeHaptic, goodOutcomeFeedback, milestoneHaptic } from '../animations';
 import { Choice, EventContext } from '../types';
 import { useGame } from '../context/GameContext';
 import { useEvents } from './useEvents';
@@ -74,7 +74,7 @@ export const useEventScreenController = () => {
     AccessibilityInfo?.announceForAccessibility?.(feedback);
     const changeCount = Object.values(gameState.lastResult?.changes || {}).filter(value => Number(value) !== 0).length;
     if (changeCount > 0) {
-      AccessibilityInfo?.announceForAccessibility?.(`${changeCount} stat degisti`);
+      AccessibilityInfo?.announceForAccessibility?.(`${changeCount} stat değişti`);
     }
   }, [gameState.phase, gameState.lastResult]);
 
@@ -82,8 +82,8 @@ export const useEventScreenController = () => {
     const resolved = typeof choice === 'function' ? resolveChoice(choice) : choice;
     lastSelectedChoiceRef.current = { choice: resolved, index: choiceIndex };
 
-    buttonPress();
-    importantDecision();
+    // Tek onay titreşimi; basma tıkı düğmenin kendisinden gelir (önceden 3 tık + 5 titreşim üst üste biniyordu)
+    choiceCommit();
 
     const turnResult = handleEventChoice(choice, choiceIndex);
     const momentumFeedback = turnResult.momentumFeedback;
@@ -105,7 +105,7 @@ export const useEventScreenController = () => {
 
     if (momentumFeedback.unlockedNow) {
       showFloatingText(
-        `${momentumFeedback.tendencyLabel} yolu acildi!`,
+        `${momentumFeedback.tendencyLabel} yolu açıldı!`,
         SCREEN_WIDTH * 0.22,
         165,
         '#fcd34d',
@@ -128,7 +128,6 @@ export const useEventScreenController = () => {
     if (elapsed < MIN_RESULT_DISPLAY_TIME || continueHandledRef.current) return;
 
     continueHandledRef.current = true;
-    buttonPress();
     continueAfterResult();
   }, [continueAfterResult]);
 
@@ -215,7 +214,7 @@ export const useEventScreenController = () => {
         const undone = undoLastChoice();
         if (!undone) {
           showFloatingText(
-            'Geri alma su an kullanilamiyor.',
+            'Geri alma şu an kullanılamıyor.',
             SCREEN_WIDTH * 0.2,
             118,
             '#fda4af',
@@ -238,7 +237,7 @@ export const useEventScreenController = () => {
 
       if (!adResult.success) {
         showFloatingText(
-          adResult.error || 'Reklam gosterilemedi.',
+          adResult.error || 'Reklam gösterilemedi.',
           SCREEN_WIDTH * 0.2,
           118,
           '#fda4af',
@@ -257,7 +256,7 @@ export const useEventScreenController = () => {
       const undone = undoLastChoice();
       if (!undone) {
         showFloatingText(
-          'Geri alma verisi bulunamadi.',
+          'Geri alma verisi bulunamadı.',
           SCREEN_WIDTH * 0.2,
           118,
           '#fda4af',
@@ -283,7 +282,7 @@ export const useEventScreenController = () => {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown undo error';
       showFloatingText(
-        'Geri alma sirasinda hata olustu.',
+        'Geri alma sırasında hata oluştu.',
         SCREEN_WIDTH * 0.2,
         118,
         '#fda4af',
@@ -359,8 +358,11 @@ export const useEventScreenController = () => {
 
   useEffect(() => {
     if (gameState.phase !== 'RESULT' || !gameState.lastResult?.changes) return;
-    const hasNegative = Object.values(gameState.lastResult.changes).some(v => typeof v === 'number' && v < 0);
-    if (hasNegative) badOutcomeHaptic();
+    const values = Object.values(gameState.lastResult.changes).filter((v): v is number => typeof v === 'number');
+    const net = values.reduce((sum, v) => sum + v, 0);
+    // Net kayıpta olumsuz, net kazançta olumlu ses/titreşim (önceden yalnızca kötü sonuç ses çıkarıyordu)
+    if (values.some(v => v < 0) && net <= 0) badOutcomeHaptic();
+    else if (net > 0) goodOutcomeFeedback();
   }, [gameState.phase, gameState.lastResult]);
 
   const eventChoiceSet = useMemo(() => getEventChoiceSet(gameState), [gameState]);

@@ -6,7 +6,8 @@
  */
 
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Modal } from 'react-native';
+import { View, StyleSheet, Pressable, Modal } from 'react-native';
+import { Text } from './ui/LocaleText';
 import { Feather } from '@expo/vector-icons';
 import type { FateState } from '../types';
 import { previewFateOdds, getPityModifier, getZodiacModifier } from '../systems/FateEngine';

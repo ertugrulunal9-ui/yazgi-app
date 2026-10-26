@@ -30,6 +30,7 @@ import {
 } from '../utils/gameUtils';
 import { logQuickStart } from '../utils/analyticsEvents';
 import { getDensityMetrics, getThemeTokens } from '../utils/themeUtils';
+import { toUpperLocale } from '../utils/localeText';
 import { checkDailyLogin, getLegacyBonusBreakdown } from '../utils/metaProgression';
 import {
   FadeInDownView,
@@ -254,7 +255,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({
   const zodiac = zodiacInfo[zodiacSign];
   const accessoryOptions = useMemo(() => ([
     tStatic('app.accessoryNone', undefined, 'Yok'),
-    tStatic('app.accessoryGlasses', undefined, 'Gozluk'),
+    tStatic('app.accessoryGlasses', undefined, 'Gözlük'),
     tStatic('app.accessoryHat', undefined, 'Sapka'),
   ]), [tStatic]);
   useEffect(() => {
@@ -311,7 +312,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({
         tStatic(
           'app.completeRequiredFields',
           undefined,
-          'Baslamak icin ad, soyad ve sehir gerekli.'
+          'Başlamak için ad, soyad ve şehir gerekli.'
         )
       );
       return;
@@ -440,7 +441,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({
                 onPress={() => setDailyRewardMessage(null)}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 accessibilityRole="button"
-                accessibilityLabel={tStatic('app.dismissDailyReward', undefined, 'Miras puani bildirimini kapat')}
+                accessibilityLabel={tStatic('app.dismissDailyReward', undefined, 'Miras puanı bildirimini kapat')}
               >
                 <Text style={{ color: '#22c55e', fontSize: 14, fontWeight: '800' }}>x</Text>
               </TouchableOpacity>
@@ -456,7 +457,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({
             style={tabButtonStyle('play')}
             activeOpacity={0.85}
             accessibilityRole="button"
-            accessibilityLabel={tStatic('app.openHubTab', undefined, 'Basla sekmesi')}
+            accessibilityLabel={tStatic('app.openHubTab', undefined, 'Başla sekmesi')}
           >
             <Text style={{ color: activeTab === 'play' ? theme.textPrimary : theme.textSecondary, fontWeight: '700' }}>
               {tStatic('app.tabStart', undefined, 'Basla')}
@@ -568,11 +569,11 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({
             {/* Avatar Seçici — Faz 6A */}
             <View style={sectionStyle}>
               <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
-                {tStatic('app.appearanceTitle', undefined, 'Gorunum')}
+                {tStatic('app.appearanceTitle', undefined, 'Görünüm')}
               </Text>
               <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
                 {/* Avatar önizleme */}
-                <Avatar config={avatar} age={10} size={52} />
+                <Avatar config={avatar} age={10} gender={gender} size={52} />
 
                 <View style={{ flex: 1, gap: 8 }}>
                   {/* Saç */}
@@ -628,7 +629,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({
 
             <View style={sectionStyle}>
               <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
-                {tStatic('app.birthInfo', undefined, 'Dogum Bilgisi')}
+                {tStatic('app.birthInfo', undefined, 'Doğum Bilgisi')}
               </Text>
               <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
                 <View style={{ flex: 1 }}>
@@ -644,7 +645,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({
                         setBirthMonth(monthIndex + 1);
                       }
                     }}
-                    placeholder={tStatic('app.selectMonth', undefined, 'Ay sec')}
+                    placeholder={tStatic('app.selectMonth', undefined, 'Ay seç')}
                     theme={theme}
                     metrics={metrics}
                   />
@@ -657,7 +658,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({
                     value={String(birthDay)}
                     options={dayOptions}
                     onSelect={(day) => setBirthDay(Number(day))}
-                    placeholder={tStatic('app.selectDay', undefined, 'Gun sec')}
+                    placeholder={tStatic('app.selectDay', undefined, 'Gün seç')}
                     theme={theme}
                     metrics={metrics}
                   />
@@ -672,7 +673,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({
                   value={birthCity}
                   options={turkishCities}
                   onSelect={setBirthCity}
-                  placeholder={tStatic('app.selectCity', undefined, 'Sehir sec')}
+                  placeholder={tStatic('app.selectCity', undefined, 'Şehir seç')}
                   theme={theme}
                   metrics={metrics}
                 />
@@ -688,7 +689,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({
                 }}
               >
                 <Text style={{ color: theme.accentBrand, fontWeight: '800', marginBottom: 6 }}>
-                  {zodiac.emoji} {zodiac.name.toUpperCase()}  {'\u2022'}  {zodiac.dateRange}
+                  {zodiac.emoji} {toUpperLocale(zodiac.name)}  {'\u2022'}  {zodiac.dateRange}
                 </Text>
                 <Text style={{ color: theme.textPrimary, fontSize: 13, lineHeight: 20, marginBottom: 6 }}>
                   "{zodiac.personality}"
@@ -708,7 +709,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({
             {fastStartUnlocked && (
               <View style={sectionStyle}>
                 <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
-                  {tStatic('app.fastStartTitle', undefined, 'Hizli Baslangic')}
+                  {tStatic('app.fastStartTitle', undefined, 'Hızlı Başlangıç')}
                 </Text>
                 <TouchableOpacity
                   onPress={() => setUseFastStart(prev => !prev)}
@@ -724,11 +725,11 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({
                 >
                   <Text style={{ color: useFastStart ? theme.accentEvent : theme.textPrimary, fontWeight: '700', fontSize: 13 }}>
                     {useFastStart
-                      ? tStatic('app.fastStartEnabled', undefined, 'Acik - 7 Yas Baslangici')
-                      : tStatic('app.fastStartDisabled', undefined, 'Kapali - 0 Yas Baslangici')}
+                      ? tStatic('app.fastStartEnabled', undefined, 'Açık - 7 Yaş Başlangıcı')
+                      : tStatic('app.fastStartDisabled', undefined, 'Kapalı - 0 Yaş Başlangıcı')}
                   </Text>
                   <Text style={{ color: theme.textSecondary, fontSize: 11, marginTop: 4 }}>
-                    {tStatic('app.fastStartHint', undefined, 'Legacy Seviye 1 ile acilir. Bebeklik fazini atlar.')}
+                    {tStatic('app.fastStartHint', undefined, 'Legacy Seviye 1 ile açılır. Bebeklik fazını atlar.')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -737,7 +738,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({
             {legacyPerksEnabled && unlockedLegacyPerks.length > 0 && (
               <View style={sectionStyle}>
                 <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
-                  {tStatic('app.legacyPerksTitle', undefined, 'Acilan Legacy Perkler')}
+                  {tStatic('app.legacyPerksTitle', undefined, 'Açılan Legacy Perkler')}
                 </Text>
                 <View style={{ gap: 6 }}>
                   {unlockedLegacyPerks.map(perk => (
@@ -765,14 +766,14 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({
             {legacyBonuses.visible && (
               <View style={sectionStyle}>
                 <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
-                  {tStatic('app.legacyAdvantages', undefined, 'Miras Avantajlari')}
+                  {tStatic('app.legacyAdvantages', undefined, 'Miras Avantajları')}
                 </Text>
                 <Text style={{ color: theme.textPrimary, fontWeight: '700', marginBottom: 8 }}>
                   {tStatic('app.legacyLevel', { level: legacyBonuses.level }, `Legacy Seviye ${legacyBonuses.level}`)}
                 </Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                   <View style={{ backgroundColor: theme.surfaceOverlay, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}>
-                    <Text style={{ color: theme.textPrimary, fontSize: 12 }}>{tStatic('labels.stats.health', undefined, 'Saglik')} +{legacyBonuses.health}</Text>
+                    <Text style={{ color: theme.textPrimary, fontSize: 12 }}>{tStatic('labels.stats.health', undefined, 'Sağlık')} +{legacyBonuses.health}</Text>
                   </View>
                   <View style={{ backgroundColor: theme.surfaceOverlay, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}>
                     <Text style={{ color: theme.textPrimary, fontSize: 12 }}>{tStatic('labels.stats.intelligence', undefined, 'Zeka')} +{legacyBonuses.intelligence}</Text>
@@ -808,12 +809,12 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({
                 opacity: isFormReady ? 1 : 0.65,
               }}
               activeOpacity={0.85}
-              accessibilityLabel={tStatic('app.startGameAria', undefined, 'Oyuna basla')}
+              accessibilityLabel={tStatic('app.startGameAria', undefined, 'Oyuna başla')}
               accessibilityRole="button"
               accessibilityState={{ disabled: !isFormReady }}
             >
               <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: metrics.font }}>
-                {tStatic('app.startLife', undefined, 'Hayata Basla')}
+                {tStatic('app.startLife', undefined, 'Hayata Başla')}
               </Text>
             </TouchableOpacity>
 
