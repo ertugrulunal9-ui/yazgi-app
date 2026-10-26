@@ -710,6 +710,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         personalityEffects: [{ axis: 'courage', change: 5 }, { axis: 'empathy', change: 3 }],
         stressEffect: 15,
         feedback: "Annen kızdı ama sonra sarıldı. 'Doğruyu söylediğin için teşekkür ederim.'",
+        futureEvents: [{ trigger: 'TURNS', turnsLater: 2, eventId: 'early_lie_confess_echo', priority: 'HIGH' }],
         memory: { emotion: 'PRIDE', weight: 'MEDIUM' },
       },
       {
@@ -720,6 +721,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         personalityEffects: [{ axis: 'conformity', change: -3 }],
         stressEffect: 10,
         feedback: "Annen baktı... inanmadı ama bir şey demedi. İçinde suçluluk kaldı.",
+        futureEvents: [{ trigger: 'TURNS', turnsLater: 2, eventId: 'early_lie_cat_echo', priority: 'HIGH' }],
         memory: { emotion: 'GUILT', weight: 'MEDIUM' },
       },
       {
@@ -729,6 +731,7 @@ export const AGE_SPECIFIC_EVENTS: GameEvent[] = [
         effect: { discipline: -3 },
         stressEffect: 5,
         feedback: "Suçluluk duygusu seni rahat bırakmadı. Gece yatakta düşündün...",
+        futureEvents: [{ trigger: 'TURNS', turnsLater: 2, eventId: 'early_lie_silent_echo', priority: 'HIGH' }],
         memory: { emotion: 'GUILT', weight: 'LOW' },
       },
     ],

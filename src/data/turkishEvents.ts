@@ -43,6 +43,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
         choiceType: 'NEUTRAL',
         effect: { familyRelation: 10 },
         feedback: "ANNE! Annen seni havaya kaldırdı, gözleri doldu!",
+        futureEvents: [{ trigger: 'TURNS', turnsLater: 3, eventId: 'early_first_word_mom_echo', priority: 'HIGH' }],
         memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'İlk kelimeniz: Anne' },
       },
       {
@@ -51,6 +52,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
         choiceType: 'NEUTRAL',
         effect: { familyRelation: 10 },
         feedback: "BABA! Baban gururdan patladı, herkese anlattı!",
+        futureEvents: [{ trigger: 'TURNS', turnsLater: 3, eventId: 'early_first_word_dad_echo', priority: 'HIGH' }],
         memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'İlk kelimeniz: Baba' },
       },
     ],
@@ -71,6 +73,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
         effect: { familyRelation: 5 },
         stressEffect: -10,
         feedback: "Biraz ağladın ama öğretmen teselli etti. Yavaş yavaş alışacaksın.",
+        futureEvents: [{ trigger: 'TURNS', turnsLater: 2, eventId: 'early_daycare_cry_echo', priority: 'HIGH' }],
       },
       {
         id: 'kres_oyun',
@@ -80,6 +83,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
         personalityEffects: [{ axis: 'openness', change: 3 }],
         stressEffect: 5,
         feedback: "Oyuncaklar dikkatini çekti! Annen gittiğini fark etmedin bile.",
+        futureEvents: [{ trigger: 'TURNS', turnsLater: 2, eventId: 'early_daycare_play_echo', priority: 'HIGH' }],
         memory: { emotion: 'SATISFACTION', weight: 'LOW' },
       },
     ],
@@ -242,6 +246,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
         personalityEffects: [{ axis: 'empathy', change: 8 }],
         stressEffect: 10,
         feedback: "Yavaşça dokundun. Bebek sana baktı! Yeni en iyi arkadaşın olabilir.",
+        futureEvents: [{ trigger: 'TURNS', turnsLater: 3, eventId: 'early_sibling_love_echo', priority: 'HIGH' }],
         memory: { emotion: 'SATISFACTION', weight: 'HIGH' },
       },
       {
@@ -252,6 +257,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
         personalityEffects: [{ axis: 'empathy', change: -3 }],
         stressEffect: 5,
         feedback: "Kıskanmak normal. Ama annen seni de çok seviyor.",
+        futureEvents: [{ trigger: 'TURNS', turnsLater: 3, eventId: 'early_sibling_jealous_echo', priority: 'HIGH' }],
       },
     ],
   },
