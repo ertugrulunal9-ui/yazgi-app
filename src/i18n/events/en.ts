@@ -1,8 +1,9 @@
 import type { EventTranslationCatalog } from './types';
 import { enEventTranslationsGenerated } from './en.generated';
 import { enEventTranslationsOverrides } from './en.overrides';
+import { enOutcomeFeedbackTranslations } from './en.outcomes';
 
-export const enEventTranslations: EventTranslationCatalog = {
+const baseEnEventTranslations: EventTranslationCatalog = {
   ...enEventTranslationsGenerated,
   ...enEventTranslationsOverrides,
   fallback_generic: {
@@ -42,3 +43,30 @@ export const enEventTranslations: EventTranslationCatalog = {
     },
   },
 };
+
+// Şansa bağlı sonuç metinlerini olayın mevcut çevirisini ezmeden ekler
+const withOutcomeFeedback = (
+  catalog: EventTranslationCatalog,
+  outcomes: typeof enOutcomeFeedbackTranslations,
+): EventTranslationCatalog => {
+  const result: EventTranslationCatalog = { ...catalog };
+  for (const [eventId, choices] of Object.entries(outcomes)) {
+    const event = result[eventId] ?? {};
+    const eventChoices = { ...(event.choices ?? {}) };
+    for (const [choiceId, outcomeFeedback] of Object.entries(choices)) {
+      const choice = eventChoices[choiceId] ?? {};
+      const mergedOutcomes = { ...(choice.outcomes ?? {}) };
+      for (const [outcomeId, feedback] of Object.entries(outcomeFeedback)) {
+        mergedOutcomes[outcomeId] = { ...(mergedOutcomes[outcomeId] ?? {}), feedback };
+      }
+      eventChoices[choiceId] = { ...choice, outcomes: mergedOutcomes };
+    }
+    result[eventId] = { ...event, choices: eventChoices };
+  }
+  return result;
+};
+
+export const enEventTranslations: EventTranslationCatalog = withOutcomeFeedback(
+  baseEnEventTranslations,
+  enOutcomeFeedbackTranslations,
+);

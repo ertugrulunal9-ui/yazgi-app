@@ -17,7 +17,7 @@ export const ECONOMIC_RECOVERY_EVENTS: GameEvent[] = [
       {
         id: 'econ_scholarship_careful_apply',
         text: 'Başvuruyu özenle hazırla',
-        effect: { money: 120, intelligence: 3, discipline: 2, familyRelation: 2, energy: -4 },
+        effect: { money: 120, intelligence: 3, discipline: 2, familyRelation: 2, energy: -4, health: -2 },
         skillUpdates: { reading: 2, writing: 1 },
         stressEffect: 4,
         feedback: 'Başvurun kabul edildi. Burs ile okul masrafların bir süreliğine rahatlayacak.',

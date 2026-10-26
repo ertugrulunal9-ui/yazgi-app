@@ -196,7 +196,7 @@ export const NPC_EVENTS: GameEvent[] = [
             },
             {
                 text: '🤷 "Abartma" de',
-                effect: {},
+                effect: { charisma: -4 },
                 feedback: 'Umursamaz tavrın arkadaşlığı bitirdi.',
                 npcRelationChange: -30,
                 personalityEffects: [{ axis: 'empathy', change: -5 }],
@@ -619,7 +619,7 @@ export const NPC_EVENTS: GameEvent[] = [
             },
             {
                 text: '🚶 Yeni arkadaşlar edin',
-                effect: { charisma: 3 },
+                effect: { charisma: 3, money: -10 },
                 feedback: 'Başka insanlarla takılmaya başladın. Belki daha iyi bir grup bulursun.',
                 personalityEffects: [{ axis: 'openness', change: 5 }],
             },

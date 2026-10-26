@@ -17,6 +17,7 @@ export {
   levelUp,
   turnAdvance,
   eventStart,
+  echoReveal,
   gradeGood,
   gradeBad,
   healthCritical,

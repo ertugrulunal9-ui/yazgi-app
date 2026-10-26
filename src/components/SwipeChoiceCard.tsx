@@ -59,6 +59,8 @@ const CHOICE_TYPE_LABELS: Record<string, { tr: string; en: string }> = {
   BREAKDOWN:  { tr: 'Kriz',    en: 'Crisis'  },
 };
 
+const UNCERTAIN_COLOR = '#facc15';
+
 const STAT_ICONS: Partial<Record<keyof Stats, { icon: string }>> = {
   health: { icon: 'heart' },
   intelligence: { icon: 'book' },
@@ -172,14 +174,22 @@ export const SwipeChoiceCard: React.FC<SwipeChoiceCardProps> = React.memo(({
   const choiceTypeLabel = choiceType !== 'NEUTRAL'
     ? (CHOICE_TYPE_LABELS[choiceType]?.[getRuntimeLocale() === 'tr' ? 'tr' : 'en'] ?? choiceType)
     : null;
+  // Sonucu şansa ve karaktere bağlı seçenek (conditionalOutcomes)
+  const isUncertain = (choice.conditionalOutcomes?.length ?? 0) > 0;
+  const uncertainLabel = tRuntime('events.swipe.uncertain', undefined, 'Şansa bağlı');
   const dialogueTag = getMomentumDialogueTag(choice, personalityState);
   const tradeoffHint = dialogueTag ? null : generateTradeoffHint(choice);
   const swipeHint = tRuntime('events.swipe.swipeHint', undefined, 'kaydir');
 
-  // Stat hints from choice.effect
+  // Stat ipuçları: yalnızca hangi statların etkileneceği gösterilir; yön ve miktar
+  // sonuç ekranına kadar gizli kalır (seçim "yeşil olana bas"a dönüşmesin diye).
   const statHints = Object.entries(choice.effect || {}).filter(
     ([, val]) => typeof val === 'number' && val !== 0,
   );
+  const affectedStatsLabel = statHints
+    .slice(0, 4)
+    .map(([key]) => tRuntime(`labels.stats.${key}`, undefined, key))
+    .join(', ');
 
   return (
     <GestureDetector gesture={panGesture}>
@@ -205,6 +215,12 @@ export const SwipeChoiceCard: React.FC<SwipeChoiceCardProps> = React.memo(({
               </View>
             ) : (
               <View style={[styles.typeDot, { backgroundColor: choiceTypeColor }]} />
+            )}
+            {isUncertain && (
+              <View style={[styles.typeChip, styles.uncertainChip, { borderColor: `${UNCERTAIN_COLOR}66`, backgroundColor: `${UNCERTAIN_COLOR}1f` }]}>
+                <Feather name="shuffle" size={10} color={UNCERTAIN_COLOR} />
+                <Text style={[styles.typeChipText, { color: UNCERTAIN_COLOR }]}>{uncertainLabel}</Text>
+              </View>
             )}
             <Text style={[styles.positionText, { color: theme.textSecondary }]}>
               {index + 1} / {totalChoices}
@@ -252,25 +268,28 @@ export const SwipeChoiceCard: React.FC<SwipeChoiceCardProps> = React.memo(({
 
           {/* Stat hints */}
           {statHints.length > 0 && (
-            <View style={styles.statRow}>
-              {statHints.slice(0, 4).map(([key, val]) => {
+            <View
+              style={styles.statRow}
+              accessible
+              accessibilityLabel={tRuntime(
+                'events.swipe.affectedStats',
+                { stats: affectedStatsLabel },
+                `Etkilenir: ${affectedStatsLabel}`,
+              )}
+            >
+              {statHints.slice(0, 4).map(([key]) => {
                 const info = STAT_ICONS[key as keyof Stats];
                 if (!info) return null;
-                const isPositive = (val as number) > 0;
                 return (
                   <View key={key} style={[styles.statBadge, {
-                    backgroundColor: isPositive ? '#dcfce7' : '#fee2e2',
+                    backgroundColor: theme.surfaceRaised,
+                    borderColor: theme.border,
                   }]}>
                     <Feather
                       name={info.icon as any}
-                      size={12}
-                      color={isPositive ? '#16a34a' : '#dc2626'}
+                      size={13}
+                      color={theme.textSecondary}
                     />
-                    <Text style={[styles.statBadgeText, {
-                      color: isPositive ? '#16a34a' : '#dc2626',
-                    }]}>
-                      {isPositive ? '+' : ''}{val}
-                    </Text>
                   </View>
                 );
               })}
@@ -328,6 +347,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.2,
   },
+  uncertainChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   positionText: {
     fontSize: 11,
     fontWeight: '600',
@@ -359,14 +383,10 @@ const styles = StyleSheet.create({
   statBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
     borderRadius: 12,
-  },
-  statBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
+    borderWidth: 1,
   },
   swipeHint: {
     flexDirection: 'row',

@@ -1,11 +1,13 @@
 import { SchoolGrades, Family, Stats } from '../types';
 import { tRuntime } from '../i18n/strings';
 
+// D, karnedeki geçme sınırıyla (ortalama >= 50 "sınıfı geçti") aynı yerden başlar;
+// aksi halde 50-59 alan öğrenci "geçti" yazarken harf notu "F" görünüyordu.
 export const getLetterGrade = (score: number): string => {
   if (score >= 90) return 'A';
   if (score >= 80) return 'B';
   if (score >= 70) return 'C';
-  if (score >= 60) return 'D';
+  if (score >= 50) return 'D';
   return 'F';
 };
 
@@ -15,6 +17,16 @@ export interface SchoolReport {
   language: number;
   averageGrade: number;
 }
+
+/**
+ * Sınavına girilmeyen ders için otomatik not katkısı: karakterin zekâsına göre
+ * "ortalama bir sınav performansı" (+4..+8). Girilen iyi bir sınav (+10..+15)
+ * her zaman daha kârlı kalır; atlamak ise sınıf tekrarına mahkûm etmez.
+ */
+export const getSkippedExamGradeBonus = (intelligence: number): number => {
+  const expectedAccuracy = Math.min(0.75, Math.max(0.35, 0.35 + intelligence / 200));
+  return Math.round(expectedAccuracy * 10);
+};
 
 export const calculateSchoolReport = (stats: Stats, gameState: any): SchoolGrades => {
   // ===============================

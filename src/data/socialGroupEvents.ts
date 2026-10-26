@@ -55,6 +55,7 @@ export const SOCIAL_GROUP_EVENTS: GameEvent[] = [
         id: 'best_friend_create_group',
         text: 'Ders grubu kur',
         effect: { intelligence: 3, discipline: 2 },
+        stressEffect: 3,
         feedback: 'Planlı çalışma rutini kurarak grubunu oluşturdun.',
         socialGroupAction: {
           type: 'CREATE',

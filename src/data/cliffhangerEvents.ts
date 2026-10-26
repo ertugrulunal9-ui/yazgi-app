@@ -33,6 +33,7 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
       {
         text: '🤔 "Tamam, merak ettim!"',
         effect: { charisma: 2 },
+        stressEffect: 3,
         npcRelationChange: 5,
         futureEvents: [{ trigger: 'TURNS', eventId: 'cliff_npc_secret_reveal', turnsLater: 1 }],
         feedback: 'Merak içinde kaldın. Yarın ne söyleyecek acaba?',
@@ -68,6 +69,7 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
       {
         text: '💪 "Uzak da olsak arkadaş kalırız"',
         effect: { charisma: 1 },
+        stressEffect: 4,
         npcRelationChange: 15,
         feedback: 'Mesafe dostluğun önündeki tek engel değil.',
       },
@@ -159,6 +161,7 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
       {
         text: '😊 "Iyi haber mi?"',
         effect: {},
+        stressEffect: 2,
         futureEvents: [{ trigger: 'TURNS', eventId: 'cliff_family_news_reveal', turnsLater: 1 }],
         feedback: 'Güldümsediler ama cevap vermediler. Merak içinde kaldın.',
       },
@@ -175,6 +178,7 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
       {
         text: '🎉 "Harika! Abi/abla olacağım!"',
         effect: { charisma: 10 },
+        stressEffect: 4,
         personalityEffects: [{ axis: 'empathy', change: 3 }],
         memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Yeni kardeş haberi' },
         feedback: 'Heyecanlısın! Büyük sorumluluk ama büyük mutluluk da.',

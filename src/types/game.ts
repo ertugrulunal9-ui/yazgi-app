@@ -371,6 +371,11 @@ export interface GameState {
     sourceEventId: string;
     narrativeLine: string;
     emotion: string;
+    /** Doluysa bu olay, o yaşta verilen bir seçimin zamanlanmış yankısıdır */
+    sourceChoiceId?: string;
+    sourceAge?: number;
+    /** Yankının ait olduğu olay; araya giren başka bir olayda (ör. toparlanma) kart gösterilmez */
+    targetEventId?: string;
   } | null;
 
   // --- V4 alanları ---

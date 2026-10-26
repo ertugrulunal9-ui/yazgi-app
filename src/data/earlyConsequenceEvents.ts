@@ -48,7 +48,7 @@ export const EARLY_CONSEQUENCE_EVENTS: GameEvent[] = [
       {
         id: 'toy_keep_echo_boundary',
         text: 'Önce sormasını sakin biçimde iste',
-        effect: { charisma: 3, discipline: 3, energy: -3 },
+        effect: { charisma: 3, discipline: 3, energy: -3, health: -2 },
         feedback: 'Bu kez “benim” derken karşındakini incitmedin. Çocukluk tepkini açık bir sınıra dönüştürdün.',
         personalityEffects: [{ axis: 'courage', change: 3 }, { axis: 'empathy', change: 2 }],
         memory: { emotion: 'PRIDE', weight: 'HIGH' },

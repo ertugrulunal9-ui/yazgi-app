@@ -14,8 +14,10 @@ import { AnimatedButton } from '../animations/ButtonAnimations';
 import { StaggeredFadeIn, buttonPress, importantDecision } from '../animations';
 import { getMomentumDialogueTag } from '../utils/momentumDialogue';
 import { generateTradeoffHint } from '../utils/tradeoffHints';
+import { describeLockReason, LockedChoice } from '../utils/eventChoiceFilter';
 import { tRuntime } from '../i18n/strings';
 import { useRuntimeLocale } from '../i18n/useRuntimeLocale';
+import { Feather } from '@expo/vector-icons';
 
 /** Minimum read time by rarity (ms). Swipe stays locked until this elapses. */
 const MIN_READ_TIME_MS: Record<EventRarity | 'BREAKDOWN', number> = {
@@ -36,6 +38,8 @@ interface SwipeChoiceDeckProps {
   eventRarity?: EventRarity;
   /** Event id resets lock state when event changes */
   eventId?: string;
+  /** Kişilik/stat şartı yüzünden seçilemeyen seçenekler; gri ve kilitli gösterilir */
+  lockedChoices?: LockedChoice[];
 }
 
 const BACK_CARD_SCALE = 0.95;
@@ -50,6 +54,7 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
   personalityState,
   eventRarity,
   eventId,
+  lockedChoices,
 }) => {
   useRuntimeLocale();
 
@@ -103,9 +108,35 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
     );
   }, [resolvedChoices.length]);
 
+  const lockedSection = lockedChoices && lockedChoices.length > 0 ? (
+    <View style={lockedStyles.container}>
+      <Text style={[lockedStyles.title, { color: theme.textSecondary }]}>
+        {tRuntime('ui.event.locked.title')}
+      </Text>
+      {lockedChoices.map((item, i) => {
+        const reason = describeLockReason(item.reason);
+        return (
+          <View
+            key={`locked-${i}`}
+            style={[lockedStyles.row, { borderColor: theme.border }]}
+            accessible
+            accessibilityLabel={`${tRuntime('ui.event.locked.a11yPrefix')}: ${item.choice.text}. ${reason}`}
+          >
+            <Feather name="lock" size={13} color={theme.textSecondary} />
+            <View style={lockedStyles.textWrap}>
+              <Text style={[lockedStyles.text, { color: theme.textSecondary }]}>{item.choice.text}</Text>
+              <Text style={[lockedStyles.reason, { color: theme.textSecondary }]}>{reason}</Text>
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  ) : null;
+
   // Fallback: <=2 choices or RARE/BREAKDOWN -> classic buttons
   if (resolvedChoices.length <= 2 || forceButtonFallback) {
     return (
+      <>
       <StaggeredFadeIn>
         {choices.map((choice, index) => {
           const resolved = resolveChoice(choice);
@@ -149,11 +180,21 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
                     {buttonTradeoffHint}
                   </Text>
                 )}
+                {(resolved.conditionalOutcomes?.length ?? 0) > 0 && (
+                  <View style={buttonFallbackStyles.uncertainRow}>
+                    <Feather name="shuffle" size={11} color="#facc15" />
+                    <Text style={buttonFallbackStyles.uncertainText}>
+                      {tRuntime('events.swipe.uncertain', undefined, 'Şansa bağlı')}
+                    </Text>
+                  </View>
+                )}
               </View>
             </AnimatedButton>
           );
         })}
       </StaggeredFadeIn>
+      {lockedSection}
+      </>
     );
   }
 
@@ -231,6 +272,7 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
           </Text>
         </AnimatedButton>
       </View>
+      {lockedSection}
     </GestureHandlerRootView>
   );
 });
@@ -266,6 +308,43 @@ const styles = StyleSheet.create({
   },
 });
 
+const lockedStyles = StyleSheet.create({
+  container: {
+    marginTop: 14,
+    gap: 6,
+  },
+  title: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    opacity: 0.8,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    opacity: 0.6,
+  },
+  textWrap: {
+    flex: 1,
+  },
+  text: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  reason: {
+    marginTop: 2,
+    fontSize: 11,
+    fontStyle: 'italic',
+  },
+});
+
 const buttonFallbackStyles = StyleSheet.create({
   button: {
     borderRadius: 12,
@@ -286,5 +365,16 @@ const buttonFallbackStyles = StyleSheet.create({
     fontSize: 12,
     fontStyle: 'italic',
     opacity: 0.75,
+  },
+  uncertainRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+  },
+  uncertainText: {
+    color: '#facc15',
+    fontSize: 11,
+    fontWeight: '700',
   },
 });

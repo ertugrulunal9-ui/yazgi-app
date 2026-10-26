@@ -9,7 +9,7 @@ import { TurnMediator } from '../systems/TurnMediator';
 import type { TurnResult } from '../systems/TurnMediator';
 import { buildMemoryAwareEventText } from '../utils/memoryLogic';
 import { isFeatureEnabled } from '../config/featureFlags';
-import { calculateSchoolReport } from '../utils/schoolLogic';
+import { calculateSchoolReport, getSkippedExamGradeBonus } from '../utils/schoolLogic';
 import { tRuntime } from '../i18n/strings';
 import {
   handleEventChoice as logEventChoice,
@@ -362,14 +362,22 @@ export const useEvents = () => {
     });
   }, [gameState, stats, updateGameState]);
 
+  // Sınavlar isteğe bağlı: dönem, kalan sınavlar atlansa da kapanır; girilmeyen
+  // derslerin notu statlardan hesaplanır ve yeni yıl temiz bir sınav listesiyle başlar.
   const completeExamPeriod = useCallback(() => {
-    const completedExams = gameState.examsTakenThisYear || [];
-    const allExamsTaken = ALL_EXAM_SUBJECTS.every(subject => completedExams.includes(subject));
+    const taken = gameState.examsTakenThisYear || [];
+    const skippedBonus = getSkippedExamGradeBonus(stats.intelligence);
+    const gradesWithSkipped = { ...gameState.schoolGrades };
+    for (const subject of ALL_EXAM_SUBJECTS) {
+      if (!taken.includes(subject)) {
+        gradesWithSkipped[subject] = Math.min(100, gradesWithSkipped[subject] + skippedBonus);
+      }
+    }
     updateGameState({
       isExamPeriod: false,
       pendingReportCard: true,
-      ...(allExamsTaken ? { examsTakenThisYear: [] } : {}),
-      schoolGrades: calculateSchoolReport(stats, gameState),
+      examsTakenThisYear: [],
+      schoolGrades: calculateSchoolReport(stats, { ...gameState, schoolGrades: gradesWithSkipped }),
     });
   }, [gameState, stats, updateGameState]);
 

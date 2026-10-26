@@ -1,5 +1,5 @@
 import { ALL_EXAM_SUBJECTS } from '../../types';
-import type { EventContext, GameEvent, GameState, GameStateUpdate, Stats } from '../../types';
+import type { EventContext, GameEvent, GameState, GameStateUpdate, ScheduledEvent, Stats } from '../../types';
 import type { AgeMilestoneSummary } from '../../types/game';
 import { ageTransitionHaptic } from '../../animations/HapticFeedback';
 import { CONSUMABLE_CONFIG } from '../../config/gameBalance';
@@ -41,7 +41,7 @@ import { analyzeGoalMismatch, resolveEnding } from '../../utils/endingResolver';
 import { composeInnerThought, getStrategicMonologue } from '../../utils/internalMonologue';
 import { getEventChoiceSet } from '../../utils/gameStateAdapter';
 import { logBurdenTrigger, logGameEnding, logTurnProgress } from '../../utils/analyticsEvents';
-import { tickScheduledEvents, isForcedScheduledEvent, pickScheduledEvent } from '../../utils/scheduledEvents';
+import { buildEchoCausalLink, tickScheduledEvents, isForcedScheduledEvent, pickScheduledEvent } from '../../utils/scheduledEvents';
 import { STORY_ARCS } from '../../data/storyArcs';
 import { syncActiveArcsWithSelectedEvent } from '../../utils/storyArcSelection';
 import { selectCrisisEvent } from '../../data/crisisEvents';
@@ -486,12 +486,15 @@ export const runAdvanceTurn = ({
     activeArcs,
     isExamPeriodValue = false,
     nextEventTeaser,
+    echoSource,
   }: {
     event: GameEvent;
     scheduledEvents: GameState['scheduledEvents'];
     activeArcs?: NonNullable<GameState['activeArcs']>;
     isExamPeriodValue?: boolean;
     nextEventTeaser?: string;
+    /** Olay bir seçimin zamanlanmış yankısıysa kaynağı (yankı kartı için) */
+    echoSource?: ScheduledEvent | null;
   }): void => {
     const resolvedActiveArcs = activeArcs ?? syncActiveArcsWithSelectedEvent(
       currentActiveArcs,
@@ -512,6 +515,8 @@ export const runAdvanceTurn = ({
       activeArcs: resolvedActiveArcs,
       eventFrequency: buildEventFrequency(gameState.eventFrequency, event.id, newTurn),
       ...(nextEventTeaser ? { nextEventTeaser } : {}),
+      // Her yeni olayda yeniden hesaplanır; önceki olayın bağı taşınmaz
+      currentCausalLink: buildEchoCausalLink(echoSource),
     });
   };
 
@@ -577,6 +582,7 @@ export const runAdvanceTurn = ({
         commitEventPhase({
           event: forcedEvent,
           scheduledEvents: buildRemainingScheduledEvents(forcedSelection.id),
+          echoSource: forcedSelection,
         });
         return;
       }
@@ -631,6 +637,7 @@ export const runAdvanceTurn = ({
     commitEventPhase({
       event: scheduledEvent,
       scheduledEvents: remainingScheduledEvents,
+      echoSource: scheduledSelection,
     });
     return;
   }

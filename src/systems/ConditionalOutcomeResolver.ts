@@ -34,7 +34,8 @@ export interface ResolvedOutcome {
   stressEffect?: number;
 }
 
-const isPositiveOutcome = (outcome: ConditionalOutcome): boolean => {
+export const isPositiveOutcome = (outcome: ConditionalOutcome): boolean => {
+  if (outcome.tone) return outcome.tone === 'positive';
   const totalStat = Object.values(outcome.statChanges).reduce(
     (sum, val) => sum + (typeof val === 'number' ? val : 0),
     0,
