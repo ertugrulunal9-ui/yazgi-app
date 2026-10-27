@@ -467,7 +467,9 @@ export const GameStateSchema = z.object({
   // Meta progression (cross-run)
   metaProgression: MetaProgressionSchema.optional(),
   metaRunRecorded: z.boolean().optional(),
-}).partial(); // Make all fields optional for flexible validation
+}).partial() // Make all fields optional for flexible validation
+  // Şemada tanımlı olmayan alanlar (avatar, hedef, kader, birikim, yara izleri...) yüklemede silinmesin
+  .passthrough();
 
 // =================================================================
 // SAVE SLOT DATA SCHEMA
