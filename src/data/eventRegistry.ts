@@ -24,16 +24,16 @@ import type { GameEvent } from '../types/events';
 const ChoiceSchema = z.object({
   id: z.string().optional(),
   text: z.string().min(1, 'Choice text boş olamaz'),
-  effect: z.record(z.number()),
+  effect: z.record(z.string(), z.number()),
   feedback: z.string().min(1, 'Feedback boş olamaz'),
   icon: z.string().optional(),
   grantTraits: z.array(z.string()).optional(),
-  gradeUpdates: z.record(z.number()).optional(),
-  skillUpdates: z.record(z.number()).optional(),
+  gradeUpdates: z.record(z.string(), z.number()).optional(),
+  skillUpdates: z.record(z.string(), z.number()).optional(),
   inventoryAdd: z.array(z.string()).optional(),
   setSelectedGoal: z.string().nullable().optional(),
-  reqStats: z.record(z.number()).optional(),
-  reqSkills: z.record(z.number()).optional(),
+  reqStats: z.record(z.string(), z.number()).optional(),
+  reqSkills: z.record(z.string(), z.number()).optional(),
   reqNPCRole: z.string().optional(),
   reqEventIds: z.array(z.string()).optional(),
   blockEventIds: z.array(z.string()).optional(),
@@ -49,8 +49,8 @@ const ChoiceSchema = z.object({
     customNote: z.string().optional(),
   }).optional(),
   // conditionalOutcomes, personalityEffects, futureEvents vb. şemada tek tek tanımlı değil;
-  // passthrough olmadan __DEV__ build'lerinde bu alanlar sessizce silinir (prod ile fark yaratır).
-}).passthrough();
+  // .loose() (zod 3'te .passthrough()) olmadan __DEV__ build'lerinde bu alanlar sessizce silinir (prod ile fark yaratır).
+}).loose();
 
 // =================================================================
 // GAME EVENT SCHEMA
@@ -72,8 +72,8 @@ const GameEventSchema = z.object({
   // choices: static Choice nesneleri veya function — fonksiyonlar geçilir
   choices: z.array(z.union([ChoiceSchema, z.function()])).min(1, 'En az 1 choice gerekli'),
   // Koşullar loose-validate (partial stats/skills maps)
-  reqStats: z.record(z.number()).optional(),
-  reqSkills: z.record(z.number()).optional(),
+  reqStats: z.record(z.string(), z.number()).optional(),
+  reqSkills: z.record(z.string(), z.number()).optional(),
   reqTraits: z.array(z.string()).optional(),
   reqNoItem: z.array(z.string()).optional(),
   reqNPCRole: z.string().optional(),
@@ -87,9 +87,15 @@ const GameEventSchema = z.object({
   personalityCategory: z.enum(['SOCIAL', 'RISK', 'MORAL', 'CONFLICT', 'GROWTH', 'BREAKDOWN']).optional(),
   milestoneLevel: z.enum(['MINOR', 'MAJOR']).optional(),
   isMilestoneEvent: z.boolean().optional(),
-}).passthrough().refine(
+}).loose().refine(
   (e) => e.minAge <= e.maxAge,
-  (e) => ({ message: `"${e.id}": minAge (${e.minAge}) maxAge'den (${e.maxAge}) büyük olamaz` }),
+  {
+    // zod 4'te refine ikinci argüman olarak fonksiyon almıyor; mesaj issue.input'tan (doğrulanan event) üretilir
+    error: (issue) => {
+      const e = issue.input as { id: string; minAge: number; maxAge: number };
+      return `"${e.id}": minAge (${e.minAge}) maxAge'den (${e.maxAge}) büyük olamaz`;
+    },
+  },
 );
 
 // =================================================================
@@ -124,7 +130,7 @@ export function validateEventPool(events: unknown[]): GameEvent[] {
       failures.push({
         index,
         id,
-        errors: result.error.errors.map((e) => `[${e.path.join('.')}] ${e.message}`),
+        errors: result.error.issues.map((e) => `[${e.path.join('.')}] ${e.message}`),
       });
       return null;
     }
@@ -153,7 +159,7 @@ export function validateEventPool(events: unknown[]): GameEvent[] {
 export function validateSingleEvent(raw: unknown): string | null {
   const result = GameEventSchema.safeParse(raw);
   if (result.success) return null;
-  return result.error.errors.map((e) => `[${e.path.join('.')}] ${e.message}`).join('; ');
+  return result.error.issues.map((e) => `[${e.path.join('.')}] ${e.message}`).join('; ');
 }
 
 /**
@@ -172,7 +178,7 @@ export function auditEventPool(events: unknown[]): EventValidationError[] {
       failures.push({
         index,
         id,
-        errors: result.error.errors.map((e) => `[${e.path.join('.')}] ${e.message}`),
+        errors: result.error.issues.map((e) => `[${e.path.join('.')}] ${e.message}`),
       });
     }
   }

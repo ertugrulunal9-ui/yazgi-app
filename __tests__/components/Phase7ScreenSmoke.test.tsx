@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { MainMenuScreen } from '../../src/screens/MainMenuScreen';
 import { GameScreen } from '../../src/screens/GameScreen';
 import { ReportCardScreen } from '../../src/screens/ReportCardScreen';
@@ -16,6 +16,9 @@ import { useNPCs } from '../../src/hooks/useNPCs';
 import { useExamHandler } from '../../src/hooks/useExamHandler';
 import { useAchievements } from '../../src/hooks/useAchievements';
 import SaveManager from '../../src/save/SaveManager';
+import { CHAPTERS } from '../../src/config/gameBalance';
+import { buildChapterSummary } from '../../src/utils/milestoneBuilder';
+import type { AgeMilestoneSummary } from '../../src/types/game';
 
 jest.mock('react-native', () => {
   const baseModule = require('../mocks/ReactNative.mock');
@@ -436,6 +439,81 @@ describe('Phase 7 screen smoke', () => {
     );
 
     expect(getByText('End Day')).toBeTruthy();
+  });
+
+  describe('year-end windows', () => {
+    const yearSummary = (age: number, withContent = true): AgeMilestoneSummary => ({
+      age,
+      traitsGained: [],
+      traitsLost: [],
+      keyMemories: [],
+      statDeltas: withContent ? { health: 4 } : {},
+      npcChanges: [],
+    });
+
+    const renderYearEnd = (
+      milestones: AgeMilestoneSummary[],
+      chapterIds: number[]
+    ) => {
+      const current = mockedUseGame();
+      mockedUseGame.mockReturnValue({
+        ...current,
+        gameState: {
+          ...current.gameState,
+          age: 4,
+          ageMilestoneSummaries: milestones,
+          chapterSummaries: chapterIds.map(id => buildChapterSummary(
+            CHAPTERS.find(chapter => chapter.id === id)!,
+            milestones.filter(m => {
+              const chapter = CHAPTERS.find(candidate => candidate.id === id)!;
+              return m.age >= chapter.ageStart && m.age <= chapter.ageEnd;
+            })
+          )),
+        },
+      });
+      const view = render(<GameScreen onPhaseChange={jest.fn()} currentTab="hub" />);
+      const visibleModals = () => view.UNSAFE_root.findAll(
+        (node: { type: unknown; props: { visible?: boolean } }) => (
+          node.type === 'Modal' && node.props.visible === true
+        )
+      );
+      return { ...view, visibleModals };
+    };
+
+    it('opens one window with the year summary inside when an age-up ends a chapter', () => {
+      const { getByText, queryByText, visibleModals } = renderYearEnd([yearSummary(3)], [1]);
+
+      expect(visibleModals()).toHaveLength(1);
+      expect(getByText(/Ended$/)).toBeTruthy();
+      expect(getByText('Age 3 Summary')).toBeTruthy();
+
+      fireEvent.press(getByText('Continue'));
+
+      expect(visibleModals()).toHaveLength(0);
+      expect(queryByText('Age 3 Summary')).toBeNull();
+    });
+
+    it('opens only the chapter window when the closing year was quiet', () => {
+      const { getByText, queryByText, visibleModals } = renderYearEnd([yearSummary(3, false)], [1]);
+
+      expect(visibleModals()).toHaveLength(1);
+      expect(getByText(/Ended$/)).toBeTruthy();
+      expect(queryByText('Age 3 Summary')).toBeNull();
+    });
+
+    it('opens only the year summary when there is no chapter change', () => {
+      const { getByText, queryByText, visibleModals } = renderYearEnd([yearSummary(4)], []);
+
+      expect(visibleModals()).toHaveLength(1);
+      expect(getByText('Age 4 Summary')).toBeTruthy();
+      expect(queryByText(/Ended$/)).toBeNull();
+    });
+
+    it('opens nothing after a quiet year without a chapter change', () => {
+      const { visibleModals } = renderYearEnd([yearSummary(4, false)], []);
+
+      expect(visibleModals()).toHaveLength(0);
+    });
   });
 
   it('renders ReportCardScreen labels in EN locale', () => {

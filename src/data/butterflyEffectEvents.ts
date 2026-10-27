@@ -343,6 +343,7 @@ export const BUTTERFLY_EFFECT_EVENTS: GameEvent[] = [
         id: 'school_embraced_echo_lead',
         text: 'Ekibi kurmaya öncülük et',
         effect: { charisma: 5, intelligence: 2, energy: -8 },
+        stressEffect: 3,
         feedback: 'Eski bir değişimi fırsata çevirmiş olman, bugün yabancılar arasında liderlik etmeni kolaylaştırdı.',
         personalityEffects: [{ axis: 'courage', change: 3 }, { axis: 'openness', change: 3 }],
         memory: { emotion: 'PRIDE', weight: 'HIGH' },

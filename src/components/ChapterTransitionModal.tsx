@@ -4,6 +4,9 @@
  * Bir bölüm tamamlandığında (Bebeklik, Çocukluk, İlkokul, Ortaokul, Lise, Son Yıl)
  * oyuncuya o bölümün özetini gösterir: stat değişimleri, trait kazanımlar/kayıplar,
  * öne çıkan anılar ve ilişki değişimleri.
+ *
+ * Bölümü kapatan yılın yaş özeti de varsa (`yearMilestone`) pencerenin içinde
+ * gösterilir; böylece yıl sonunda ayrı ikinci bir pencere açılmaz.
  */
 
 import React from 'react';
@@ -11,14 +14,18 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { Modal } from './ui/Modal';
 import { Typography } from './ui/Typography';
 import { Button } from './ui/Button';
+import { AgeMilestoneContent } from './AgeMilestoneContent';
 import { useUI } from '../context/UIContext';
-import type { ChapterSummary } from '../types/game';
+import type { AgeMilestoneSummary, ChapterSummary } from '../types/game';
 import type { StatKey } from '../types/core';
 import { getChapterNameKey } from '../utils/gameUtils';
+import { hasMilestoneContent } from '../utils/milestoneBuilder';
 
 interface Props {
   visible: boolean;
   summary: ChapterSummary | null;
+  /** Bölümü kapatan yılın yaş özeti; varsa pencerenin içinde gösterilir. */
+  yearMilestone?: AgeMilestoneSummary | null;
   nextChapterId?: number;
   nextChapterEmoji?: string;
   onClose: () => void;
@@ -35,6 +42,7 @@ const EMOTION_ICON: Record<string, string> = {
 export const ChapterTransitionModal: React.FC<Props> = ({
   visible,
   summary,
+  yearMilestone,
   nextChapterId,
   nextChapterEmoji,
   onClose,
@@ -54,7 +62,8 @@ export const ChapterTransitionModal: React.FC<Props> = ({
     summary.allTraitsLost.length > 0 ||
     summary.keyMemories.length > 0 ||
     statEntries.length > 0 ||
-    summary.topNpcChanges.length > 0;
+    summary.topNpcChanges.length > 0 ||
+    (yearMilestone ? hasMilestoneContent(yearMilestone) : false);
 
   return (
     <Modal
@@ -161,6 +170,16 @@ export const ChapterTransitionModal: React.FC<Props> = ({
           </View>
         )}
 
+        {/* Bölümü kapatan yılın özeti */}
+        {yearMilestone && (
+          <View style={[styles.yearSummary, { borderTopColor: theme.border }]}>
+            <Typography variant="label" style={styles.yearSummaryTitle}>
+              {t('milestone.title', { age: yearMilestone.age })}
+            </Typography>
+            <AgeMilestoneContent milestone={yearMilestone} />
+          </View>
+        )}
+
         {/* Sonraki Bölüm Teaserı */}
         {nextChapterName && (
           <View style={[styles.nextChapter, { borderColor: theme.border, backgroundColor: theme.surfaceOverlay }]}>
@@ -210,6 +229,14 @@ const styles = StyleSheet.create({
   emptyText: {
     textAlign: 'center',
     paddingVertical: 20,
+  },
+  yearSummary: {
+    borderTopWidth: 1,
+    paddingTop: 12,
+    marginBottom: 2,
+  },
+  yearSummaryTitle: {
+    marginBottom: 8,
   },
   nextChapter: {
     borderWidth: 1,
