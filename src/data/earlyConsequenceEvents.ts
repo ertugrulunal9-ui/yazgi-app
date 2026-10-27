@@ -426,7 +426,7 @@ export const EARLY_CONSEQUENCE_EVENTS: GameEvent[] = [
       {
         id: 'social_presence_echo_delete',
         text: 'Paylaşımı kaldırıp ara ver',
-        effect: { discipline: 2, energy: 5, charisma: -1 },
+        effect: { discipline: 2, energy: 5, charisma: -1, health: 1 },
         feedback: 'Geri çekilmek sana nefes aldırdı. Dijital dünyaya ne zaman döneceğine kendin karar vereceksin.',
         personalityEffects: [{ axis: 'patience', change: 2 }],
         memory: { emotion: 'SATISFACTION', weight: 'MEDIUM' },
@@ -539,6 +539,7 @@ export const EARLY_CONSEQUENCE_EVENTS: GameEvent[] = [
         id: 'school_leadership_echo_guide',
         text: 'Gönüllü olup planı kur',
         effect: { charisma: 5, discipline: 3, energy: -7 },
+        stressEffect: 3,
         skillUpdates: { teamwork: 3, work_ethic: 2 },
         feedback: 'Eski adil görev dağıtımı bugün daha net bir liderliğe dönüştü. İnsanları dinleyerek yön verdin.',
         personalityEffects: [{ axis: 'courage', change: 4 }, { axis: 'empathy', change: 2 }],
@@ -719,7 +720,7 @@ export const EARLY_CONSEQUENCE_EVENTS: GameEvent[] = [
       {
         id: 'middle_prepare_echo_plan',
         text: 'Haftalık çalışma planı çıkar',
-        effect: { intelligence: 4, discipline: 5, energy: -8 },
+        effect: { intelligence: 4, discipline: 5, energy: -8, health: -2 },
         skillUpdates: { reading: 2, work_ethic: 2 },
         feedback: 'Çocukken kurduğun düzenli hazırlık alışkanlığı büyüdü. Kaygıyı küçük, ölçülebilir adımlara böldün.',
         personalityEffects: [{ axis: 'patience', change: 4 }],
@@ -814,6 +815,7 @@ export const EARLY_CONSEQUENCE_EVENTS: GameEvent[] = [
         id: 'hobby_sport_echo_lead',
         text: 'Takımı motive et',
         effect: { health: 4, charisma: 5, energy: -10 },
+        stressEffect: 3,
         skillUpdates: { sports: 2, teamwork: 3 },
         feedback: 'Eski takım ruhu bugün liderliğe dönüştü. Kazanmak kadar birbirinizi oyunda tutmanın da önemli olduğunu gördünüz.',
         personalityEffects: [{ axis: 'courage', change: 3 }, { axis: 'empathy', change: 3 }],
@@ -844,7 +846,7 @@ export const EARLY_CONSEQUENCE_EVENTS: GameEvent[] = [
       {
         id: 'hobby_art_echo_submit',
         text: 'Portfolyonu başvuruda kullan',
-        effect: { intelligence: 3, charisma: 4, energy: -7 },
+        effect: { intelligence: 3, charisma: 4, energy: -7, money: -20 },
         skillUpdates: { art: 4, design: 2 },
         feedback: 'Sakinleşmek için başladığın resim, şimdi geleceğin için somut bir dosyaya dönüştü.',
         personalityEffects: [{ axis: 'openness', change: 4 }, { axis: 'courage', change: 2 }],
@@ -1053,7 +1055,7 @@ export const EARLY_CONSEQUENCE_EVENTS: GameEvent[] = [
       {
         id: 'phone_conflict_echo_listen',
         text: 'Ailenin kaygısını dinle ve ortak kural koy',
-        effect: { familyRelation: 6, discipline: 3 },
+        effect: { familyRelation: 6, discipline: 3, charisma: -2 },
         personalityEffects: [{ axis: 'empathy', change: 3 }, { axis: 'patience', change: 3 }],
         feedback: 'Tartışmayı kazanmak yerine birlikte yaşanabilir bir kural kurdunuz.',
         memory: { emotion: 'SATISFACTION', weight: 'HIGH' },
@@ -1211,7 +1213,7 @@ export const EARLY_CONSEQUENCE_EVENTS: GameEvent[] = [
       {
         id: 'teacher_voice_echo_mediator',
         text: 'Güvendiğin birinden arabuluculuk iste',
-        effect: { charisma: 3, discipline: 3, energy: -3 },
+        effect: { charisma: 3, discipline: 3, energy: -3, familyRelation: 2 },
         feedback: 'Yardım istemek zayıflık değil, durumu adil bir zemine taşımaktı.',
         personalityEffects: [{ axis: 'openness', change: 3 }],
         memory: { emotion: 'SATISFACTION', weight: 'MEDIUM' },
@@ -1408,7 +1410,7 @@ export const EARLY_CONSEQUENCE_EVENTS: GameEvent[] = [
       {
         id: 'science_patience_echo_measure',
         text: 'Veriyi takip edip deneyi sürdür',
-        effect: { intelligence: 5, discipline: 4, energy: -7 },
+        effect: { intelligence: 5, discipline: 4, energy: -7, charisma: -2 },
         skillUpdates: { logic: 2 },
         personalityEffects: [{ axis: 'patience', change: 4 }],
         feedback: 'Hemen sonuç alamamak, doğru soruyu takip etmekten daha az değerli değildi.',

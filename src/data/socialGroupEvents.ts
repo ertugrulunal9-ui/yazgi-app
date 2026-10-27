@@ -89,6 +89,7 @@ export const SOCIAL_GROUP_EVENTS: GameEvent[] = [
         id: 'group_conflict_mediate',
         text: 'Araya gir ve uzlaştır',
         effect: { charisma: 2, discipline: 1, energy: -5 },
+        stressEffect: 3,
         feedback: 'Kriz yönetimiyle grubu dağılmaktan kurtardın.',
         socialGroupAction: { type: 'REPUTATION', reputationDelta: 8 },
         socialReputationChange: 4,
@@ -129,7 +130,7 @@ export const SOCIAL_GROUP_EVENTS: GameEvent[] = [
       {
         id: 'club_competition_skip',
         text: 'Bu tur geri çekil',
-        effect: { energy: 4 },
+        effect: { energy: 4, health: 1 },
         feedback: 'Takım moralinde hafif bir düşüş oldu.',
         socialGroupAction: { type: 'REPUTATION', reputationDelta: -6 },
         socialReputationChange: -3,

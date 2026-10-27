@@ -153,7 +153,7 @@ export const NPC_CHECKIN_EVENTS: GameEvent[] = [
     personalityCategory: 'SOCIAL',
     text: (_ctx, npcName) => `${npcName} "Hafta sonu bir kahve?" diye çekingen bir mesaj attı.`,
     choices: [
-      { text: 'Evet, buluşalım', effect: { charisma: 3 }, feedback: 'Samimi bir buluşma oldu.', npcRelationChange: 10, stressEffect: -3 },
+      { text: 'Evet, buluşalım', effect: { charisma: 3, money: -10 }, feedback: 'Samimi bir buluşma oldu.', npcRelationChange: 10, stressEffect: -3 },
       { text: 'Arkadaşlarla olursa olur', effect: { charisma: 1 }, feedback: 'Güvenli bir cevap verdin.', npcRelationChange: 3 },
       { text: 'Kibarca reddet', effect: {}, feedback: 'Aradaki heyecan azaldı.', npcRelationChange: -6 },
     ],
@@ -166,7 +166,7 @@ export const NPC_CHECKIN_EVENTS: GameEvent[] = [
     personalityCategory: 'RISK',
     text: (_ctx, npcName) => `${npcName} attığın hikayeye kalp bıraktı ve sohbet başlatmak istedi.`,
     choices: [
-      { text: 'Sohbeti sürdür', effect: { charisma: 2 }, feedback: 'İletişim doğal aktı.', npcRelationChange: 8 },
+      { text: 'Sohbeti sürdür', effect: { charisma: 2, discipline: -1 }, feedback: 'İletişim doğal aktı.', npcRelationChange: 8 },
       { text: 'Kısa cevap ver', effect: {}, feedback: 'Temkinli kaldın.', npcRelationChange: 2 },
       { text: 'Görmezden gel', effect: {}, feedback: 'Sinyal cevapsız kaldı.', npcRelationChange: -7 },
     ],
@@ -180,7 +180,7 @@ export const NPC_CHECKIN_EVENTS: GameEvent[] = [
     text: (_ctx, npcName) => `${npcName} senin hakkında yanlış bir şey duyduğunu yazdı.`,
     choices: [
       { text: 'Sakin açıkla', effect: { charisma: 2, discipline: 1 }, feedback: 'Durumu netleştirdin.', npcRelationChange: 9, stressEffect: -2 },
-      { text: 'Şaka ile geçiştir', effect: { charisma: 1 }, feedback: 'Konu dağıldı ama tam kapanmadı.', npcRelationChange: 1 },
+      { text: 'Şaka ile geçiştir', effect: { charisma: 3 }, feedback: 'Konu dağıldı ama tam kapanmadı.', npcRelationChange: 1 },
       { text: 'Sinirli cevap ver', effect: {}, feedback: 'Yanlış anlaşılma büyüdü.', npcRelationChange: -9, stressEffect: 5 },
     ],
   }),
@@ -206,7 +206,7 @@ export const NPC_CHECKIN_EVENTS: GameEvent[] = [
     personalityCategory: 'SOCIAL',
     text: (_ctx, npcName) => `${npcName} birlikte gelecek planları hakkında konuşmak istiyor.`,
     choices: [
-      { text: 'Net bir plan yapalım', effect: { discipline: 2, charisma: 1 }, feedback: 'Birlikte yol çizmek güven verdi.', npcRelationChange: 9 },
+      { text: 'Net bir plan yapalım', effect: { discipline: 2, charisma: 1 }, stressEffect: 3, feedback: 'Birlikte yol çizmek güven verdi.', npcRelationChange: 9 },
       { text: 'Kısa bir plan yap', effect: { discipline: 1 }, feedback: 'Kısmen netleştiniz.', npcRelationChange: 3 },
       { text: 'Konuyu ertele', effect: {}, feedback: 'Belirsizlik ilişkiyi gerdi.', npcRelationChange: -7, stressEffect: 3 },
     ],

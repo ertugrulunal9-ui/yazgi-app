@@ -8,7 +8,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 3,
     choices: [
       { text: 'Programa sadık kal', effect: { discipline: 3, intelligence: 2, energy: -8 }, stressEffect: -6, feedback: 'Ritmin oturdu.' },
-      { text: 'Planı bırak', effect: { energy: -4 }, stressEffect: 5, feedback: 'Odağın yine dağıldı.' },
+      { text: 'Planı bırak', effect: { energy: -4, charisma: 1 }, stressEffect: 5, feedback: 'Odağın yine dağıldı.' },
     ],
   },
   {
@@ -27,7 +27,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
     text: 'Son deneme beklenenden kötü geldi, toparlanma zamanı.',
     minAge: 15, maxAge: 18, rarity: 'UNCOMMON', difficulty: 4,
     choices: [
-      { text: 'Hata analizi yap', effect: { intelligence: 4, discipline: 3, energy: -12 }, stressEffect: -3, feedback: 'Zayıf alanlarını net gördün.' },
+      { text: 'Hata analizi yap', effect: { intelligence: 4, discipline: 3, energy: -12, money: -20 }, stressEffect: -3, feedback: 'Zayıf alanlarını net gördün.' },
       { text: 'Sonucu görme', effect: { energy: -2 }, stressEffect: 7, feedback: 'Kısa rahatlama uzun strese döndü.' },
     ],
   },
@@ -77,7 +77,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
     text: 'Sınava son bir hafta; planın da planı gerekiyor.',
     minAge: 15, maxAge: 18, rarity: 'UNCOMMON', difficulty: 4,
     choices: [
-      { text: 'Günlük hedef listesi yap', effect: { discipline: 4, intelligence: 3, energy: -10 }, stressEffect: -4, feedback: 'Kritik haftayı yönettin.' },
+      { text: 'Günlük hedef listesi yap', effect: { discipline: 4, intelligence: 3, energy: -10, familyRelation: -1 }, stressEffect: -4, feedback: 'Kritik haftayı yönettin.' },
       { text: 'Rastgele ilerle', effect: { energy: -6 }, stressEffect: 6, feedback: 'Kafandaki dağınıklık arttı.' },
     ],
   },
@@ -87,7 +87,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
     text: 'Bir günlüğüne bir profesyoneli gözlemleme fırsatı buldun.',
     minAge: 15, maxAge: 18, rarity: 'UNCOMMON', difficulty: 2,
     choices: [
-      { text: 'Tüm gün takip et', effect: { intelligence: 2, discipline: 2, charisma: 1, energy: -8 }, skillUpdates: { work_ethic: 2 }, stressEffect: -2, feedback: 'Meslek gerçeğini yakından gördün.' },
+      { text: 'Tüm gün takip et', effect: { intelligence: 2, discipline: 2, charisma: 1, energy: -8, health: -1 }, skillUpdates: { work_ethic: 2 }, stressEffect: -2, feedback: 'Meslek gerçeğini yakından gördün.' },
       { text: 'Yarıda ayrıl', effect: { energy: 3 }, stressEffect: 1, feedback: 'Fırsatın bir kısmını kaçırdın.' },
     ],
   },
@@ -97,7 +97,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
     text: 'Staj başvurusu için kısa bir portfolyo hazırlaman gerekiyor.',
     minAge: 16, maxAge: 18, rarity: 'UNCOMMON', difficulty: 3,
     choices: [
-      { text: 'Projeleri düzenle', effect: { intelligence: 3, discipline: 3, energy: -10 }, skillUpdates: { coding: 2, design: 2 }, stressEffect: 3, feedback: 'Başvuru dosyan güçlendi.' },
+      { text: 'Projeleri düzenle', effect: { intelligence: 3, discipline: 3, energy: -10, familyRelation: -1 }, skillUpdates: { coding: 2, design: 2 }, stressEffect: 3, feedback: 'Başvuru dosyan güçlendi.' },
       { text: 'Eski haliyle gönder', effect: { energy: -2 }, stressEffect: 4, feedback: 'Riskli bir tercih yaptın.' },
     ],
   },
@@ -148,7 +148,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 3,
     choices: [
       { text: 'Hazırlıkla çık', effect: { charisma: 3, discipline: 2, energy: -7 }, stressEffect: 3, feedback: 'Kendini daha net ifade ettin.' },
-      { text: 'Doğaçlama git', effect: { charisma: 1, energy: -4 }, stressEffect: 5, feedback: 'Kurtardın ama zorlandın.' },
+      { text: 'Doğaçlama git', effect: { charisma: 1, energy: -4, intelligence: 1 }, stressEffect: 5, feedback: 'Kurtardın ama zorlandın.' },
     ],
   },
   {
@@ -157,7 +157,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
     text: 'Kendi değerlerini yazıp hayatınla karşılaştırmaya karar verdin.',
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 2,
     choices: [
-      { text: 'Detaylı liste yap', effect: { discipline: 2, intelligence: 2, energy: -4 }, stressEffect: -6, feedback: 'İçine dair daha net bir harita çıktı.' },
+      { text: 'Detaylı liste yap', effect: { discipline: 2, intelligence: 2, energy: -4, charisma: -1 }, stressEffect: -6, feedback: 'İçine dair daha net bir harita çıktı.' },
       { text: 'Ertesi haftaya bırak', effect: { energy: 1 }, stressEffect: 2, feedback: 'Soru işaretleri duruyor.' },
     ],
   },
@@ -167,7 +167,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
     text: 'Yeni bir hobinin seni değiştirebileceğini hissediyorsun.',
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 2,
     choices: [
-      { text: 'Deneme dersine git', effect: { charisma: 2, intelligence: 1, energy: -5 }, skillUpdates: { art: 2 }, stressEffect: -4, feedback: 'Yeni bir tarafını keşfettin.' },
+      { text: 'Deneme dersine git', effect: { charisma: 2, intelligence: 1, energy: -5, money: -20 }, skillUpdates: { art: 2 }, stressEffect: -4, feedback: 'Yeni bir tarafını keşfettin.' },
       { text: 'Konfor alanında kal', effect: { energy: 2 }, stressEffect: 1, feedback: 'Güvenli ama durağan kaldın.' },
     ],
   },
@@ -178,7 +178,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
     minAge: 15, maxAge: 18, rarity: 'UNCOMMON', difficulty: 3,
     choices: [
       { text: 'Öncelik sırası belirle', effect: { discipline: 3, familyRelation: 2, energy: -6 }, stressEffect: -5, feedback: 'Çakışmayı yönetilebilir hale getirdin.' },
-      { text: 'Her şeyi aynı anda yap', effect: { energy: -10, health: -2 }, stressEffect: 9, feedback: 'Yük birikti.' },
+      { text: 'Her şeyi aynı anda yap', effect: { energy: -10, health: -2, intelligence: 2 }, stressEffect: 9, feedback: 'Yük birikti.' },
     ],
   },
   {
@@ -187,7 +187,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
     text: 'Aynaya bakarken yazdıklarınla yüzleşiyorsun.',
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 2,
     choices: [
-      { text: 'Açık yaz', effect: { discipline: 2, charisma: 1, energy: -3 }, skillUpdates: { writing: 2 }, stressEffect: -7, feedback: 'Yazmak içini rahatlattı.' },
+      { text: 'Açık yaz', effect: { discipline: 2, charisma: 1, energy: -3, health: -1 }, skillUpdates: { writing: 2 }, stressEffect: -7, feedback: 'Yazmak içini rahatlattı.' },
       { text: 'Boş sayfa bırak', effect: { energy: 1 }, stressEffect: 2, feedback: 'Konu yine ertelendi.' },
     ],
   },
@@ -208,7 +208,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
     minAge: 16, maxAge: 18, rarity: 'UNCOMMON', difficulty: 3,
     choices: [
       { text: 'Araştırıp planla', effect: { intelligence: 2, discipline: 2, energy: -5 }, stressEffect: -3, feedback: 'Belirsizlik azaldı.' },
-      { text: 'Fikri kapat', effect: { discipline: 1, energy: -2 }, stressEffect: 3, feedback: 'Karar ertelendi.' },
+      { text: 'Fikri kapat', effect: { discipline: 1, energy: -2, familyRelation: 2 }, stressEffect: 3, feedback: 'Karar ertelendi.' },
     ],
   },
   {
@@ -218,7 +218,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 3,
     choices: [
       { text: 'Net bir soru sor', effect: { charisma: 3, energy: -4 }, stressEffect: 4, feedback: 'Belirsizlik yerine netlik geldi.' },
-      { text: 'Sinyalleri yorumlamaya devam et', effect: { energy: -3 }, stressEffect: 6, feedback: 'Belirsizlik uzadı.' },
+      { text: 'Sinyalleri yorumlamaya devam et', effect: { energy: -3, intelligence: 1 }, stressEffect: 6, feedback: 'Belirsizlik uzadı.' },
     ],
   },
   {
@@ -248,7 +248,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 2,
     choices: [
       { text: 'Mesajı sadeleştir', effect: { charisma: 2, discipline: 1, energy: -2 }, stressEffect: -1, feedback: 'Kendini net anlattın.' },
-      { text: 'Duyguyla gönder', effect: { charisma: 1, energy: -4 }, stressEffect: 4, feedback: 'Sonucu beklemek yordu.' },
+      { text: 'Duyguyla gönder', effect: { charisma: 3, energy: -4 }, stressEffect: 4, feedback: 'Sonucu beklemek yordu.' },
     ],
   },
   {
@@ -257,7 +257,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
     text: 'Ayrılık sonrası yeniden konuşma teklifi geldi.',
     minAge: 15, maxAge: 18, rarity: 'RARE', difficulty: 4,
     choices: [
-      { text: 'Sakin bir buluşma ayarla', effect: { charisma: 2, discipline: 2, energy: -5 }, stressEffect: -4, feedback: 'Durumu olgunlukla yönettin.' },
+      { text: 'Sakin bir buluşma ayarla', effect: { charisma: 2, discipline: 2, energy: -5, money: -10 }, stressEffect: -4, feedback: 'Durumu olgunlukla yönettin.' },
       { text: 'Hemen reddet', effect: { discipline: 1, energy: -1 }, stressEffect: 1, feedback: 'Kendi sınırlarını korudun.' },
     ],
   },
@@ -308,7 +308,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 2,
     choices: [
       { text: 'Düzenli görev al', effect: { discipline: 2, familyRelation: 3, energy: -5 }, stressEffect: -2, feedback: 'Ev içinde güven kazandın.' },
-      { text: 'Sürekli ertele', effect: { familyRelation: -4, energy: -1 }, stressEffect: 3, feedback: 'Güven kaybı başladı.' },
+      { text: 'Sürekli ertele', effect: { familyRelation: -4, energy: -1, health: 1 }, stressEffect: 3, feedback: 'Güven kaybı başladı.' },
     ],
   },
   {
@@ -318,7 +318,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 3,
     choices: [
       { text: 'Saat planıyla anlaş', effect: { familyRelation: 3, charisma: 2, energy: -3 }, stressEffect: -3, feedback: 'Orta yol bulundu.' },
-      { text: 'Ani çıkış yap', effect: { familyRelation: -5, energy: -2 }, stressEffect: 5, feedback: 'Tansiyon yükseldi.' },
+      { text: 'Ani çıkış yap', effect: { familyRelation: -5, energy: -2, charisma: 3 }, stressEffect: 5, feedback: 'Tansiyon yükseldi.' },
     ],
   },
   {
@@ -327,7 +327,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
     text: 'Geçmiş bir tartışmadan sonra güveni yeniden kurma şansı doğdu.',
     minAge: 15, maxAge: 18, rarity: 'UNCOMMON', difficulty: 3,
     choices: [
-      { text: 'Tutarlılık göster', effect: { familyRelation: 5, discipline: 2, energy: -4 }, stressEffect: -5, feedback: 'İlişki toparlanmaya başladı.' },
+      { text: 'Tutarlılık göster', effect: { familyRelation: 5, discipline: 2, energy: -4, charisma: -1 }, stressEffect: -5, feedback: 'İlişki toparlanmaya başladı.' },
       { text: 'Boşver', effect: { familyRelation: -3, energy: -1 }, stressEffect: 2, feedback: 'Mesafe korundu.' },
     ],
   },
@@ -338,7 +338,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
     minAge: 15, maxAge: 18, rarity: 'UNCOMMON', difficulty: 2,
     choices: [
       { text: 'Planı uygula', effect: { money: 160, discipline: 2, intelligence: 1, energy: -3 }, skillUpdates: { business: 2 }, stressEffect: -3, feedback: 'Paranı daha kontrollü yönettin.' },
-      { text: 'Plansız harca', effect: { money: 70, energy: -1 }, stressEffect: 3, feedback: 'Ay sonu zorlaştı.' },
+      { text: 'Plansız harca', effect: { money: 70, energy: -1, charisma: 2 }, stressEffect: 3, feedback: 'Ay sonu zorlaştı.' },
     ],
   },
   {
@@ -387,7 +387,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
     text: 'Kendine 3 aylık bir birikim hedefi koydun.',
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 2,
     choices: [
-      { text: 'Hedef takip çizelgesi yap', effect: { money: 100, discipline: 3, energy: -2 }, stressEffect: -2, feedback: 'Hedef görünür hale geldi.' },
+      { text: 'Hedef takip çizelgesi yap', effect: { money: 100, discipline: 3, energy: -2, charisma: -1 }, stressEffect: -2, feedback: 'Hedef görünür hale geldi.' },
       { text: 'Aklinda tut yeter', effect: { money: 40, energy: -1 }, stressEffect: 2, feedback: 'Takip zorlasti.' },
     ],
   },
@@ -397,7 +397,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
     text: 'Burs arama portallarında uzun bir akşam geçirdin.',
     minAge: 15, maxAge: 18, rarity: 'UNCOMMON', difficulty: 3,
     choices: [
-      { text: 'Başvuruları tamamla', effect: { intelligence: 2, discipline: 2, money: 80, energy: -6 }, stressEffect: -2, feedback: 'Maddi nefes aldıracak bir adım attın.' },
+      { text: 'Başvuruları tamamla', effect: { intelligence: 2, discipline: 2, money: 80, energy: -6, health: -1 }, stressEffect: -2, feedback: 'Maddi nefes aldıracak bir adım attın.' },
       { text: 'Yarım bırak', effect: { energy: -2 }, stressEffect: 3, feedback: 'Fırsat penceresi daraldı.' },
     ],
   },
@@ -504,7 +504,7 @@ export const LATE_TEEN_EVENTS: GameEvent[] = [
       },
       {
         text: 'Sosyal medyada oyalan',
-        effect: { energy: -6 },
+        effect: { energy: -6, charisma: 2 },
         stressEffect: 6,
         feedback: 'Kısa süreli kaçış iyi geldi ama sorular duruyor.',
       },
@@ -574,7 +574,7 @@ export const LATE_TEEN_EVENTS: GameEvent[] = [
       },
       {
         text: 'Kapını çarpıp çık',
-        effect: { familyRelation: -10, charisma: 1, energy: -4 },
+        effect: { familyRelation: -10, charisma: 3, energy: -4 },
         stressEffect: 12,
         feedback: 'Anlık rahatlama oldu ama ilişki zorlandı.',
       },
@@ -622,7 +622,7 @@ export const LATE_TEEN_EVENTS: GameEvent[] = [
       },
       {
         text: 'Sadece yakın arkadaşlarla dolaş',
-        effect: { charisma: 1, energy: -5 },
+        effect: { charisma: 1, energy: -5, health: 1 },
         stressEffect: 1,
         feedback: 'Rahat bir gün oldu ama bilgi kazanımın sınırlı kaldı.',
       },
