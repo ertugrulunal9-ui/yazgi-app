@@ -404,7 +404,9 @@ export const GameStateSchema = z.object({
   npcs: z.array(NPCSchema),
   selectedNpcId: z.string().nullable(),
   innerThought: z.string(),
-  innerThoughtType: z.enum(['CRISIS', 'MISMATCH', 'TRAIT', 'MOMENTUM', 'CLIFFHANGER', 'IDLE']).default('IDLE'),
+  // .partial() altındaki alanlarda .default() yok: zod 3 burada varsayılanı hiç uygulamıyordu (eksik alan eksik kalıyordu),
+  // zod 4 uygular; eski kayıtların yüklenme sonucu değişmesin diye kaldırıldı (activeBuffs, consumable* için de aynı).
+  innerThoughtType: z.enum(['CRISIS', 'MISMATCH', 'TRAIT', 'MOMENTUM', 'CLIFFHANGER', 'IDLE']),
   floatingTexts: z.array(z.any()), // Transient, don't validate strictly
   totalTurns: z.number(),
   sessionCount: z.number().min(0),
@@ -416,9 +418,9 @@ export const GameStateSchema = z.object({
   scheduledEvents: z.array(ScheduledEventSchema),
   activeArcs: z.array(ActiveStoryArcSchema),
   familyEvolution: FamilyEvolutionSchema.optional(),
-  activeBuffs: z.array(ActiveBuffSchema).optional().default([]),
-  consumableCooldowns: z.record(z.string(), z.number().min(0)).optional().default({}),
-  consumableUsageThisTurn: z.record(z.string(), z.number().min(0)).optional().default({}),
+  activeBuffs: z.array(ActiveBuffSchema).optional(),
+  consumableCooldowns: z.record(z.string(), z.number().min(0)).optional(),
+  consumableUsageThisTurn: z.record(z.string(), z.number().min(0)).optional(),
 
   // Achievement System
   unlockedAchievements: z.array(UnlockedAchievementSchema),
