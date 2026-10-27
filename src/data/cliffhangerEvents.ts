@@ -206,6 +206,7 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
       {
         text: '🌟 "Değişime hazırım"',
         effect: { charisma: 3 },
+        stressEffect: 2,
         personalityEffects: [{ axis: 'openness', change: 3 }, { axis: 'openness', change: 2 }],
         feedback: 'İçindeki ses güçlendi. Yarın ne getireceğini bilmiyorsun ama korkun yok.',
       },
@@ -233,6 +234,7 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
       {
         text: '🕵️ "Gidecegim — kim oldugunu merak ediyorum"',
         effect: { charisma: 2 },
+        stressEffect: 3,
         personalityEffects: [{ axis: 'openness', change: 3 }, { axis: 'openness', change: 2 }],
         futureEvents: [{ trigger: 'TURNS', eventId: 'cliff_letter_meetup', turnsLater: 1 }],
         feedback: 'Cesur bir karar. Yarın parkta ne bekliyor seni?',

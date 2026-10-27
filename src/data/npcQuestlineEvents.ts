@@ -259,6 +259,7 @@ const friendshipEvents: GameEvent[] = [
       {
         text: '💬 "Ne oldu aramizda? Konusalim mi?"',
         effect: { charisma: 0 },
+        stressEffect: 3,
         npcRelationChange: 5,
         personalityEffects: [{ axis: 'empathy', change: 2 }, { axis: 'openness', change: 2 }],
         feedback: 'Açık konuştunuz. Belki her şey eskisi gibi olmayacak ama saygı kaldı.',
@@ -294,7 +295,7 @@ const romanceEvents: GameEvent[] = [
     choices: [
       {
         text: '😊 Gül ve bak — belki o da hissediyordur',
-        effect: { charisma: 5 },
+        effect: { charisma: 5, discipline: -2 },
         npcRelationChange: 8,
         personalityEffects: [{ axis: 'openness', change: 3 }],
         memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'İlk kıvılcım' },
@@ -392,6 +393,7 @@ const romanceEvents: GameEvent[] = [
       {
         text: '🤗 "Sadece arkadaşım. Sana güveniyorum, sen de bana güven"',
         effect: { charisma: 2 },
+        stressEffect: 3,
         npcRelationChange: 10,
         personalityEffects: [{ axis: 'empathy', change: 3 }],
         feedback: 'Sakince açıkladın. Bir süre sonra yumuşamaya başladı.',
@@ -452,6 +454,7 @@ const romanceEvents: GameEvent[] = [
       {
         text: '😊 Açıkça anlat — gizlemenin anlamı yok',
         effect: { charisma: 2 },
+        stressEffect: 3,
         npcRelationChange: 5,
         personalityEffects: [{ axis: 'openness', change: 3 }, { axis: 'openness', change: 2 }],
         feedback: 'Ailen şaşırdı ama dürüst oldun. Bu önemli.',
@@ -655,6 +658,7 @@ const rivalryEvents: GameEvent[] = [
       {
         text: '🕊️ "Kabul. Deneyelim."',
         effect: { charisma: 8 },
+        stressEffect: 3,
         npcRelationChange: 25,
         personalityEffects: [{ axis: 'empathy', change: 4 }, { axis: 'openness', change: 2 }],
         memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Rakiple baris' },
@@ -689,6 +693,7 @@ const rivalryEvents: GameEvent[] = [
       {
         text: '🧘 Sessiz kal — zamanla herkes gerçeği görür',
         effect: { charisma: 0 },
+        stressEffect: 3,
         npcRelationChange: 5,
         personalityEffects: [{ axis: 'openness', change: 3 }, { axis: 'conformity', change: -1 }],
         feedback: 'Sessizliğin güçlü bir cevap oldu. İnsanlar senin tarafına geçmeye başladı.',
@@ -774,6 +779,7 @@ const betrayalEvents: GameEvent[] = [
       {
         text: '🕵️ Dikkatli ol ve izle',
         effect: { intelligence: 1 },
+        stressEffect: 3,
         personalityEffects: [{ axis: 'openness', change: 1 }],
         feedback: 'Gözlerini açtın. Bir sonraki sefer daha dikkatli olacaksın.',
       },
@@ -800,6 +806,7 @@ const betrayalEvents: GameEvent[] = [
       {
         text: '🤔 "Emin misin? Önce doğrulayayım"',
         effect: { intelligence: 2 },
+        stressEffect: 3,
         personalityEffects: [{ axis: 'openness', change: 1 }, { axis: 'empathy', change: 1 }],
         feedback: 'Soğukkanlı kaldın. Kanıtları toplamak için zaman kazandın.',
       },
@@ -905,6 +912,7 @@ const betrayalEvents: GameEvent[] = [
       {
         text: '🤝 "Zaman lazim. Ama dinliyorum."',
         effect: { charisma: 2 },
+        stressEffect: 3,
         npcRelationChange: 5,
         personalityEffects: [{ axis: 'empathy', change: 3 }],
         feedback: 'Af hemen gelmez. Ama kapı tamamen kapanmadı.',

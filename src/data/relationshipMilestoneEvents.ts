@@ -222,7 +222,7 @@ export const MILESTONE_EVENTS: GameEvent[] = [
     choices: [
       {
         text: '❤️ "Ben de çok mutluyum"',
-        effect: { charisma: 5, health: 5 },
+        effect: { charisma: 5, health: 5, discipline: -2 },
         feedback: 'İlk ilişkiniz başladı. Hayat çok güzel!',
         npcRelationChange: 15,
         stressEffect: -20,
@@ -409,7 +409,7 @@ export const MILESTONE_EVENTS: GameEvent[] = [
       },
       {
         text: '🎧 Müzik dinle ve içine kapat',
-        effect: { intelligence: 2 },
+        effect: { intelligence: 2, charisma: -2 },
         feedback: 'Acıyı müzikle bastırdın. Ama hâlâ orada.',
         stressEffect: 15,
         personalityEffects: [{ axis: 'openness', change: -3 }],
