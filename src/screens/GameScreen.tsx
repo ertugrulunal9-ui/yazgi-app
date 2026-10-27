@@ -71,9 +71,8 @@ import { ChapterTransitionModal } from '../components/ChapterTransitionModal';
 import { SessionRecapModal } from '../components/SessionRecapModal';
 import { GoalTracker } from '../components/GoalTracker';
 import { isFeatureEnabled } from '../config/featureFlags';
-import type { AgeMilestoneSummary, ChapterSummary } from '../types/game';
 import { getCurrentChapter, getLocalizedChapterName, getStatCap } from '../utils/gameUtils';
-import { hasMilestoneContent } from '../utils/milestoneBuilder';
+import { resolveYearEndWindow, type YearEndWindow } from '../utils/yearEndWindow';
 import { hasSpendableEnergy } from '../utils/endDayPrompt';
 import { getAvatarMood } from '../utils/avatarMood';
 import { countPendingEchoes } from '../utils/echoTrail';
@@ -146,9 +145,9 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
   const [achievementToastIds, setAchievementToastIds] = useState<string[]>([]);
   const [achievementToastVisible, setAchievementToastVisible] = useState(false);
   const [achievementsOpen, setAchievementsOpen] = useState(false);
-  const [currentMilestoneToShow, setCurrentMilestoneToShow] = useState<AgeMilestoneSummary | null>(null);
+  // Yıl sonunda tek pencere: bölüm değişimi varsa bölüm penceresi (yaş özeti içinde), yoksa yaş özeti
+  const [yearEndWindow, setYearEndWindow] = useState<YearEndWindow | null>(null);
   const shownMilestoneAgesRef = useRef<Set<number>>(new Set());
-  const [currentChapterToShow, setCurrentChapterToShow] = useState<ChapterSummary | null>(null);
   const shownChaptersRef = useRef<Set<number>>(new Set());
   const [sessionRecapVisible, setSessionRecapVisible] = useState(false);
   const sessionRecapShownRef = useRef(false);
@@ -292,45 +291,27 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
   }, [gameState.totalTurns, enqueueToast, t]);
 
   useEffect(() => {
-    if (!isFeatureEnabled('MILESTONE_SUMMARY')) return;
-    const summaries = gameState.ageMilestoneSummaries;
-    if (!summaries?.length) return;
+    const next = resolveYearEndWindow({
+      milestones: gameState.ageMilestoneSummaries,
+      chapters: gameState.chapterSummaries,
+      milestoneEnabled: isFeatureEnabled('MILESTONE_SUMMARY'),
+      chapterEnabled: isFeatureEnabled('CHAPTER_SYSTEM'),
+      shownMilestoneAges: shownMilestoneAgesRef.current,
+      shownChapterIds: shownChaptersRef.current,
+    });
+    if (next) setYearEndWindow(next);
+  }, [gameState.ageMilestoneSummaries, gameState.chapterSummaries]);
 
-    const lastSummary = summaries[summaries.length - 1];
-    if (!shownMilestoneAgesRef.current.has(lastSummary.age)) {
-      // Sakin geçen yıllar için ayrı bir pencere açma; olay akışı kesilmesin
-      if (!hasMilestoneContent(lastSummary)) {
-        shownMilestoneAgesRef.current.add(lastSummary.age);
-        return;
-      }
-      setCurrentMilestoneToShow(lastSummary);
+  // Tek pencere iki özeti de gösterir; kapanınca ikisi de "gösterildi" olur
+  const handleYearEndClose = useCallback(() => {
+    if (yearEndWindow?.milestone) {
+      shownMilestoneAgesRef.current.add(yearEndWindow.milestone.age);
     }
-  }, [gameState.ageMilestoneSummaries]);
-
-  const handleMilestoneClose = useCallback(() => {
-    if (currentMilestoneToShow) {
-      shownMilestoneAgesRef.current.add(currentMilestoneToShow.age);
+    if (yearEndWindow?.chapter) {
+      shownChaptersRef.current.add(yearEndWindow.chapter.chapterId);
     }
-    setCurrentMilestoneToShow(null);
-  }, [currentMilestoneToShow]);
-
-  useEffect(() => {
-    if (!isFeatureEnabled('CHAPTER_SYSTEM')) return;
-    const summaries = gameState.chapterSummaries;
-    if (!summaries?.length) return;
-
-    const lastSummary = summaries[summaries.length - 1];
-    if (!shownChaptersRef.current.has(lastSummary.chapterId)) {
-      setCurrentChapterToShow(lastSummary);
-    }
-  }, [gameState.chapterSummaries]);
-
-  const handleChapterClose = useCallback(() => {
-    if (currentChapterToShow) {
-      shownChaptersRef.current.add(currentChapterToShow.chapterId);
-    }
-    setCurrentChapterToShow(null);
-  }, [currentChapterToShow]);
+    setYearEndWindow(null);
+  }, [yearEndWindow]);
 
   // Session Recap — Faz 1B: mount'ta son oturum 5+ dakika önceyse göster
   useEffect(() => {
@@ -600,11 +581,12 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     () => getLocalizedChapterName(currentChapter.id, locale),
     [currentChapter.id, locale]
   );
+  const chapterToShow = yearEndWindow?.chapter ?? null;
   const nextChapter = useMemo(
-    () => currentChapterToShow
-      ? CHAPTERS.find(chapter => chapter.id === currentChapterToShow.chapterId + 1)
+    () => chapterToShow
+      ? CHAPTERS.find(chapter => chapter.id === chapterToShow.chapterId + 1)
       : undefined,
-    [currentChapterToShow]
+    [chapterToShow]
   );
 
   const examOverlayStyle = useMemo(() => ({
@@ -905,23 +887,22 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
         onCancel={handleDaySummaryCancel}
       />
 
-      {isFeatureEnabled('MILESTONE_SUMMARY') && currentMilestoneToShow && (
-        <AgeMilestoneModal
-          visible
-          milestone={currentMilestoneToShow}
-          onClose={handleMilestoneClose}
-        />
-      )}
-
-      {isFeatureEnabled('CHAPTER_SYSTEM') && currentChapterToShow && (
+      {yearEndWindow?.chapter ? (
         <ChapterTransitionModal
           visible
-          summary={currentChapterToShow}
+          summary={yearEndWindow.chapter}
+          yearMilestone={yearEndWindow.milestone}
           nextChapterId={nextChapter?.id}
           nextChapterEmoji={nextChapter?.emoji}
-          onClose={handleChapterClose}
+          onClose={handleYearEndClose}
         />
-      )}
+      ) : yearEndWindow?.milestone ? (
+        <AgeMilestoneModal
+          visible
+          milestone={yearEndWindow.milestone}
+          onClose={handleYearEndClose}
+        />
+      ) : null}
 
       <SessionRecapModal
         visible={sessionRecapVisible}
