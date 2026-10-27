@@ -96,11 +96,6 @@
       "url": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c",
       "package": "sprintf-js",
       "reason": "Build/test-time only (moderate). Pulled in by argparse@1 -> js-yaml@3 -> babel-plugin-istanbul -> babel-jest (react-native, jest-expo); fails the gate only through packages marked high by braces. Not bundled into the app or run on device (absent from the Android export source map). No patched release exists (1.1.3 is the latest). Review and remove this entry once a patched release is published."
-    },
-    {
-      "url": "https://github.com/advisories/GHSA-mrhx-c7xc-m3w5",
-      "package": "zod",
-      "reason": "Runtime, local data only. Used by src/save/SaveValidation.ts to validate the player's own save (device storage, or a save the player pastes into Import, capped at 2 MB before parsing) and by src/data/eventRegistry.ts to validate bundled event data. No network or third-party input reaches zod (cloud sync is disabled and not wired in). Worst case is a player exhausting memory on their own device with a hand-crafted save. Fix is zod 4.6.6+, a major bump (zod 3 -> 4) that needs both schemas migrated; tracked as a separate task. Remove this entry once on zod >= 4.6.6."
     }
   ]
 }
