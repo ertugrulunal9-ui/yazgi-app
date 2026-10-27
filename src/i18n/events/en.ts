@@ -1,6 +1,7 @@
 import type { EventTranslationCatalog } from './types';
 import { enEventTranslationsGenerated } from './en.generated';
 import { enEventTranslationsOverrides } from './en.overrides';
+import { enEventGapTranslations } from './en.gaps';
 import { enOutcomeFeedbackTranslations } from './en.outcomes';
 
 const baseEnEventTranslations: EventTranslationCatalog = {
@@ -44,6 +45,29 @@ const baseEnEventTranslations: EventTranslationCatalog = {
   },
 };
 
+// Elle yazılmış boşluk doldurmaları: yalnızca hâlâ İngilizcesi olmayan metinleri ekler,
+// mevcut hiçbir çeviriyi ezmez (en.gaps.ts)
+const withGapFills = (
+  catalog: EventTranslationCatalog,
+  gaps: typeof enEventGapTranslations,
+): EventTranslationCatalog => {
+  const result: EventTranslationCatalog = { ...catalog };
+  for (const [eventId, gap] of Object.entries(gaps)) {
+    const event = result[eventId] ?? {};
+    const eventChoices = { ...(event.choices ?? {}) };
+    for (const [choiceId, gapChoice] of Object.entries(gap.choices)) {
+      const choice = eventChoices[choiceId] ?? {};
+      eventChoices[choiceId] = {
+        ...choice,
+        text: choice.text || gapChoice.text,
+        feedback: choice.feedback || gapChoice.feedback,
+      };
+    }
+    result[eventId] = { ...event, text: event.text || gap.text, choices: eventChoices };
+  }
+  return result;
+};
+
 // Şansa bağlı sonuç metinlerini olayın mevcut çevirisini ezmeden ekler
 const withOutcomeFeedback = (
   catalog: EventTranslationCatalog,
@@ -67,6 +91,6 @@ const withOutcomeFeedback = (
 };
 
 export const enEventTranslations: EventTranslationCatalog = withOutcomeFeedback(
-  baseEnEventTranslations,
+  withGapFills(baseEnEventTranslations, enEventGapTranslations),
   enOutcomeFeedbackTranslations,
 );
