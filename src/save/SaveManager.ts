@@ -512,7 +512,7 @@ class SaveManager {
         continue;
       }
 
-      let normalizedSave = validation.data as SaveSlotData;
+      let normalizedSave = validation.data as unknown as SaveSlotData;
       if (normalizedSave.metadata.version < SAVE_VERSION) {
         normalizedSave = migrateToVersion(normalizedSave, SAVE_VERSION);
       }
@@ -1338,7 +1338,7 @@ class SaveManager {
       }
 
       // Use repaired data if auto-repair was applied
-      let validatedData = validation.data as SaveSlotData;
+      let validatedData = validation.data as unknown as SaveSlotData;
       if (validation.repaired) {
         devLog.warn(`Slot ${slotId} was auto-repaired:`, validation.repairLog);
         // Recompute checksum for repaired data before persisting/validating
@@ -1553,7 +1553,7 @@ class SaveManager {
         devLog.warn('Imported save was auto-repaired:', validation.repairLog);
       }
 
-      let saveData = validation.data as SaveSlotData;
+      let saveData = validation.data as unknown as SaveSlotData;
       if (saveData.metadata.version < SAVE_VERSION) {
         saveData = migrateToVersion(saveData, SAVE_VERSION);
       }

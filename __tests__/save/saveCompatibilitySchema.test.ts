@@ -1,4 +1,4 @@
-import { GameStateSchema, SaveSlotMetadataSchema, validateSaveData } from '../../src/save/SaveValidation';
+import { SaveSlotMetadataSchema, validateSaveData } from '../../src/save/SaveValidation';
 import { getInitialGameState, getInitialStats } from '../../src/utils/gameUtils';
 
 describe('Save Compatibility Schema', () => {
@@ -243,8 +243,8 @@ describe('Save Compatibility Schema', () => {
         metadata: pickKeys(save.metadata, Object.keys(SaveSlotMetadataSchema.shape)),
         playerName: save.playerName,
         stats: save.stats,
-        // GameStateSchema bilinmeyen anahtarları atar (strip), bilinenleri olduğu gibi bırakır
-        gameState: pickKeys(save.gameState, Object.keys(GameStateSchema.shape)),
+        // GameStateSchema bilinmeyen anahtarları da korur (.loose()); kayıtta ne varsa yüklenir
+        gameState: save.gameState,
       });
       expect(result.data?.metadata).not.toHaveProperty('chapter');
     });
