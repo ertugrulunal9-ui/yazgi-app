@@ -486,6 +486,44 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({
             bounces={false}
           >
             <TouchableOpacity
+              onPress={handleQuickPlay}
+              testID="quick-play-button"
+              style={{
+                borderRadius: 12,
+                minHeight: 56,
+                borderWidth: 1,
+                borderColor: theme.accentEvent,
+                backgroundColor: theme.accentEvent,
+                justifyContent: 'center',
+                alignItems: 'center',
+                paddingHorizontal: 12,
+              }}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={tStatic('app.quickPlay', undefined, 'Hemen Başla — Rastgele Karakter')}
+            >
+              <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: metrics.font + 2 }}>
+                {tStatic('app.quickPlay', undefined, 'Hemen Başla — Rastgele Karakter')}
+              </Text>
+            </TouchableOpacity>
+            {(metaProgression?.recentRuns?.length ?? 0) === 0 && (
+              <Text style={{ color: theme.textSecondary, fontSize: 11, textAlign: 'center', marginTop: 6 }}>
+                {tStatic('app.quickPlayHint', undefined, 'Form doldurmadan rastgele bir karakterle hemen başla')}
+              </Text>
+            )}
+            <Text
+              style={{
+                color: theme.textSecondary,
+                fontSize: 12,
+                textAlign: 'center',
+                marginTop: 14,
+                marginBottom: 10,
+              }}
+            >
+              {tStatic('app.orCreateCharacter', undefined, 'ya da karakterini kendin oluştur')}
+            </Text>
+
+            <TouchableOpacity
               onPress={handleRandomize}
               activeOpacity={0.8}
               style={{
@@ -800,10 +838,10 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({
               style={{
                 marginTop: 2,
                 borderRadius: 12,
-                minHeight: 52,
+                minHeight: 48,
                 borderWidth: 1,
                 borderColor: isFormReady ? theme.accentEvent : theme.border,
-                backgroundColor: isFormReady ? theme.accentEvent : theme.surfaceOverlay,
+                backgroundColor: theme.surfaceOverlay,
                 justifyContent: 'center',
                 alignItems: 'center',
                 opacity: isFormReady ? 1 : 0.65,
@@ -813,38 +851,16 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = React.memo(({
               accessibilityRole="button"
               accessibilityState={{ disabled: !isFormReady }}
             >
-              <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: metrics.font }}>
+              <Text
+                style={{
+                  color: isFormReady ? theme.accentEvent : theme.textSecondary,
+                  fontWeight: '800',
+                  fontSize: metrics.font,
+                }}
+              >
                 {tStatic('app.startLife', undefined, 'Hayata Başla')}
               </Text>
             </TouchableOpacity>
-
-            <TouchableOpacity
-                onPress={handleQuickPlay}
-                testID="quick-play-button"
-                style={{
-                  marginTop: 8,
-                  borderRadius: 12,
-                  minHeight: 44,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  backgroundColor: theme.surfaceOverlay,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  opacity: 1,
-                }}
-                activeOpacity={0.85}
-                accessibilityRole="button"
-                accessibilityLabel={tStatic('app.quickPlay', undefined, 'Hemen Başla - Rastgele Karakter')}
-              >
-                <Text style={{ color: theme.textSecondary, fontWeight: '700', fontSize: metrics.font - 1 }}>
-                  {tStatic('app.quickPlay', undefined, 'Hemen Başla — Rastgele Karakter')}
-                </Text>
-              </TouchableOpacity>
-              {(metaProgression?.recentRuns?.length ?? 0) === 0 && (
-                <Text style={{ color: theme.textSecondary, fontSize: 11, textAlign: 'center', marginTop: 4 }}>
-                  {tStatic('app.quickPlayHint', undefined, 'Form doldurmadan rastgele bir karakterle hemen başla')}
-                </Text>
-              )}
           </ScrollView>
         ) : (
           <ScrollView
