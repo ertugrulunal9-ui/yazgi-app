@@ -88,7 +88,7 @@ const friendshipEvents: GameEvent[] = [
         effect: { charisma: 0 },
         npcRelationChange: 0,
         personalityEffects: [{ axis: 'openness', change: -2 }],
-        feedback: 'Sessiz bir aksam oldu. Firsat kacti ama kotu de gecmedi.',
+        feedback: 'Sessiz bir akşam oldu. Fırsat kaçtı ama kötü de geçmedi.',
       },
     ],
   },
@@ -105,7 +105,7 @@ const friendshipEvents: GameEvent[] = [
     reqNPCRole: 'FRIEND',
     choices: [
       {
-        text: '🎉 "Harika fikir! Ne yapalim?"',
+        text: '🎉 "Harika fikir! Ne yapalım?"',
         effect: { charisma: 4 },
         npcRelationChange: 8,
         feedback: 'Gülerek vakit geçirdiniz. Bazen en güzel anlar plansız olanlar.',
@@ -257,7 +257,7 @@ const friendshipEvents: GameEvent[] = [
     personalityCategory: 'SOCIAL',
     choices: [
       {
-        text: '💬 "Ne oldu aramizda? Konusalim mi?"',
+        text: '💬 "Ne oldu aramızda? Konuşalım mı?"',
         effect: { charisma: 0 },
         stressEffect: 3,
         npcRelationChange: 5,
@@ -357,7 +357,7 @@ const romanceEvents: GameEvent[] = [
     reqNPCRole: 'CRUSH',
     choices: [
       {
-        text: '☕ Sakin bir kafeye git — konusalim',
+        text: '☕ Sakin bir kafeye git — konuşalım',
         effect: { charisma: 8 },
         npcRelationChange: 12,
         personalityEffects: [{ axis: 'empathy', change: 2 }],
@@ -406,11 +406,11 @@ const romanceEvents: GameEvent[] = [
         feedback: 'Sert konuştun. Belki haklısın ama zamanlama kötü.',
       },
       {
-        text: '😞 "Haklisin, bir daha olmaz"',
+        text: '😞 "Haklısın, bir daha olmaz"',
         effect: { charisma: -2 },
         npcRelationChange: 5,
         personalityEffects: [{ axis: 'conformity', change: 3 }, { axis: 'openness', change: -2 }],
-        feedback: 'Teslim oldun. Kisa vadede rahatladi ama uzun vadede...',
+        feedback: 'Teslim oldun. Kısa vadede rahatladı ama uzun vadede...',
       },
     ],
   },
@@ -577,7 +577,7 @@ const rivalryEvents: GameEvent[] = [
         stressEffect: 3,
         npcRelationChange: 8,
         personalityEffects: [{ axis: 'empathy', change: 3 }],
-        feedback: 'Olgunlugun herkesi sasirtti. Gerilim biraz azaldi.',
+        feedback: 'Olgunluğun herkesi şaşırttı. Gerilim biraz azaldı.',
       },
       {
         text: '💪 Kendi grubunu güçlendirmek için uğraş',
@@ -712,7 +712,7 @@ const rivalryEvents: GameEvent[] = [
     personalityCategory: 'SOCIAL',
     choices: [
       {
-        text: '🤝 "Ben de. Beni daha guclu yaptin."',
+        text: '🤝 "Ben de. Beni daha güçlü yaptın."',
         effect: { charisma: 8 },
         npcRelationChange: 15,
         personalityEffects: [{ axis: 'empathy', change: 2 }],
@@ -747,7 +747,7 @@ const rivalryEvents: GameEvent[] = [
         npcRelationChange: -15,
         personalityEffects: [{ axis: 'openness', change: 1 }, { axis: 'empathy', change: -3 }],
         memory: { emotion: 'REGRET', weight: 'MEDIUM', customNote: 'Bitmeyen düşmancalık' },
-        feedback: 'Nefret seni ele geciriyor. Bu yol karanlik.',
+        feedback: 'Nefret seni ele geçiriyor. Bu yol karanlık.',
       },
     ],
   },
@@ -771,7 +771,7 @@ const betrayalEvents: GameEvent[] = [
     reqNPCRole: 'FRIEND',
     choices: [
       {
-        text: '🤔 "Herkesin kotu gunu olabilir, gormezden gel"',
+        text: '🤔 "Herkesin kötü günü olabilir, görmezden gel"',
         effect: {},
         personalityEffects: [{ axis: 'empathy', change: 2 }],
         feedback: 'Hoş gör. Ama içinde küçük bir şüphe kaldı.',
@@ -797,7 +797,7 @@ const betrayalEvents: GameEvent[] = [
     personalityCategory: 'CONFLICT',
     choices: [
       {
-        text: '😡 "Ne?! Simdi gidip hesap soracagim!"',
+        text: '😡 "Ne?! Şimdi gidip hesap soracağım!"',
         effect: { charisma: -4 },
         npcRelationChange: -10,
         personalityEffects: [{ axis: 'openness', change: 3 }],
@@ -836,10 +836,10 @@ const betrayalEvents: GameEvent[] = [
         feedback: 'Parça parça gerçek ortaya çıkıyor. Şimdi ne yapacaksın?',
       },
       {
-        text: '💔 Yeter, dogrudan konusacagim',
+        text: '💔 Yeter, doğrudan konuşacağım',
         effect: { charisma: 2 },
         personalityEffects: [{ axis: 'openness', change: 4 }],
-        feedback: 'Cesur karar. Dogrudan gidiyorsun.',
+        feedback: 'Cesur karar. Doğrudan gidiyorsun.',
       },
     ],
   },
@@ -862,12 +862,12 @@ const betrayalEvents: GameEvent[] = [
         feedback: 'Sesi titriyordu. Belki pişmandır, belki korkmuştur. Ama gerçek ortada.',
       },
       {
-        text: '😢 "Sana guveniyordum..."',
+        text: '😢 "Sana güveniyordum..."',
         effect: { charisma: -6 },
         npcRelationChange: -5,
         personalityEffects: [{ axis: 'empathy', change: 2 }],
         memory: { emotion: 'REGRET', weight: 'HIGH', customNote: 'Arkadasin ihaneti' },
-        feedback: 'Kelimeler yumruktan daha sert vurdu. Gozleri doldu.',
+        feedback: 'Kelimeler yumruktan daha sert vurdu. Gözleri doldu.',
       },
     ],
   },
@@ -883,14 +883,14 @@ const betrayalEvents: GameEvent[] = [
     personalityCategory: 'CONFLICT',
     choices: [
       {
-        text: '🧠 "Kanitlarim var. Oyunu birak."',
+        text: '🧠 "Kanıtlarım var. Oyunu bırak."',
         effect: { intelligence: 2, charisma: 2 },
         npcRelationChange: -20,
         personalityEffects: [{ axis: 'openness', change: 4 }],
         feedback: 'Maskesi düştü. Sonunda gerçek yüzü gördün.',
       },
       {
-        text: '😰 Belki haklidir... kafam karisti',
+        text: '😰 Belki haklıdır... kafam karıştı',
         effect: { charisma: -4 },
         npcRelationChange: 5,
         personalityEffects: [{ axis: 'conformity', change: 3 }, { axis: 'openness', change: -3 }],
@@ -910,7 +910,7 @@ const betrayalEvents: GameEvent[] = [
     personalityCategory: 'MORAL',
     choices: [
       {
-        text: '🤝 "Zaman lazim. Ama dinliyorum."',
+        text: '🤝 "Zaman lazım. Ama dinliyorum."',
         effect: { charisma: 2 },
         stressEffect: 3,
         npcRelationChange: 5,
@@ -938,7 +938,7 @@ const betrayalEvents: GameEvent[] = [
     personalityCategory: 'MORAL',
     choices: [
       {
-        text: '💚 "Herkes hata yapar. Ikinci sans."',
+        text: '💚 "Herkes hata yapar. İkinci şans."',
         effect: { charisma: 7 },
         npcRelationChange: 20,
         personalityEffects: [{ axis: 'empathy', change: 4 }],
@@ -960,7 +960,7 @@ const betrayalEvents: GameEvent[] = [
     personalityCategory: 'SOCIAL',
     choices: [
       {
-        text: '🤝 "Selam. Nasilsin?"',
+        text: '🤝 "Selam. Nasılsın?"',
         effect: { charisma: 2 },
         npcRelationChange: 0,
         feedback: 'Mesafeli ama medenî. Olgunlaşmak bazen böyle olur.',

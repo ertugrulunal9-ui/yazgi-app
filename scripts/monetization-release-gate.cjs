@@ -5,6 +5,9 @@ const path = require('node:path');
 
 const APP_JSON_PATH = path.join(process.cwd(), 'app.json');
 const EAS_JSON_PATH = path.join(process.cwd(), 'eas.json');
+// android/ is committed (bare workflow), so EAS builds use this manifest, not the app.json plugin config.
+const ANDROID_MANIFEST_PATH = path.join(process.cwd(), 'android', 'app', 'src', 'main', 'AndroidManifest.xml');
+const MANIFEST_ADMOB_APP_ID_PATTERN = /android:name="com\.google\.android\.gms\.ads\.APPLICATION_ID"\s+android:value="([^"]*)"/;
 
 const PLACEHOLDER_PATTERN = /(TODO|REPLACE|YOUR_|CHANGE_ME|<.*>|PLACEHOLDER)/i;
 const ADMOB_APP_ID_PATTERN = /^ca-app-pub-\d{16}~\d+$/;
@@ -167,6 +170,22 @@ const main = () => {
       pattern: ADMOB_APP_ID_PATTERN,
       testSet: ADMOB_TEST_APP_IDS,
     });
+    if (fs.existsSync(ANDROID_MANIFEST_PATH)) {
+      const manifest = fs.readFileSync(ANDROID_MANIFEST_PATH, 'utf8');
+      const manifestAppId = normalize(manifest.match(MANIFEST_ADMOB_APP_ID_PATTERN)?.[1]);
+      const manifestSource = 'android/app/src/main/AndroidManifest.xml';
+      assertRequiredIdentifier({
+        label: 'AdMob Android app ID',
+        value: manifestAppId,
+        source: manifestSource,
+        errors,
+        pattern: ADMOB_APP_ID_PATTERN,
+        testSet: ADMOB_TEST_APP_IDS,
+      });
+      if (manifestAppId && androidAppId.value && manifestAppId !== androidAppId.value) {
+        errors.push(`AdMob Android app ID: ${manifestSource} does not match ${androidAppId.source}`);
+      }
+    }
     assertRequiredIdentifier({
       label: 'AdMob Android rewarded unit ID',
       value: rewardedAndroid.value,

@@ -368,7 +368,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
     minAge: 16, maxAge: 18, rarity: 'UNCOMMON', difficulty: 3,
     choices: [
       { text: 'Deneme süreci başlat', effect: { money: 110, discipline: 2, energy: -8 }, skillUpdates: { business: 2, work_ethic: 2 }, stressEffect: 3, feedback: 'İlk müşterini buldun.' },
-      { text: 'Risk alma', effect: { energy: 2 }, stressEffect: -1, feedback: 'Stabil kaldin.' },
+      { text: 'Risk alma', effect: { energy: 2 }, stressEffect: -1, feedback: 'Stabil kaldın.' },
     ],
   },
   {
@@ -378,7 +378,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
     minAge: 15, maxAge: 18, rarity: 'UNCOMMON', difficulty: 3,
     choices: [
       { text: 'Yazılı planla ver', effect: { money: -40, charisma: 2, discipline: 1, energy: -1 }, stressEffect: 1, feedback: 'Sınırlarını koruyarak destek oldun.' },
-      { text: 'Hayir de', effect: { discipline: 1, energy: 0 }, stressEffect: -1, feedback: 'Mali dengeni korudun.' },
+      { text: 'Hayır de', effect: { discipline: 1, energy: 0 }, stressEffect: -1, feedback: 'Mali dengeni korudun.' },
     ],
   },
   {
@@ -388,7 +388,7 @@ const ADDITIONAL_LATE_TEEN_EVENTS: GameEvent[] = [
     minAge: 15, maxAge: 18, rarity: 'COMMON', difficulty: 2,
     choices: [
       { text: 'Hedef takip çizelgesi yap', effect: { money: 100, discipline: 3, energy: -2, charisma: -1 }, stressEffect: -2, feedback: 'Hedef görünür hale geldi.' },
-      { text: 'Aklinda tut yeter', effect: { money: 40, energy: -1 }, stressEffect: 2, feedback: 'Takip zorlasti.' },
+      { text: 'Aklında tut yeter', effect: { money: 40, energy: -1 }, stressEffect: 2, feedback: 'Takip zorlaştı.' },
     ],
   },
   {
@@ -431,7 +431,7 @@ export const LATE_TEEN_EVENTS: GameEvent[] = [
         feedback: 'Planlı bir tekrar listesi çıkardın.',
       },
       {
-        text: 'Bugunu dinlenerek kapat',
+        text: 'Bugünü dinlenerek kapat',
         effect: { energy: 10 },
         stressEffect: -12,
         feedback: 'Kısa bir ara zihnini toplamana yardım etti.',
@@ -448,41 +448,41 @@ export const LATE_TEEN_EVENTS: GameEvent[] = [
     difficulty: 3,
     choices: [
       {
-        text: 'Mentorlugu kabul et',
+        text: 'Mentorluğu kabul et',
         effect: { intelligence: 3, discipline: 3, charisma: 1, energy: -10 },
         gradeUpdates: { math: 4, turkish: 4 },
         stressEffect: -6,
-        feedback: 'Dogru yonlendirme motivasyonunu arttirdi.',
+        feedback: 'Doğru yönlendirme motivasyonunu artırdı.',
       },
       {
-        text: 'Kendi basima devam et',
+        text: 'Kendi başıma devam et',
         effect: { discipline: 2, energy: -8 },
         stressEffect: 4,
-        feedback: 'Daha bagimsiz ama daha zor bir yol sectin.',
+        feedback: 'Daha bağımsız ama daha zor bir yol seçtin.',
       },
     ],
   },
   {
     id: 'lt_first_internship_call',
     tags: ['work', 'business'],
-    text: 'Bir startup staj gorusmesi icin seni aradi. Heyecanla not defterine sarildin.',
+    text: 'Bir startup staj görüşmesi için seni aradı. Heyecanla not defterine sarıldın.',
     minAge: 16,
     maxAge: 18,
     rarity: 'UNCOMMON',
     difficulty: 4,
     choices: [
       {
-        text: 'Gorusmeye hazirlan',
+        text: 'Görüşmeye hazırlan',
         effect: { intelligence: 3, charisma: 3, discipline: 2, energy: -15 },
         skillUpdates: { coding: 4, work_ethic: 3 },
         stressEffect: 7,
-        feedback: 'Gorusmede guclu bir ilk izlenim biraktin.',
+        feedback: 'Görüşmede güçlü bir ilk izlenim bıraktın.',
       },
       {
         text: 'Ertelensin diye mesaj at',
         effect: { energy: 8 },
         stressEffect: -5,
-        feedback: 'Kendine zaman kazandin ama firsat riske girdi.',
+        feedback: 'Kendine zaman kazandın ama fırsat riske girdi.',
       },
     ],
   },

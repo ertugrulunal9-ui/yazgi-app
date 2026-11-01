@@ -212,7 +212,7 @@ export const MILESTONE_EVENTS: GameEvent[] = [
     text: (ctx: EventContext) => {
       const partner = getRecentMilestoneNPC(ctx, 'PARTNER');
       const name = partner?.name || 'Sevgilin';
-      return `${name} ile artık resmi olarak birlikteisiniz! İlk ilişkin... El ele tutuştuğunuzda tüm dünya duruyor sanki. "Seninle olmak çok güzel" diyor ${name}.`;
+      return `${name} ile artık resmi olarak birliktesiniz! İlk ilişkin... El ele tutuştuğunuzda tüm dünya duruyor sanki. "Seninle olmak çok güzel" diyor ${name}.`;
     },
     minAge: 13,
     maxAge: 18,
@@ -342,7 +342,7 @@ export const MILESTONE_EVENTS: GameEvent[] = [
         personalityEffects: [{ axis: 'courage', change: -3 }],
       },
       {
-        text: '💪 "Korkumuyorum!"',
+        text: '💪 "Korkmuyorum!"',
         effect: { discipline: 3, charisma: -2 },
         feedback: 'Cesur duruyorsun ama bu savaş kolay olmayacak.',
         stressEffect: 10,

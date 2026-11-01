@@ -460,7 +460,7 @@ const SOCIAL_EVENTS: GoalEventTemplate[] = [
     tags: ['social', 'group', 'topluluk'],
     safeChoice: {
       id: 'goal_social_election_safe',
-      text: 'Ortak fayda odakli konus',
+      text: 'Ortak fayda odaklı konuş',
       effect: { charisma: 4, familyRelation: 2, discipline: 1, energy: -4 },
       stressEffect: 3,
       feedback: 'Dengeli mesajın güven oluşturdu.',
