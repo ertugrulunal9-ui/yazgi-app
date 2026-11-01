@@ -1,7 +1,11 @@
 import { errorLogger } from '../utils/errorLogger';
 import { devLog } from '../utils/devLogger';
 
-const isWeb = typeof window !== 'undefined' && typeof navigator !== 'undefined';
+// React Native de `window` ve `navigator` tanımlar (navigator.product === 'ReactNative');
+// yalnızca bu iki kontrol Android'i de web sanıp JS hatalarını Crashlytics'e hiç göndermiyordu.
+const isWeb = typeof window !== 'undefined'
+  && typeof navigator !== 'undefined'
+  && navigator.product !== 'ReactNative';
 
 interface CrashContext {
   userId?: string;
