@@ -235,15 +235,21 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     gameState.schoolGrades,
   ]);
 
+  // Kayıttaki liste dışarıdan değiştiyse (Geri Al eski listeyi geri yükler, kayıt yüklenir) useAchievements onu
+  // kendi listesine alır; aynı turda eski listeyi geri yazmak iki listeyi her render'da takas ettiriyordu
+  // (sonsuz yeniden çizim, "Maximum update depth exceeded").
+  const previousSavedAchievementsRef = useRef(gameState.unlockedAchievements);
   useEffect(() => {
-    if (achievementsLoading) return;
+    const savedListChanged = previousSavedAchievementsRef.current !== gameState.unlockedAchievements;
+    previousSavedAchievementsRef.current = gameState.unlockedAchievements;
+    if (achievementsLoading || savedListChanged) return;
     const currentSet = new Set(currentAchievementIds);
     const hasDiff = unlockedAchievementIds.length !== currentAchievementIds.length
       || unlockedAchievementIds.some(id => !currentSet.has(id));
     if (hasDiff) {
       updateGameState({ unlockedAchievements });
     }
-  }, [achievementsLoading, unlockedAchievementIds, currentAchievementIds, unlockedAchievements, updateGameState]);
+  }, [achievementsLoading, unlockedAchievementIds, currentAchievementIds, unlockedAchievements, updateGameState, gameState.unlockedAchievements]);
 
   useEffect(() => {
     if (gameState.age > previousAgeRef.current) {

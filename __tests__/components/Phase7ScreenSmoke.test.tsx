@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { MainMenuScreen } from '../../src/screens/MainMenuScreen';
 import { GameScreen } from '../../src/screens/GameScreen';
 import { ReportCardScreen } from '../../src/screens/ReportCardScreen';
@@ -18,7 +18,8 @@ import { useAchievements } from '../../src/hooks/useAchievements';
 import SaveManager from '../../src/save/SaveManager';
 import { CHAPTERS } from '../../src/config/gameBalance';
 import { buildChapterSummary } from '../../src/utils/milestoneBuilder';
-import type { AgeMilestoneSummary } from '../../src/types/game';
+import * as achievementSystem from '../../src/systems/achievementSystem';
+import type { AgeMilestoneSummary, GameState, UnlockedAchievement } from '../../src/types/game';
 
 jest.mock('react-native', () => {
   const baseModule = require('../mocks/ReactNative.mock');
@@ -513,6 +514,73 @@ describe('Phase 7 screen smoke', () => {
       const { visibleModals } = renderYearEnd([yearSummary(4, false)], []);
 
       expect(visibleModals()).toHaveLength(0);
+    });
+  });
+
+  describe('achievement sync', () => {
+    const unlocked = (achievementId: string): UnlockedAchievement => ({
+      achievementId,
+      unlockedAt: 1,
+      timestamp: '2026-11-01T00:00:00.000Z',
+    });
+
+    // Geri Al seçimden önceki gameState'i (daha kısa başarım listesiyle) geri yükler; hook ise seçimden
+    // sonra açılan başarımı hâlâ tutar. Önceden iki liste her render'da yer değiştiriyordu.
+    it('settles on the restored list when undo brings back an older unlocked list', async () => {
+      const actual = jest.requireActual<typeof import('../../src/hooks/useAchievements')>(
+        '../../src/hooks/useAchievements'
+      );
+      const latest: { current: ReturnType<typeof useAchievements> | null } = { current: null };
+      const useTrackedAchievements: typeof useAchievements = (...args) => {
+        latest.current = actual.useAchievements(...args);
+        return latest.current;
+      };
+      mockedUseAchievements.mockImplementation(useTrackedAchievements);
+      const checkSpy = jest.spyOn(achievementSystem, 'checkAllAchievements').mockResolvedValue([]);
+
+      const beforeChoice = [unlocked('energetic')];
+      const afterChoice = [...beforeChoice, unlocked('first_income')];
+      const base = mockedUseGame();
+      const GameStateContext = React.createContext<GameState>(base.gameState);
+      const useTestGame = () => ({ ...base, gameState: React.useContext(GameStateContext) });
+      mockedUseGame.mockImplementation(useTestGame);
+
+      let setGameState: React.Dispatch<React.SetStateAction<GameState>> = () => {};
+      const updateGameState = jest.fn((updates: Partial<GameState>) => {
+        // Döngü geri gelirse test asılı kalmasın diye sınırlı
+        if (updateGameState.mock.calls.length <= 100) {
+          setGameState(prev => ({ ...prev, ...updates }));
+        }
+      });
+      mockedUseGameActions.mockReturnValue({ updateGameState, updateStats: jest.fn(), setStats: jest.fn() } as any);
+
+      const Host = () => {
+        const [gameState, setState] = React.useState<GameState>({
+          ...base.gameState,
+          unlockedAchievements: afterChoice,
+        });
+        setGameState = setState;
+        return (
+          <GameStateContext.Provider value={gameState}>
+            <GameScreen onPhaseChange={jest.fn()} currentTab="hub" />
+          </GameStateContext.Provider>
+        );
+      };
+
+      render(<Host />);
+      await act(async () => {});
+      expect(latest.current?.unlockedAchievements).toBe(afterChoice);
+
+      await act(async () => {
+        setGameState(prev => ({ ...prev, unlockedAchievements: beforeChoice }));
+      });
+
+      expect(updateGameState).not.toHaveBeenCalled();
+      expect(latest.current?.unlockedAchievements).toBe(beforeChoice);
+      const errors = (console.error as jest.Mock).mock.calls.map(call => String(call[0]));
+      expect(errors.filter(message => message.includes('Maximum update depth'))).toEqual([]);
+
+      checkSpy.mockRestore();
     });
   });
 
