@@ -59,6 +59,13 @@ jest.mock('../../src/components/Onboarding', () => {
   };
 });
 
+jest.mock('../../src/components/PrivacyChoicesCard', () => {
+  const ReactLocal = require('react');
+  return {
+    PrivacyChoicesCard: (props: any) => ReactLocal.createElement('MockPrivacyChoicesCard', props),
+  };
+});
+
 jest.mock('../../src/components/SaveSlotPicker', () => {
   const ReactLocal = require('react');
   return {
@@ -313,6 +320,84 @@ describe('AppShell integration', () => {
       ])
     );
 
+    tree.unmount();
+  });
+
+  it('shows the privacy choices card first, before the tutorial card', async () => {
+    mockUseAppBootstrap.mockReturnValue(
+      createBootstrapState({
+        showSplash: false,
+        hasCompletedOnboarding: false,
+        privacyChoicesPending: true,
+        completePrivacyChoices: jest.fn(),
+      })
+    );
+
+    let tree!: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<AppShell />);
+    });
+
+    const card = tree.root.findByType('MockPrivacyChoicesCard' as any);
+    expect(card.props.initialPersonalizedAds).toBe(false);
+    expect(card.props.initialAnalytics).toBe(false);
+    expect(tree.root.findAllByProps({ accessibilityLabel: 'Rehberi başlat' })).toHaveLength(0);
+    expect(tree.root.findAllByType('MockAppNavigator' as any)).toHaveLength(0);
+    expect(mockSettingsPanel).not.toHaveBeenCalled();
+    tree.unmount();
+  });
+
+  it('saves both privacy choices through the existing setters', async () => {
+    const setAnalyticsEnabled = jest.fn();
+    const setPersonalizedAdsEnabled = jest.fn();
+    const completePrivacyChoices = jest.fn();
+    mockUseAppBootstrap.mockReturnValue(
+      createBootstrapState({
+        uiPrefs: {
+          theme: 'light',
+          density: 'standard',
+          reduceMotion: false,
+          // Eski oyuncu: analitiği açmış, reklam değeri eski hatadan "açık" kalmış.
+          analyticsEnabled: true,
+          personalizedAdsEnabled: true,
+        },
+        privacyChoicesPending: true,
+        setAnalyticsEnabled,
+        setPersonalizedAdsEnabled,
+        completePrivacyChoices,
+      })
+    );
+
+    let tree!: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<AppShell />);
+    });
+
+    const card = tree.root.findByType('MockPrivacyChoicesCard' as any);
+    expect(card.props.initialAnalytics).toBe(true);
+    // Reklam anahtarı oyuncunun seçimi olmayan eski değerle önceden işaretlenmez.
+    expect(card.props.initialPersonalizedAds).toBe(false);
+
+    await act(async () => {
+      card.props.onSubmit({ personalizedAds: true, analytics: false });
+    });
+
+    expect(setPersonalizedAdsEnabled).toHaveBeenCalledWith(true);
+    expect(setAnalyticsEnabled).toHaveBeenCalledWith(false);
+    expect(completePrivacyChoices).toHaveBeenCalledWith({ personalizedAds: true, analytics: false });
+    tree.unmount();
+  });
+
+  it('does not show the privacy card once it was saved', () => {
+    mockUseAppBootstrap.mockReturnValue(createBootstrapState({ privacyChoicesPending: false }));
+
+    let tree!: renderer.ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(<AppShell />);
+    });
+
+    expect(tree.root.findAllByType('MockPrivacyChoicesCard' as any)).toHaveLength(0);
+    expect(mockNavigator).toHaveBeenCalledTimes(1);
     tree.unmount();
   });
 

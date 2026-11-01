@@ -13,8 +13,13 @@ import type { AppLocale } from '../i18n/strings';
 import { analyticsService } from '../services/analytics';
 import { logAppOpen } from '../utils/analyticsEvents';
 import { requestAndResolveConsent } from '../services/consentService';
+import { resolveEffectivePersonalizedAds } from '../services/adConsentPolicy';
+import type { UmpConsentOutcome } from '../services/adConsentPolicy';
 import { initMonetization, setPersonalizedAdsEnabled as setMonetizationPersonalizedAdsEnabled } from '../services/monetization';
+import { restoreNotificationPermission } from '../services/notificationService';
 import { initializeSubscriptions } from '../services/subscriptionManager';
+import { usePrivacyChoicesGate } from './usePrivacyChoicesGate';
+import type { PrivacyChoices } from './usePrivacyChoicesGate';
 import {
   DEFAULT_UI_PREFS,
   getDensityMetrics,
@@ -45,6 +50,10 @@ interface UseAppBootstrapResult {
   toggleHaptics: () => void;
   setAnalyticsEnabled: (enabled: boolean) => void;
   setPersonalizedAdsEnabled: (enabled: boolean) => void;
+  /** İlk açılış gizlilik tercihleri kartı henüz kaydedilmedi. */
+  privacyChoicesPending: boolean;
+  /** Kart kaydedildi (tercihler ayrıca setter'larla yazılır). */
+  completePrivacyChoices: (choices: PrivacyChoices) => void;
 }
 
 export const useAppBootstrap = (): UseAppBootstrapResult => {
@@ -64,6 +73,9 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
   });
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [checkingOnboarding, setCheckingOnboarding] = useState(true);
+  // UMP sonucu oyuncu tercihinden ayrı tutulur; hiçbir zaman uiPrefs'e yazılmaz.
+  const [umpConsentOutcome, setUmpConsentOutcome] = useState<UmpConsentOutcome | null>(null);
+  const { checkingPrivacyChoices, privacyChoicesPending, markPrivacyChoicesSeen } = usePrivacyChoicesGate();
   const appOpenLoggedRef = useRef(false);
   const splashQuote = useMemo(() => getLoadingQuoteByAge(0, locale), [locale]);
 
@@ -115,11 +127,13 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
 
       if (cancelled) return;
 
+      // İzin daha önce verildiyse soğuk açılışta hatırlatmaları yeniden kur (izin sormaz).
+      void restoreNotificationPermission();
+
       requestAndResolveConsent()
-        .then((personalizedAllowed) => {
-          // Consent sonucunu hem monetization servisine hem de UIPrefs'e yaz
-          setMonetizationPersonalizedAdsEnabled(personalizedAllowed);
-          setUiPrefs(prev => ({ ...prev, personalizedAdsEnabled: personalizedAllowed }));
+        .then((outcome) => {
+          // Yalnızca UMP durumu saklanır; oyuncunun Ayarlar tercihi ezilmez.
+          if (!cancelled) setUmpConsentOutcome(outcome);
           return initMonetization();
         })
         .catch((error) => {
@@ -156,8 +170,11 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
   }, [uiPrefs.analyticsEnabled, uiPrefsLoaded]);
 
   useEffect(() => {
-    setMonetizationPersonalizedAdsEnabled(uiPrefs.personalizedAdsEnabled);
-  }, [uiPrefs.personalizedAdsEnabled]);
+    // Etkin değer = UMP izin veriyor VE oyuncu açtı (tercih yüklenmeden kapalı).
+    setMonetizationPersonalizedAdsEnabled(
+      resolveEffectivePersonalizedAds(umpConsentOutcome, uiPrefsLoaded && uiPrefs.personalizedAdsEnabled)
+    );
+  }, [umpConsentOutcome, uiPrefs.personalizedAdsEnabled, uiPrefsLoaded]);
 
   useEffect(() => {
     const checkOnboarding = async () => {
@@ -224,7 +241,12 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
 
   const theme = useMemo(() => getThemeTokens(resolvedTheme), [resolvedTheme]);
   const metrics = useMemo(() => getDensityMetrics(uiPrefs.density), [uiPrefs.density]);
-  const showSplash = !uiPrefsLoaded || !localeLoaded || !splashReady || !fontsLoaded || checkingOnboarding;
+  const showSplash = !uiPrefsLoaded
+    || !localeLoaded
+    || !splashReady
+    || !fontsLoaded
+    || checkingOnboarding
+    || checkingPrivacyChoices;
 
   const setLocale = useCallback((nextLocale: AppLocale) => {
     setLocaleState(nextLocale);
@@ -271,5 +293,7 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
     toggleHaptics,
     setAnalyticsEnabled,
     setPersonalizedAdsEnabled,
+    privacyChoicesPending,
+    completePrivacyChoices: markPrivacyChoicesSeen,
   };
 };

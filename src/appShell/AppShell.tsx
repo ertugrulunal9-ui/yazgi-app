@@ -20,6 +20,8 @@ import { clearSlotSave, getCurrentSlotId, setCurrentSlotId } from '../utils/game
 import { stripRuntimeGameStateCaches } from '../utils/gameStateAdapter';
 import { getOnboardingCohort, isInOnboardingWindow, getCohortDisplayMeta } from '../utils/onboardingGuidance';
 import { PaywallModal } from '../components/PaywallModal';
+import { PrivacyChoicesCard } from '../components/PrivacyChoicesCard';
+import type { PrivacyChoices } from './usePrivacyChoicesGate';
 import { AnalyticsTracker } from './AnalyticsTracker';
 import { AppNavigator } from './AppNavigator';
 import { SettingsPanel } from './SettingsPanel';
@@ -109,6 +111,8 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
     toggleHaptics,
     setAnalyticsEnabled,
     setPersonalizedAdsEnabled,
+    privacyChoicesPending,
+    completePrivacyChoices,
   } = useAppBootstrap();
 
   // Ayarlar'daki hareket/titreşim tercihlerini React dışı yardımcılara ulaştır
@@ -404,6 +408,12 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
     void setDevFeatureFlagOverride(flag, enabled);
   }, []);
 
+  const handlePrivacyChoicesSubmit = useCallback((choices: PrivacyChoices) => {
+    setPersonalizedAdsEnabled(choices.personalizedAds);
+    setAnalyticsEnabled(choices.analytics);
+    completePrivacyChoices(choices);
+  }, [completePrivacyChoices, setAnalyticsEnabled, setPersonalizedAdsEnabled]);
+
   const handleOnboardingComplete = useCallback(() => {
     setHasCompletedOnboarding(true);
     void logTutorialCompleted();
@@ -493,6 +503,23 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
           </View>
         </SafeAreaView>
       </View>
+    );
+  }
+
+  // Gizlilik tercihleri her şeyden önce ve tek başına gösterilir (Rehber ve oyun
+  // pencereleri bu kart kapanana kadar çizilmez, üst üste binmez).
+  // Eski hata AEA dışında her açılışta kişiselleştirilmiş reklamı "açık" yazıyordu;
+  // kayıtlı değer oyuncunun seçimi olmadığı için o anahtar kapalı başlar.
+  if (privacyChoicesPending) {
+    return (
+      <PrivacyChoicesCard
+        theme={theme}
+        metrics={metrics}
+        locale={locale}
+        initialPersonalizedAds={false}
+        initialAnalytics={uiPrefs.analyticsEnabled}
+        onSubmit={handlePrivacyChoicesSubmit}
+      />
     );
   }
 

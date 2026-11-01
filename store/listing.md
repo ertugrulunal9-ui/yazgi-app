@@ -70,9 +70,11 @@ Rol Yapma Oyunları (Role Playing) veya Simülasyon (Simulation)
 ```
 → **Tavsiye: Simulation** — RPG kitlesi beklenenden farklı oyun çıkabilir.
 
-## İçerik Derecelendirmesi
-- Yaş sınırı: **12+** (şiddet yok, ama stresli hayat olayları var)
-- IARC anketi doldurunca otomatik belirlenir
+## İçerik Derecelendirmesi ve Hedef Kitle
+İkisi ayrı şeyler; karıştırma:
+- **İçerik derecelendirmesi** (mağazada görünen yaş etiketi): Play Console'daki IARC anketinden otomatik çıkar, biz seçmeyiz. Beklenen: **12+ / PEGI 12** (şiddet yok, ama stresli hayat olayları var). Anket sonucu farklı çıkarsa o geçerlidir.
+- **Hedef kitle** (Play Console > Uygulama içeriği > Hedef kitle ve içerik): **13+** — yaş grupları 13-15, 16-17, 18+. 13 yaş altı seçilmez; uygulama çocuklar için tasarlanmadı (Aileler politikası kapsamı dışında). Gizlilik politikası ve kullanım koşulları da 13+ der.
+- Veri güvenliği formu taslağı: `store/data-safety.md`
 
 ---
 

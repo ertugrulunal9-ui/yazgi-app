@@ -8,7 +8,12 @@ import { devLog } from '../utils/devLogger';
 
 
 const isDev = __DEV__;
-const isWeb = typeof window !== 'undefined' && typeof navigator !== 'undefined';
+// React Native also defines `window` and `navigator` (navigator.product === 'ReactNative').
+// Without the product check Android was treated as web: opt-in events were never sent and
+// the native collection flag was never applied.
+const isWeb = typeof window !== 'undefined'
+  && typeof navigator !== 'undefined'
+  && navigator.product !== 'ReactNative';
 
 type FirebaseAnalyticsModule = {
   logEvent: (name: string, params?: Record<string, unknown>) => Promise<void>;
