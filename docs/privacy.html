@@ -40,82 +40,161 @@
   <div class="container">
     <h1>Gizlilik Politikası</h1>
     <p class="subtitle">Yazgı — Hayat Simülasyonu Oyunu</p>
-    <div class="badge">Son güncelleme: Nisan 2026</div>
+    <div class="badge">Son güncelleme: 1 Kasım 2026</div>
 
     <p>
-      Bu gizlilik politikası, <strong>Yazgı</strong> uygulamasının kişisel verileri nasıl topladığını,
-      kullandığını ve koruduğunu açıklar. Uygulamayı kullanarak bu politikayı kabul etmiş sayılırsın.
+      Bu gizlilik politikası, <strong>Yazgı</strong> uygulamasının hangi verileri, hangi amaçla ve hangi
+      hizmetler aracılığıyla işlediğini açıklar. Yazgı'yı kullanmak için hesap açman gerekmez; adını,
+      e-posta adresini veya telefon numaranı istemeyiz. Veri sorumlusu Yazgı'nın geliştiricisidir; bize
+      <a href="mailto:yazgi.app.contact@gmail.com">yazgi.app.contact@gmail.com</a> adresinden ulaşabilirsin.
     </p>
+    <p>Kısaca:</p>
+    <ul>
+      <li>Oyun kayıtların ve ayarların yalnızca cihazında saklanır.</li>
+      <li>Yazgı ücretsizdir ve Google AdMob reklamları gösterir. Reklamlar <strong>yalnızca sen açarsan</strong> kişiselleştirilir.</li>
+      <li>Kullanım istatistikleri (Firebase Analytics) <strong>yalnızca sen açarsan</strong> gönderilir.</li>
+      <li>Uygulama çökerse Firebase Crashlytics bir çökme raporu gönderir (varsayılan olarak açık).</li>
+      <li>Hatırlatma bildirimleri cihazında planlanır; bunun için sunucumuz yoktur.</li>
+    </ul>
 
     <h2>1. Topladığımız Veriler</h2>
-    <p>Yazgı aşağıdaki verileri toplar:</p>
+    <p><strong>a) Reklamlar (Google AdMob) — reklam gösterebilmek için her zaman:</strong></p>
     <ul>
-      <li><strong>Kullanım analitiği:</strong> Hangi ekranları ziyaret ettiğin, oyun süresi, tercih ettiğin seçenekler (Firebase Analytics aracılığıyla, anonim).</li>
-      <li><strong>Hata raporları:</strong> Uygulama çökmeleri ve teknik hatalar (Firebase Crashlytics aracılığıyla). Kullanıcı kimliği ilk 10 karaktere indirgenerek anonimleştirilir.</li>
-      <li><strong>Reklam verileri:</strong> Kişiselleştirilmiş reklam tercihine göre Google AdMob tarafından reklam tanımlayıcısı kullanılabilir.</li>
+      <li>Cihazının reklam kimliği (Android Advertising ID) ve uygulama grubu kimliği (app set ID)</li>
+      <li>Cihaz bilgileri (ör. model, işletim sistemi sürümü, dil) ve uygulama/SDK performans verileri</li>
+      <li>IP adresi ve buradan çıkarılan yaklaşık konum (ülke/şehir düzeyi; kesin konum kullanılmaz)</li>
+      <li>Reklam etkileşimleri (ör. reklamın gösterilmesi, tıklanması, ödüllü videonun izlenmesi)</li>
     </ul>
-    <p>Adın, soyadın, e-posta adresin veya telefon numaran gibi kimlik bilgileri <strong>toplanmaz</strong>.</p>
+    <p>
+      Kişiselleştirilmiş reklamları açmazsan Google'dan yalnızca kişiselleştirilmemiş reklam isteriz.
+      Kişiselleştirilmemiş reklamlar ilgi alanına göre seçilmez; ancak Google bunları gösterebilmek,
+      sıklığı sınırlamak, ölçmek ve kötüye kullanımı önlemek için yukarıdaki cihaz verilerinin bir kısmını
+      (ör. IP adresinden yaklaşık konum) yine kullanır.
+    </p>
 
-    <h2>2. Verilerin Kullanımı</h2>
+    <p><strong>b) Anonim kullanım istatistikleri (Firebase Analytics) — yalnızca açarsan, varsayılan olarak kapalı:</strong></p>
     <ul>
-      <li>Uygulama performansını iyileştirmek</li>
-      <li>Teknik hataları tespit edip düzeltmek</li>
-      <li>Sana uygun reklamlar göstermek (izin verdiysen)</li>
+      <li>Oyun içi olaylar: ör. oyunun başlaması, olay seçimleri, karakterin yaşı ve bölümü, oturum süresi, ipucu turu adımları, ödüllü reklam kullanımı, oyunun bitişi</li>
+      <li>Kuruluma özgü rastgele bir uygulama kimliği (app instance ID), cihaz modeli ve işletim sistemi sürümü</li>
+      <li>IP adresinden türetilen yaklaşık konum (ülke/şehir düzeyi)</li>
     </ul>
+    <p>
+      Bu istatistikler adını, karakterinin adını, reklam kimliğini veya Android kimliğini içermez; kuruluma
+      özgü rastgele bir kimlikle (takma adlı olarak) tutulur ve oyunun hangi bölümlerinin zor ya da sıkıcı
+      olduğunu anlamak için toplu olarak incelenir.
+    </p>
+
+    <p><strong>c) Çökme raporları (Firebase Crashlytics) — varsayılan olarak açık:</strong></p>
+    <ul>
+      <li>Uygulama çöktüğünde hata kaydı (stack trace) ve o andaki uygulama durumu</li>
+      <li>Çökme anındaki cihaz bilgileri (ör. model, işletim sistemi sürümü, boş bellek/depolama)</li>
+      <li>Etkilenen kullanıcı sayısını ölçmek için kuruluma özgü rastgele bir Crashlytics kimliği</li>
+    </ul>
+    <p>
+      Firebase hizmetleri ayrıca kuruluma özgü bir Firebase kurulum kimliği ve SDK/cihaz sürüm bilgisi
+      kullanır. Uygulama içinde çökme raporları için ayrı bir anahtar yoktur; gönderilmesini istemiyorsan
+      7. bölümdeki adresten bize yazabilirsin.
+    </p>
+
+    <p><strong>d) Bildirimler:</strong> Hatırlatma bildirimleri cihazında yerel olarak planlanır. Bildirim izni
+      yalnızca oyun sonunda hatırlatmayı açmak istediğinde sorulur. Bildirimler için bir sunucuya veri
+      gönderilmez ve bildirim (push) kimliği alınmaz.</p>
+
+    <p><strong>e) Oyun kayıtları ve ayarlar:</strong> Kayıtların, tercihlerin ve gizlilik seçimlerin yalnızca
+      cihazında saklanır; bizim sunucularımıza gönderilmez. "Dışa Aktar" ile oluşturduğun kayıt kodu ya da
+      dosyası yalnızca senin paylaştığın yere gider; "İçe Aktar" ile yüklediğin kayıt yalnızca cihazında işlenir.</p>
+
+    <p><strong>Toplamadıklarımız:</strong> hesap bilgisi, ad-soyad, e-posta, telefon numarası, rehber, fotoğraf,
+      kesin konum ve ödeme bilgisi. Bu sürümde uygulama içi satın alma yoktur.</p>
+
+    <h2>2. Verilerin Kullanım Amaçları ve Hukuki Sebepleri</h2>
+    <ul>
+      <li><strong>Reklam göstermek ve oyunu ücretsiz sunmak:</strong> kişiselleştirilmemiş reklamlar için meşru menfaat; kişiselleştirilmiş reklamlar için açık rızan (KVKK m.5/1, GDPR m.6/1-a).</li>
+      <li><strong>Oyunu geliştirmek (kullanım istatistikleri):</strong> açık rızan.</li>
+      <li><strong>Teknik hataları tespit edip düzeltmek (çökme raporları):</strong> uygulamanın çalışır kalmasındaki meşru menfaatimiz (KVKK m.5/2-f, GDPR m.6/1-f).</li>
+      <li><strong>Hatırlatma bildirimleri:</strong> cihazında verdiğin bildirim izni.</li>
+    </ul>
+    <p>
+      Google hizmetleri verileri Türkiye ve Avrupa Ekonomik Alanı dışındaki sunucularda (ör. ABD) işleyebilir.
+      Kişiselleştirilmiş reklam ve kullanım istatistikleri için bu aktarım verdiğin açık rızaya; diğer işlemler
+      için Google'ın sunduğu aktarım güvencelerine (ör. standart sözleşmeler, AB-ABD Veri Gizliliği Çerçevesi)
+      dayanır.
+    </p>
 
     <h2>3. Üçüncü Taraf Hizmetler</h2>
     <p>Yazgı aşağıdaki üçüncü taraf hizmetleri kullanır. Her birinin kendi gizlilik politikası vardır:</p>
     <ul>
       <li>
+        <strong>Google AdMob</strong> (reklam) —
+        <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">policies.google.com/privacy</a>
+        ve
+        <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">Google'ın iş ortağı uygulamalardaki veri kullanımı</a>
+      </li>
+      <li>
         <strong>Firebase Analytics &amp; Crashlytics</strong> (Google) —
         <a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener">firebase.google.com/support/privacy</a>
       </li>
-      <li>
-        <strong>Google AdMob</strong> —
-        <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">policies.google.com/privacy</a>
-      </li>
-      <li>
-        <strong>RevenueCat</strong> (abonelik yönetimi) —
-        <a href="https://www.revenuecat.com/privacy" target="_blank" rel="noopener">revenuecat.com/privacy</a>
-      </li>
     </ul>
+    <p>Veriler bu hizmetlere TLS ile şifrelenerek iletilir. Verilerini satmayız.</p>
 
-    <h2>4. Reklam ve İzin</h2>
+    <h2>4. Reklam ve İzin Tercihleri</h2>
     <p>
-      Uygulamayı ilk açtığında reklam izni için bir onay formu gösterilir (Avrupa Ekonomik Alanı kullanıcıları için zorunludur).
-      Kişiselleştirilmiş reklamları reddettiğinde yalnızca anonim reklamlar gösterilir.
-      Bu tercihini Ayarlar &gt; Gizlilik bölümünden her zaman değiştirebilirsin.
+      Uygulamayı ilk açtığında "Gizlilik tercihlerin" ekranı gösterilir: "Kişiselleştirilmiş reklamlar" ve
+      "Anonim kullanım istatistikleri" için iki ayrı anahtar vardır ve ikisi de <strong>kapalı</strong> başlar.
+      Açmazsan oyun aynı şekilde çalışır.
     </p>
+    <p>
+      Avrupa Ekonomik Alanı ve Birleşik Krallık'ta ayrıca Google'ın onay formu gösterilir; kişiselleştirilmiş
+      reklam için hem bu formda hem de Yazgı'daki anahtarda izin vermen gerekir.
+    </p>
+    <p><strong>İznini geri çekmek:</strong> Ayarlar &gt; Gizlilik bölümünden iki anahtarı da istediğin zaman
+      kapatabilirsin. Kişiselleştirilmiş reklamı kapatınca sonraki reklam istekleri kişiselleştirilmemiş olur;
+      istatistikleri kapatınca istatistik gönderimi durur. Geri çekme, önceki işlemlerin hukuka uygunluğunu
+      etkilemez. Reklam kimliğini Android ayarlarından (Google &gt; Reklamlar) sıfırlayabilir veya silebilirsin;
+      bildirimleri Android ayarlarından kapatabilirsin.</p>
 
     <h2>5. Veri Saklama</h2>
-    <p>
-      Oyun verileri (kayıtlar, tercihler) yalnızca cihazında yerel olarak saklanır.
-      Uygulamayı sildiğinde bu veriler kalıcı olarak silinir.
-      Firebase Analytics verileri 14 ay sonra otomatik olarak silinir.
-    </p>
+    <ul>
+      <li>Cihazındaki oyun verileri, uygulamayı silene veya uygulama verilerini temizleyene kadar cihazında kalır; uygulamayı sildiğinde bu veriler silinir.</li>
+      <li>Kullanım istatistikleri, Google Analytics ayarlarımızda belirlenen süre (en fazla 14 ay) sonunda silinir.</li>
+      <li>Crashlytics çökme kayıtları ve ilgili kimlikler 90 gün saklanır.</li>
+      <li>AdMob verileri Google'ın kendi saklama politikasına tabidir.</li>
+    </ul>
 
     <h2>6. Çocukların Gizliliği</h2>
     <p>
-      Yazgı 13 yaş ve üzeri kullanıcılar için tasarlanmıştır.
-      13 yaş altı çocuklardan bilerek kişisel veri toplamıyoruz.
+      Yazgı 13 yaş ve üzeri kullanıcılar için tasarlanmıştır; 13 yaşından küçüksen Yazgı'yı kullanmamalısın.
+      13 yaş altı çocuklardan bilerek kişisel veri toplamıyoruz. Böyle bir durumu fark edersen bize yaz;
+      ilgili verilerin silinmesi için gerekeni yaparız.
     </p>
 
-    <h2>7. KVKK / GDPR Hakları</h2>
-    <p>Şu haklara sahipsin:</p>
+    <h2>7. KVKK ve GDPR Kapsamındaki Hakların</h2>
+    <p>6698 sayılı Kişisel Verilerin Korunması Kanunu'nun (KVKK) 11. maddesi uyarınca şu haklara sahipsin:</p>
     <ul>
-      <li>Verilerine erişim talep etmek</li>
-      <li>Verilerinin silinmesini istemek</li>
-      <li>Veri işleme iznini geri çekmek</li>
+      <li>Kişisel verilerinin işlenip işlenmediğini öğrenmek ve işlendiyse bilgi talep etmek</li>
+      <li>İşlenme amacını ve amacına uygun kullanılıp kullanılmadığını öğrenmek</li>
+      <li>Yurt içinde veya yurt dışında aktarıldığı üçüncü kişileri bilmek</li>
+      <li>Eksik veya yanlış işlenmişse düzeltilmesini, KVKK m.7 şartlarıyla silinmesini veya yok edilmesini istemek ve bu işlemlerin aktarılan üçüncü kişilere bildirilmesini talep etmek</li>
+      <li>Münhasıran otomatik sistemlerle analiz edilmesi sonucu aleyhine bir sonuç çıkmasına itiraz etmek</li>
+      <li>Kanuna aykırı işleme nedeniyle zarara uğrarsan zararın giderilmesini talep etmek</li>
     </ul>
     <p>
-      Bu haklarını kullanmak için:
-      <a href="mailto:yazgi.app.contact@gmail.com">yazgi.app.contact@gmail.com</a> adresine yazabilirsin.
+      Avrupa Ekonomik Alanı'ndaysan GDPR kapsamında ayrıca erişim, düzeltme, silme, işlemeyi kısıtlama,
+      veri taşınabilirliği ve itiraz haklarına sahipsin.
+    </p>
+    <p>
+      Rızanı her zaman Ayarlar &gt; Gizlilik bölümünden geri çekebilirsin. Diğer hakların için
+      <a href="mailto:yazgi.app.contact@gmail.com">yazgi.app.contact@gmail.com</a> adresine yazabilirsin;
+      başvurunu en geç 30 gün içinde yanıtlarız. Hesap olmadığı için verilerini bulabilmemiz amacıyla senden
+      cihazına ilişkin ek bilgi isteyebiliriz. Cihazındaki verileri uygulamayı silerek kendin de silebilirsin.
+      Ayrıca Kişisel Verileri Koruma Kurulu'na (Türkiye) veya bulunduğun ülkenin veri koruma otoritesine
+      şikâyette bulunma hakkın vardır.
     </p>
 
     <h2>8. Politika Değişiklikleri</h2>
     <p>
-      Bu politikayı güncelleyebiliriz. Önemli değişikliklerde uygulama içinde bildirim gösterilir.
-      Güncel politika her zaman bu sayfada yayınlanır.
+      Bu politikayı güncelleyebiliriz. Güncel politika her zaman bu sayfada, son güncelleme tarihiyle
+      yayınlanır. Yeni bir veri işleme için iznin gerekirse uygulama içinde yeniden sorarız.
     </p>
 
     <hr />
