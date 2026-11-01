@@ -2336,7 +2336,7 @@ export const TURKISH_EVENTS: GameEvent[] = [
         effect: { money: 20, discipline: 8 },
         personalityEffects: [{ axis: 'patience', change: 5 }],
         stressEffect: 10,
-        feedback: "Harcamak için elledin titirdi ama koydun. Gelecekte işe yarayacak!",
+        feedback: "Harcamak için ellerin titredi ama koydun. Gelecekte işe yarayacak!",
       },
       {
         id: 'harçlık_candy',

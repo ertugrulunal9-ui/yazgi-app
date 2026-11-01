@@ -76,7 +76,7 @@ export const FAMILY_ARC_EVENTS: GameEvent[] = [
       },
       {
         id: 'strict_negotiate',
-        text: 'Pazarlik et',
+        text: 'Pazarlık et',
         reqStats: { charisma: 35 },
         reqPersonality: [{ axis: 'patience', min: 40 }],
         effect: { charisma: 7, familyRelation: 2, discipline: 2 },
@@ -163,7 +163,7 @@ export const FAMILY_ARC_EVENTS: GameEvent[] = [
       },
       {
         id: 'strict_compromise_career',
-        text: 'Uzlasma ara',
+        text: 'Uzlaşma ara',
         reqStats: { charisma: 45 },
         effect: { intelligence: 5, charisma: 6, discipline: 3, familyRelation: 4 },
         personalityEffects: [
@@ -272,7 +272,7 @@ export const FAMILY_ARC_EVENTS: GameEvent[] = [
     choices: [
       {
         id: 'supportive_celebrate',
-        text: 'Sevin ve katil',
+        text: 'Sevin ve katıl',
         effect: { familyRelation: 12, charisma: 4 },
         personalityEffects: [{ axis: 'openness', change: 5 }],
         stressEffect: -4,
@@ -352,7 +352,7 @@ export const FAMILY_ARC_EVENTS: GameEvent[] = [
       },
       {
         id: 'strict_rebel_plan',
-        text: 'Sessizce kendi planini yap',
+        text: 'Sessizce kendi planını yap',
         effect: { intelligence: 5, discipline: 5, familyRelation: -5 },
         personalityEffects: [
           { axis: 'courage', change: 5 },

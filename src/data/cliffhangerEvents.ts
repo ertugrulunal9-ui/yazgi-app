@@ -111,7 +111,7 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
     personalityCategory: 'GROWTH',
     choices: [
       {
-        text: '🎉 Sonuclara bak',
+        text: '🎉 Sonuçlara bak',
         effect: { intelligence: 4, charisma: 6 },
         gradeUpdates: { math: 5, science: 3 },
         feedback: 'Harika bir not! Gece çalışmak işe yaramış.',
@@ -127,7 +127,7 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
     personalityCategory: 'GROWTH',
     choices: [
       {
-        text: '📊 Sonuclara bak',
+        text: '📊 Sonuçlara bak',
         effect: { intelligence: 2, charisma: 4, health: 2 },
         gradeUpdates: { math: 3 },
         feedback: 'Fena değil! Dinlenmek de işe yaramış. Hem sağlığından da olmadın.',
@@ -159,7 +159,7 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
         feedback: '"Yarın konuşuruz" dediler. Gece uyuyamadın.',
       },
       {
-        text: '😊 "Iyi haber mi?"',
+        text: '😊 "İyi haber mi?"',
         effect: {},
         stressEffect: 2,
         futureEvents: [{ trigger: 'TURNS', eventId: 'cliff_family_news_reveal', turnsLater: 1 }],
@@ -211,7 +211,7 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
         feedback: 'İçindeki ses güçlendi. Yarın ne getireceğini bilmiyorsun ama korkun yok.',
       },
       {
-        text: '😟 "Umarim kotu bir sey degildir"',
+        text: '😟 "Umarım kötü bir şey değildir"',
         effect: { charisma: -1 },
         personalityEffects: [{ axis: 'openness', change: -1 }],
         feedback: 'Tedirginsin. Ama bazen en iyi şeyler beklenmedik anda gelir.',
@@ -232,7 +232,7 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
     personalityCategory: 'RISK',
     choices: [
       {
-        text: '🕵️ "Gidecegim — kim oldugunu merak ediyorum"',
+        text: '🕵️ "Gideceğim — kim olduğunu merak ediyorum"',
         effect: { charisma: 2 },
         stressEffect: 3,
         personalityEffects: [{ axis: 'openness', change: 3 }, { axis: 'openness', change: 2 }],
@@ -256,7 +256,7 @@ export const CLIFFHANGER_EVENTS: GameEvent[] = [
     personalityCategory: 'SOCIAL',
     choices: [
       {
-        text: '🤗 "Inanamiyorum! Gel sarilayim!"',
+        text: '🤗 "İnanamıyorum! Gel sarılayım!"',
         effect: { charisma: 11 },
         memory: { emotion: 'SATISFACTION', weight: 'HIGH', customNote: 'Eski arkadaş tekrar bulundu' },
         feedback: 'Bazen hayat en güzel sürprizleri en beklenmedik anda verir.',
