@@ -477,6 +477,7 @@ export const uiStrings: DomainStrings = {
       detailsSuffix: ' Detayları',
       closeDetailPanel: 'Detay panelini kapat',
       crisisApproaching: 'Kriz yaklaşıyor!',
+      energyChipLabel: 'Enerji {current}/{max}',
     },
     labels: {
       pillars: {
@@ -1226,6 +1227,7 @@ export const uiStrings: DomainStrings = {
       detailsSuffix: ' Details',
       closeDetailPanel: 'Close details panel',
       crisisApproaching: 'Crisis approaching!',
+      energyChipLabel: 'Energy {current} of {max}',
     },
     labels: {
       pillars: {

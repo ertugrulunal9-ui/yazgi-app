@@ -101,6 +101,37 @@ describe('StatusHeader stress indicator', () => {
     expect(getByText('Kriz yaklaşıyor!')).toBeTruthy();
   });
 
+  it('shows current and max energy in the header with an accessibility label', () => {
+    const { getByTestId, getByText } = render(
+      <StatusHeader
+        playerName="Test User"
+        age={12}
+        stats={stats}
+        maxEnergy={100}
+        theme={theme}
+      />
+    );
+
+    const chip = getByTestId('energy-chip');
+    expect(chip.props.accessibilityLabel).toBe('Enerji 75/100');
+    expect(getByText('75/100')).toBeTruthy();
+  });
+
+  it('clamps the header energy to the max and rounds fractional energy', () => {
+    const { getByTestId, getByText } = render(
+      <StatusHeader
+        playerName="Test User"
+        age={1}
+        stats={{ ...stats, energy: 57.4 }}
+        maxEnergy={110}
+        theme={theme}
+      />
+    );
+
+    expect(getByTestId('energy-chip').props.accessibilityLabel).toBe('Enerji 57/110');
+    expect(getByText('57/110')).toBeTruthy();
+  });
+
   it('renders localized goal tracker copy inside the notifications panel', () => {
     const { getByText } = render(
       <StatusHeader

@@ -403,7 +403,10 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
   const t: TranslateFn = (key, params, fallback) => (
     baseTranslate(normalizeStatusHeaderKey(key), params, fallback)
   );
-  const safeMaxEnergy = Math.max(1, maxEnergy);
+  const safeMaxEnergy = Math.max(1, Math.round(maxEnergy));
+  const energyCurrent = Math.round(clamp(stats.energy, 0, safeMaxEnergy));
+  const energyRatio = energyCurrent / safeMaxEnergy;
+  const energyColor = energyRatio < 0.2 ? '#ef4444' : energyRatio < 0.4 ? '#f97316' : '#eab308';
   const avatarIcon = getPlayerIcon(age);
   const safeRiskPercent = clamp(riskPercent, 0, 100);
   const notificationCount = 1 + (safeRiskPercent >= 50 ? 1 : 0) + (innerThought ? 1 : 0);
@@ -590,6 +593,28 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
               </View>
             ) : null}
           </View>
+        </View>
+
+        <View
+          testID="energy-chip"
+          accessible
+          accessibilityLabel={t(
+            'ui.statusHeader.energyChipLabel',
+            { current: energyCurrent, max: safeMaxEnergy },
+            `Enerji ${energyCurrent}/${safeMaxEnergy}`
+          )}
+          style={[
+            styles.energyChip,
+            {
+              backgroundColor: isLightTheme ? theme.surfaceRaised : theme.surfaceOverlay,
+              borderColor: theme.border,
+            },
+          ]}
+        >
+          <MaterialCommunityIcons name="lightning-bolt" size={15} color={energyColor} />
+          <Text style={[styles.energyChipText, { color: theme.textPrimary }]}>
+            {`${energyCurrent}/${safeMaxEnergy}`}
+          </Text>
         </View>
       </View>
 
@@ -868,6 +893,19 @@ const styles = StyleSheet.create({
   },
   infoContainer: {
     flex: 1,
+  },
+  energyChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  energyChipText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   playerName: {
     fontSize: 19,
