@@ -118,3 +118,72 @@ describe('StatusHeader stress indicator', () => {
     expect(getByText('Hedef seçince izlenecek statlar burada görünür.')).toBeTruthy();
   });
 });
+
+describe('StatusHeader pillar alerts by age', () => {
+  // Bebeklik başlangıç statları: zekâ/disiplin 0, karizma 5, sağlık 25
+  const infantStats = {
+    health: 25,
+    intelligence: 0,
+    charisma: 5,
+    discipline: 0,
+    money: 0,
+    energy: 57,
+    familyRelation: 50,
+  };
+
+  const borderOf = (getByLabelText: (label: string) => any, label: string): string => (
+    flattenStyle(getByLabelText(label).props.style).borderColor
+  );
+
+  beforeEach(() => {
+    setRuntimeLocale('tr');
+    mockedUseStress.mockReturnValue({
+      current: 0,
+      threshold: 70,
+      ratio: 0,
+      latestSource: { reason: 'test_stress', amount: 0, turn: 1 },
+      recoveryPerTurn: 3,
+    });
+    mockedUsePillarStats.mockImplementation((incomingStats: any) => ({
+      beden: Math.round((incomingStats.health + incomingStats.energy) / 2),
+      zihin: Math.round((incomingStats.intelligence + incomingStats.discipline) / 2),
+      ruh: Math.round((incomingStats.charisma + incomingStats.familyRelation) / 2),
+      servet: incomingStats.money,
+      raw: incomingStats,
+    }));
+  });
+
+  it('does not mark any pillar red for a newborn with the starting stats', () => {
+    [0, 1, 3, 6].forEach(age => {
+      const { getByLabelText, unmount } = render(
+        <StatusHeader
+          playerName="Bebek"
+          age={age}
+          stats={infantStats}
+          maxEnergy={100}
+          theme={theme}
+        />
+      );
+
+      expect(borderOf(getByLabelText, 'Zihin detaylarını aç')).toBe(theme.border);
+      expect(borderOf(getByLabelText, 'Ruh detaylarını aç')).toBe(theme.border);
+      expect(borderOf(getByLabelText, 'Beden detaylarını aç')).toBe(theme.border);
+      unmount();
+    });
+  });
+
+  it('still marks low pillars red from age 7', () => {
+    const { getByLabelText } = render(
+      <StatusHeader
+        playerName="Öğrenci"
+        age={7}
+        stats={infantStats}
+        maxEnergy={100}
+        theme={theme}
+      />
+    );
+
+    expect(borderOf(getByLabelText, 'Zihin detaylarını aç')).toBe('#ef4444');
+    expect(borderOf(getByLabelText, 'Ruh detaylarını aç')).toBe('#ef4444');
+  });
+});

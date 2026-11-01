@@ -12,6 +12,7 @@ import { Typography } from './ui/Typography';
 import { Button } from './ui/Button';
 import { useUI } from '../context/UIContext';
 import type { GameState, Stats } from '../types';
+import { isRiskWarningAge } from '../utils/riskDisplay';
 
 interface SessionRecapProps {
   visible: boolean;
@@ -37,14 +38,16 @@ export const SessionRecapModal: React.FC<SessionRecapProps> = ({
     ? t(`recap.goalNames.${gameState.selectedGoal}`)
     : null;
 
-  // Kritik uyarılar
+  // Kritik uyarılar: mutlak eşikler okul öncesinde hep tetiklenir (bebek sağlığı 25, disiplin 0'dan başlar)
+  const showWarnings = isRiskWarningAge(gameState.age);
   const warnings = useMemo(() => {
     const list: string[] = [];
+    if (!showWarnings) return list;
     if (stats.health < 30) list.push(t('recap.healthLow', { value: Math.round(stats.health) }));
     if (stats.discipline < 25) list.push(t('recap.disciplineWeak', { value: Math.round(stats.discipline) }));
     if (stats.energy < 15) list.push(t('recap.energyLow', { value: Math.round(stats.energy) }));
     return list;
-  }, [stats, t]);
+  }, [showWarnings, stats, t]);
 
   // Aktif NPC arkadaş/partner
   const closeFriend = useMemo(() => {
@@ -91,7 +94,7 @@ export const SessionRecapModal: React.FC<SessionRecapProps> = ({
                 <Typography
                   variant="body"
                   style={{
-                    color: stats[key] < 30 ? '#ef4444' : theme.textPrimary,
+                    color: showWarnings && stats[key] < 30 ? '#ef4444' : theme.textPrimary,
                     fontWeight: '700',
                   }}
                 >

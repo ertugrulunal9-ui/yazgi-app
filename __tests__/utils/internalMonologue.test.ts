@@ -41,6 +41,21 @@ describe('getStrategicMonologue — Priority Queue', () => {
     expect(result!.type).toBe('CRISIS');
   });
 
+  it('does not return CRISIS before age 7 even when the absolute-threshold risk is high', () => {
+    // Mutlak eşikli risk bebeklikte ~70 çıkar (sağlık 25, disiplin 0); bebeğe kriz monoloğu gösterilmez
+    [0, 1, 3, 6].forEach(age => {
+      [65, 69.8, 75, 95].forEach(burdenRisk => {
+        const result = getStrategicMonologue(buildInput({ burdenRisk, age }));
+        expect(result?.type).not.toBe('CRISIS');
+      });
+    });
+  });
+
+  it('returns CRISIS again from age 7', () => {
+    expect(getStrategicMonologue(buildInput({ burdenRisk: 65, age: 7 }))!.type).toBe('CRISIS');
+    expect(getStrategicMonologue(buildInput({ burdenRisk: 85, age: 7 }))!.type).toBe('CRISIS');
+  });
+
   it('returns MISMATCH type for age 13-15 with low alignment', () => {
     const mismatch: GoalMismatchAnalysis = {
       selectedGoal: 'ATHLETIC',

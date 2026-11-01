@@ -9,6 +9,8 @@ import { View, Text, StyleSheet, Modal, Pressable, TouchableOpacity } from 'reac
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { Stats } from '../types';
 import { tRuntime } from '../i18n/strings';
+import { isBelowCapRatio } from '../utils/gameUtils';
+import { isRiskWarningAge } from '../utils/riskDisplay';
 
 interface DaySummaryModalProps {
   visible: boolean;
@@ -61,6 +63,11 @@ export const DaySummaryModal: React.FC<DaySummaryModalProps> = ({
   const summaryBack = tRuntime('app.summaryBack');
   const energyLeftHint = tRuntime('app.summaryEnergyLeftHint');
 
+  // Sağlık < 50 mutlak eşiği okul öncesinde (tavan 30) hep kırmızı gösterirdi; orada tavana oranla bakılır
+  const healthIsLow = isRiskWarningAge(age)
+    ? stats.health < 50
+    : isBelowCapRatio(stats.health, age, 'health', 0.3);
+
   const summaryItems = useMemo(() => {
     const items: { icon: string; label: string; value: string; color: string }[] = [
       {
@@ -79,7 +86,7 @@ export const DaySummaryModal: React.FC<DaySummaryModalProps> = ({
         icon: 'heart-pulse',
         label: tRuntime('app.summaryHealth'),
         value: `%${Math.round(stats.health)}`,
-        color: stats.health >= 50 ? '#22c55e' : '#ef4444',
+        color: healthIsLow ? '#ef4444' : '#22c55e',
       },
       {
         icon: 'brain',
@@ -103,6 +110,7 @@ export const DaySummaryModal: React.FC<DaySummaryModalProps> = ({
     maxEnergy,
     energyLabel,
     energyColor,
+    healthIsLow,
     stats.health,
     stats.intelligence,
     varietyBonus,

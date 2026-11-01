@@ -9,6 +9,7 @@ import { MessageToast } from '../animations/ToastAnimations';
 import { usePillarStats, useStress } from '../hooks/useGameSelectors';
 import { getLifeGoalMeta } from '../utils/lifeGoalSystem';
 import { clamp } from '../utils/gameUtils';
+import { isRiskWarningAge } from '../utils/riskDisplay';
 import { tRuntime } from '../i18n/strings';
 
 type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
@@ -419,12 +420,14 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
   const isThoughtHighlight = innerThoughtType != null && innerThoughtType !== 'IDLE';
   const pillarStats = usePillarStats(stats);
   const moneyDisplay = useMemo(() => formatMoneyDisplay(pillarStats.servet, t), [pillarStats.servet, t]);
+  // Mutlak eşikler (< 25) okul öncesinde hep tetiklenir: bebek zekâ/disiplin 0'dan, karizma 5'ten başlar
+  const showPillarAlerts = isRiskWarningAge(age);
   const pillarAlerts = useMemo(() => ({
-    beden: pillarStats.raw.health < 25 || pillarStats.raw.energy < 25,
-    zihin: pillarStats.raw.intelligence < 25 || pillarStats.raw.discipline < 25,
-    ruh: pillarStats.raw.charisma < 25 || pillarStats.raw.familyRelation < 25,
+    beden: showPillarAlerts && (pillarStats.raw.health < 25 || pillarStats.raw.energy < 25),
+    zihin: showPillarAlerts && (pillarStats.raw.intelligence < 25 || pillarStats.raw.discipline < 25),
+    ruh: showPillarAlerts && (pillarStats.raw.charisma < 25 || pillarStats.raw.familyRelation < 25),
     servet: false,
-  }), [pillarStats.raw]);
+  }), [pillarStats.raw, showPillarAlerts]);
   const selectedPillarContent = useMemo(() => {
     if (!selectedPillar) return null;
 

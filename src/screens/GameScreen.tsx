@@ -76,14 +76,11 @@ import { resolveYearEndWindow, type YearEndWindow } from '../utils/yearEndWindow
 import { hasSpendableEnergy } from '../utils/endDayPrompt';
 import { getAvatarMood } from '../utils/avatarMood';
 import { countPendingEchoes } from '../utils/echoTrail';
+import { isRiskWarningAge } from '../utils/riskDisplay';
 import { CHAPTERS } from '../config/gameBalance';
 
 // Kritik sağlık eşiği yaşa göre tavanın %20'si (yetişkinde 20); bebeklikte tavan 30 olduğu için sabit 20 yanlış alarm veriyordu
 const isHealthCriticalForAge = (health: number, age: number): boolean => health <= getStatCap(age, 'health') * 0.2;
-
-// Risk hesabı mutlak eşikler kullanır (sağlık/disiplin 45, not 55, para); okul öncesinde stat tavanı 30
-// ve not/harçlık olmadığı için risk hep yüksek çıkıyordu. Bu yaştan önce yalnızca gösterilmez, hesap değişmez.
-const RISK_DISPLAY_MIN_AGE = 7;
 
 interface GameScreenProps {
   onPhaseChange: (tab: AppTab) => void;
@@ -388,7 +385,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     () => calculateEndingErrorDebt(gameState, stats),
     [gameState, stats]
   );
-  const showRisk = gameState.age >= RISK_DISPLAY_MIN_AGE;
+  const showRisk = isRiskWarningAge(gameState.age);
   const riskPercent = showRisk ? riskData.total : 0;
   const riskReasons = showRisk ? riskData.reasons : [];
   const avatarMood = useMemo(() => getAvatarMood({
