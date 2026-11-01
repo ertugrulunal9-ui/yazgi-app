@@ -13,26 +13,6 @@
       "reason": "Build-time only. Pulled in by @expo/plist -> @expo/config-plugins -> @expo/metro-config (Expo SDK 54). Not bundled into the app or run on device. Fix blocked on Expo SDK upgrade."
     },
     {
-      "url": "https://github.com/advisories/GHSA-2328-f5f3-gj25",
-      "package": "node-forge",
-      "reason": "Build-time only. Pulled in by @expo/code-signing-certificates -> @expo/cli (Expo SDK 54). Not bundled into the app or run on device. Fix blocked on Expo SDK upgrade."
-    },
-    {
-      "url": "https://github.com/advisories/GHSA-q67f-28xg-22rw",
-      "package": "node-forge",
-      "reason": "Build-time only. Pulled in by @expo/code-signing-certificates -> @expo/cli (Expo SDK 54). Not bundled into the app or run on device. Fix blocked on Expo SDK upgrade."
-    },
-    {
-      "url": "https://github.com/advisories/GHSA-5m6q-g25r-mvwx",
-      "package": "node-forge",
-      "reason": "Build-time only. Pulled in by @expo/code-signing-certificates -> @expo/cli (Expo SDK 54). Not bundled into the app or run on device. Fix blocked on Expo SDK upgrade."
-    },
-    {
-      "url": "https://github.com/advisories/GHSA-ppp5-5v6c-4jwp",
-      "package": "node-forge",
-      "reason": "Build-time only. Pulled in by @expo/code-signing-certificates -> @expo/cli (Expo SDK 54). Not bundled into the app or run on device. Fix blocked on Expo SDK upgrade."
-    },
-    {
       "url": "https://github.com/advisories/GHSA-3v7f-55p6-f55p",
       "package": "picomatch",
       "reason": "Build-time only. Pulled in by @expo/cli -> Metro bundler (Expo SDK 54). Not bundled into the app or run on device. Fix blocked on Expo SDK upgrade."
@@ -83,11 +63,6 @@
       "reason": "Build-time only (moderate). Pulled in by xcode -> @expo/config-plugins (Expo SDK 54) to generate Xcode project object IDs during prebuild; the vulnerable buffer-output path is not used. Not bundled into the app or run on device. Fix is uuid 11.x, a major bump xcode@3 does not support; blocked on Expo SDK upgrade."
     },
     {
-      "url": "https://github.com/advisories/GHSA-86w9-cpqp-85rv",
-      "package": "node-forge",
-      "reason": "Build-time only. Pulled in by @expo/code-signing-certificates -> @expo/cli (Expo SDK 54). Not bundled into the app or run on device (absent from the Android export source map). No patched release exists (1.4.0 is the latest). Review and remove this entry once a patched release is published."
-    },
-    {
       "url": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
       "package": "braces",
       "reason": "Build/test-time only. Pulled in by micromatch -> metro, jest and babel-jest (react-native, jest-expo). Not bundled into the app or run on device (absent from the Android export source map). No patched release exists (3.0.3 is the latest). Review and remove this entry once a patched release is published."
@@ -96,6 +71,31 @@
       "url": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c",
       "package": "sprintf-js",
       "reason": "Build/test-time only (moderate). Pulled in by argparse@1 -> js-yaml@3 -> babel-plugin-istanbul -> babel-jest (react-native, jest-expo); fails the gate only through packages marked high by braces. Not bundled into the app or run on device (absent from the Android export source map). No patched release exists (1.1.3 is the latest). Review and remove this entry once a patched release is published."
+    },
+    {
+      "url": "https://github.com/advisories/GHSA-qr28-fpjm-wq7f",
+      "package": "decode-uri-component",
+      "reason": "Only reachable through expo-router -> query-string (expo-router is installed but unused). Not bundled into the app or run on device: the app never imports expo-router, expo-linking or query-string (entry is index.js -> registerRootComponent(App), no expo-router plugin) and the package is absent from the Android export source map. Fix needs a newer expo-router (Expo SDK upgrade)."
+    },
+    {
+      "url": "https://github.com/advisories/GHSA-vcc3-ghjq-m6fr",
+      "package": "decode-uri-component",
+      "reason": "Moderate. Only reachable through expo-router -> query-string (expo-router is installed but unused). Not bundled into the app or run on device: the app never imports expo-router, expo-linking or query-string (entry is index.js -> registerRootComponent(App), no expo-router plugin) and the package is absent from the Android export source map. Fix needs a newer expo-router (Expo SDK upgrade)."
+    },
+    {
+      "url": "https://github.com/advisories/GHSA-gcqx-w48m-w2h4",
+      "package": "deepmerge",
+      "reason": "Build/test-time only (low); fails the gate only through expo-router. Pulled in by @expo/config (reads app.json at build time, via expo-constants) and jest-config. Not bundled into the app or run on device (absent from the Android export source map). Fix blocked on Expo SDK upgrade."
+    },
+    {
+      "url": "https://github.com/advisories/GHSA-3g3m-2fjr-6pw4",
+      "package": "glob",
+      "reason": "Build/test-time only (moderate); fails the gate only through expo-router. Pulled in by @expo/config, @expo/cli, React Native tooling and jest. Node filesystem library, not bundled into the app or run on device (absent from the Android export source map). Fix blocked on Expo SDK / React Native upgrade."
+    },
+    {
+      "url": "https://github.com/advisories/GHSA-g3hv-75wg-m249",
+      "package": "minimatch",
+      "reason": "Build/test-time only (moderate); fails the gate only through expo-router. Pulled in by glob (@expo/config, @expo/cli, React Native tooling and jest). Not bundled into the app or run on device (absent from the Android export source map). Fix blocked on Expo SDK / React Native upgrade."
     }
   ]
 }
