@@ -7,7 +7,12 @@ import { Choice, FateState, GameEvent, Personality, ResultData, Skills, Stats } 
 import { Card, StatChange, TypewriterText } from './ui';
 import { FateTokenDisplay, hasNegativeOutcome } from './FateTokenDisplay';
 import { TraitProgressChip } from './TraitProgressChip';
-import { buildPrimaryFeedbackMessage, EventOutcomeSummary } from '../utils/feedbackPrioritizer';
+import {
+  buildPrimaryFeedbackMessage,
+  EventOutcomeSummary,
+  fateContradictsOutcome,
+  getOutcomeDirection,
+} from '../utils/feedbackPrioritizer';
 import { isFeatureEnabled } from '../config/featureFlags';
 import { isBelowCapRatio } from '../utils/gameUtils';
 
@@ -309,11 +314,19 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
           const isBad = fr.outcome === 'UNLUCKY' || fr.outcome === 'CURSED';
           const multiplierMap: Record<string, number> = { BLESSED: 35, FORTUNATE: 15, NEUTRAL: 0, UNLUCKY: 20, CURSED: 50 };
           const pct = multiplierMap[fr.outcome] ?? 0;
-          const desc = isGood
-            ? `${t('fate.indicator.prefix')}: ${outcomeLabel}! ${t('fate.indicator.effectsBuffed', { pct: String(pct) })}`
-            : isBad
-              ? `${t('fate.indicator.prefix')}: ${outcomeLabel}. ${t('fate.indicator.effectsNerfed', { pct: String(pct) })}`
-              : `${t('fate.indicator.prefix')}: ${outcomeLabel}`;
+          // Kötü şans kazançlı sonuçta (iyi şans kayıplı sonuçta) çıktıysa etkisi azalma olarak anlatılır
+          const reductionMap: Record<string, number> = { BLESSED: 40, FORTUNATE: 15, NEUTRAL: 0, UNLUCKY: 20, CURSED: 40 };
+          const contradictsOutcome = fateContradictsOutcome(fr.outcome, getOutcomeDirection(lastResult.changes));
+          const desc = contradictsOutcome
+            ? `${t('fate.indicator.prefix')}: ${outcomeLabel}. ${t(
+              isBad ? 'fate.indicator.gainsReduced' : 'fate.indicator.lossesReduced',
+              { pct: String(reductionMap[fr.outcome] ?? 0) }
+            )}`
+            : isGood
+              ? `${t('fate.indicator.prefix')}: ${outcomeLabel}! ${t('fate.indicator.effectsBuffed', { pct: String(pct) })}`
+              : isBad
+                ? `${t('fate.indicator.prefix')}: ${outcomeLabel}. ${t('fate.indicator.effectsNerfed', { pct: String(pct) })}`
+                : `${t('fate.indicator.prefix')}: ${outcomeLabel}`;
           const color = isGood ? '#22c55e' : isBad ? '#f97316' : '#94a3b8';
           return (
             <View style={{

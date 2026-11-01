@@ -47,6 +47,36 @@ const getFateMessages = (): Record<FateOutcome, string> => ({
   CURSED: tRuntime('feedback.prioritizer.fateCursed'),
 });
 
+export type OutcomeDirection = 'GAIN' | 'LOSS' | 'MIXED' | 'NONE';
+
+/**
+ * Uygulanan stat değişimlerinin genel yönü (çoğunluk). Enerji bedel sayılır, yönü belirlemez.
+ * Kader ruloyu seçimden bağımsız atar: kazançlı bir seçimde "Lanetli", kayıplı bir seçimde "Şanslı"
+ * çıkabilir; şans metni bu yönle çelişmesin diye metin buna göre seçilir.
+ */
+export const getOutcomeDirection = (changes: Partial<Stats> | undefined): OutcomeDirection => {
+  let gains = 0;
+  let losses = 0;
+  for (const [key, value] of Object.entries(changes ?? {})) {
+    if (key === 'energy' || typeof value !== 'number') continue;
+    if (value > 0) gains += 1;
+    else if (value < 0) losses += 1;
+  }
+  if (gains === 0 && losses === 0) return 'NONE';
+  if (gains > losses) return 'GAIN';
+  if (losses > gains) return 'LOSS';
+  return 'MIXED';
+};
+
+/** Kötü şans iyi sonuçta ya da iyi şans kötü sonuçta çıkarsa metin sonuçla çelişir. */
+export const fateContradictsOutcome = (
+  fateOutcome: FateOutcome | undefined,
+  direction: OutcomeDirection
+): boolean => (
+  ((fateOutcome === 'CURSED' || fateOutcome === 'UNLUCKY') && direction === 'GAIN')
+  || ((fateOutcome === 'BLESSED' || fateOutcome === 'FORTUNATE') && direction === 'LOSS')
+);
+
 /**
  * Event sonuç özetini alır, öncelik sıralı feedback listesi döndürür.
  * Çağıran bileşen yalnızca CRITICAL ve NOTABLE öğeleri gösterir;
@@ -82,19 +112,24 @@ export const prioritizeFeedback = (outcome: EventOutcomeSummary): EventFeedbackI
     });
   }
 
-  // ── P1: NOTABLE — Kötü Kader rulosu ────────────────────────────────────
+  // ── P1: NOTABLE — Kötü/İyi Kader rulosu (sonucun yönüyle çelişmeyen metin) ──
+  const direction = getOutcomeDirection(outcome.statChanges);
   if (outcome.fateOutcome === 'CURSED') {
     items.push({
       type: 'fate',
       priority: 'NOTABLE',
-      message: getFateMessages().CURSED,
+      message: fateContradictsOutcome('CURSED', direction)
+        ? tRuntime('feedback.prioritizer.fateCursedGain')
+        : getFateMessages().CURSED,
       delay: 200,
     });
   } else if (outcome.fateOutcome === 'BLESSED') {
     items.push({
       type: 'fate',
       priority: 'NOTABLE',
-      message: getFateMessages().BLESSED,
+      message: fateContradictsOutcome('BLESSED', direction)
+        ? tRuntime('feedback.prioritizer.fateBlessedLoss')
+        : getFateMessages().BLESSED,
       delay: 200,
     });
   }
