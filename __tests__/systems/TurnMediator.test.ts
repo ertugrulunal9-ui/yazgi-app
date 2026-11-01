@@ -219,6 +219,30 @@ describe('TurnMediator', () => {
     expect(personalityState?.HELPFUL.multiplier).toBe(1);
   });
 
+  it('calls a gentle toddler health gain "Cesur", not "Agresif" (internal key stays AGGRESSIVE)', () => {
+    const gameState: GameState = { ...createBaseGameState(), age: 2 };
+    const stats = createBaseStats();
+    const choice: Choice = {
+      id: 'ch_toddler_bed_check',
+      text: 'Yatağın altına bak',
+      effect: { health: 2 },
+      feedback: 'Yatağın altında canavar yokmuş.',
+    };
+
+    const result = mediator.processEventChoice({
+      choice,
+      gameState,
+      stats,
+      choiceIndex: 0,
+    });
+
+    expect(result.gameStateUpdates.personalityState?.AGGRESSIVE.count).toBe(1);
+    expect(result.momentumFeedback?.tendency).toBe('AGGRESSIVE');
+    expect(result.momentumFeedback?.tendencyLabel).toBe('Cesur');
+    expect(result.momentumFeedback?.feedbackText).toBe('Cesur ritmi güçleniyor!');
+    expect(result.momentumFeedback?.feedbackText).not.toMatch(/agresif/i);
+  });
+
   it('shows momentum flavor feedback when streak reaches 10+', () => {
     let gameState: GameState = createBaseGameState();
     let stats = createBaseStats();

@@ -23,7 +23,7 @@ const TENDENCIES: PersonalityTendency[] = ['HELPFUL', 'PRAGMATIC', 'AGGRESSIVE']
 export const MOMENTUM_TENDENCY_LABELS: Record<PersonalityTendency, string> = {
   HELPFUL: 'Yardımsever',
   PRAGMATIC: 'Pragmatik',
-  AGGRESSIVE: 'Agresif',
+  AGGRESSIVE: 'Cesur',
 };
 
 const OPPOSITE_SIGNAL_TO_TENDENCY: Partial<Record<PersonalityMomentumSignal, PersonalityTendency>> = {

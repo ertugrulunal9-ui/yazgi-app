@@ -617,7 +617,7 @@ export const uiStrings: DomainStrings = {
         dialogueSubtitles: {
           HELPFUL: 'Bu seçenek senin sahici tarafını güçlendirir.',
           PRAGMATIC: 'Durumu hızlı okuyup doğru acıyı görüyorsun.',
-          AGGRESSIVE: 'Baskıya karşı sert refleksin daha da netleşiyor.',
+          AGGRESSIVE: 'Bu seçenek cesur tarafını daha da güçlendirir.',
         },
       },
       prioritizer: {
@@ -1367,7 +1367,7 @@ export const uiStrings: DomainStrings = {
         dialogueSubtitles: {
           HELPFUL: 'This option strengthens your most sincere side.',
           PRAGMATIC: 'You read the situation quickly and spot the right angle.',
-          AGGRESSIVE: 'Your hard reflex against pressure becomes even clearer.',
+          AGGRESSIVE: 'This option strengthens your bold side.',
         },
       },
       prioritizer: {
