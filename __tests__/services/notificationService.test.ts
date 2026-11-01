@@ -16,6 +16,22 @@ jest.mock('expo-notifications', () => ({
   setNotificationHandler: (...args: unknown[]) => mockSetNotificationHandler(...args),
 }));
 
+// Soğuk açılışlar arasında kalıcı depo (isolateModules modül kayıtlarını sıfırlar, bu Map kalır).
+const mockStorage = new Map<string, string>();
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  __esModule: true,
+  default: {
+    getItem: (key: string) => Promise.resolve(mockStorage.get(key) ?? null),
+    setItem: (key: string, value: string) => {
+      mockStorage.set(key, value);
+      return Promise.resolve();
+    },
+  },
+}));
+
+const REMINDER_OPT_IN_KEY = '@yazgi/reminders_opt_in/v1';
+const markReminderOptIn = () => mockStorage.set(REMINDER_OPT_IN_KEY, 'true');
+
 // Servis izin durumunu modül düzeyinde tutar; her test soğuk açılış gibi taze yükler.
 const loadFreshService = (): NotificationServiceModule => {
   let service!: NotificationServiceModule;
@@ -53,13 +69,47 @@ describe('notificationService cold start', () => {
     mockScheduleNotificationAsync.mockReset().mockResolvedValue('id');
     mockCancelAllScheduledNotificationsAsync.mockReset().mockResolvedValue(undefined);
     mockSetNotificationHandler.mockReset();
+    mockStorage.clear();
   });
 
   afterEach(() => {
     restoreGlobals();
   });
 
+  it('does not schedule anything on a fresh install even if the OS reports granted (Android 12 and earlier)', async () => {
+    mockGetPermissionsAsync.mockResolvedValue({ status: 'granted' });
+    const service = loadFreshService();
+
+    await expect(service.restoreNotificationPermission()).resolves.toBe(false);
+    await service.scheduleReengagement(24);
+
+    expect(mockGetPermissionsAsync).not.toHaveBeenCalled();
+    expect(mockRequestPermissionsAsync).not.toHaveBeenCalled();
+    expect(mockScheduleNotificationAsync).not.toHaveBeenCalled();
+  });
+
+  it('remembers the game-end opt-in and restores reminders on the next cold start', async () => {
+    mockRequestPermissionsAsync.mockResolvedValue({ status: 'granted' });
+    const firstRun = loadFreshService();
+    await expect(firstRun.requestPermissions()).resolves.toBe(true);
+    expect(mockStorage.get(REMINDER_OPT_IN_KEY)).toBe('true');
+
+    mockGetPermissionsAsync.mockResolvedValue({ status: 'granted' });
+    const nextRun = loadFreshService();
+    await expect(nextRun.restoreNotificationPermission()).resolves.toBe(true);
+    expect(mockScheduleNotificationAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not record an opt-in when the player denies the prompt', async () => {
+    mockRequestPermissionsAsync.mockResolvedValue({ status: 'denied' });
+    const service = loadFreshService();
+
+    await expect(service.requestPermissions()).resolves.toBe(false);
+    expect(mockStorage.has(REMINDER_OPT_IN_KEY)).toBe(false);
+  });
+
   it('reads an earlier grant without prompting and reschedules the reminder', async () => {
+    markReminderOptIn();
     mockGetPermissionsAsync.mockResolvedValue({ status: 'granted' });
     const service = loadFreshService();
 
@@ -84,6 +134,7 @@ describe('notificationService cold start', () => {
   });
 
   it('does nothing when permission was not granted, and the game-end prompt still works', async () => {
+    markReminderOptIn();
     mockGetPermissionsAsync.mockResolvedValue({ status: 'undetermined' });
     mockRequestPermissionsAsync.mockResolvedValue({ status: 'granted' });
     const service = loadFreshService();
@@ -100,6 +151,7 @@ describe('notificationService cold start', () => {
   });
 
   it('does nothing when permission was denied', async () => {
+    markReminderOptIn();
     mockGetPermissionsAsync.mockResolvedValue({ status: 'denied' });
     const service = loadFreshService();
 
@@ -108,6 +160,7 @@ describe('notificationService cold start', () => {
   });
 
   it('survives a failing permission read', async () => {
+    markReminderOptIn();
     mockGetPermissionsAsync.mockRejectedValue(new Error('native module missing'));
     const service = loadFreshService();
 
@@ -116,6 +169,7 @@ describe('notificationService cold start', () => {
   });
 
   it('treats React Native (which defines window and navigator) as native, not web', async () => {
+    markReminderOptIn();
     setBrowserLikeGlobals('ReactNative');
     mockGetPermissionsAsync.mockResolvedValue({ status: 'granted' });
     const service = loadFreshService();
@@ -125,6 +179,7 @@ describe('notificationService cold start', () => {
   });
 
   it('is a safe no-op on web', async () => {
+    markReminderOptIn();
     setBrowserLikeGlobals('Gecko');
     mockGetPermissionsAsync.mockResolvedValue({ status: 'granted' });
     const service = loadFreshService();

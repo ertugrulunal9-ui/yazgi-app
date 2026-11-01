@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { devLog } from '../utils/devLogger';
 
 // React Native de `window` ve `navigator` tanımlar (navigator.product === 'ReactNative');
@@ -55,6 +56,10 @@ const NOTIF_IDS = {
   EXAM_SEASON: 'yazgi_exam_season',
 } as const;
 
+// Oyuncu oyun sonundaki "Hatırlat" ile hatırlatmaları açtı mı. Android 12 ve altında bildirim
+// izni varsayılan "granted" gelir; işletim sistemi izni tek başına oyuncunun seçimi sayılmaz.
+const REMINDER_OPT_IN_KEY = '@yazgi/reminders_opt_in/v1';
+
 let permissionsGranted = false;
 let permissionsChecked = false;
 
@@ -91,6 +96,13 @@ export async function requestPermissions(): Promise<boolean> {
     permissionsGranted = status === 'granted';
     permissionsChecked = true;
     devLog.log(`[NOTIFICATIONS] Permission: ${status}`);
+    if (permissionsGranted) {
+      try {
+        await AsyncStorage.setItem(REMINDER_OPT_IN_KEY, 'true');
+      } catch {
+        // Yazılamazsa soğuk açılışta hatırlatma geri kurulmaz; oyuncu yeniden açabilir.
+      }
+    }
     return permissionsGranted;
   } catch (error) {
     devLog.warn('[NOTIFICATIONS] requestPermissions failed', error);
@@ -100,14 +112,23 @@ export async function requestPermissions(): Promise<boolean> {
 }
 
 /**
- * Soğuk açılışta mevcut izni SORMADAN okur. İzin daha önce verilmişse bunu
- * hatırlar ve geri çağırma hatırlatmasını yeniden kurar; sonraki turlar da
- * hatırlatmaları güncelleyebilir. İzin yoksa hiçbir şeyi değiştirmez
- * (oyun sonundaki "Hatırlat" düğmesi yine izin isteyebilir).
+ * Soğuk açılışta, oyuncu hatırlatmaları daha önce oyun sonunda açtıysa mevcut
+ * izni SORMADAN okur; izin hâlâ verilmişse geri çağırma hatırlatmasını yeniden
+ * kurar ve sonraki turlar da hatırlatmaları güncelleyebilir. Oyuncu hiç açmadıysa
+ * ya da izin yoksa hiçbir şeyi değiştirmez (oyun sonundaki "Hatırlat" düğmesi
+ * yine izin isteyebilir).
  */
 export async function restoreNotificationPermission(): Promise<boolean> {
   if (isWeb) return false;
   if (permissionsGranted) return true;
+
+  let optedIn = false;
+  try {
+    optedIn = (await AsyncStorage.getItem(REMINDER_OPT_IN_KEY)) === 'true';
+  } catch {
+    optedIn = false;
+  }
+  if (!optedIn) return false;
 
   const mod = getModule();
   if (!mod || typeof mod.getPermissionsAsync !== 'function') return false;
