@@ -19,7 +19,7 @@ interface ProgressBonusProps {
 const TENDENCY_LABELS: Record<PersonalityTendency, string> = {
   HELPFUL: 'Helpful',
   PRAGMATIC: 'Pragmatic',
-  AGGRESSIVE: 'Aggressive',
+  AGGRESSIVE: 'Bold',
 };
 
 const TENDENCY_TONES: Record<PersonalityTendency, {

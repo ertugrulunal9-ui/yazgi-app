@@ -16,6 +16,7 @@ import { getMomentumVisibilityFromPersonalityState } from './momentumVisibility'
 import { getPersonalityLevelDescription } from './personalitySystem';
 import { buildNPCPersonalityReaction } from './npcPersonalityReaction';
 import { getRuntimeStringArray, tRuntime } from '../i18n/strings';
+import { isRiskWarningAge } from './riskDisplay';
 
 const TENDENCIES: PersonalityTendency[] = ['HELPFUL', 'PRAGMATIC', 'AGGRESSIVE'];
 const PERSONALITY_AXES: (keyof Personality)[] = ['openness', 'courage', 'empathy', 'patience', 'conformity'];
@@ -152,13 +153,16 @@ export const getStrategicMonologue = (input: StrategicMonologueInput): Strategic
     }
   }
 
-  if (burdenRisk > 70) {
-    const lines = getNarrativeBank('narrative.monologue.banks.crisis.critical');
-    if (lines.length > 0) return { text: pickByTurn(lines, turn), type: 'CRISIS' };
-  }
-  if (burdenRisk > 60) {
-    const lines = getNarrativeBank('narrative.monologue.banks.crisis.warning');
-    if (lines.length > 0) return { text: pickByTurn(lines, turn), type: 'CRISIS' };
+  // Risk mutlak eşiklerle hesaplanır; okul öncesinde hep yüksek çıktığı için bebeğe "krize giriyorum" demesin
+  if (isRiskWarningAge(age)) {
+    if (burdenRisk > 70) {
+      const lines = getNarrativeBank('narrative.monologue.banks.crisis.critical');
+      if (lines.length > 0) return { text: pickByTurn(lines, turn), type: 'CRISIS' };
+    }
+    if (burdenRisk > 60) {
+      const lines = getNarrativeBank('narrative.monologue.banks.crisis.warning');
+      if (lines.length > 0) return { text: pickByTurn(lines, turn), type: 'CRISIS' };
+    }
   }
 
   // --- IMPORTANT (P2-P4): mismatch + age transition + fate + memory ---

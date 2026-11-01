@@ -18,9 +18,9 @@ export const MOMENTUM_STREAK_LEVEL_HINTS: Record<PersonalityTendency, Record<'BU
     POWERFUL: 'Pragmatik refleksin zor anlarda seni taşıyan eksen oldu.',
   },
   AGGRESSIVE: {
-    BUILDING: 'Sınırlarını daha sert çizmeye başladın.',
-    ACTIVE: 'Sert tavrın etkisini giderek daha fazla hissettiriyor.',
-    POWERFUL: 'Agresif refleksin artık karakterinin baskın tonu haline geldi.',
+    BUILDING: 'Son zamanlarda daha cesur kararlar veriyorsun.',
+    ACTIVE: 'Cesur tavrın giderek daha çok hissediliyor.',
+    POWERFUL: 'Cesur refleksin artık karakterinin baskın tonu haline geldi.',
   },
 };
 

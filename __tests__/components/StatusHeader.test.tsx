@@ -101,6 +101,37 @@ describe('StatusHeader stress indicator', () => {
     expect(getByText('Kriz yaklaşıyor!')).toBeTruthy();
   });
 
+  it('shows current and max energy in the header with an accessibility label', () => {
+    const { getByTestId, getByText } = render(
+      <StatusHeader
+        playerName="Test User"
+        age={12}
+        stats={stats}
+        maxEnergy={100}
+        theme={theme}
+      />
+    );
+
+    const chip = getByTestId('energy-chip');
+    expect(chip.props.accessibilityLabel).toBe('Enerji 75/100');
+    expect(getByText('75/100')).toBeTruthy();
+  });
+
+  it('clamps the header energy to the max and rounds fractional energy', () => {
+    const { getByTestId, getByText } = render(
+      <StatusHeader
+        playerName="Test User"
+        age={1}
+        stats={{ ...stats, energy: 57.4 }}
+        maxEnergy={110}
+        theme={theme}
+      />
+    );
+
+    expect(getByTestId('energy-chip').props.accessibilityLabel).toBe('Enerji 57/110');
+    expect(getByText('57/110')).toBeTruthy();
+  });
+
   it('renders localized goal tracker copy inside the notifications panel', () => {
     const { getByText } = render(
       <StatusHeader
@@ -116,5 +147,74 @@ describe('StatusHeader stress indicator', () => {
 
     expect(getByText('Hedef seçimi 10 yaşında açılır.')).toBeTruthy();
     expect(getByText('Hedef seçince izlenecek statlar burada görünür.')).toBeTruthy();
+  });
+});
+
+describe('StatusHeader pillar alerts by age', () => {
+  // Bebeklik başlangıç statları: zekâ/disiplin 0, karizma 5, sağlık 25
+  const infantStats = {
+    health: 25,
+    intelligence: 0,
+    charisma: 5,
+    discipline: 0,
+    money: 0,
+    energy: 57,
+    familyRelation: 50,
+  };
+
+  const borderOf = (getByLabelText: (label: string) => any, label: string): string => (
+    flattenStyle(getByLabelText(label).props.style).borderColor
+  );
+
+  beforeEach(() => {
+    setRuntimeLocale('tr');
+    mockedUseStress.mockReturnValue({
+      current: 0,
+      threshold: 70,
+      ratio: 0,
+      latestSource: { reason: 'test_stress', amount: 0, turn: 1 },
+      recoveryPerTurn: 3,
+    });
+    mockedUsePillarStats.mockImplementation((incomingStats: any) => ({
+      beden: Math.round((incomingStats.health + incomingStats.energy) / 2),
+      zihin: Math.round((incomingStats.intelligence + incomingStats.discipline) / 2),
+      ruh: Math.round((incomingStats.charisma + incomingStats.familyRelation) / 2),
+      servet: incomingStats.money,
+      raw: incomingStats,
+    }));
+  });
+
+  it('does not mark any pillar red for a newborn with the starting stats', () => {
+    [0, 1, 3, 6].forEach(age => {
+      const { getByLabelText, unmount } = render(
+        <StatusHeader
+          playerName="Bebek"
+          age={age}
+          stats={infantStats}
+          maxEnergy={100}
+          theme={theme}
+        />
+      );
+
+      expect(borderOf(getByLabelText, 'Zihin detaylarını aç')).toBe(theme.border);
+      expect(borderOf(getByLabelText, 'Ruh detaylarını aç')).toBe(theme.border);
+      expect(borderOf(getByLabelText, 'Beden detaylarını aç')).toBe(theme.border);
+      unmount();
+    });
+  });
+
+  it('still marks low pillars red from age 7', () => {
+    const { getByLabelText } = render(
+      <StatusHeader
+        playerName="Öğrenci"
+        age={7}
+        stats={infantStats}
+        maxEnergy={100}
+        theme={theme}
+      />
+    );
+
+    expect(borderOf(getByLabelText, 'Zihin detaylarını aç')).toBe('#ef4444');
+    expect(borderOf(getByLabelText, 'Ruh detaylarını aç')).toBe('#ef4444');
   });
 });

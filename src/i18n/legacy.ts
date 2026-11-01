@@ -293,12 +293,12 @@ export const strings: Record<AppLocale, NestedRecord> = {
         tendencies: {
           HELPFUL: 'Yardımsever',
           PRAGMATIC: 'Pragmatik',
-          AGGRESSIVE: 'Agresif',
+          AGGRESSIVE: 'Cesur',
         },
         flavor: {
           HELPFUL: 'Yardımsever ruhun güçleniyor!',
           PRAGMATIC: 'Pragmatik ruhun güçleniyor!',
-          AGGRESSIVE: 'Agresif ruhun güçleniyor!',
+          AGGRESSIVE: 'Cesur ruhun güçleniyor!',
         },
       },
     },
@@ -351,7 +351,7 @@ export const strings: Record<AppLocale, NestedRecord> = {
       personalities: {
         HELPFUL: 'İnsanlarla kurduğu bağları hayatının her köşesine işledi. Veriverdi, bazen kendine bile fırsat bırakmadan.',
         PRAGMATIC: 'Hesaplı adımlar attı. Her kararında mantık vardı; duygular geride kalırdı.',
-        AGGRESSIVE: 'Sınırlarını sert çizdi. Bu ona hem güç hem bedel getirdi.',
+        AGGRESSIVE: 'Korkmadan ileri atıldı. Bu ona hem güç hem bedel getirdi.',
         DEFAULT: 'Kendi yolunu kendi biçiminde yürüdü.',
       },
       suggestions: {
@@ -1004,12 +1004,12 @@ export const strings: Record<AppLocale, NestedRecord> = {
         tendencies: {
           HELPFUL: 'Helpful',
           PRAGMATIC: 'Pragmatic',
-          AGGRESSIVE: 'Aggressive',
+          AGGRESSIVE: 'Bold',
         },
         flavor: {
           HELPFUL: 'Your helpful spirit is growing stronger!',
           PRAGMATIC: 'Your pragmatic spirit is growing stronger!',
-          AGGRESSIVE: 'Your aggressive spirit is growing stronger!',
+          AGGRESSIVE: 'Your bold spirit is growing stronger!',
         },
       },
     },
@@ -1062,7 +1062,7 @@ export const strings: Record<AppLocale, NestedRecord> = {
       personalities: {
         HELPFUL: 'The bonds you built with people seeped into every corner of your life. You gave freely, sometimes without leaving room for yourself.',
         PRAGMATIC: 'You took calculated steps. Logic was in every decision; emotions took a back seat.',
-        AGGRESSIVE: 'You drew your boundaries hard. It brought you both power and a price.',
+        AGGRESSIVE: 'You stepped forward without fear. It brought you both power and a price.',
         DEFAULT: 'You walked your own path in your own way.',
       },
       suggestions: {

@@ -9,6 +9,7 @@ import { MessageToast } from '../animations/ToastAnimations';
 import { usePillarStats, useStress } from '../hooks/useGameSelectors';
 import { getLifeGoalMeta } from '../utils/lifeGoalSystem';
 import { clamp } from '../utils/gameUtils';
+import { isRiskWarningAge } from '../utils/riskDisplay';
 import { tRuntime } from '../i18n/strings';
 
 type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
@@ -402,7 +403,10 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
   const t: TranslateFn = (key, params, fallback) => (
     baseTranslate(normalizeStatusHeaderKey(key), params, fallback)
   );
-  const safeMaxEnergy = Math.max(1, maxEnergy);
+  const safeMaxEnergy = Math.max(1, Math.round(maxEnergy));
+  const energyCurrent = Math.round(clamp(stats.energy, 0, safeMaxEnergy));
+  const energyRatio = energyCurrent / safeMaxEnergy;
+  const energyColor = energyRatio < 0.2 ? '#ef4444' : energyRatio < 0.4 ? '#f97316' : '#eab308';
   const avatarIcon = getPlayerIcon(age);
   const safeRiskPercent = clamp(riskPercent, 0, 100);
   const notificationCount = 1 + (safeRiskPercent >= 50 ? 1 : 0) + (innerThought ? 1 : 0);
@@ -419,12 +423,14 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
   const isThoughtHighlight = innerThoughtType != null && innerThoughtType !== 'IDLE';
   const pillarStats = usePillarStats(stats);
   const moneyDisplay = useMemo(() => formatMoneyDisplay(pillarStats.servet, t), [pillarStats.servet, t]);
+  // Mutlak eşikler (< 25) okul öncesinde hep tetiklenir: bebek zekâ/disiplin 0'dan, karizma 5'ten başlar
+  const showPillarAlerts = isRiskWarningAge(age);
   const pillarAlerts = useMemo(() => ({
-    beden: pillarStats.raw.health < 25 || pillarStats.raw.energy < 25,
-    zihin: pillarStats.raw.intelligence < 25 || pillarStats.raw.discipline < 25,
-    ruh: pillarStats.raw.charisma < 25 || pillarStats.raw.familyRelation < 25,
+    beden: showPillarAlerts && (pillarStats.raw.health < 25 || pillarStats.raw.energy < 25),
+    zihin: showPillarAlerts && (pillarStats.raw.intelligence < 25 || pillarStats.raw.discipline < 25),
+    ruh: showPillarAlerts && (pillarStats.raw.charisma < 25 || pillarStats.raw.familyRelation < 25),
     servet: false,
-  }), [pillarStats.raw]);
+  }), [pillarStats.raw, showPillarAlerts]);
   const selectedPillarContent = useMemo(() => {
     if (!selectedPillar) return null;
 
@@ -587,6 +593,28 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
               </View>
             ) : null}
           </View>
+        </View>
+
+        <View
+          testID="energy-chip"
+          accessible
+          accessibilityLabel={t(
+            'ui.statusHeader.energyChipLabel',
+            { current: energyCurrent, max: safeMaxEnergy },
+            `Enerji ${energyCurrent}/${safeMaxEnergy}`
+          )}
+          style={[
+            styles.energyChip,
+            {
+              backgroundColor: isLightTheme ? theme.surfaceRaised : theme.surfaceOverlay,
+              borderColor: theme.border,
+            },
+          ]}
+        >
+          <MaterialCommunityIcons name="lightning-bolt" size={15} color={energyColor} />
+          <Text style={[styles.energyChipText, { color: theme.textPrimary }]}>
+            {`${energyCurrent}/${safeMaxEnergy}`}
+          </Text>
         </View>
       </View>
 
@@ -865,6 +893,19 @@ const styles = StyleSheet.create({
   },
   infoContainer: {
     flex: 1,
+  },
+  energyChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  energyChipText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   playerName: {
     fontSize: 19,

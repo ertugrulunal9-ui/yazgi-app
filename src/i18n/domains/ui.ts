@@ -57,6 +57,7 @@ export const uiStrings: DomainStrings = {
       accessoryHat: 'Şapka',
       quickPlay: 'Hemen Başla — Rastgele Karakter',
       quickPlayHint: 'Form doldurmadan rastgele bir karakterle hemen başla',
+      orCreateCharacter: 'ya da karakterini kendin oluştur',
       saveClose: 'Kapat',
       saveBack: 'Geri',
       dropdownBackToHub: 'Ana ekrana dön',
@@ -402,6 +403,8 @@ export const uiStrings: DomainStrings = {
         currentOdds: 'Mevcut Olasılıklar',
         effectsBuffed: 'Etkiler %{pct} güçlendi',
         effectsNerfed: 'Negatif etkiler %{pct} arttı',
+        gainsReduced: 'Kazançlar %{pct} azaldı',
+        lossesReduced: 'Kayıplar %{pct} azaldı',
         zodiacOnly: '{zodiacLabel} burcu',
         zodiacBuff: '{zodiacLabel}: {categoryLabel} olaylarında +%{pct} şans',
         zodiacNerf: '{zodiacLabel}: {categoryLabel} olaylarında %{pct} şans',
@@ -476,6 +479,7 @@ export const uiStrings: DomainStrings = {
       detailsSuffix: ' Detayları',
       closeDetailPanel: 'Detay panelini kapat',
       crisisApproaching: 'Kriz yaklaşıyor!',
+      energyChipLabel: 'Enerji {current}/{max}',
     },
     labels: {
       pillars: {
@@ -615,7 +619,7 @@ export const uiStrings: DomainStrings = {
         dialogueSubtitles: {
           HELPFUL: 'Bu seçenek senin sahici tarafını güçlendirir.',
           PRAGMATIC: 'Durumu hızlı okuyup doğru acıyı görüyorsun.',
-          AGGRESSIVE: 'Baskıya karşı sert refleksin daha da netleşiyor.',
+          AGGRESSIVE: 'Bu seçenek cesur tarafını daha da güçlendirir.',
         },
       },
       prioritizer: {
@@ -625,6 +629,8 @@ export const uiStrings: DomainStrings = {
         fateBlessed: 'Kader bugün seninle - her şey yolunda gitti.',
         fateFortunate: 'Şans biraz güldü; işler beklediğinden iyi gitti.',
         fateCursed: 'En kötü an... Her şey ters gitti.',
+        fateCursedGain: 'Şans yüz çevirdi; kazancın beklenenden küçük kaldı.',
+        fateBlessedLoss: 'Şans seni korudu; kaybın beklenenden küçük kaldı.',
         fateUnlucky: 'Bugün şans yüz çevirdi.',
         relationShift: '{npcName} ile bağın {direction}.',
         relationShiftFallbackNpc: 'Biriyle ilişkin',
@@ -842,6 +848,7 @@ export const uiStrings: DomainStrings = {
       accessoryHat: 'Hat',
       quickPlay: 'Play Now — Random Character',
       quickPlayHint: 'Skip the form and start right away with a random character',
+      orCreateCharacter: 'or create your own character',
       dailyRewardMessage: 'Welcome back! +{points} Legacy Points',
       dailyRewardMessageStreak: 'Welcome back! +{points} Legacy Points ({streak}-day streak!)',
       dismissDailyReward: 'Dismiss daily reward notice',
@@ -1150,6 +1157,8 @@ export const uiStrings: DomainStrings = {
         currentOdds: 'Current Odds',
         effectsBuffed: 'Effects increased by %{pct}',
         effectsNerfed: 'Negative effects increased by %{pct}',
+        gainsReduced: 'Gains reduced by %{pct}',
+        lossesReduced: 'Losses reduced by %{pct}',
         zodiacOnly: '{zodiacLabel} sign',
         zodiacBuff: '{zodiacLabel}: +{pct}% luck in {categoryLabel} events',
         zodiacNerf: '{zodiacLabel}: {pct}% luck in {categoryLabel} events',
@@ -1224,6 +1233,7 @@ export const uiStrings: DomainStrings = {
       detailsSuffix: ' Details',
       closeDetailPanel: 'Close details panel',
       crisisApproaching: 'Crisis approaching!',
+      energyChipLabel: 'Energy {current} of {max}',
     },
     labels: {
       pillars: {
@@ -1363,7 +1373,7 @@ export const uiStrings: DomainStrings = {
         dialogueSubtitles: {
           HELPFUL: 'This option strengthens your most sincere side.',
           PRAGMATIC: 'You read the situation quickly and spot the right angle.',
-          AGGRESSIVE: 'Your hard reflex against pressure becomes even clearer.',
+          AGGRESSIVE: 'This option strengthens your bold side.',
         },
       },
       prioritizer: {
@@ -1373,6 +1383,8 @@ export const uiStrings: DomainStrings = {
         fateBlessed: 'Fate was with you today - everything went smoothly.',
         fateFortunate: 'Luck leaned your way; things went better than expected.',
         fateCursed: 'The worst moment... everything went wrong.',
+        fateCursedGain: 'Luck turned away, so your gain came out smaller than expected.',
+        fateBlessedLoss: 'Luck looked after you, so the loss was smaller than expected.',
         fateUnlucky: 'Luck turned away from you today.',
         relationShift: 'Your bond with {npcName} {direction}.',
         relationShiftFallbackNpc: 'Your relationship with someone',

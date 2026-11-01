@@ -83,7 +83,7 @@ export const characterStrings: DomainStrings = {
       tendencySuffix: {
         HELPFUL: 'İçindeki yardımsever ruh güçlü.',
         PRAGMATIC: 'İçindeki pragmatik yan her geçen gün netleşiyor.',
-        AGGRESSIVE: 'İçindeki savaşçı ruh hâlâ yanıyor.',
+        AGGRESSIVE: 'İçindeki cesur ruh hâlâ yanıyor.',
       },
     },
     zodiac: {
@@ -267,7 +267,7 @@ export const characterStrings: DomainStrings = {
       tendencySuffix: {
         HELPFUL: 'The helper spirit inside you is strong.',
         PRAGMATIC: 'Your pragmatic side grows clearer every day.',
-        AGGRESSIVE: 'The fighter spirit inside you still burns.',
+        AGGRESSIVE: 'The bold spirit inside you still burns.',
       },
     },
     zodiac: {

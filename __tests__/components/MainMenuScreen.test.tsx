@@ -46,6 +46,14 @@ const metrics = {
 
 const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+const flattenStyle = (style: any): Record<string, any> => {
+  if (!style) return {};
+  if (Array.isArray(style)) {
+    return style.reduce((acc, item) => ({ ...acc, ...flattenStyle(item) }), {});
+  }
+  return style;
+};
+
 describe('MainMenuScreen zodiac panel', () => {
   it('starts a randomized quick game without requiring the character form', () => {
     const startNewGame = jest.fn();
@@ -79,6 +87,35 @@ describe('MainMenuScreen zodiac panel', () => {
       expect.objectContaining({ quickPlay: true })
     );
     expect(onGameStart).toHaveBeenCalledTimes(1);
+  });
+
+  it('puts quick play above the character form as the primary button', () => {
+    const { getByTestId, getByLabelText, toJSON } = render(
+      <MainMenuScreen
+        theme={theme as any}
+        metrics={metrics as any}
+        locale="tr"
+        onGameStart={jest.fn()}
+        startNewGame={jest.fn()}
+        metaProgression={createInitialMetaProgression()}
+        metaProgressionLoaded
+        updateMetaProgression={jest.fn()}
+      />
+    );
+
+    // Ağaç sırası: Hemen Başla, formdaki "Kimlik" bölümünden ve "Hayata Başla"dan önce gelir
+    const tree = JSON.stringify(toJSON());
+    const quickPlayAt = tree.indexOf('quick-play-button');
+    expect(quickPlayAt).toBeGreaterThan(-1);
+    expect(quickPlayAt).toBeLessThan(tree.indexOf('Kimlik'));
+    expect(quickPlayAt).toBeLessThan(tree.indexOf('Hayata Başla'));
+
+    // Birincil düğme: dolu vurgu rengi; formun kendi başlat düğmesi ikincil (dolu değil)
+    const quickPlayStyle = flattenStyle(getByTestId('quick-play-button').props.style);
+    const formStartStyle = flattenStyle(getByLabelText('Oyuna başla').props.style);
+    expect(quickPlayStyle.backgroundColor).toBe(theme.accentEvent);
+    expect(formStartStyle.backgroundColor).not.toBe(theme.accentEvent);
+    expect(quickPlayStyle.minHeight).toBeGreaterThanOrEqual(formStartStyle.minHeight as number);
   });
 
   it('renders zodiac personality, strength and challenge text', () => {

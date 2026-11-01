@@ -60,7 +60,7 @@ export const narrativeStrings: DomainStrings = {
         tendency: {
           helpful: 'yardımsever',
           pragmatic: 'pragmatik',
-          aggressive: 'savaşçı',
+          aggressive: 'cesur',
         },
         paragraph: {
           earlyYears: 'İlkokul ve ortaokul yıllarında önemli anlar yaşadı. {lines}',
@@ -75,7 +75,7 @@ export const narrativeStrings: DomainStrings = {
           tendency: {
             HELPFUL: 'İçindeki yardımsever ruh güçlü.',
             PRAGMATIC: 'İçindeki pragmatik yan her geçen gün netleşiyor.',
-            AGGRESSIVE: 'İçindeki savaşçı ruh hâlâ canlı.',
+            AGGRESSIVE: 'İçindeki cesur ruh hâlâ canlı.',
           },
         },
         banks: {
@@ -194,7 +194,7 @@ export const narrativeStrings: DomainStrings = {
               'Pragmatik ritmin güçleniyor.',
             ],
             AGGRESSIVE: [
-              'Agresif ritmin güçleniyor.',
+              'Cesur ritmin güçleniyor.',
             ],
           },
         },
@@ -386,7 +386,7 @@ export const narrativeStrings: DomainStrings = {
         tendency: {
           helpful: 'helpful',
           pragmatic: 'pragmatic',
-          aggressive: 'aggressive',
+          aggressive: 'bold',
         },
         paragraph: {
           earlyYears: 'In primary and middle school years, key moments stood out. {lines}',
@@ -401,7 +401,7 @@ export const narrativeStrings: DomainStrings = {
           tendency: {
             HELPFUL: 'Your helpful core feels stronger.',
             PRAGMATIC: 'Your pragmatic side is becoming clearer each day.',
-            AGGRESSIVE: 'Your fighting edge is still alive.',
+            AGGRESSIVE: 'Your bold side is still alive.',
           },
         },
         banks: {
@@ -520,7 +520,7 @@ export const narrativeStrings: DomainStrings = {
               'Your pragmatic rhythm is getting stronger.',
             ],
             AGGRESSIVE: [
-              'Your aggressive rhythm is getting stronger.',
+              'Your bold rhythm is getting stronger.',
             ],
           },
         },
