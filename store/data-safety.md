@@ -70,9 +70,9 @@ Not: Oyuncunun yazdığı karakter adı cihazda kalır; analitiğe yalnızca **u
 | Bölüm | Cevap |
 |---|---|
 | Reklamlar | **Evet, uygulamada reklam var** (AdMob geçiş + ödüllü) |
-| Reklam kimliği beyanı | **Evet, reklam kimliği kullanılıyor** — amaç: Reklam veya pazarlama, Analiz (AdMob); Dolandırıcılığı önleme. `com.google.android.gms.permission.AD_ID` izni Google Mobile Ads kütüphanesinden birleşik manifeste gelir — **doğrula:** derlenmiş AAB'nin birleşik manifestinde izni gör |
+| Reklam kimliği beyanı | **Evet, reklam kimliği kullanılıyor** — amaç: Reklam veya pazarlama, Analiz (AdMob); Dolandırıcılığı önleme. `com.google.android.gms.permission.AD_ID` izni Google Mobile Ads kütüphanesinden birleşik manifeste gelir. 2026-11-01 yerel debug APK'nın birleşik manifestinde görüldü (`AD_ID` ve `ACCESS_ADSERVICES_AD_ID`); izinler kütüphanelerden geldiği için release AAB'de de olması beklenir |
 | Hedef kitle | 13-15, 16-17, 18+ (13 yaş altı yok). Çocuklara yönelik değil (`store/listing.md`) |
-| Uygulama içi satın alma | Yok. **doğrula:** RevenueCat/Play Billing kütüphanesi derlemede olduğu için birleşik manifestte `com.android.vending.BILLING` izni olabilir; Play bunu sorarsa "bu sürümde satın alma yok" de. Soft launch'ta abonelik planlanmıyorsa paketi çıkarmak ayrı bir karar (bağımlılık değişikliği) |
+| Uygulama içi satın alma | Yok. RevenueCat/Play Billing kütüphanesi derlemede olduğu için birleşik manifestte `com.android.vending.BILLING` izni var (2026-11-01 yerel debug APK'da görüldü); Play bunu sorarsa "bu sürümde satın alma yok" de. Soft launch'ta abonelik planlanmıyorsa paketi çıkarmak ayrı bir karar (bağımlılık değişikliği) |
 
 ## Kodda bilinen, formu etkileyebilecek notlar
 
