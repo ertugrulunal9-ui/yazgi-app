@@ -16,6 +16,7 @@ import { itemsStrings } from './domains/items';
 import { premiumStrings } from './domains/premium';
 import { skillTreeStrings } from './domains/skillTree';
 import { storyTextStrings } from './domains/storyText';
+import { privacyStrings } from './domains/privacy';
 import type { DomainStrings, NestedRecord, Primitive, PrimitiveArray } from './domains/types';
 
 export type { AppLocale };
@@ -37,6 +38,7 @@ const DOMAIN_BUNDLES: DomainStrings[] = [
   premiumStrings,
   skillTreeStrings,
   storyTextStrings,
+  privacyStrings,
 ];
 
 const isRecord = (value: unknown): value is NestedRecord => (

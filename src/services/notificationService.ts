@@ -1,12 +1,18 @@
 import { devLog } from '../utils/devLogger';
 
-const isWeb = typeof window !== 'undefined' && typeof navigator !== 'undefined';
+// React Native de `window` ve `navigator` tanımlar (navigator.product === 'ReactNative');
+// yalnızca bu iki kontrol Android'i de web sanıp bildirimleri tamamen kapatıyordu.
+const isWeb = typeof window !== 'undefined'
+  && typeof navigator !== 'undefined'
+  && navigator.product !== 'ReactNative';
 
 type ExpireNotifications = {
+  getPermissionsAsync?: () => Promise<{ status: string }>;
   requestPermissionsAsync: () => Promise<{ status: string }>;
   scheduleNotificationAsync: (request: {
     content: { title: string; body: string; data?: Record<string, unknown> };
-    trigger: { seconds: number } | null;
+    // expo-notifications 0.32: `type` olmayan tetikleyici TypeError fırlatır.
+    trigger: { type: 'timeInterval'; seconds: number; repeats?: boolean } | null;
   }) => Promise<string>;
   cancelAllScheduledNotificationsAsync: () => Promise<void>;
   cancelScheduledNotificationAsync: (id: string) => Promise<void>;
@@ -52,17 +58,7 @@ const NOTIF_IDS = {
 let permissionsGranted = false;
 let permissionsChecked = false;
 
-/**
- * Request notification permissions on first call.
- * Safe to call multiple times — subsequent calls are no-ops.
- */
-export async function requestPermissions(): Promise<boolean> {
-  if (isWeb) return false;
-  if (permissionsChecked) return permissionsGranted;
-
-  const mod = getModule();
-  if (!mod) return false;
-
+function installForegroundHandler(mod: NotificationsModule): void {
   // Set a handler so foreground notifications show as alerts
   try {
     mod.setNotificationHandler({
@@ -75,6 +71,20 @@ export async function requestPermissions(): Promise<boolean> {
   } catch {
     // Non-fatal
   }
+}
+
+/**
+ * Request notification permissions on first call.
+ * Safe to call multiple times — subsequent calls are no-ops.
+ */
+export async function requestPermissions(): Promise<boolean> {
+  if (isWeb) return false;
+  if (permissionsChecked) return permissionsGranted;
+
+  const mod = getModule();
+  if (!mod) return false;
+
+  installForegroundHandler(mod);
 
   try {
     const { status } = await mod.requestPermissionsAsync();
@@ -85,6 +95,34 @@ export async function requestPermissions(): Promise<boolean> {
   } catch (error) {
     devLog.warn('[NOTIFICATIONS] requestPermissions failed', error);
     permissionsChecked = true;
+    return false;
+  }
+}
+
+/**
+ * Soğuk açılışta mevcut izni SORMADAN okur. İzin daha önce verilmişse bunu
+ * hatırlar ve geri çağırma hatırlatmasını yeniden kurar; sonraki turlar da
+ * hatırlatmaları güncelleyebilir. İzin yoksa hiçbir şeyi değiştirmez
+ * (oyun sonundaki "Hatırlat" düğmesi yine izin isteyebilir).
+ */
+export async function restoreNotificationPermission(): Promise<boolean> {
+  if (isWeb) return false;
+  if (permissionsGranted) return true;
+
+  const mod = getModule();
+  if (!mod || typeof mod.getPermissionsAsync !== 'function') return false;
+
+  try {
+    const { status } = await mod.getPermissionsAsync();
+    if (status !== 'granted') return false;
+
+    installForegroundHandler(mod);
+    permissionsGranted = true;
+    permissionsChecked = true;
+    await scheduleReengagement(24);
+    return true;
+  } catch (error) {
+    devLog.warn('[NOTIFICATIONS] restoreNotificationPermission failed', error);
     return false;
   }
 }
@@ -118,7 +156,7 @@ async function scheduleOne(
     // expo-notifications doesn't support named IDs natively — we cancel all and re-schedule
     await mod.scheduleNotificationAsync({
       content: { title, body, data: { notifId: id, ...data } },
-      trigger: { seconds: Math.max(1, Math.round(delaySeconds)) },
+      trigger: { type: 'timeInterval', seconds: Math.max(1, Math.round(delaySeconds)) },
     });
     devLog.log(`[NOTIFICATIONS] Scheduled "${id}" in ${Math.round(delaySeconds / 3600)}h`);
   } catch (error) {

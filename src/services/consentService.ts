@@ -1,11 +1,15 @@
 import { AdsConsent, AdsConsentStatus } from 'react-native-google-mobile-ads';
+import type { UmpConsentOutcome } from './adConsentPolicy';
 
 /**
  * UMP (User Messaging Platform) consent flow.
  * EEA kullanıcıları için Google'ın standart onay formunu gösterir.
- * Returns true if personalized ads are allowed, false otherwise.
+ *
+ * Yalnızca UMP durumunu döndürür; oyuncunun Ayarlar'daki tercihine dokunmaz.
+ * Kişiselleştirilmiş reklam kararı `resolveEffectivePersonalizedAds` ile
+ * (UMP izin veriyor VE oyuncu açtı) verilir.
  */
-export async function requestAndResolveConsent(): Promise<boolean> {
+export async function requestAndResolveConsent(): Promise<UmpConsentOutcome> {
   try {
     const info = await AdsConsent.requestInfoUpdate();
 
@@ -17,14 +21,18 @@ export async function requestAndResolveConsent(): Promise<boolean> {
     // Güncel durumu al
     const finalInfo = await AdsConsent.requestInfoUpdate();
 
-    if (!finalInfo.isConsentFormAvailable) {
-      // Form gerekmiyorsa (EEA dışı kullanıcı) — kişiselleştirilmiş reklam varsayılan açık
-      return true;
+    switch (finalInfo.status) {
+      case AdsConsentStatus.OBTAINED:
+        return 'obtained';
+      case AdsConsentStatus.NOT_REQUIRED:
+        return 'not_required';
+      case AdsConsentStatus.REQUIRED:
+        return 'required';
+      default:
+        return 'unknown';
     }
-
-    return finalInfo.status === AdsConsentStatus.OBTAINED;
   } catch {
     // Herhangi bir hata durumunda güvenli fallback: kişiselleştirilmemiş reklam
-    return false;
+    return 'error';
   }
 }
