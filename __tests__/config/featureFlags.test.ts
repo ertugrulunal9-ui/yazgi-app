@@ -51,7 +51,55 @@ const loadFeatureFlagsModule = async (
   return { featureFlags, remoteConfigInstance: null, asyncStorageMock };
 };
 
+const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+
+const setBrowserLikeGlobals = (product: string) => {
+  (globalThis as { window?: unknown }).window = globalThis;
+  Object.defineProperty(globalThis, 'navigator', {
+    value: { product },
+    configurable: true,
+    writable: true,
+  });
+};
+
+const restoreGlobals = () => {
+  delete (globalThis as { window?: unknown }).window;
+  if (originalNavigator) {
+    Object.defineProperty(globalThis, 'navigator', originalNavigator);
+  } else {
+    delete (globalThis as { navigator?: unknown }).navigator;
+  }
+};
+
 describe('featureFlags', () => {
+  afterEach(() => {
+    restoreGlobals();
+  });
+
+  it('treats React Native (which defines window and navigator) as native, not web', async () => {
+    setBrowserLikeGlobals('ReactNative');
+    const { featureFlags, remoteConfigInstance } = await loadFeatureFlagsModule(false, {
+      flags: { PARTIAL_ENERGY_RECOVERY: true },
+    });
+
+    await featureFlags.initializeFeatureFlags();
+
+    expect(remoteConfigInstance?.fetchAndActivate).toHaveBeenCalled();
+    expect(featureFlags.isFeatureEnabled('PARTIAL_ENERGY_RECOVERY')).toBe(true);
+  });
+
+  it('keeps local defaults on web without touching remote config', async () => {
+    setBrowserLikeGlobals('Gecko');
+    const { featureFlags, remoteConfigInstance } = await loadFeatureFlagsModule(false, {
+      flags: { PARTIAL_ENERGY_RECOVERY: true },
+    });
+
+    await featureFlags.initializeFeatureFlags();
+
+    expect(remoteConfigInstance?.fetchAndActivate).not.toHaveBeenCalled();
+    expect(featureFlags.isFeatureEnabled('PARTIAL_ENERGY_RECOVERY')).toBe(false);
+  });
+
   it('applies remote config values when available', async () => {
     const { featureFlags, remoteConfigInstance } = await loadFeatureFlagsModule(false, {
       incidentMode: false,
@@ -68,6 +116,7 @@ describe('featureFlags', () => {
     expect(featureFlags.isFeatureEnabled('VARIETY_BONUS')).toBe(false);
     expect(remoteConfigInstance?.setConfigSettings).toHaveBeenCalledWith({
       minimumFetchIntervalMillis: 300000,
+      fetchTimeMillis: 5000,
     });
     expect(remoteConfigInstance?.setConfigSettings).toHaveBeenCalledWith({
       minimumFetchIntervalMillis: 43200000,
