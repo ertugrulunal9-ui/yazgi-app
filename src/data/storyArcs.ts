@@ -103,6 +103,9 @@ export const STORY_ARCS: StoryArc[] = [
     title: 'Ailede Bagimsizlik',
     ageRange: [15, 18],
     isRepeatable: false,
+    // Şartsızken her koşuda 15 yaşında başlıyor, 3 kartı her hayatta aynı geliyordu; bağımsızlık
+    // kavgası kurallara pek uymayan gençlerin hikayesi (uyumlu gençte bu turlar başka olaylara kalır)
+    reqPersonality: [{ axis: 'conformity', max: 50 }],
     events: [
       { eventId: 'lt_family_independence_argument', stage: 1, requiresPrevious: false },
       // Stage 2: Çatışmacı dal (patience < 55) - bütçe tartışması
