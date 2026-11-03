@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { devLog } from '../utils/devLogger';
+import { tRuntime } from '../i18n/strings';
 
 // React Native de `window` ve `navigator` tanımlar (navigator.product === 'ReactNative');
 // yalnızca bu iki kontrol Android'i de web sanıp bildirimleri tamamen kapatıyordu.
@@ -209,12 +210,27 @@ async function scheduleOne(
   }
 }
 
+/** Süren hayattaki karakter: hatırlatma onun adıyla ve yaşıyla yazılır. */
+export interface ReminderCharacter {
+  name: string;
+  age: number;
+}
+
+// Metin kurulduğu andaki oyun dilinde; karakter yoksa (oyun sonu, soğuk açılış) genel metin.
+const getReengagementBody = (character?: ReminderCharacter): string => {
+  const name = character?.name.trim();
+  if (!character || !name) return tRuntime('notifications.reengagementBody');
+  return character.age >= 1
+    ? tRuntime('notifications.reengagementBodyAge', { name, age: character.age })
+    : tRuntime('notifications.reengagementBodyNewborn', { name });
+};
+
 /**
  * Schedule a re-engagement notification.
  * Fires after `hours` of inactivity (default 24h).
  * Call this after every turn to keep resetting the countdown.
  */
-export async function scheduleReengagement(hours = 24): Promise<void> {
+export async function scheduleReengagement(hours = 24, character?: ReminderCharacter): Promise<void> {
   const mod = getModule();
   if (!mod || !permissionsGranted) return;
 
@@ -223,8 +239,8 @@ export async function scheduleReengagement(hours = 24): Promise<void> {
 
   await scheduleOne(
     NOTIF_IDS.REENGAGEMENT,
-    'Yazgı',
-    'Hayatın seni bekliyor... 🌟',
+    tRuntime('notifications.title'),
+    getReengagementBody(character),
     hours * 3600,
     { type: 'reengagement' },
   );
@@ -238,7 +254,7 @@ export async function scheduleNPCReminder(npcName: string, hours = 48): Promise<
   await scheduleOne(
     NOTIF_IDS.NPC_REMINDER,
     npcName,
-    `${npcName} seni merak ediyor...`,
+    tRuntime('notifications.npcReminderBody', { name: npcName }),
     hours * 3600,
     { type: 'npc_reminder', npcName },
   );
@@ -251,8 +267,8 @@ export async function scheduleNPCReminder(npcName: string, hours = 48): Promise<
 export async function scheduleExamSeason(hours = 36): Promise<void> {
   await scheduleOne(
     NOTIF_IDS.EXAM_SEASON,
-    'Yazgı',
-    'Sınav dönemi yaklaşıyor! 📚',
+    tRuntime('notifications.title'),
+    tRuntime('notifications.examSeasonBody'),
     hours * 3600,
     { type: 'exam_season' },
   );

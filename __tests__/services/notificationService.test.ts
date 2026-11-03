@@ -246,3 +246,54 @@ describe('notificationService permission retry', () => {
     expect(mockRequestPermissionsAsync).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('notificationService reminder text', () => {
+  beforeEach(() => {
+    mockRequestPermissionsAsync.mockReset().mockResolvedValue({ status: 'granted' });
+    mockScheduleNotificationAsync.mockReset().mockResolvedValue('id');
+    mockCancelAllScheduledNotificationsAsync.mockReset().mockResolvedValue(undefined);
+    mockStorage.clear();
+  });
+
+  // Metin kurulduğu andaki oyun dilinde yazılır; dil, servisle aynı (taze) i18n modülünde ayarlanır
+  const loadFreshServiceIn = (locale: 'tr' | 'en'): NotificationServiceModule => {
+    let service!: NotificationServiceModule;
+    jest.isolateModules(() => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      require('../../src/i18n/strings').setRuntimeLocale(locale);
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      service = require('../../src/services/notificationService');
+    });
+    return service;
+  };
+
+  const scheduledContent = (index: number) => mockScheduleNotificationAsync.mock.calls[index][0].content;
+
+  it('names the character and age in Turkish', async () => {
+    const service = loadFreshServiceIn('tr');
+    await service.requestPermissions();
+
+    await service.scheduleReengagement(24, { name: 'Taner', age: 4 });
+    await service.scheduleReengagement(24, { name: 'Taner', age: 0 });
+
+    expect(scheduledContent(0)).toMatchObject({
+      title: 'Yazgı',
+      body: 'Taner, 4 yaşındasın. Sıradaki seçim seni bekliyor. 🌟',
+    });
+    expect(scheduledContent(1).body).toBe('Taner, hayatın daha yeni başladı. Sıradaki seçim seni bekliyor. 🌟');
+  });
+
+  it('writes reminders in English for English players (they used to get Turkish text)', async () => {
+    const service = loadFreshServiceIn('en');
+    await service.requestPermissions();
+
+    await service.scheduleReengagement(24, { name: 'Taner', age: 4 });
+    await service.scheduleNPCReminder('Ayşe', 48);
+    await service.scheduleReengagement(24);
+
+    expect(scheduledContent(0).body).toBe('Taner, you are 4. Your next choice is waiting. 🌟');
+    expect(scheduledContent(1)).toMatchObject({ title: 'Ayşe', body: 'Ayşe is wondering how you are...' });
+    // Karakter yoksa (oyun sonu, soğuk açılış) genel metin
+    expect(scheduledContent(2).body).toBe('Your life is waiting for you... 🌟');
+  });
+});
