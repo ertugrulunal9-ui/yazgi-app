@@ -733,6 +733,8 @@ export const uiStrings: DomainStrings = {
       keyMemories: 'Öne Çıkan Anılar',
       npcChanges: 'İlişki Değişimleri',
       nextChapter: 'Sıradaki Bölüm',
+      reminderPrompt: 'Hikayen yarın da devam etsin mi?',
+      reminderButton: '🔔 Yarın hatırlat',
     },
     milestone: {
       title: 'Yaş {age} Özeti',
@@ -1487,6 +1489,8 @@ export const uiStrings: DomainStrings = {
       keyMemories: 'Key Memories',
       npcChanges: 'Relationship Changes',
       nextChapter: 'Next Chapter',
+      reminderPrompt: 'Want your story to continue tomorrow?',
+      reminderButton: '🔔 Remind me tomorrow',
     },
     milestone: {
       title: 'Age {age} Summary',

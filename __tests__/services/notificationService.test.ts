@@ -190,3 +190,28 @@ describe('notificationService cold start', () => {
     expect(mockScheduleNotificationAsync).not.toHaveBeenCalled();
   });
 });
+
+describe('notificationService early reminder offer', () => {
+  beforeEach(() => {
+    mockRequestPermissionsAsync.mockReset();
+    mockStorage.clear();
+  });
+
+  it('offers the reminder once on a fresh install', async () => {
+    const service = loadFreshService();
+    await expect(service.isReminderOfferEligible()).resolves.toBe(true);
+
+    await service.markReminderOfferShown();
+
+    // Sonraki soğuk açılışta ve koşuda da bir daha çıkmaz
+    await expect(loadFreshService().isReminderOfferEligible()).resolves.toBe(false);
+  });
+
+  it('does not offer the reminder once the player has opted in (e.g. at game end)', async () => {
+    mockRequestPermissionsAsync.mockResolvedValue({ status: 'granted' });
+    const service = loadFreshService();
+    await service.requestPermissions();
+
+    await expect(service.isReminderOfferEligible()).resolves.toBe(false);
+  });
+});

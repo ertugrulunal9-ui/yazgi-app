@@ -59,6 +59,8 @@ const NOTIF_IDS = {
 // Oyuncu oyun sonundaki "Hatırlat" ile hatırlatmaları açtı mı. Android 12 ve altında bildirim
 // izni varsayılan "granted" gelir; işletim sistemi izni tek başına oyuncunun seçimi sayılmaz.
 const REMINDER_OPT_IN_KEY = '@yazgi/reminders_opt_in/v1';
+// Bebeklik bölüm penceresindeki tek seferlik hatırlatma teklifi görüldü mü (kurulum başına bir kez).
+const REMINDER_OFFER_SHOWN_KEY = '@yazgi/reminder_offer_shown/v1';
 
 let permissionsGranted = false;
 let permissionsChecked = false;
@@ -145,6 +147,31 @@ export async function restoreNotificationPermission(): Promise<boolean> {
   } catch (error) {
     devLog.warn('[NOTIFICATIONS] restoreNotificationPermission failed', error);
     return false;
+  }
+}
+
+/**
+ * Erken hatırlatma teklifi gösterilebilir mi: oyuncu hatırlatmaları henüz açmadı ve teklifi
+ * daha önce görmedi. Depo okunamazsa teklif gösterilmez (oyuncuyu tekrar tekrar rahatsız etmesin).
+ */
+export async function isReminderOfferEligible(): Promise<boolean> {
+  try {
+    const [optedIn, offerShown] = await Promise.all([
+      AsyncStorage.getItem(REMINDER_OPT_IN_KEY),
+      AsyncStorage.getItem(REMINDER_OFFER_SHOWN_KEY),
+    ]);
+    return optedIn !== 'true' && offerShown !== 'true';
+  } catch {
+    return false;
+  }
+}
+
+/** Teklif oyuncuya gösterildi; bir daha çıkmaz (oyun sonundaki "Hatırlat" düğmesi kalır). */
+export async function markReminderOfferShown(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(REMINDER_OFFER_SHOWN_KEY, 'true');
+  } catch {
+    // Yazılamazsa teklif sonraki koşunun Bebeklik penceresinde yeniden çıkabilir.
   }
 }
 

@@ -216,6 +216,7 @@ jest.mock('../../src/utils/analyticsEvents', () => ({
   logHubAction: jest.fn(async () => {}),
   logInterstitialOpportunity: jest.fn(async () => {}),
   logInterstitialResult: jest.fn(async () => {}),
+  logReminderOffer: jest.fn(async () => {}),
   logRewardedAdRequested: jest.fn(async () => {}),
   logRewardedAdResult: jest.fn(async () => {}),
   logTraitChanges: jest.fn(async () => {}),

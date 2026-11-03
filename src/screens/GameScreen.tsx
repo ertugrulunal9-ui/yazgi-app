@@ -79,6 +79,9 @@ import { countPendingEchoes } from '../utils/echoTrail';
 import { isRiskWarningAge } from '../utils/riskDisplay';
 import { CHAPTERS } from '../config/gameBalance';
 
+// Hatırlatma teklifi Bebeklik (1. bölüm) penceresinde çıkar: ilk koşuyu yarıda bırakan da görsün
+const REMINDER_OFFER_CHAPTER_ID = 1;
+
 // Kritik sağlık eşiği yaşa göre tavanın %20'si (yetişkinde 20); bebeklikte tavan 30 olduğu için sabit 20 yanlış alarm veriyordu
 const isHealthCriticalForAge = (health: number, age: number): boolean => health <= getStatCap(age, 'health') * 0.2;
 
@@ -897,6 +900,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
           yearMilestone={yearEndWindow.milestone}
           nextChapterId={nextChapter?.id}
           nextChapterEmoji={nextChapter?.emoji}
+          reminderOffer={yearEndWindow.chapter.chapterId === REMINDER_OFFER_CHAPTER_ID}
           onClose={handleYearEndClose}
         />
       ) : yearEndWindow?.milestone ? (
