@@ -3,6 +3,7 @@ import {
   GameState,
   LifeGoal,
   MetaProgression,
+  NPCRole,
   SchoolGrades,
   Skills,
   Stats,
@@ -1568,6 +1569,9 @@ interface SecretEndingResult {
   result: CareerResult;
 }
 
+// "Kimseye ihtiyaç duymadan" yaşayan biri tanıdık ve rakip edinebilir, yakın bağ kurmaz
+const SILENT_LEGEND_CLOSE_ROLES: NPCRole[] = ['FRIEND', 'BEST_FRIEND', 'CRUSH', 'PARTNER'];
+
 const checkSecretEndings = (
   gameState: GameState,
   stats: Stats,
@@ -1577,7 +1581,8 @@ const checkSecretEndings = (
   const npcs = gameState.npcs || [];
   const fateTokens = gameState.fate?.tokens ?? 0;
   const hasPartner = npcs.some(n => n.role === 'PARTNER');
-  const npcCount = npcs.length;
+  // Her oyun 2 NPC ile başlar ve NPC silinmez; "hiç NPC yok" şartı bu sonu imkânsız kılıyordu
+  const hasCloseBond = npcs.some(n => SILENT_LEGEND_CLOSE_ROLES.includes(n.role));
 
   // secret_true_balance: all core stats are 85+ (gerçekten olağanüstü denge)
   if (
@@ -1642,9 +1647,9 @@ const checkSecretEndings = (
     };
   }
 
-  // secret_silent_legend: low NPC interaction with high skill profile
+  // secret_silent_legend: no close bond (friend, best friend, crush, partner) with high skill profile
   if (
-    npcCount === 0 &&
+    !hasCloseBond &&
     stats.intelligence >= 85 &&
     stats.discipline >= 80 &&
     stats.health >= 60 &&

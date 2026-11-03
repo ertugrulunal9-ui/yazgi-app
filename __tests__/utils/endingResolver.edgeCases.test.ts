@@ -212,6 +212,39 @@ describe('endingResolver — Edge Cases', () => {
 
       expect(resolution.id).toBe('secret_love_and_glory');
     });
+
+    // Her oyun 2 NPC ile başladığı için eski "hiç NPC yok" şartı bu sonu imkânsız kılıyordu
+    const silentLegendNpc = (role: 'ACQUAINTANCE' | 'RIVAL' | 'FRIEND') => ({
+      id: `npc_${role}`, name: 'Test', role, relationship: role === 'FRIEND' ? 60 : 20,
+      romance: 0, gender: 'FEMALE' as const, age: 18, personality: 'FRIENDLY' as const,
+      traits: [], metAge: 0, metTurn: 1, lastInteraction: 10,
+      sharedMemories: [], isInPlayerGroup: false,
+    });
+    const silentLegendInput = (npcs: ReturnType<typeof silentLegendNpc>[]) => ({
+      gameState: createGameState({
+        npcs,
+        skills: { ...createGameState().skills, coding: 90 },
+      }),
+      stats: { ...baseStats, intelligence: 90, discipline: 85 },
+    });
+
+    it('starting NPCs without a close bond still allow Sessiz Efsane', () => {
+      const resolution = resolveEnding(silentLegendInput([
+        silentLegendNpc('ACQUAINTANCE'),
+        silentLegendNpc('RIVAL'),
+      ]));
+
+      expect(resolution.id).toBe('secret_silent_legend');
+    });
+
+    it('a friend rules out Sessiz Efsane', () => {
+      const resolution = resolveEnding(silentLegendInput([
+        silentLegendNpc('ACQUAINTANCE'),
+        silentLegendNpc('FRIEND'),
+      ]));
+
+      expect(resolution.id).not.toBe('secret_silent_legend');
+    });
   });
 
   // ==========================================================
