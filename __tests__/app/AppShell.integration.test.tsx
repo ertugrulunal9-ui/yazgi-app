@@ -128,6 +128,7 @@ jest.mock('../../src/appShell/AnalyticsTracker', () => {
 jest.mock('../../src/utils/analyticsEvents', () => ({
   logTutorialCompleted: jest.fn(),
   logTutorialTooltipShown: jest.fn(),
+  logTutorialSkipped: jest.fn(),
 }));
 
 describe('AppShell integration', () => {
@@ -300,23 +301,18 @@ describe('AppShell integration', () => {
 
     expect(mockSetHasCompletedOnboarding).toHaveBeenCalledWith(true);
     expect(logTutorialCompleted).not.toHaveBeenCalled();
-    const tutorialStateCall = (AsyncStorage.setItem as jest.Mock).mock.calls.find(
+    // "Atla" oyun içi ipucu turunu da kapatır; işaret, yeni koşuda turun kendini sıfırlamasını engeller
+    const tutorialStateCalls = (AsyncStorage.setItem as jest.Mock).mock.calls.filter(
       ([key]) => key === '@yazgi/tutorial_v2'
     );
-    expect(tutorialStateCall).toBeDefined();
-    expect(JSON.parse(tutorialStateCall?.[1] as string)).toMatchObject({
-      currentStep: 'GOAL_VISION',
+    expect(tutorialStateCalls.length).toBeGreaterThan(0);
+    expect(JSON.parse(tutorialStateCalls[tutorialStateCalls.length - 1][1] as string)).toMatchObject({
+      currentStep: 'COMPLETED',
+      skippedByPlayer: true,
     });
     expect((AsyncStorage.setItem as jest.Mock).mock.calls).toEqual(
       expect.arrayContaining([
         ['@yazgi/onboarding_completed', 'true'],
-      ])
-    );
-    expect((AsyncStorage.removeItem as jest.Mock).mock.calls).toEqual(
-      expect.arrayContaining([
-        ['@yazgi/hub_tutorial_shown'],
-        ['@yazgi/event_tooltip_shown'],
-        ['@yazgi/energy_tutorial_shown'],
       ])
     );
 
