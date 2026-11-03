@@ -90,7 +90,7 @@ export const narrativeStrings: DomainStrings = {
               'Her şey üst üste biniyor. Bir adım geri atmazsam çökebilirim.',
             ],
             critical: [
-              'Zihnim bulaniklasiyor. Durup toparlanmam gerek.',
+              'Zihnim bulanıklaşıyor. Durup toparlanmam gerek.',
             ],
           },
           mismatch: {
