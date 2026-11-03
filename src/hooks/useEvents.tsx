@@ -399,7 +399,10 @@ export const useEvents = () => {
   useEffect(() => {
     if (!gameState.totalTurns || gameState.totalTurns < 1) return;
 
-    void scheduleReengagement(24);
+    void scheduleReengagement(24, {
+      name: gameState.characterInfo?.firstName ?? '',
+      age: gameState.age,
+    });
 
     const activeNPC = gameState.npcs?.find(npc => npc.relationship >= 40);
     if (activeNPC) {

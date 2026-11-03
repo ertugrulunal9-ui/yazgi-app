@@ -733,6 +733,16 @@ export const uiStrings: DomainStrings = {
       keyMemories: 'Öne Çıkan Anılar',
       npcChanges: 'İlişki Değişimleri',
       nextChapter: 'Sıradaki Bölüm',
+      reminderPrompt: 'Hikayen yarın da devam etsin mi?',
+      reminderButton: '🔔 Yarın hatırlat',
+    },
+    notifications: {
+      title: 'Yazgı',
+      reengagementBody: 'Hayatın seni bekliyor... 🌟',
+      reengagementBodyNewborn: '{name}, hayatın daha yeni başladı. Sıradaki seçim seni bekliyor. 🌟',
+      reengagementBodyAge: '{name}, {age} yaşındasın. Sıradaki seçim seni bekliyor. 🌟',
+      npcReminderBody: '{name} seni merak ediyor...',
+      examSeasonBody: 'Sınav dönemi yaklaşıyor! 📚',
     },
     milestone: {
       title: 'Yaş {age} Özeti',
@@ -1487,6 +1497,16 @@ export const uiStrings: DomainStrings = {
       keyMemories: 'Key Memories',
       npcChanges: 'Relationship Changes',
       nextChapter: 'Next Chapter',
+      reminderPrompt: 'Want your story to continue tomorrow?',
+      reminderButton: '🔔 Remind me tomorrow',
+    },
+    notifications: {
+      title: 'Yazgı',
+      reengagementBody: 'Your life is waiting for you... 🌟',
+      reengagementBodyNewborn: '{name}, your life has just begun. Your next choice is waiting. 🌟',
+      reengagementBodyAge: '{name}, you are {age}. Your next choice is waiting. 🌟',
+      npcReminderBody: '{name} is wondering how you are...',
+      examSeasonBody: 'Exam season is coming! 📚',
     },
     milestone: {
       title: 'Age {age} Summary',
