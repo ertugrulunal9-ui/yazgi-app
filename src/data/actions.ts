@@ -443,6 +443,7 @@ export const ACTION_CATEGORIES: ActionCategory[] = [
     icon: '⚽',
     color: '#10b981',
     bgColor: 'rgba(16, 185, 129, 0.15)',
+    minAge: 3, // en erken eylem 3 yaşında; öncesinde bebeğe boş kategori gösterilmesin
     subActions: [
       {
         id: 'sports_run',
@@ -508,6 +509,7 @@ export const ACTION_CATEGORIES: ActionCategory[] = [
     icon: '🎨',
     color: '#ec4899',
     bgColor: 'rgba(236, 72, 153, 0.15)',
+    minAge: 3, // en erken eylem 3 yaşında; öncesinde bebeğe boş kategori gösterilmesin
     subActions: [
       {
         id: 'arts_draw',

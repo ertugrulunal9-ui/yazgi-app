@@ -219,13 +219,15 @@ describe('TurnMediator', () => {
     expect(personalityState?.HELPFUL.multiplier).toBe(1);
   });
 
-  it('calls a gentle toddler health gain "Cesur", not "Agresif" (internal key stays AGGRESSIVE)', () => {
+  it('calls the toddler bed-check courage choice "Cesur", not "Agresif" (internal key stays AGGRESSIVE)', () => {
     const gameState: GameState = { ...createBaseGameState(), age: 2 };
     const stats = createBaseStats();
+    // turkishEvents korku_cesur ile aynı etki (yalnızca sağlık kazancı artık eğilim sayılmıyor)
     const choice: Choice = {
       id: 'ch_toddler_bed_check',
       text: 'Yatağın altına bak',
-      effect: { health: 2 },
+      effect: { discipline: 5 },
+      personalityEffects: [{ axis: 'courage', change: 8 }],
       feedback: 'Yatağın altında canavar yokmuş.',
     };
 

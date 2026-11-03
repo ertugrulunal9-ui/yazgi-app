@@ -177,9 +177,12 @@ export const inferMomentumSignalFromStatEffect = (
 ): PersonalityMomentumSignal | null => {
   if (!effect) return null;
 
-  const helpfulScore = (effect.charisma ?? 0) + (effect.familyRelation ?? 0) + Math.max(0, effect.health ?? 0) * 0.25;
+  // Sağlık kazancı yalnızca enerji harcanan (efor isteyen) seçimde eğilim sayılır; uyku, yemek, dinlenme
+  // "Cesur ritmi güçleniyor!" demesin
+  const exertionHealth = (effect.energy ?? 0) < 0 ? Math.max(0, effect.health ?? 0) : 0;
+  const helpfulScore = (effect.charisma ?? 0) + (effect.familyRelation ?? 0) + exertionHealth * 0.25;
   const pragmaticScore = (effect.intelligence ?? 0) + (effect.discipline ?? 0) + Math.max(0, effect.money ?? 0) * 0.02;
-  const aggressiveScore = Math.max(0, effect.health ?? 0) + Math.max(0, effect.discipline ?? 0) * 0.5;
+  const aggressiveScore = exertionHealth + Math.max(0, effect.discipline ?? 0) * 0.5;
 
   const ranked = [
     { tendency: 'HELPFUL' as const, score: helpfulScore },

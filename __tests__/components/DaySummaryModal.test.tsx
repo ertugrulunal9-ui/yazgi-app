@@ -3,6 +3,7 @@ import { render } from '@testing-library/react-native';
 import { DaySummaryModal } from '../../src/components/DaySummaryModal';
 import { setRuntimeLocale } from '../../src/i18n/strings';
 import type { Stats } from '../../src/types';
+import { getPillarValues } from '../../src/utils/pillarStats';
 
 const theme = {
   surfaceBase: '#111827',
@@ -33,24 +34,43 @@ const statsWithHealth = (health: number): Stats => ({
   familyRelation: 50,
 });
 
+const renderSummary = (age: number, health: number) => render(
+  <DaySummaryModal
+    visible
+    age={age}
+    turn={2}
+    dailyDecisionCount={2}
+    varietyBonus={0}
+    energy={57}
+    maxEnergy={100}
+    stats={statsWithHealth(health)}
+    theme={theme}
+    onContinue={jest.fn()}
+    onCancel={jest.fn()}
+  />
+);
+
+// Satır başlıktaki Beden değerini gösterir; rengi sağlığa göre
 const healthColor = (age: number, health: number): string => {
-  const { getByText } = render(
-    <DaySummaryModal
-      visible
-      age={age}
-      turn={2}
-      dailyDecisionCount={2}
-      varietyBonus={0}
-      energy={57}
-      maxEnergy={100}
-      stats={statsWithHealth(health)}
-      theme={theme}
-      onContinue={jest.fn()}
-      onCancel={jest.fn()}
-    />
-  );
-  return flattenStyle(getByText(`%${health}`).props.style).color as string;
+  const { getByText } = renderSummary(age, health);
+  const beden = getPillarValues(statsWithHealth(health)).beden;
+  return flattenStyle(getByText(`%${beden}`).props.style).color as string;
 };
+
+describe('DaySummaryModal pillar rows', () => {
+  beforeEach(() => setRuntimeLocale('tr'));
+
+  it('uses the header pillar names and values instead of raw health and intelligence', () => {
+    // Başlık "Beden %41" derken gün sonu "Sağlık %25" diyordu
+    const { getByText, queryByText } = renderSummary(0, 25);
+    expect(getByText('Beden')).toBeTruthy();
+    expect(getByText('%41')).toBeTruthy();
+    expect(getByText('Zihin')).toBeTruthy();
+    expect(getByText('%0')).toBeTruthy();
+    expect(queryByText('Sağlık')).toBeNull();
+    expect(queryByText('%25')).toBeNull();
+  });
+});
 
 describe('DaySummaryModal health color by age', () => {
   beforeEach(() => setRuntimeLocale('tr'));
