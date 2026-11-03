@@ -527,10 +527,27 @@ export const runAdvanceTurn = ({
       ...statsAfterVarietyBonus,
       money: endingMoney,
     };
+    const gameOverUpdate: GameStateUpdate = {
+      ...baseTurnState,
+      phase: 'GAME_OVER',
+      isExamPeriod: false,
+      examsTakenThisYear: [],
+      activeArcs: currentActiveArcs,
+      activeBuffs: [],
+      consumableCooldowns: {},
+      consumableUsageThisTurn: {},
+    };
+    const gameOverFinalStats: Partial<Stats> = {
+      ...gameOverStats,
+      money: endingMoney,
+    };
+    // Oyun sonu ekranı ve galeri sonu kaydedilen durumdan hesaplar; analitik ve sonuç metni de aynı sonu
+    // kullansın (ilerlemeden önceki durumda 18 yaş kader jetonu ve NPC/stres güncellemesi yoktu)
+    const committedGameState = { ...gameState, ...gameOverUpdate } as GameState;
     const endingResolution = resolveEnding({
-      gameState,
-      stats: endingStats,
-      achievements: gameState.unlockedAchievements,
+      gameState: committedGameState,
+      stats: { ...stats, ...gameOverFinalStats },
+      achievements: committedGameState.unlockedAchievements,
     });
     const careerResult = endingResolution.result;
     void logGameEnding({
@@ -547,22 +564,12 @@ export const runAdvanceTurn = ({
       endingType: endingResolution.id,
     });
     commitPhase({
-      ...baseTurnState,
-      phase: 'GAME_OVER',
-      isExamPeriod: false,
-      examsTakenThisYear: [],
-      activeArcs: currentActiveArcs,
-      activeBuffs: [],
-      consumableCooldowns: {},
-      consumableUsageThisTurn: {},
+      ...gameOverUpdate,
       lastResult: {
         feedback: `${careerResult.title}: ${careerResult.description}`,
         changes: {},
       },
-    }, {
-      ...gameOverStats,
-      money: endingMoney,
-    });
+    }, gameOverFinalStats);
     return;
   }
 

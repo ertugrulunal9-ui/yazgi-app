@@ -77,6 +77,7 @@ import { hasSpendableEnergy } from '../utils/endDayPrompt';
 import { getAvatarMood } from '../utils/avatarMood';
 import { countPendingEchoes } from '../utils/echoTrail';
 import { isRiskWarningAge } from '../utils/riskDisplay';
+import { hasSeenLifeGoalEvent, LIFE_GOAL_SELECTION_EVENT_ID } from '../utils/lifeGoalSystem';
 import { CHAPTERS } from '../config/gameBalance';
 
 // Hatırlatma teklifi Bebeklik (1. bölüm) penceresinde çıkar: ilk koşuyu yarıda bırakan da görsün
@@ -641,6 +642,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
               stats={stats}
               maxEnergy={gameState.maxEnergy}
               selectedGoal={gameState.selectedGoal ?? null}
+              goalUndecided={!gameState.selectedGoal && hasSeenLifeGoalEvent(gameState, LIFE_GOAL_SELECTION_EVENT_ID)}
               dreamProgress={dreamProgress}
               riskPercent={riskPercent}
               riskReasons={riskReasons}

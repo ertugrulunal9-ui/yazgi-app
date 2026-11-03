@@ -148,6 +148,34 @@ describe('StatusHeader stress indicator', () => {
     expect(getByText('Hedef seçimi 10 yaşında açılır.')).toBeTruthy();
     expect(getByText('Hedef seçince izlenecek statlar burada görünür.')).toBeTruthy();
   });
+
+  it('shows an open path, not a locked goal or 0%, for a player who chose not to pick a goal', () => {
+    const renderTracker = (goalUndecided: boolean) => {
+      const view = render(
+        <StatusHeader
+          playerName="Test User"
+          age={12}
+          stats={stats}
+          maxEnergy={100}
+          goalUndecided={goalUndecided}
+          theme={theme}
+        />
+      );
+      fireEvent.press(view.getByText('Bildirimler'));
+      return view;
+    };
+
+    const locked = renderTracker(false);
+    // Risk kutusu ve sütunlar da "%0" gösterebilir; takipçinin kendi %0'ı sayılır
+    const lockedZeroCount = locked.queryAllByText('%0').length;
+    locked.unmount();
+
+    const undecided = renderTracker(true);
+    expect(undecided.getByText('Açık yol: her şeyden biraz')).toBeTruthy();
+    expect(undecided.getByText('Sonun, en çok geliştirdiğin alana göre belirlenecek.')).toBeTruthy();
+    expect(undecided.queryByText('Hedef seçimi 10 yaşında açılır.')).toBeNull();
+    expect(undecided.queryAllByText('%0')).toHaveLength(lockedZeroCount - 1);
+  });
 });
 
 describe('StatusHeader pillar alerts by age', () => {
