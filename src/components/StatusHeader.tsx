@@ -881,6 +881,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     marginBottom: 6,
+    // Sağ üstte sabit duran Ayarlar düğmesine (AppNavigator: 48 px, kenardan 16 px) yer bırak; enerji çipi altında kalıyordu
+    paddingRight: 56,
   },
   avatarContainer: {
     width: 46,
