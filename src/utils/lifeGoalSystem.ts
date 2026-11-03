@@ -187,6 +187,22 @@ const buildGoalChoice = (
   };
 };
 
+// Hedef seçmemek de bir seçim: sonu en uyumlu profile göre belirlenir (Dengeli dahil). Bu seçenek
+// yokken 4 "balanced_*" son ulaşılamazdı (hedef olayı cevaplanana kadar gelir, her seçenek hedef atardı).
+export const UNDECIDED_GOAL_CHOICE_ID = 'goal_select_undecided';
+
+const buildUndecidedGoalChoice = (): Choice => ({
+  id: UNDECIDED_GOAL_CHOICE_ID,
+  text: tRuntime('goals.undecidedChoice', undefined, 'Henüz bilmiyorum, her şeyi denemek istiyorum'),
+  effect: { health: 1, intelligence: 1, charisma: 1, energy: -2 },
+  setSelectedGoal: null,
+  feedback: tRuntime(
+    'goals.undecidedFeedback',
+    undefined,
+    'Karar vermek için erken. Her alandan biraz tadacaksın; hayat seni en çok neye çekerse sonun o olacak.'
+  ),
+});
+
 export const buildInitialLifeGoalEvent = (): GameEvent => ({
   id: LIFE_GOAL_SELECTION_EVENT_ID,
   text: tRuntime(
@@ -199,7 +215,7 @@ export const buildInitialLifeGoalEvent = (): GameEvent => ({
   rarity: 'RARE',
   isRepeatable: false,
   personalityCategory: 'GROWTH',
-  choices: LIFE_GOAL_ORDER.map(goal => buildGoalChoice(goal)),
+  choices: [...LIFE_GOAL_ORDER.map(goal => buildGoalChoice(goal)), buildUndecidedGoalChoice()],
 });
 
 const orderPivotAlternatives = (currentGoal: LifeGoal, suggestedGoal: LifeGoal): LifeGoal[] => {
