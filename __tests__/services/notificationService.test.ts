@@ -215,3 +215,34 @@ describe('notificationService early reminder offer', () => {
     await expect(service.isReminderOfferEligible()).resolves.toBe(false);
   });
 });
+
+describe('notificationService permission retry', () => {
+  beforeEach(() => {
+    mockRequestPermissionsAsync.mockReset();
+    mockStorage.clear();
+  });
+
+  it('asks the OS again at game end after the player denied the Bebeklik offer in the same session', async () => {
+    mockRequestPermissionsAsync
+      .mockResolvedValueOnce({ status: 'denied' })
+      .mockResolvedValueOnce({ status: 'granted' });
+    const service = loadFreshService();
+
+    // Bebeklik teklifinde ret; ret önceden oturum boyunca saklanıyor, oyun sonu düğmesi sormadan false alıyordu
+    await expect(service.requestPermissions()).resolves.toBe(false);
+    await expect(service.requestPermissions()).resolves.toBe(true);
+
+    expect(mockRequestPermissionsAsync).toHaveBeenCalledTimes(2);
+    expect(mockStorage.get(REMINDER_OPT_IN_KEY)).toBe('true');
+  });
+
+  it('does not ask again once permission was granted', async () => {
+    mockRequestPermissionsAsync.mockResolvedValue({ status: 'granted' });
+    const service = loadFreshService();
+
+    await service.requestPermissions();
+    await expect(service.requestPermissions()).resolves.toBe(true);
+
+    expect(mockRequestPermissionsAsync).toHaveBeenCalledTimes(1);
+  });
+});

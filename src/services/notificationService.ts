@@ -63,7 +63,6 @@ const REMINDER_OPT_IN_KEY = '@yazgi/reminders_opt_in/v1';
 const REMINDER_OFFER_SHOWN_KEY = '@yazgi/reminder_offer_shown/v1';
 
 let permissionsGranted = false;
-let permissionsChecked = false;
 
 function installForegroundHandler(mod: NotificationsModule): void {
   // Set a handler so foreground notifications show as alerts
@@ -81,12 +80,13 @@ function installForegroundHandler(mod: NotificationsModule): void {
 }
 
 /**
- * Request notification permissions on first call.
- * Safe to call multiple times — subsequent calls are no-ops.
+ * Oyuncu "Hatırlat"a bastığında bildirim izni ister. İzin verildiyse sonraki çağrılar sormadan
+ * true döner. Ret saklanmaz: Bebeklik teklifinde reddeden oyuncu aynı oturumda oyun sonundaki
+ * düğmeye basarsa işletim sistemine yeniden sorulur (sistem artık göstermiyorsa hemen "denied" döner).
  */
 export async function requestPermissions(): Promise<boolean> {
   if (isWeb) return false;
-  if (permissionsChecked) return permissionsGranted;
+  if (permissionsGranted) return true;
 
   const mod = getModule();
   if (!mod) return false;
@@ -96,7 +96,6 @@ export async function requestPermissions(): Promise<boolean> {
   try {
     const { status } = await mod.requestPermissionsAsync();
     permissionsGranted = status === 'granted';
-    permissionsChecked = true;
     devLog.log(`[NOTIFICATIONS] Permission: ${status}`);
     if (permissionsGranted) {
       try {
@@ -108,7 +107,6 @@ export async function requestPermissions(): Promise<boolean> {
     return permissionsGranted;
   } catch (error) {
     devLog.warn('[NOTIFICATIONS] requestPermissions failed', error);
-    permissionsChecked = true;
     return false;
   }
 }
@@ -141,7 +139,6 @@ export async function restoreNotificationPermission(): Promise<boolean> {
 
     installForegroundHandler(mod);
     permissionsGranted = true;
-    permissionsChecked = true;
     await scheduleReengagement(24);
     return true;
   } catch (error) {
