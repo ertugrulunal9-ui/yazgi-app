@@ -25,6 +25,7 @@ import {
 } from '../types';
 import { getAcademicState, getCharacterState, getEventState, getProgressState, getSocialState } from '../utils/gameStateAdapter';
 import { getLegacyBonusBreakdown } from '../utils/metaProgression';
+import { getPillarValues } from '../utils/pillarStats';
 import { getMomentumVisibilityFromPersonalityState } from '../utils/momentumVisibility';
 import { getStressRecoveryRate } from '../utils/personalitySystem';
 
@@ -63,10 +64,7 @@ export const usePillarStats = (overrideStats?: Stats) => {
   }
 
   return useMemo(() => ({
-    beden: Math.round((stats.health + stats.energy) / 2),
-    zihin: Math.round((stats.intelligence + stats.discipline) / 2),
-    ruh: Math.round((stats.charisma + stats.familyRelation) / 2),
-    servet: stats.money,
+    ...getPillarValues(stats),
     raw: stats,
   }), [stats]);
 };

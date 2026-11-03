@@ -11,6 +11,7 @@ import type { Stats } from '../types';
 import { tRuntime } from '../i18n/strings';
 import { isBelowCapRatio } from '../utils/gameUtils';
 import { isRiskWarningAge } from '../utils/riskDisplay';
+import { getPillarValues } from '../utils/pillarStats';
 
 interface DaySummaryModalProps {
   visible: boolean;
@@ -67,6 +68,8 @@ export const DaySummaryModal: React.FC<DaySummaryModalProps> = ({
   const healthIsLow = isRiskWarningAge(age)
     ? stats.health < 50
     : isBelowCapRatio(stats.health, age, 'health', 0.3);
+  // Başlıktaki Beden/Zihin ile aynı ad ve değer; renk yine sağlığa göre uyarır
+  const pillars = useMemo(() => getPillarValues(stats), [stats]);
 
   const summaryItems = useMemo(() => {
     const items: { icon: string; label: string; value: string; color: string }[] = [
@@ -84,14 +87,14 @@ export const DaySummaryModal: React.FC<DaySummaryModalProps> = ({
       },
       {
         icon: 'heart-pulse',
-        label: tRuntime('app.summaryHealth'),
-        value: `%${Math.round(stats.health)}`,
+        label: tRuntime('labels.pillars.body'),
+        value: `%${pillars.beden}`,
         color: healthIsLow ? '#ef4444' : '#22c55e',
       },
       {
         icon: 'brain',
-        label: tRuntime('app.summaryIntelligence'),
-        value: `%${Math.round(stats.intelligence)}`,
+        label: tRuntime('labels.pillars.mind'),
+        value: `%${pillars.zihin}`,
         color: '#3b82f6',
       },
     ];
@@ -111,8 +114,8 @@ export const DaySummaryModal: React.FC<DaySummaryModalProps> = ({
     energyLabel,
     energyColor,
     healthIsLow,
-    stats.health,
-    stats.intelligence,
+    pillars.beden,
+    pillars.zihin,
     varietyBonus,
   ]);
 
