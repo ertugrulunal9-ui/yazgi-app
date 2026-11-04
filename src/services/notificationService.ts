@@ -12,6 +12,7 @@ type ExpireNotifications = {
   getPermissionsAsync?: () => Promise<{ status: string }>;
   requestPermissionsAsync: () => Promise<{ status: string }>;
   scheduleNotificationAsync: (request: {
+    identifier?: string;
     content: { title: string; body: string; data?: Record<string, unknown> };
     // expo-notifications 0.32: `type` olmayan tetikleyici TypeError fırlatır.
     trigger: { type: 'timeInterval'; seconds: number; repeats?: boolean } | null;
@@ -198,9 +199,11 @@ async function scheduleOne(
   if (!mod || !permissionsGranted) return;
 
   try {
-    // Cancel existing notification with same logical ID via data tag
-    // expo-notifications doesn't support named IDs natively — we cancel all and re-schedule
+    // Sabit kimlik: aynı kimlikle kurulan bildirim eskisinin yerine geçer (kayıt ve alarm kimliğe bağlı).
+    // useEvents iki bileşende çalıştığı için her tur iki eşzamanlı kurulum geliyor; kimliksizken
+    // "önce cancelAll, sonra kur" sırası birbirine girip aynı hatırlatmadan iki tane bırakıyordu.
     await mod.scheduleNotificationAsync({
+      identifier: id,
       content: { title, body, data: { notifId: id, ...data } },
       trigger: { type: 'timeInterval', seconds: Math.max(1, Math.round(delaySeconds)) },
     });

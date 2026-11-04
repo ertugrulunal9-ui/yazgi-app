@@ -297,3 +297,50 @@ describe('notificationService reminder text', () => {
     expect(scheduledContent(2).body).toBe('Your life is waiting for you... 🌟');
   });
 });
+
+describe('notificationService duplicate reminders', () => {
+  // Kütüphane gibi davranan depo: istekleri kimliğe göre saklar (aynı kimlik eskisinin yerine geçer),
+  // cancelAll hepsini siler. Kimlik verilmezse her istek yeni bir kimlik alır.
+  const scheduledStore = new Map<string, unknown>();
+  let generatedId = 0;
+
+  beforeEach(() => {
+    scheduledStore.clear();
+    generatedId = 0;
+    mockStorage.clear();
+    mockRequestPermissionsAsync.mockReset().mockResolvedValue({ status: 'granted' });
+    mockCancelAllScheduledNotificationsAsync.mockReset().mockImplementation(async () => {
+      scheduledStore.clear();
+    });
+    mockScheduleNotificationAsync.mockReset().mockImplementation(async (request: { identifier?: string }) => {
+      const id = request.identifier ?? `generated-${generatedId++}`;
+      scheduledStore.set(id, request);
+      return id;
+    });
+  });
+
+  it('keeps a single re-engagement reminder when two schedules race in the same turn', async () => {
+    // useEvents iki bileşende çalışıyor: her tur iki eşzamanlı kurulum geliyordu (MEmu'da iki alarm, 2 ms arayla)
+    const service = loadFreshService();
+    await service.requestPermissions();
+
+    await Promise.all([
+      service.scheduleReengagement(24, { name: 'Buse', age: 4 }),
+      service.scheduleReengagement(24, { name: 'Buse', age: 4 }),
+    ]);
+
+    expect([...scheduledStore.keys()]).toEqual(['yazgi_reengagement']);
+  });
+
+  it('replaces the NPC reminder instead of stacking it', async () => {
+    const service = loadFreshService();
+    await service.requestPermissions();
+
+    await Promise.all([
+      service.scheduleNPCReminder('Ayşe', 48),
+      service.scheduleNPCReminder('Ayşe', 48),
+    ]);
+
+    expect([...scheduledStore.keys()]).toEqual(['yazgi_npc_reminder']);
+  });
+});
