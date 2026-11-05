@@ -148,8 +148,6 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
   const [achievementsOpen, setAchievementsOpen] = useState(false);
   // Yıl sonunda tek pencere: bölüm değişimi varsa bölüm penceresi (yaş özeti içinde), yoksa yaş özeti
   const [yearEndWindow, setYearEndWindow] = useState<YearEndWindow | null>(null);
-  const shownMilestoneAgesRef = useRef<Set<number>>(new Set());
-  const shownChaptersRef = useRef<Set<number>>(new Set());
   const [sessionRecapVisible, setSessionRecapVisible] = useState(false);
   const sessionRecapShownRef = useRef(false);
   // shopOpen state removed — IAP disabled
@@ -297,28 +295,35 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     }
   }, [gameState.totalTurns, enqueueToast, t]);
 
+  // "Gösterildi" bilgisi kayıtta: bellekte tutulunca uygulama her açılışta son bölümü/yaş özetini yeniden
+  // gösteriyordu; kayıtla birlikte yeni hayatta da sıfırlanır
+  const yearEndWindowsShown = gameState.yearEndWindowsShown;
   useEffect(() => {
     const next = resolveYearEndWindow({
       milestones: gameState.ageMilestoneSummaries,
       chapters: gameState.chapterSummaries,
       milestoneEnabled: isFeatureEnabled('MILESTONE_SUMMARY'),
       chapterEnabled: isFeatureEnabled('CHAPTER_SYSTEM'),
-      shownMilestoneAges: shownMilestoneAgesRef.current,
-      shownChapterIds: shownChaptersRef.current,
+      shownMilestoneAges: new Set(yearEndWindowsShown?.milestoneAges ?? []),
+      shownChapterIds: new Set(yearEndWindowsShown?.chapterIds ?? []),
     });
     if (next) setYearEndWindow(next);
-  }, [gameState.ageMilestoneSummaries, gameState.chapterSummaries]);
+  }, [gameState.ageMilestoneSummaries, gameState.chapterSummaries, yearEndWindowsShown]);
 
   // Tek pencere iki özeti de gösterir; kapanınca ikisi de "gösterildi" olur
   const handleYearEndClose = useCallback(() => {
-    if (yearEndWindow?.milestone) {
-      shownMilestoneAgesRef.current.add(yearEndWindow.milestone.age);
-    }
-    if (yearEndWindow?.chapter) {
-      shownChaptersRef.current.add(yearEndWindow.chapter.chapterId);
+    if (yearEndWindow) {
+      const milestoneAges = yearEndWindowsShown?.milestoneAges ?? [];
+      const chapterIds = yearEndWindowsShown?.chapterIds ?? [];
+      updateGameState({
+        yearEndWindowsShown: {
+          milestoneAges: yearEndWindow.milestone ? [...milestoneAges, yearEndWindow.milestone.age] : milestoneAges,
+          chapterIds: yearEndWindow.chapter ? [...chapterIds, yearEndWindow.chapter.chapterId] : chapterIds,
+        },
+      });
     }
     setYearEndWindow(null);
-  }, [yearEndWindow]);
+  }, [updateGameState, yearEndWindow, yearEndWindowsShown]);
 
   // Session Recap — Faz 1B: mount'ta son oturum 5+ dakika önceyse göster
   useEffect(() => {

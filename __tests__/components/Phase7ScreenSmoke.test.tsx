@@ -455,7 +455,8 @@ describe('Phase 7 screen smoke', () => {
 
     const renderYearEnd = (
       milestones: AgeMilestoneSummary[],
-      chapterIds: number[]
+      chapterIds: number[],
+      yearEndWindowsShown?: GameState['yearEndWindowsShown']
     ) => {
       const current = mockedUseGame();
       mockedUseGame.mockReturnValue({
@@ -463,6 +464,7 @@ describe('Phase 7 screen smoke', () => {
         gameState: {
           ...current.gameState,
           age: 4,
+          yearEndWindowsShown,
           ageMilestoneSummaries: milestones,
           chapterSummaries: chapterIds.map(id => buildChapterSummary(
             CHAPTERS.find(chapter => chapter.id === id)!,
@@ -513,6 +515,25 @@ describe('Phase 7 screen smoke', () => {
 
     it('opens nothing after a quiet year without a chapter change', () => {
       const { visibleModals } = renderYearEnd([yearSummary(4, false)], []);
+
+      expect(visibleModals()).toHaveLength(0);
+    });
+
+    // "Gösterildi" bilgisi bellekteydi: uygulama her açılışta son bölüm penceresini yeniden gösteriyordu
+    it('saves the closed window to the game state so it does not reopen', () => {
+      const updateGameState = jest.fn();
+      mockedUseGameActions.mockReturnValue({ updateGameState, updateStats: jest.fn(), setStats: jest.fn() } as any);
+      const { getByText } = renderYearEnd([yearSummary(3)], [1]);
+
+      fireEvent.press(getByText('Continue'));
+
+      expect(updateGameState).toHaveBeenCalledWith({
+        yearEndWindowsShown: { milestoneAges: [3], chapterIds: [1] },
+      });
+    });
+
+    it('does not reopen an already closed window on a cold start', () => {
+      const { visibleModals } = renderYearEnd([yearSummary(3)], [1], { milestoneAges: [3], chapterIds: [1] });
 
       expect(visibleModals()).toHaveLength(0);
     });
