@@ -51,6 +51,8 @@ interface FeedbackOverlayProps {
   crisisRecoveryLoading: boolean;
   undoLoading: boolean;
   canUndo: boolean;
+  /** false: geri alma reklamsız (premium); "Reklam izle" metni ve onay penceresi gösterilmez. Varsayılan true. */
+  undoRequiresAd?: boolean;
   onUndo: () => void | Promise<void>;
   onContinue: () => void;
   onRecoverWithAd: () => void | Promise<void>;
@@ -76,6 +78,7 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
   crisisRecoveryLoading,
   undoLoading,
   canUndo,
+  undoRequiresAd = true,
   onUndo,
   onContinue,
   onRecoverWithAd,
@@ -259,6 +262,17 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
       ]
     );
   }, [onUndo, t]);
+
+  // Premium'da geri alma reklamsız: onay penceresi ve "Reklam izle" metni yalnızca reklamlı yolda.
+  const handleUndoPress = useCallback(() => {
+    if (undoRequiresAd) {
+      confirmUndo();
+      return;
+    }
+    void onUndo();
+  }, [confirmUndo, onUndo, undoRequiresAd]);
+  const undoLabel = undoRequiresAd ? t('ui.feedbackOverlay.undoChoice') : t('ui.feedbackOverlay.undoChoiceFree');
+  const undoLoadingLabel = undoRequiresAd ? t('ui.feedbackOverlay.undoLoading') : t('ui.feedbackOverlay.undoLoadingFree');
 
   return (
     <View style={overlayStyle}>
@@ -487,7 +501,7 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
 
         {isFeatureEnabled('UNDO_MECHANIC') && canUndo && (
           <AnimatedButton
-            onPress={confirmUndo}
+            onPress={handleUndoPress}
             disabled={undoLoading || !adButtonsReady}
             animationType="pressScale"
             style={{
@@ -497,12 +511,10 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
               opacity: undoLoading || !adButtonsReady ? 0.6 : 1,
             }}
             accessibilityRole="button"
-            accessibilityLabel={t('ui.feedbackOverlay.undoChoice')}
+            accessibilityLabel={undoLabel}
           >
             <Text style={{ ...buttonTextStyle, color: '#f59e0b' }}>
-              {undoLoading
-                ? t('ui.feedbackOverlay.undoLoading')
-                : t('ui.feedbackOverlay.undoChoice')}
+              {undoLoading ? undoLoadingLabel : undoLabel}
             </Text>
           </AnimatedButton>
         )}

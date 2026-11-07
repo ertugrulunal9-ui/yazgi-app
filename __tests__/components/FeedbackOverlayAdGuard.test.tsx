@@ -119,6 +119,24 @@ describe('FeedbackOverlay reklam düğmesi korumaları', () => {
     expect(props.onRecoverWithAd).not.toHaveBeenCalled();
   });
 
+  it('premium (reklamsız geri alma): reklam metni ve onay yok, doğrudan geri alır', () => {
+    const tr = renderOverlay({ undoRequiresAd: false });
+    expect(tr.queryByText('Reklam izle: Seçimi geri al')).toBeNull();
+    fireEvent.press(tr.getByText('Seçimi Geri Al'));
+    expect(alertSpy).not.toHaveBeenCalled();
+    expect(tr.props.onUndo).toHaveBeenCalledTimes(1);
+    tr.unmount();
+    const en = renderOverlay({ undoRequiresAd: false }, 'en');
+    expect(en.getByText('Undo Choice')).toBeTruthy();
+  });
+
+  it('premium: metin bitmeden yine basılamaz', () => {
+    mockTextDone = false;
+    const { getByLabelText, props } = renderOverlay({ undoRequiresAd: false });
+    expect(getByLabelText('Seçimi Geri Al')).toBeDisabled();
+    expect(props.onUndo).not.toHaveBeenCalled();
+  });
+
   it('kilit açıkken kriz düğmesi çalışır', () => {
     const { getByText, getByLabelText, props } = renderOverlay();
     expect(getByLabelText('Kriz toparlanma reklamını izle')).toBeEnabled();
