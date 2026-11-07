@@ -6,7 +6,10 @@ type RemoteConfigValue = {
 
 type RemoteConfigInstance = {
   setDefaults: (defaults: Record<string, string | number | boolean>) => Promise<void>;
-  setConfigSettings: (settings: { minimumFetchIntervalMillis: number }) => Promise<void>;
+  setConfigSettings: (settings: {
+    minimumFetchIntervalMillis: number;
+    fetchTimeMillis?: number;
+  }) => Promise<void>;
   fetchAndActivate: () => Promise<boolean>;
   getValue: (key: string) => RemoteConfigValue;
 };
@@ -42,9 +45,15 @@ const FEATURE_FLAG_OVERRIDES_KEY = '@yazgi/feature_flags/dev_overrides/v1';
 const NORMAL_CACHE_MS = 43_200_000; // 12h
 const PROBE_CACHE_MS = 300_000; // 5m
 const MIN_REFRESH_INTERVAL_MS = 30_000;
+// App bootstrap awaits this fetch before ad consent and AdMob init; the SDK default is 60s.
+const FETCH_TIMEOUT_MS = 5_000;
 
 const isDevRuntime = typeof __DEV__ !== 'undefined' && __DEV__;
-const isWebRuntime = typeof window !== 'undefined' && typeof navigator !== 'undefined';
+// React Native also defines `window` and `navigator` (navigator.product === 'ReactNative').
+// Without the product check Android was treated as web and Remote Config never loaded.
+const isWebRuntime = typeof window !== 'undefined'
+  && typeof navigator !== 'undefined'
+  && navigator.product !== 'ReactNative';
 
 let initialized = false;
 let lastRefreshAt = 0;
@@ -188,8 +197,10 @@ export const refreshFeatureFlags = async (
       });
 
       // Phase 1: short-cache probe for incident mode freshness.
+      // The SDK keeps fetchTimeMillis for the later setConfigSettings calls.
       await remoteConfig.setConfigSettings({
         minimumFetchIntervalMillis: PROBE_CACHE_MS,
+        fetchTimeMillis: FETCH_TIMEOUT_MS,
       });
       await remoteConfig.fetchAndActivate();
 
