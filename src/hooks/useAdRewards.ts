@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Stats } from '../types';
 import { logRewardedAdRequested, logRewardedAdResult } from '../utils/analyticsEvents';
+import { getAdErrorMessage } from '../utils/adErrorMessage';
 import { getRemainingRewardedAds, showContextualRewardedAd } from '../services/monetization';
 
 type ToastType = 'success' | 'error' | 'info' | 'warning';
@@ -53,7 +54,7 @@ export const useAdRewards = ({
     const remainingAfter = getRemainingRewardedAds();
 
     if (!adResult.success) {
-      enqueueToast(adResult.error || t('messages.adNotShown'), 'error');
+      enqueueToast(getAdErrorMessage(adResult.error), 'error');
       void logRewardedAdResult({
         placement: 'energy_depleted',
         rewardType: 'energy',
@@ -96,7 +97,7 @@ export const useAdRewards = ({
     const remainingAfter = getRemainingRewardedAds();
 
     if (!adResult.success) {
-      enqueueToast(adResult.error || t('messages.adNotShown'), 'error');
+      enqueueToast(getAdErrorMessage(adResult.error), 'error');
       void logRewardedAdResult({
         placement: 'exam_prep',
         rewardType: 'intelligence',
@@ -148,7 +149,7 @@ export const useAdRewards = ({
     const remainingAfter = getRemainingRewardedAds();
 
     if (!adResult.success) {
-      enqueueToast(adResult.error || t('messages.adNotShown'), 'error');
+      enqueueToast(getAdErrorMessage(adResult.error), 'error');
       void logRewardedAdResult({
         placement: 'undo_choice',
         rewardType: 'utility',

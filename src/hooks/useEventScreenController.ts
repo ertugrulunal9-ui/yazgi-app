@@ -9,6 +9,7 @@ import { getEventChoiceSet } from '../utils/gameStateAdapter';
 import { getChoicesToRender, getLockedChoices } from '../utils/eventChoiceFilter';
 import { getEventById } from './useEvents/shared';
 import { tRuntime } from '../i18n/strings';
+import { getAdErrorMessage } from '../utils/adErrorMessage';
 import {
   getRemainingRewardedAds,
   isPremium,
@@ -262,7 +263,10 @@ export const useEventScreenController = () => {
   const canUndo = useMemo(() => (
     isFeatureEnabled('UNDO_MECHANIC') &&
     gameState.phase === 'RESULT' &&
-    gameState.undoSnapshot != null
+    gameState.undoSnapshot != null &&
+    // Günlük ödüllü reklam hakkı bittiyse (premium'da sınır yok) düğme hiç gösterilmez;
+    // oyuncu basıp hata görmesin.
+    (isPremium() || getRemainingRewardedAds() > 0)
   ), [gameState.phase, gameState.undoSnapshot]);
 
   const handleUndo = useCallback(async () => {
@@ -279,7 +283,7 @@ export const useEventScreenController = () => {
     const reportUndoSkipped = (remainingAfter: number, errorMessage: string) => {
       if (isMountedRef.current) {
         showFloatingText(
-          'Sonuç ekranından çıktığın için seçim geri alınmadı.',
+          tRuntime('messages.undoLeftResult'),
           SCREEN_WIDTH * 0.2,
           118,
           '#fda4af',
@@ -303,7 +307,7 @@ export const useEventScreenController = () => {
         const undone = undoLastChoice();
         if (!undone) {
           showFloatingText(
-            'Geri alma şu an kullanılamıyor.',
+            tRuntime('messages.undoUnavailable'),
             SCREEN_WIDTH * 0.2,
             118,
             '#fda4af',
@@ -331,7 +335,7 @@ export const useEventScreenController = () => {
 
       if (!adResult.success) {
         showFloatingText(
-          adResult.error || 'Reklam gösterilemedi.',
+          getAdErrorMessage(adResult.error),
           SCREEN_WIDTH * 0.2,
           118,
           '#fda4af',
@@ -355,7 +359,7 @@ export const useEventScreenController = () => {
       const undone = undoLastChoice();
       if (!undone) {
         showFloatingText(
-          'Geri alma verisi bulunamadı.',
+          tRuntime('messages.undoDataMissing'),
           SCREEN_WIDTH * 0.2,
           118,
           '#fda4af',
@@ -381,7 +385,7 @@ export const useEventScreenController = () => {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown undo error';
       showFloatingText(
-        'Geri alma sırasında hata oluştu.',
+        tRuntime('messages.undoFailed'),
         SCREEN_WIDTH * 0.2,
         118,
         '#fda4af',

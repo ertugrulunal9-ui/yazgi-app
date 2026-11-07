@@ -29,6 +29,13 @@ const MIN_READ_TIME_MS: Record<EventRarity | 'BREAKDOWN', number> = {
   BREAKDOWN: 3000,
 };
 
+/**
+ * 1-2 seçenekli normal olaylarda (düğme modu) kısa kilit: "Devam"/"Günü Bitir"e çift dokunan
+ * oyuncunun ikinci dokunuşu yeni olaydaki bir seçeneğe düşmesin. Çift dokunuş aralığı ~300 ms;
+ * 500 ms okumayı fark edilir şekilde geciktirmez.
+ */
+const BUTTON_MODE_GUARD_MS = 500;
+
 interface SwipeChoiceDeckProps {
   choices: (Choice | ((ctx: EventContext) => Choice))[];
   resolveChoice: (c: Choice | ((ctx: EventContext) => Choice)) => Choice;
@@ -65,6 +72,7 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
 
   // Force button fallback for RARE/BREAKDOWN events
   const forceButtonFallback = isBreakdownEvent || eventRarity === 'RARE';
+  const choiceCount = choices.length;
 
   // Swipe lock: disabled until MIN_READ_TIME has passed since event display
   const [swipeLocked, setSwipeLocked] = useState(true);
@@ -74,7 +82,9 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
     const rarityKey: EventRarity | 'BREAKDOWN' = isBreakdownEvent
       ? 'BREAKDOWN'
       : (eventRarity ?? 'COMMON');
-    const delay = MIN_READ_TIME_MS[rarityKey];
+    const delay = forceButtonFallback || choiceCount > 2
+      ? MIN_READ_TIME_MS[rarityKey]
+      : BUTTON_MODE_GUARD_MS;
     setLockRemainingMs(delay);
     const startTime = Date.now();
     const interval = setInterval(() => {
@@ -87,7 +97,7 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
       }
     }, 100);
     return () => clearInterval(interval);
-  }, [eventId, isBreakdownEvent, eventRarity]);
+  }, [eventId, isBreakdownEvent, eventRarity, forceButtonFallback, choiceCount]);
   const lockCountdownText = swipeLocked ? `${Math.ceil(lockRemainingMs / 1000)}s` : '';
   const swipeChoiceHint = tRuntime('events.swipe.choiceHint', undefined, 'Bu seçim karakterini etkiler');
   const selectHint = tRuntime('events.swipe.selectHint', undefined, 'Bu seçimi onayla');
@@ -157,13 +167,18 @@ export const SwipeChoiceDeck: React.FC<SwipeChoiceDeckProps> = React.memo(({
           return (
             <AnimatedButton
               key={index}
-              onPress={() => onChoiceSelected(choice, choiceIndex)}
+              onPress={() => {
+                if (swipeLocked) return;
+                onChoiceSelected(choice, choiceIndex);
+              }}
+              disabled={swipeLocked}
               animationType={isBreakdownEvent ? 'shake' : 'pressScale'}
               style={{
                 ...buttonFallbackStyles.button,
                 backgroundColor: theme.surfaceBase,
                 padding: metrics.pad,
                 borderColor: theme.border,
+                opacity: swipeLocked ? 0.55 : 1,
               }}
               accessibilityRole="button"
               accessibilityLabel={resolved.text}

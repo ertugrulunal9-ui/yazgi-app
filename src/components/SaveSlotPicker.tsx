@@ -74,7 +74,7 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
     }
   };
 
-  const handleSave = async (slotId: string) => {
+  const performSave = async (slotId: string) => {
     setIsLoading(true);
     try {
       const success = await SaveManager.saveToSlot(
@@ -91,6 +91,30 @@ export const SaveSlotPicker: React.FC<SaveSlotPickerProps> = ({
     } finally {
       setIsLoading(false);
     }
+  };
+
+  /** Dolu yuvanın üzerine yazmadan önce onay ister (Sil ile aynı Alert yöntemi); boş yuvada doğrudan kaydeder. */
+  const handleSave = (slotId: string) => {
+    const existing = slots.find(slot => slot.slotId === slotId);
+    if (!existing || existing.status === 'empty') {
+      void performSave(slotId);
+      return;
+    }
+    Alert.alert(
+      tRuntime('save.overwriteTitle'),
+      tRuntime('save.overwriteConfirm', {
+        name: existing.characterName || '?',
+        age: existing.age,
+      }),
+      [
+        { text: tRuntime('save.cancelBtn'), style: 'cancel' },
+        {
+          text: tRuntime('save.overwriteBtn'),
+          style: 'destructive',
+          onPress: () => { void performSave(slotId); },
+        },
+      ]
+    );
   };
 
   const handleLoad = async (slotId: string) => {

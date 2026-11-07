@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render } from '@testing-library/react-native';
+import { act, fireEvent, render } from '@testing-library/react-native';
 import { SwipeChoiceDeck } from '../../src/components/SwipeChoiceDeck';
 import { setRuntimeLocale } from '../../src/i18n/strings';
 import type { Choice } from '../../src/types';
@@ -59,19 +59,29 @@ const risky: Choice = {
   conditionalOutcomes: [{ condition: () => true, weight: 1, statChanges: { health: -3 }, feedback: '' }],
 } as unknown as Choice;
 
-const renderDeck = (onChoiceSelected = jest.fn()) => render(
+const renderDeck = (
+  onChoiceSelected = jest.fn(),
+  extra: { isBreakdownEvent?: boolean; eventRarity?: 'RARE' | 'COMMON' } = {},
+) => render(
   <SwipeChoiceDeck
     choices={[safe, risky]}
     resolveChoice={choice => choice as Choice}
     onChoiceSelected={onChoiceSelected}
-    isBreakdownEvent={false}
+    isBreakdownEvent={extra.isBreakdownEvent ?? false}
     originalChoices={[safe, risky]}
     eventId="test_event"
+    eventRarity={extra.eventRarity}
   />,
 );
 
+const advance = (ms: number) => act(() => { jest.advanceTimersByTime(ms); });
+
 describe('SwipeChoiceDeck button cards', () => {
-  beforeEach(() => setRuntimeLocale('tr'));
+  beforeEach(() => {
+    setRuntimeLocale('tr');
+    jest.useFakeTimers();
+  });
+  afterEach(() => jest.useRealTimers());
 
   it('labels each option with a letter, its type and the stats it touches', () => {
     const { getByText, UNSAFE_root } = renderDeck();
@@ -90,9 +100,52 @@ describe('SwipeChoiceDeck button cards', () => {
   it('still selects the tapped option with its original index', () => {
     const onChoiceSelected = jest.fn();
     const { getByLabelText } = renderDeck(onChoiceSelected);
+    advance(600);
 
     fireEvent.press(getByLabelText('Merdivenleri tek başına çık'));
 
     expect(onChoiceSelected).toHaveBeenCalledWith(risky, 1);
+  });
+
+  it('ignores a tap that lands right after the event appears (double tap on Devam)', () => {
+    const onChoiceSelected = jest.fn();
+    const { getByLabelText } = renderDeck(onChoiceSelected);
+
+    fireEvent.press(getByLabelText('Annene sarıl'));
+    expect(onChoiceSelected).not.toHaveBeenCalled();
+
+    advance(450);
+    fireEvent.press(getByLabelText('Annene sarıl'));
+    expect(onChoiceSelected).not.toHaveBeenCalled();
+
+    advance(150);
+    fireEvent.press(getByLabelText('Annene sarıl'));
+    expect(onChoiceSelected).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps RARE events locked for their own 4 s read time', () => {
+    const onChoiceSelected = jest.fn();
+    const { getByLabelText } = renderDeck(onChoiceSelected, { eventRarity: 'RARE' });
+
+    advance(3800);
+    fireEvent.press(getByLabelText('Annene sarıl'));
+    expect(onChoiceSelected).not.toHaveBeenCalled();
+
+    advance(300);
+    fireEvent.press(getByLabelText('Annene sarıl'));
+    expect(onChoiceSelected).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps BREAKDOWN events locked for their own 3 s read time', () => {
+    const onChoiceSelected = jest.fn();
+    const { getByLabelText } = renderDeck(onChoiceSelected, { isBreakdownEvent: true });
+
+    advance(2800);
+    fireEvent.press(getByLabelText('Annene sarıl'));
+    expect(onChoiceSelected).not.toHaveBeenCalled();
+
+    advance(300);
+    fireEvent.press(getByLabelText('Annene sarıl'));
+    expect(onChoiceSelected).toHaveBeenCalledTimes(1);
   });
 });
