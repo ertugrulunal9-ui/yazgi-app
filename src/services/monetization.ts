@@ -2,7 +2,7 @@
  * Monetization Service - Pure Ad-Only
  * Yazgi - AdMob rewarded + interstitial ads
  */
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import SaveManager from '../save/SaveManager';
 import { isPremium as checkPremiumSubscription } from './subscriptionManager';
 import { devLog } from '../utils/devLogger';
@@ -48,6 +48,37 @@ export interface ContextualRewardedAdResult {
   amount: number;
   error?: string;
 }
+
+export interface RewardedAdShowOptions {
+  /**
+   * Reklam yüklendiğinde, gösterilmeden hemen önce sorulur. false dönerse reklam açılmaz,
+   * sonuç `REWARDED_AD_CANCELLED_ERROR` ile başarısız döner ve günlük hak düşmez
+   * (ör. oyuncu reklam yüklenirken sonuç ekranından çıktıysa).
+   */
+  shouldShow?: () => boolean;
+}
+
+export const REWARDED_AD_CANCELLED_ERROR = 'cancelled';
+export const REWARDED_AD_LOAD_TIMEOUT_ERROR = 'Rewarded ad load timed out';
+/**
+ * Ödüllü reklam isteğinde LOADED ya da ERROR bu sürede gelmezse istek bırakılır; sonradan gelen
+ * LOADED reklam açmaz. Normal bir istek birkaç saniyede biter; 15 sn yavaş mobil bağlantıya pay
+ * bırakır ama oyuncuyu "yükleniyor"da bekletmez ve bayat bir reklamın geç açılmasını önler.
+ */
+export const REWARDED_AD_LOAD_TIMEOUT_MS = 15_000;
+
+const canShowRewardedAd = (shouldShow?: () => boolean): boolean => {
+  // Uygulama arka plandayken (Ana ekran / geri tuşu) yüklenen reklam açılmaz: uygulamayı öne çekip
+  // beklenmedik tam ekran reklam göstermesin. Yalnızca gösterim öncesinde bakılır; reklam açıkken
+  // uygulamanın arka plana geçmesi ödülü etkilemez.
+  if (AppState.currentState != null && AppState.currentState !== 'active') return false;
+  if (!shouldShow) return true;
+  try {
+    return shouldShow() === true;
+  } catch {
+    return false;
+  }
+};
 
 export type InterstitialBlockReason =
   | 'shown'
@@ -362,7 +393,7 @@ class MonetizationService {
     return checkPremiumSubscription();
   }
 
-  async showRewardedAd(rewardType: RewardType): Promise<RewardedAdResult> {
+  async showRewardedAd(rewardType: RewardType, options?: RewardedAdShowOptions): Promise<RewardedAdResult> {
     if (!this.isInitialized) await this.initialize();
 
     if (this.isPremium()) {
@@ -388,7 +419,7 @@ class MonetizationService {
     const fallbackAmount = this.getFallbackRewardAmount(rewardType);
 
     if (this.adProvider === 'admob' && this.adMobModule) {
-      const result = await this.showRewardedAdWithAdMob(rewardType, fallbackAmount);
+      const result = await this.showRewardedAdWithAdMob(rewardType, fallbackAmount, options?.shouldShow);
       if (result.success) {
         this.rewardedAdCount += 1;
         this.saveAdCount();
@@ -404,6 +435,9 @@ class MonetizationService {
     }
 
     await new Promise(resolve => setTimeout(resolve, MOCK_REWARDED_AD_DELAY_MS));
+    if (!canShowRewardedAd(options?.shouldShow)) {
+      return { success: false, error: REWARDED_AD_CANCELLED_ERROR };
+    }
     this.rewardedAdCount += 1;
     this.saveAdCount();
     return {
@@ -415,7 +449,10 @@ class MonetizationService {
     };
   }
 
-  async showContextualRewardedAd(placement: RewardedPlacement): Promise<ContextualRewardedAdResult> {
+  async showContextualRewardedAd(
+    placement: RewardedPlacement,
+    options?: RewardedAdShowOptions
+  ): Promise<ContextualRewardedAdResult> {
     if (!this.isInitialized) await this.initialize();
 
     const placementMap: Record<RewardedPlacement, {
@@ -462,7 +499,7 @@ class MonetizationService {
       };
     }
 
-    const adResult = await this.showRewardedAd(plan.adDriverRewardType);
+    const adResult = await this.showRewardedAd(plan.adDriverRewardType, options);
     if (!adResult.success) {
       return {
         success: false,
@@ -620,7 +657,8 @@ class MonetizationService {
 
   private async showRewardedAdWithAdMob(
     rewardType: RewardType,
-    fallbackAmount: number
+    fallbackAmount: number,
+    shouldShow?: () => boolean
   ): Promise<RewardedAdResult> {
     const rewardedFactory = this.adMobModule?.RewardedAd;
     const adEventType = this.adMobModule?.AdEventType;
@@ -637,10 +675,18 @@ class MonetizationService {
       });
 
       let settled = false;
+      let loadTimer: ReturnType<typeof setTimeout> | null = null;
       const unsubs: Array<() => void> = [];
+      const clearLoadTimer = () => {
+        if (loadTimer) {
+          clearTimeout(loadTimer);
+          loadTimer = null;
+        }
+      };
       const settle = (result: RewardedAdResult) => {
         if (settled) return;
         settled = true;
+        clearLoadTimer();
         unsubs.forEach((unsub) => {
           try {
             unsub();
@@ -649,6 +695,12 @@ class MonetizationService {
           }
         });
         resolve(result);
+      };
+      const settleShowFailure = (error: unknown) => {
+        settle({
+          success: false,
+          error: (error as { message?: string } | null | undefined)?.message || 'Rewarded ad show failed',
+        });
       };
 
       unsubs.push(
@@ -663,13 +715,20 @@ class MonetizationService {
 
       unsubs.push(
         rewardedAd.addAdEventListener(rewardedEventType.LOADED, () => {
+          // Zaman aşımından ya da iptalden sonra gelen LOADED reklam açmaz.
+          if (settled) return;
+          clearLoadTimer();
+          if (!canShowRewardedAd(shouldShow)) {
+            settle({ success: false, error: REWARDED_AD_CANCELLED_ERROR });
+            return;
+          }
           try {
-            void rewardedAd.show();
-          } catch (error: any) {
-            settle({
-              success: false,
-              error: error?.message || 'Rewarded ad show failed',
-            });
+            const shown = rewardedAd.show();
+            if (shown && typeof shown.then === 'function') {
+              shown.then(undefined, settleShowFailure);
+            }
+          } catch (error) {
+            settleShowFailure(error);
           }
         })
       );
@@ -691,6 +750,11 @@ class MonetizationService {
           });
         })
       );
+
+      // Yalnızca yükleme beklenir; reklam açıldıktan sonra izleme süresi sınırlanmaz.
+      loadTimer = setTimeout(() => {
+        settle({ success: false, error: REWARDED_AD_LOAD_TIMEOUT_ERROR });
+      }, REWARDED_AD_LOAD_TIMEOUT_MS);
 
       rewardedAd.load();
     });
@@ -803,9 +867,10 @@ export const getProducts = () => monetizationService.getProducts();
 export const purchaseProduct = (id: string) => monetizationService.purchaseProduct(id);
 export const hasProduct = (id: string) => monetizationService.hasProduct(id);
 export const isPremium = () => monetizationService.isPremium();
-export const showRewardedAd = (type: RewardType) => monetizationService.showRewardedAd(type);
-export const showContextualRewardedAd = (placement: RewardedPlacement) =>
-  monetizationService.showContextualRewardedAd(placement);
+export const showRewardedAd = (type: RewardType, options?: RewardedAdShowOptions) =>
+  monetizationService.showRewardedAd(type, options);
+export const showContextualRewardedAd = (placement: RewardedPlacement, options?: RewardedAdShowOptions) =>
+  monetizationService.showContextualRewardedAd(placement, options);
 export const showInterstitialAd = () => monetizationService.showInterstitialAd();
 export const showInterstitialAdDetailed = () => monetizationService.showInterstitialAdDetailed();
 export const getRemainingRewardedAds = () => monetizationService.getRemainingRewardedAds();

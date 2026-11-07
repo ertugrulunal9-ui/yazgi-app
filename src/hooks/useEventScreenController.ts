@@ -9,7 +9,12 @@ import { getEventChoiceSet } from '../utils/gameStateAdapter';
 import { getChoicesToRender, getLockedChoices } from '../utils/eventChoiceFilter';
 import { getEventById } from './useEvents/shared';
 import { tRuntime } from '../i18n/strings';
-import { getRemainingRewardedAds, isPremium, showContextualRewardedAd } from '../services/monetization';
+import {
+  getRemainingRewardedAds,
+  isPremium,
+  REWARDED_AD_CANCELLED_ERROR,
+  showContextualRewardedAd,
+} from '../services/monetization';
 import { logRewardedAdRequested, logRewardedAdResult } from '../utils/analyticsEvents';
 import { isFeatureEnabled } from '../config/featureFlags';
 
@@ -39,6 +44,33 @@ export const useEventScreenController = () => {
   const [crisisRecoveryLoading, setCrisisRecoveryLoading] = useState(false);
   const [crisisRecoveryClaimed, setCrisisRecoveryClaimed] = useState(false);
   const [undoLoading, setUndoLoading] = useState(false);
+  // Reklam yüklendiğinde ve ödül geldiğinde "oyuncu hâlâ aynı sonuç ekranında mı?" sorusu için en güncel durum.
+  const latestResultScreenRef = useRef({
+    phase: gameState.phase,
+    undoSnapshot: gameState.undoSnapshot,
+    lastResult: gameState.lastResult,
+  });
+  latestResultScreenRef.current = {
+    phase: gameState.phase,
+    undoSnapshot: gameState.undoSnapshot,
+    lastResult: gameState.lastResult,
+  };
+  const isMountedRef = useRef(true);
+  // Yalnızca en son reklam isteği "yükleniyor" durumunu kapatır; eski, iptal olan istek yenisini açmasın.
+  const undoRequestIdRef = useRef(0);
+  const crisisRequestIdRef = useRef(0);
+  const isOnResultScreen = useCallback(() => (
+    isMountedRef.current &&
+    !continueHandledRef.current &&
+    latestResultScreenRef.current.phase === 'RESULT'
+  ), []);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (gameState.phase !== 'RESULT') return undefined;
@@ -143,6 +175,15 @@ export const useEventScreenController = () => {
   const handleCrisisRecoveryAd = useCallback(async () => {
     if (crisisRecoveryLoading || !hasCrisisRecoveryOption) return;
 
+    // Toparlanma bu sonucun kayıplarından hesaplanır: oyuncu sonuç ekranından çıktıysa
+    // (Devam, yeni sonuç, ekran kapandı) reklam açılmaz, açıldıysa stat eklenmez.
+    const expectedLastResult = gameState.lastResult;
+    const isStillOnSameResult = () => (
+      isOnResultScreen() &&
+      latestResultScreenRef.current.lastResult === expectedLastResult
+    );
+
+    const requestId = ++crisisRequestIdRef.current;
     setCrisisRecoveryLoading(true);
     const remainingBefore = getRemainingRewardedAds();
     void logRewardedAdRequested({
@@ -152,7 +193,7 @@ export const useEventScreenController = () => {
     });
 
     try {
-      const adResult = await showContextualRewardedAd('crisis_recovery');
+      const adResult = await showContextualRewardedAd('crisis_recovery', { shouldShow: isStillOnSameResult });
       const remainingAfter = getRemainingRewardedAds();
 
       if (!adResult.success) {
@@ -162,6 +203,17 @@ export const useEventScreenController = () => {
           success: false,
           remainingAfter,
           errorMessage: adResult.error,
+        });
+        return;
+      }
+
+      if (!isStillOnSameResult()) {
+        void logRewardedAdResult({
+          placement: 'crisis_recovery',
+          rewardType: 'utility',
+          success: false,
+          remainingAfter,
+          errorMessage: 'Crisis recovery skipped: result screen closed',
         });
         return;
       }
@@ -194,9 +246,18 @@ export const useEventScreenController = () => {
         remainingAfter,
       });
     } finally {
-      setCrisisRecoveryLoading(false);
+      if (crisisRequestIdRef.current === requestId) {
+        setCrisisRecoveryLoading(false);
+      }
     }
-  }, [applyCrisisRecovery, crisisRecoveryLoading, hasCrisisRecoveryOption, showFloatingText]);
+  }, [
+    applyCrisisRecovery,
+    crisisRecoveryLoading,
+    gameState.lastResult,
+    hasCrisisRecoveryOption,
+    isOnResultScreen,
+    showFloatingText,
+  ]);
 
   const canUndo = useMemo(() => (
     isFeatureEnabled('UNDO_MECHANIC') &&
@@ -207,6 +268,34 @@ export const useEventScreenController = () => {
   const handleUndo = useCallback(async () => {
     if (!canUndo || undoLoading) return;
 
+    // Reklam yüklenirken Devam kilitlenmez (yükleme takılırsa oyuncu sonuç ekranında kalmasın).
+    // Oyuncu bu sonuç ekranından çıktıysa reklam yüklenince açılmaz; açıldıktan sonra çıktıysa
+    // ödül geldiğinde geri alma atlanır.
+    const expectedSnapshot = gameState.undoSnapshot;
+    const isStillOnSameResult = () => (
+      isOnResultScreen() &&
+      latestResultScreenRef.current.undoSnapshot === expectedSnapshot
+    );
+    const reportUndoSkipped = (remainingAfter: number, errorMessage: string) => {
+      if (isMountedRef.current) {
+        showFloatingText(
+          'Sonuç ekranından çıktığın için seçim geri alınmadı.',
+          SCREEN_WIDTH * 0.2,
+          118,
+          '#fda4af',
+          { animationType: 'bounce', duration: 1800 }
+        );
+      }
+      void logRewardedAdResult({
+        placement: 'undo_choice',
+        rewardType: 'utility',
+        success: false,
+        remainingAfter,
+        errorMessage,
+      });
+    };
+
+    const requestId = ++undoRequestIdRef.current;
     setUndoLoading(true);
     try {
       // Premium users undo directly without ad
@@ -232,8 +321,13 @@ export const useEventScreenController = () => {
         remainingBefore,
       });
 
-      const adResult = await showContextualRewardedAd('undo_choice');
+      const adResult = await showContextualRewardedAd('undo_choice', { shouldShow: isStillOnSameResult });
       const remainingAfter = getRemainingRewardedAds();
+
+      if (!adResult.success && adResult.error === REWARDED_AD_CANCELLED_ERROR) {
+        reportUndoSkipped(remainingAfter, 'Undo ad cancelled: result screen closed');
+        return;
+      }
 
       if (!adResult.success) {
         showFloatingText(
@@ -250,6 +344,11 @@ export const useEventScreenController = () => {
           remainingAfter,
           errorMessage: adResult.error,
         });
+        return;
+      }
+
+      if (!isStillOnSameResult()) {
+        reportUndoSkipped(remainingAfter, 'Undo skipped: result screen closed');
         return;
       }
 
@@ -296,9 +395,11 @@ export const useEventScreenController = () => {
         errorMessage,
       });
     } finally {
-      setUndoLoading(false);
+      if (undoRequestIdRef.current === requestId) {
+        setUndoLoading(false);
+      }
     }
-  }, [canUndo, undoLastChoice, undoLoading, showFloatingText]);
+  }, [canUndo, gameState.undoSnapshot, isOnResultScreen, undoLastChoice, undoLoading, showFloatingText]);
 
   const isBreakdownEvent = gameState.phase === 'EVENT' && gameState.currentEvent?.personalityCategory === 'BREAKDOWN';
   const isDramaticEvent = gameState.phase === 'EVENT' && gameState.currentEvent != null && (

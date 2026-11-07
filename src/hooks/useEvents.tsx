@@ -158,8 +158,9 @@ export const useEvents = () => {
     } = {};
     const unlimitedUndo = isPremiumUser();
     if (isFeatureEnabled('UNDO_MECHANIC') && (unlimitedUndo || (gameState.undosUsedThisAge ?? 0) < 1)) {
+      // Tek seviye: önceki snapshot içeri kopyalanmaz (yoksa her seçimde zincir uzar, kayıt MB'larca şişer).
       Object.assign(undoSnapshotUpdate, {
-        undoSnapshot: { gameState: { ...gameState }, stats: { ...stats } },
+        undoSnapshot: { gameState: { ...gameState, undoSnapshot: null }, stats: { ...stats } },
       });
     }
 
@@ -234,6 +235,7 @@ export const useEvents = () => {
     return turnResult;
   }, [gameState, resolveChoice, resolveEventText, setStats, stats, updateGameState]);
 
+  // Geri Al yalnızca sonuç ekranında geçerli: Devam'dan sonra snapshot tutulmaz.
   const continueAfterResult = useCallback(() => {
     const shouldInjectRecoveryEvent = gameState.lastResult?.shouldForceRecovery === true;
     if (shouldInjectRecoveryEvent) {
@@ -242,6 +244,7 @@ export const useEvents = () => {
         phase: 'EVENT',
         currentEvent: recoveryEvent,
         lastResult: null,
+        undoSnapshot: null,
         recentEvents: buildRecentEvents(gameState.recentEvents, recoveryEvent.id, gameState.age),
         eventFrequency: buildEventFrequency(gameState.eventFrequency, recoveryEvent.id, gameState.turn),
       });
@@ -252,6 +255,7 @@ export const useEvents = () => {
       phase: 'HUB',
       lastResult: null,
       currentEvent: null,
+      undoSnapshot: null,
     });
   }, [gameState, updateGameState]);
 
