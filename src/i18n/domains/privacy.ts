@@ -12,7 +12,7 @@ export const privacyStrings: DomainStrings = {
       personalizedAdsTitle: 'Kişiselleştirilmiş reklamlar',
       personalizedAdsBody:
         'Açarsan Google, reklam kimliğini kullanarak ilgi alanına göre reklam gösterebilir; kapalıyken reklamlar kişiselleştirilmez.',
-      analyticsTitle: 'Anonim kullanım istatistikleri',
+      analyticsTitle: 'Kullanım istatistikleri',
       analyticsBody:
         'Oyunu geliştirmemize yardım eder: hangi bölümlerin oynandığı ve oturum süresi gibi bilgiler adın ve reklam kimliğin olmadan gönderilir.',
       note: 'İkisini de daha sonra Ayarlar > Gizlilik bölümünden değiştirebilirsin.',
@@ -29,7 +29,7 @@ export const privacyStrings: DomainStrings = {
       personalizedAdsTitle: 'Personalized ads',
       personalizedAdsBody:
         'If on, Google may use your advertising ID to show ads based on your interests; when off, ads are not personalized.',
-      analyticsTitle: 'Anonymous usage statistics',
+      analyticsTitle: 'Usage statistics',
       analyticsBody:
         'Helps us improve the game: things like which chapters are played and session length are sent without your name or advertising ID.',
       note: 'You can change both later in Settings > Privacy.',

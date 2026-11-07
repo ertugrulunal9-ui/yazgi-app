@@ -40,7 +40,7 @@
   <div class="container">
     <h1>Gizlilik Politikası</h1>
     <p class="subtitle">Yazgı — Hayat Simülasyonu Oyunu</p>
-    <div class="badge">Son güncelleme: 1 Kasım 2026</div>
+    <div class="badge">Son güncelleme: 7 Kasım 2026</div>
 
     <p>
       Bu gizlilik politikası, <strong>Yazgı</strong> uygulamasının hangi verileri, hangi amaçla ve hangi
@@ -50,7 +50,7 @@
     </p>
     <p>Kısaca:</p>
     <ul>
-      <li>Oyun kayıtların ve ayarların yalnızca cihazında saklanır.</li>
+      <li>Oyun kayıtların ve ayarların cihazında saklanır ve bize gönderilmez; Android yedeklemesi açıksa Google hesabına yedeklenebilir.</li>
       <li>Yazgı ücretsizdir ve Google AdMob reklamları gösterir. Reklamlar <strong>yalnızca sen açarsan</strong> kişiselleştirilir.</li>
       <li>Kullanım istatistikleri (Firebase Analytics) <strong>yalnızca sen açarsan</strong> gönderilir.</li>
       <li>Uygulama çökerse Firebase Crashlytics bir çökme raporu gönderir (varsayılan olarak açık).</li>
@@ -72,7 +72,7 @@
       (ör. IP adresinden yaklaşık konum) yine kullanır.
     </p>
 
-    <p><strong>b) Anonim kullanım istatistikleri (Firebase Analytics) — yalnızca açarsan, varsayılan olarak kapalı:</strong></p>
+    <p><strong>b) Kullanım istatistikleri (Firebase Analytics) — yalnızca açarsan, varsayılan olarak kapalı:</strong></p>
     <ul>
       <li>Oyun içi olaylar: ör. oyunun başlaması, olay seçimleri, karakterin yaşı ve bölümü, oturum süresi, ipucu turu adımları, ödüllü reklam kullanımı, oyunun bitişi</li>
       <li>Kuruluma özgü rastgele bir uygulama kimliği (app instance ID), cihaz modeli ve işletim sistemi sürümü</li>
@@ -82,6 +82,11 @@
       Bu istatistikler adını, karakterinin adını, reklam kimliğini veya Android kimliğini içermez; kuruluma
       özgü rastgele bir kimlikle (takma adlı olarak) tutulur ve oyunun hangi bölümlerinin zor ya da sıkıcı
       olduğunu anlamak için toplu olarak incelenir.
+    </p>
+    <p>
+      Bu istatistikler reklam amacıyla kullanılmaz. Google Analytics'in reklamla ilgili izin sinyalleri
+      (reklam depolama, reklam için kullanıcı verisi gönderimi ve reklam kişiselleştirme) uygulamada
+      kapalıdır; kişiselleştirilmiş reklamları açsan da kapalı kalır.
     </p>
 
     <p><strong>c) Çökme raporları (Firebase Crashlytics) — varsayılan olarak açık:</strong></p>
@@ -97,12 +102,18 @@
     </p>
 
     <p><strong>d) Bildirimler:</strong> Hatırlatma bildirimleri cihazında yerel olarak planlanır. Bildirim izni
-      yalnızca oyun sonunda hatırlatmayı açmak istediğinde sorulur. Bildirimler için bir sunucuya veri
-      gönderilmez ve bildirim (push) kimliği alınmaz.</p>
+      yalnızca bir hatırlatma düğmesine dokunduğunda sorulur: Bebeklik bölümünün sonunda gösterilen
+      "Yarın hatırlat" ya da oyun sonundaki "Yarın yeni bir hayat için hatırlat". Bildirimler için bir
+      sunucuya veri gönderilmez. Uygulama bildirim (push) kimliği istemez ve kullanmaz; Firebase Cloud
+      Messaging'in otomatik kaydı kapalıdır.</p>
 
-    <p><strong>e) Oyun kayıtları ve ayarlar:</strong> Kayıtların, tercihlerin ve gizlilik seçimlerin yalnızca
-      cihazında saklanır; bizim sunucularımıza gönderilmez. "Dışa Aktar" ile oluşturduğun kayıt kodu ya da
-      dosyası yalnızca senin paylaştığın yere gider; "İçe Aktar" ile yüklediğin kayıt yalnızca cihazında işlenir.</p>
+    <p><strong>e) Oyun kayıtları ve ayarlar:</strong> Kayıtların, tercihlerin ve gizlilik seçimlerin
+      cihazında saklanır; bizim sunucularımıza gönderilmez. Cihazında Android'in yedekleme özelliği açıksa
+      Android bu verileri diğer uygulama verileriyle birlikte Google hesabına yedekleyebilir ve uygulamayı
+      yeniden kurduğunda ya da yeni bir cihaza geçtiğinde geri yükleyebilir. Bu yedeklemeyi Android yapar;
+      yedeğe bizim erişimimiz yoktur. Yedeklemeyi Android ayarlarından kapatabilirsin. "Dışa Aktar" ile
+      oluşturduğun kayıt kodu ya da dosyası yalnızca senin paylaştığın yere gider; "İçe Aktar" ile
+      yüklediğin kayıt yalnızca cihazında işlenir.</p>
 
     <p><strong>Toplamadıklarımız:</strong> hesap bilgisi, ad-soyad, e-posta, telefon numarası, rehber, fotoğraf,
       kesin konum ve ödeme bilgisi. Bu sürümde uygulama içi satın alma yoktur.</p>
@@ -140,7 +151,7 @@
     <h2>4. Reklam ve İzin Tercihleri</h2>
     <p>
       Uygulamayı ilk açtığında "Gizlilik tercihlerin" ekranı gösterilir: "Kişiselleştirilmiş reklamlar" ve
-      "Anonim kullanım istatistikleri" için iki ayrı anahtar vardır ve ikisi de <strong>kapalı</strong> başlar.
+      "Kullanım istatistikleri" için iki ayrı anahtar vardır ve ikisi de <strong>kapalı</strong> başlar.
       Açmazsan oyun aynı şekilde çalışır.
     </p>
     <p>
@@ -155,7 +166,7 @@
 
     <h2>5. Veri Saklama</h2>
     <ul>
-      <li>Cihazındaki oyun verileri, uygulamayı silene veya uygulama verilerini temizleyene kadar cihazında kalır; uygulamayı sildiğinde bu veriler silinir.</li>
+      <li>Cihazındaki oyun verileri, uygulamayı silene veya uygulama verilerini temizleyene kadar cihazında kalır; uygulamayı sildiğinde cihazdaki veriler silinir. Android yedeği varsa o yedek Google hesabında Android'in kendi kurallarıyla saklanır ve uygulamayı yeniden kurduğunda geri yüklenebilir.</li>
       <li>Kullanım istatistikleri, Google Analytics ayarlarımızda belirlenen süre (en fazla 14 ay) sonunda silinir.</li>
       <li>Crashlytics çökme kayıtları ve ilgili kimlikler 90 gün saklanır.</li>
       <li>AdMob verileri Google'ın kendi saklama politikasına tabidir.</li>
