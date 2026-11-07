@@ -20,7 +20,7 @@ Ders mi çalışırsın, arkadaşlarınla mı takılırsın? Ailenle mi vakit ge
 🎭 400'den fazla benzersiz olay
 Her yaş döneminde seni bekleyen farklı olaylar — aile tartışmaları, okul sınavları, arkadaşlık krizleri, beklenmedik fırsatlar.
 
-🏁 35 farklı son
+🏁 34 farklı son
 Sıradan bir hayat mı yaşarsın, yoksa efsane olur musun? Her oyun farklı — ending galerisini doldur.
 
 🧠 Gelişen kişilik sistemi
@@ -30,7 +30,7 @@ Sıradan bir hayat mı yaşarsın, yoksa efsane olur musun? Her oyun farklı —
 Bazı kararların sonuçları silinmez. Travmalar ve hayat dersleri oyun sonuna kadar seninle kalır.
 
 🏆 Legacy sistemi
-Her oyun bir sonrakini etkiler. Önceki hayatlardan kazandığın avantajlar yeni bir hayata taşınır.
+Her oyun bir sonrakini etkiler. Bitirdiğin her hayat Miras puanı kazandırır; puan biriktikçe yeni hayatlara biraz daha güçlü başlarsın (küçük başlangıç bonusları).
 
 — Oyna. Seç. Pişman ol. Tekrar dene. —
 ```
@@ -47,7 +47,7 @@ Study or hang out with friends? Spend time with family or carve your own path? T
 🎭 400+ unique events
 Different events await you at every age — family conflicts, school exams, friendship crises, unexpected opportunities.
 
-🏁 35 different endings
+🏁 34 different endings
 Will you live an ordinary life, or become a legend? Every run is different — fill your ending gallery.
 
 🧠 Evolving personality system
@@ -57,7 +57,7 @@ Will you live an ordinary life, or become a legend? Every run is different — f
 Some decisions leave marks that don't fade. Traumas and life lessons stay with you until the very end.
 
 🏆 Legacy system
-Every run affects the next. Advantages earned from previous lives carry over into a new one.
+Every finished life earns Legacy points; as they add up, you start new lives a little stronger (small starting bonuses).
 
 — Play. Choose. Regret. Try again. —
 ```
