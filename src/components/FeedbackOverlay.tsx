@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Alert, ScrollView, View } from 'react-native';
 import { Text } from './ui/LocaleText';
 import { FadeInUpView } from '../animations';
 import { AnimatedButton } from '../animations/ButtonAnimations';
@@ -239,6 +239,27 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
   const wasDramatic = (currentEvent?.difficulty ?? 0) >= 4;
   const feedbackText = wasDramatic ? `${t('ui.feedbackOverlay.dramaticDecision')} ${rawFeedback}` : rawFeedback;
 
+  // Reklam açan düğmeler: sonuç metni yazılırken ve Devam kilitliyken basılamaz (istemsiz reklam tıklaması).
+  const [completedText, setCompletedText] = useState<string | null>(null);
+  const handleTextComplete = useCallback(() => setCompletedText(feedbackText), [feedbackText]);
+  const adButtonsReady = buttonEnabled && completedText === feedbackText;
+
+  const confirmUndo = useCallback(() => {
+    Alert.alert(
+      t('ui.feedbackOverlay.undoConfirmTitle'),
+      t('ui.feedbackOverlay.undoConfirmBody'),
+      [
+        { text: t('ui.feedbackOverlay.undoConfirmCancel'), style: 'cancel' },
+        {
+          text: t('ui.feedbackOverlay.undoConfirmWatch'),
+          onPress: () => {
+            void onUndo();
+          },
+        },
+      ]
+    );
+  }, [onUndo, t]);
+
   return (
     <View style={overlayStyle}>
       <ScrollView
@@ -253,6 +274,8 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
           <TypewriterText
             text={feedbackText}
             speed={26}
+            reserveSpace
+            onComplete={handleTextComplete}
             accessibilityLabel={t('ui.feedbackOverlay.eventResultLabel')}
             style={{
               color: theme.textPrimary,
@@ -444,13 +467,13 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
         {hasCrisisRecoveryOption && (
           <AnimatedButton
             onPress={onRecoverWithAd}
-            disabled={crisisRecoveryLoading}
+            disabled={crisisRecoveryLoading || !adButtonsReady}
             animationType="pressScale"
             style={{
               ...buttonStyle,
               backgroundColor: theme.surfaceRaised,
               borderColor: '#22c55e',
-              opacity: crisisRecoveryLoading ? 0.75 : 1,
+              opacity: crisisRecoveryLoading || !adButtonsReady ? 0.6 : 1,
             }}
             accessibilityRole="button"
             accessibilityLabel={t('ui.feedbackOverlay.crisisRecoveryAdButton')}
@@ -464,16 +487,14 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = React.memo(({
 
         {isFeatureEnabled('UNDO_MECHANIC') && canUndo && (
           <AnimatedButton
-            onPress={() => {
-              void onUndo();
-            }}
-            disabled={undoLoading}
+            onPress={confirmUndo}
+            disabled={undoLoading || !adButtonsReady}
             animationType="pressScale"
             style={{
               ...buttonStyle,
               backgroundColor: theme.surfaceRaised,
               borderColor: '#f59e0b',
-              opacity: undoLoading ? 0.75 : 1,
+              opacity: undoLoading || !adButtonsReady ? 0.6 : 1,
             }}
             accessibilityRole="button"
             accessibilityLabel={t('ui.feedbackOverlay.undoChoice')}
