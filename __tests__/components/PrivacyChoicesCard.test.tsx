@@ -44,7 +44,7 @@ describe('PrivacyChoicesCard', () => {
     expect(adsSwitch().props.value).toBe(false);
     expect(analyticsSwitch().props.value).toBe(false);
     expect(adsSwitch().props.accessibilityLabel).toBe('Kişiselleştirilmiş reklamlar');
-    expect(analyticsSwitch().props.accessibilityLabel).toBe('Anonim kullanım istatistikleri');
+    expect(analyticsSwitch().props.accessibilityLabel).toBe('Kullanım istatistikleri');
 
     act(() => {
       continueButton().props.onPress();
@@ -103,7 +103,7 @@ describe('PrivacyChoicesCard', () => {
 
     expect(tree.root.findByProps({ accessibilityLabel: 'Save privacy choices and continue' })).toBeTruthy();
     expect(tree.root.findByProps({ testID: 'privacy-choice-analytics' }).props.accessibilityLabel)
-      .toBe('Anonymous usage statistics');
+      .toBe('Usage statistics');
     tree.unmount();
   });
 });
