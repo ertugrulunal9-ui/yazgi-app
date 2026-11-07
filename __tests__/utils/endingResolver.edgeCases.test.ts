@@ -16,10 +16,12 @@ import {
   calculateEndingErrorDebt,
   analyzeGoalMismatch,
   calculateSelectedGoalStatProgress,
+  calculateTier,
   TOTAL_ENDING_COUNT,
   ENDING_ID_LIST,
   generateFutureVision,
 } from '../../src/utils/endingResolver';
+import type { EndingErrorDebt } from '../../src/utils/endingResolver';
 import { GameState, Stats } from '../../src/types';
 import { setRuntimeLocale } from '../../src/i18n/strings';
 
@@ -415,6 +417,31 @@ describe('endingResolver — Edge Cases', () => {
       expect(ENDING_ID_LIST).toContain('secret_family_legacy');
       expect(ENDING_ID_LIST).toContain('secret_love_and_glory');
       expect(ENDING_ID_LIST).toContain('secret_silent_legend');
+    });
+
+    it('gelemeyen balanced_mismatch_failure katalogda yok; 34 son (6 hedef × 4 kademe + 5 uyumsuzluk + 5 gizli)', () => {
+      expect(ENDING_ID_LIST).not.toContain('balanced_mismatch_failure');
+      expect(ENDING_ID_LIST).toContain('balanced_legendary');
+      expect(ENDING_ID_LIST).toContain('athletic_mismatch_failure');
+      expect(TOTAL_ENDING_COUNT).toBe(34);
+    });
+  });
+
+  describe('Kademe eşikleri', () => {
+    const debt = (total: number) => ({ total, reasons: [] } as unknown as EndingErrorDebt);
+
+    it('efsane eşiği 85: atletik puan tavanı (89,6) efsaneye ulaşır', () => {
+      expect(calculateTier(84.9, debt(0))).toBe('SUCCESS');
+      expect(calculateTier(85, debt(0))).toBe('LEGENDARY');
+      expect(calculateTier(89.6, debt(0))).toBe('LEGENDARY');
+    });
+
+    it('diğer eşikler değişmedi', () => {
+      expect(calculateTier(70, debt(0))).toBe('SUCCESS');
+      expect(calculateTier(69.9, debt(0))).toBe('NORMAL');
+      expect(calculateTier(50, debt(0))).toBe('NORMAL');
+      expect(calculateTier(49.9, debt(0))).toBe('FAILURE');
+      expect(calculateTier(95, debt(60))).toBe('FAILURE');
     });
   });
 

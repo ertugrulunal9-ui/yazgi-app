@@ -120,7 +120,9 @@ const generatedTierEndings: EndingCatalogEntry[] = GOAL_ENDING_CATALOG.flatMap(
   )
 );
 
-const generatedMismatchEndings: EndingCatalogEntry[] = GOAL_ENDING_CATALOG.map(
+// Uyumsuzluk sonu oyuncunun seçtiği yaşam hedefinden üretilir; BALANCED seçilebilir bir hedef
+// değil (LifeGoal), bu yüzden balanced_mismatch_failure hiç gelemezdi ve katalogda yer almaz.
+const generatedMismatchEndings: EndingCatalogEntry[] = GOAL_ENDING_CATALOG.filter(({ goal }) => goal !== 'BALANCED').map(
   ({ goal, prefix, labelKey, fallbackLabel, icon }) => (
     createLocalizedCatalogEntry({
       id: `${prefix}_mismatch_failure`,
@@ -981,9 +983,10 @@ const flavorByAchievements = (
   return lines;
 };
 
-const calculateTier = (score: number, errorDebt: EndingErrorDebt): CareerResult['type'] => {
+export const calculateTier = (score: number, errorDebt: EndingErrorDebt): CareerResult['type'] => {
   if (errorDebt.total >= 60) return 'FAILURE';
-  if (score >= 90) return 'LEGENDARY';
+  // 85: atletik hedefte not ağırlığı olmadığı için puan tavanı 89,6; 90 eşiğinde atletik efsane imkânsızdı.
+  if (score >= 85) return 'LEGENDARY';
   if (score >= 70) return 'SUCCESS';
   if (score >= 50) return 'NORMAL';
   return 'FAILURE';
