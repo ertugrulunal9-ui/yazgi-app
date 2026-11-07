@@ -79,6 +79,25 @@ const prepareStateForPersistence = (state: GameState): GameState => ({
   floatingTexts: [],
 });
 
+/**
+ * Eski sürümler her seçimde önceki Geri Al verisini de kopyalıyordu (undoSnapshot zinciri; 17 yaşta
+ * ~60 seviye, kayıt MB'larca). Geri Al yalnızca son seçimi geri sarar; iç içe kopyalar hiç okunmaz.
+ * Yüklemede en fazla tek seviye bırakılır; kaydın geri kalanı olduğu gibi kalır.
+ */
+const withSingleLevelUndoSnapshot = (state: GameState): GameState => {
+  const nested = state.undoSnapshot?.gameState?.undoSnapshot;
+  if (nested == null) return state;
+
+  const snapshot = state.undoSnapshot!;
+  return {
+    ...state,
+    undoSnapshot: {
+      ...snapshot,
+      gameState: { ...snapshot.gameState, undoSnapshot: null },
+    },
+  };
+};
+
 const CLIFFHANGER_CONTINUATION_PRIORITY = 999;
 
 const getScheduledPriorityValue = (priority: ScheduledEvent['priority']): number => {
@@ -165,7 +184,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, onLoadGame
 
   const applySavedGame = useCallback((saved: SaveSlotData) => {
     const initial = getInitialGameState();
-    const savedState: GameState | undefined = saved.gameState;
+    const savedState: GameState | undefined = saved.gameState
+      ? withSingleLevelUndoSnapshot(saved.gameState)
+      : undefined;
     const resolvedStats = savedState?.stats ?? saved.stats ?? initialStatsRef.current;
 
     initialStatsRef.current = resolvedStats;
