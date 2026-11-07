@@ -24,6 +24,7 @@ const mockContinue = jest.fn(() => {
   };
 });
 const mockUndo = jest.fn(() => true);
+const mockAdState = { remaining: 8, premium: false };
 const mockCrisisPreview: { value: Record<string, number> } = { value: {} };
 const mockApplyCrisis = jest.fn(() => ({ health: 6 }));
 const mockShowFloatingText = jest.fn();
@@ -75,8 +76,8 @@ jest.mock('../../src/services/monetization', () => ({
   showContextualRewardedAd: (placement: string, options?: { shouldShow?: () => boolean }) => (
     mockShowAd(placement, options)
   ),
-  getRemainingRewardedAds: () => 8,
-  isPremium: () => false,
+  getRemainingRewardedAds: () => mockAdState.remaining,
+  isPremium: () => mockAdState.premium,
 }));
 
 jest.mock('../../src/utils/analyticsEvents', () => ({
@@ -159,6 +160,8 @@ describe('Sonuç ekranı reklamları ve sonuç ekranından çıkış', () => {
     mockLogRewardedAdResult.mockClear();
     mockPendingAd = null;
     mockCrisisPreview.value = {};
+    mockAdState.remaining = 8;
+    mockAdState.premium = false;
     mockGame.gameState = resultState('e1');
   });
 
@@ -167,6 +170,40 @@ describe('Sonuç ekranı reklamları ve sonuç ekranından çıkış', () => {
   });
 
   describe('Geri Al', () => {
+    it('günlük ödüllü reklam hakkı 0 iken Geri Al sunulmaz ve reklam istenmez', () => {
+      mockAdState.remaining = 0;
+      const { result } = renderHook(() => useEventScreenController());
+      expect(result.current.canUndo).toBe(false);
+
+      act(() => {
+        void result.current.handleUndo();
+      });
+      expect(mockShowAd).not.toHaveBeenCalled();
+    });
+
+    it('premium oyuncuda hak sınırı yoktur, Geri Al sunulur', () => {
+      mockAdState.remaining = 0;
+      mockAdState.premium = true;
+      const { result } = renderHook(() => useEventScreenController());
+      expect(result.current.canUndo).toBe(true);
+    });
+
+    it('reklam hatasında oyuncu İngilizce teknik metin görmez', async () => {
+      const { result } = renderHook(() => useEventScreenController());
+      act(() => {
+        void result.current.handleUndo();
+      });
+      await act(async () => {
+        pendingAd().resolve({
+          success: false, placement: 'undo_choice', rewardType: 'utility', amount: 0,
+          error: 'Rewarded ad closed before reward',
+        });
+      });
+      const shown = mockShowFloatingText.mock.calls.map(call => call[0]).join(' ');
+      expect(shown).not.toMatch(/Rewarded/);
+      expect(shown).toMatch(/ödül/);
+    });
+
     it('aynı sonuç ekranında reklam açılır ve seçim bir kez geri alınır', async () => {
       const { result } = renderHook(() => useEventScreenController());
       expect(result.current.canUndo).toBe(true);
