@@ -103,6 +103,45 @@ describe('SaveSlotPicker overwrite confirmation', () => {
     expect(mockedManager.saveToSlot.mock.calls[0][0]).toBe('slot_1');
   });
 
+  describe('on web (Alert.alert is a no-op in react-native-web)', () => {
+    const rn = jest.requireMock('react-native') as { Platform: { OS: string } };
+    const globals = globalThis as { confirm?: (text?: string) => boolean };
+    let originalConfirm: typeof globals.confirm;
+
+    beforeEach(() => {
+      rn.Platform.OS = 'web';
+      originalConfirm = globals.confirm;
+    });
+
+    afterEach(() => {
+      rn.Platform.OS = 'ios';
+      globals.confirm = originalConfirm;
+    });
+
+    it('uses the browser confirmation and saves when the player accepts', async () => {
+      globals.confirm = jest.fn(() => true);
+      const { findByText, getAllByLabelText } = renderPicker();
+      await findByText('Alex');
+
+      fireEvent.press(getAllByLabelText('Kaydet')[0]);
+
+      expect(alertSpy).not.toHaveBeenCalled();
+      expect(globals.confirm).toHaveBeenCalledWith(expect.stringContaining('Alex'));
+      await waitFor(() => expect(mockedManager.saveToSlot).toHaveBeenCalledTimes(1));
+    });
+
+    it('does not save when the player cancels the browser confirmation', async () => {
+      globals.confirm = jest.fn(() => false);
+      const { findByText, getAllByLabelText } = renderPicker();
+      await findByText('Alex');
+
+      fireEvent.press(getAllByLabelText('Kaydet')[0]);
+
+      expect(globals.confirm).toHaveBeenCalledTimes(1);
+      expect(mockedManager.saveToSlot).not.toHaveBeenCalled();
+    });
+  });
+
   it('saves an empty slot without any confirmation', async () => {
     const { findByLabelText } = renderPicker();
     const empty = await findByLabelText(/slot_2|Boş|boş/i);
