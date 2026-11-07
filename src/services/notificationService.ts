@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { devLog } from '../utils/devLogger';
+import { tRuntime } from '../i18n/strings';
 
 // React Native de `window` ve `navigator` tanımlar (navigator.product === 'ReactNative');
 // yalnızca bu iki kontrol Android'i de web sanıp bildirimleri tamamen kapatıyordu.
@@ -11,6 +12,7 @@ type ExpireNotifications = {
   getPermissionsAsync?: () => Promise<{ status: string }>;
   requestPermissionsAsync: () => Promise<{ status: string }>;
   scheduleNotificationAsync: (request: {
+    identifier?: string;
     content: { title: string; body: string; data?: Record<string, unknown> };
     // expo-notifications 0.32: `type` olmayan tetikleyici TypeError fırlatır.
     trigger: { type: 'timeInterval'; seconds: number; repeats?: boolean } | null;
@@ -59,9 +61,10 @@ const NOTIF_IDS = {
 // Oyuncu oyun sonundaki "Hatırlat" ile hatırlatmaları açtı mı. Android 12 ve altında bildirim
 // izni varsayılan "granted" gelir; işletim sistemi izni tek başına oyuncunun seçimi sayılmaz.
 const REMINDER_OPT_IN_KEY = '@yazgi/reminders_opt_in/v1';
+// Bebeklik bölüm penceresindeki tek seferlik hatırlatma teklifi görüldü mü (kurulum başına bir kez).
+const REMINDER_OFFER_SHOWN_KEY = '@yazgi/reminder_offer_shown/v1';
 
 let permissionsGranted = false;
-let permissionsChecked = false;
 
 function installForegroundHandler(mod: NotificationsModule): void {
   // Set a handler so foreground notifications show as alerts
@@ -79,12 +82,13 @@ function installForegroundHandler(mod: NotificationsModule): void {
 }
 
 /**
- * Request notification permissions on first call.
- * Safe to call multiple times — subsequent calls are no-ops.
+ * Oyuncu "Hatırlat"a bastığında bildirim izni ister. İzin verildiyse sonraki çağrılar sormadan
+ * true döner. Ret saklanmaz: Bebeklik teklifinde reddeden oyuncu aynı oturumda oyun sonundaki
+ * düğmeye basarsa işletim sistemine yeniden sorulur (sistem artık göstermiyorsa hemen "denied" döner).
  */
 export async function requestPermissions(): Promise<boolean> {
   if (isWeb) return false;
-  if (permissionsChecked) return permissionsGranted;
+  if (permissionsGranted) return true;
 
   const mod = getModule();
   if (!mod) return false;
@@ -94,7 +98,6 @@ export async function requestPermissions(): Promise<boolean> {
   try {
     const { status } = await mod.requestPermissionsAsync();
     permissionsGranted = status === 'granted';
-    permissionsChecked = true;
     devLog.log(`[NOTIFICATIONS] Permission: ${status}`);
     if (permissionsGranted) {
       try {
@@ -106,7 +109,6 @@ export async function requestPermissions(): Promise<boolean> {
     return permissionsGranted;
   } catch (error) {
     devLog.warn('[NOTIFICATIONS] requestPermissions failed', error);
-    permissionsChecked = true;
     return false;
   }
 }
@@ -139,12 +141,36 @@ export async function restoreNotificationPermission(): Promise<boolean> {
 
     installForegroundHandler(mod);
     permissionsGranted = true;
-    permissionsChecked = true;
     await scheduleReengagement(24);
     return true;
   } catch (error) {
     devLog.warn('[NOTIFICATIONS] restoreNotificationPermission failed', error);
     return false;
+  }
+}
+
+/**
+ * Erken hatırlatma teklifi gösterilebilir mi: oyuncu hatırlatmaları henüz açmadı ve teklifi
+ * daha önce görmedi. Depo okunamazsa teklif gösterilmez (oyuncuyu tekrar tekrar rahatsız etmesin).
+ */
+export async function isReminderOfferEligible(): Promise<boolean> {
+  try {
+    const [optedIn, offerShown] = await Promise.all([
+      AsyncStorage.getItem(REMINDER_OPT_IN_KEY),
+      AsyncStorage.getItem(REMINDER_OFFER_SHOWN_KEY),
+    ]);
+    return optedIn !== 'true' && offerShown !== 'true';
+  } catch {
+    return false;
+  }
+}
+
+/** Teklif oyuncuya gösterildi; bir daha çıkmaz (oyun sonundaki "Hatırlat" düğmesi kalır). */
+export async function markReminderOfferShown(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(REMINDER_OFFER_SHOWN_KEY, 'true');
+  } catch {
+    // Yazılamazsa teklif sonraki koşunun Bebeklik penceresinde yeniden çıkabilir.
   }
 }
 
@@ -173,9 +199,11 @@ async function scheduleOne(
   if (!mod || !permissionsGranted) return;
 
   try {
-    // Cancel existing notification with same logical ID via data tag
-    // expo-notifications doesn't support named IDs natively — we cancel all and re-schedule
+    // Sabit kimlik: aynı kimlikle kurulan bildirim eskisinin yerine geçer (kayıt ve alarm kimliğe bağlı).
+    // useEvents iki bileşende çalıştığı için her tur iki eşzamanlı kurulum geliyor; kimliksizken
+    // "önce cancelAll, sonra kur" sırası birbirine girip aynı hatırlatmadan iki tane bırakıyordu.
     await mod.scheduleNotificationAsync({
+      identifier: id,
       content: { title, body, data: { notifId: id, ...data } },
       trigger: { type: 'timeInterval', seconds: Math.max(1, Math.round(delaySeconds)) },
     });
@@ -185,12 +213,27 @@ async function scheduleOne(
   }
 }
 
+/** Süren hayattaki karakter: hatırlatma onun adıyla ve yaşıyla yazılır. */
+export interface ReminderCharacter {
+  name: string;
+  age: number;
+}
+
+// Metin kurulduğu andaki oyun dilinde; karakter yoksa (oyun sonu, soğuk açılış) genel metin.
+const getReengagementBody = (character?: ReminderCharacter): string => {
+  const name = character?.name.trim();
+  if (!character || !name) return tRuntime('notifications.reengagementBody');
+  return character.age >= 1
+    ? tRuntime('notifications.reengagementBodyAge', { name, age: character.age })
+    : tRuntime('notifications.reengagementBodyNewborn', { name });
+};
+
 /**
  * Schedule a re-engagement notification.
  * Fires after `hours` of inactivity (default 24h).
  * Call this after every turn to keep resetting the countdown.
  */
-export async function scheduleReengagement(hours = 24): Promise<void> {
+export async function scheduleReengagement(hours = 24, character?: ReminderCharacter): Promise<void> {
   const mod = getModule();
   if (!mod || !permissionsGranted) return;
 
@@ -199,8 +242,8 @@ export async function scheduleReengagement(hours = 24): Promise<void> {
 
   await scheduleOne(
     NOTIF_IDS.REENGAGEMENT,
-    'Yazgı',
-    'Hayatın seni bekliyor... 🌟',
+    tRuntime('notifications.title'),
+    getReengagementBody(character),
     hours * 3600,
     { type: 'reengagement' },
   );
@@ -214,7 +257,7 @@ export async function scheduleNPCReminder(npcName: string, hours = 48): Promise<
   await scheduleOne(
     NOTIF_IDS.NPC_REMINDER,
     npcName,
-    `${npcName} seni merak ediyor...`,
+    tRuntime('notifications.npcReminderBody', { name: npcName }),
     hours * 3600,
     { type: 'npc_reminder', npcName },
   );
@@ -227,8 +270,8 @@ export async function scheduleNPCReminder(npcName: string, hours = 48): Promise<
 export async function scheduleExamSeason(hours = 36): Promise<void> {
   await scheduleOne(
     NOTIF_IDS.EXAM_SEASON,
-    'Yazgı',
-    'Sınav dönemi yaklaşıyor! 📚',
+    tRuntime('notifications.title'),
+    tRuntime('notifications.examSeasonBody'),
     hours * 3600,
     { type: 'exam_season' },
   );

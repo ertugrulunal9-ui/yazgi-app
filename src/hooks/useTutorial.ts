@@ -70,6 +70,7 @@ const parseTutorialState = (raw: string | null, sessionNumber: number): Tutorial
       currentStep: parsed.currentStep,
       completedSteps,
       sessionNumber: normalizeSessionCount(parsed.sessionNumber) || sessionNumber,
+      ...(parsed.skippedByPlayer === true ? { skippedByPlayer: true } : {}),
     };
   } catch {
     return null;
@@ -246,6 +247,7 @@ export const useTutorial = (
   useEffect(() => {
     if (!state || !enabled) return;
     if (state.currentStep !== 'COMPLETED') return;
+    if (state.skippedByPlayer) return;
     if (!isFreshRunContext(gameContext)) return;
 
     showLockRef.current = false;
@@ -275,7 +277,7 @@ export const useTutorial = (
     showLockRef.current = false;
     setVisible(false);
     const completed = skipTutorial(state?.sessionNumber ?? 1);
-    setState(completed);
+    setState({ ...completed, skippedByPlayer: true });
   }, [state]);
 
   const currentStep = state?.currentStep ?? 'COMPLETED';

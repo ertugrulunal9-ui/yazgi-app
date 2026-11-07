@@ -439,10 +439,12 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
     })();
   }, [prepareTutorialForNewPlayer]);
 
+  const { skip: skipTutorialTour } = tutorial;
   const handleSkipOnboarding = useCallback(() => {
+    // "Atla" rehberle birlikte oyun içi ipucu turunu da kapatır; tur sonraki koşularda da geri gelmez
+    skipTutorialTour();
     void (async () => {
       try {
-        await prepareTutorialForNewPlayer();
         await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
       } catch {
         // Ignore persistence failures and continue to game setup.
@@ -450,7 +452,7 @@ const AppContent: React.FC<AppContentProps> = ({ clearFloatingTextsRef }) => {
         setHasCompletedOnboarding(true);
       }
     })();
-  }, [prepareTutorialForNewPlayer, setHasCompletedOnboarding]);
+  }, [setHasCompletedOnboarding, skipTutorialTour]);
 
   if (showSplash) {
     return (

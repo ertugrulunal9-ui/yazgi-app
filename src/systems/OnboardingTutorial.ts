@@ -23,6 +23,8 @@ export interface TutorialState {
   currentStep: TutorialStep;
   completedSteps: TutorialStep[];
   sessionNumber: number;
+  /** Oyuncu turu kendisi atladı ("Atla" ya da ipucundaki atla); yeni koşuda tur yeniden başlamaz. */
+  skippedByPlayer?: boolean;
 }
 
 export const INITIAL_TUTORIAL_STATE: TutorialState = {

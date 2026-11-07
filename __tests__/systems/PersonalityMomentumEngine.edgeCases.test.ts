@@ -280,6 +280,18 @@ describe('PersonalityMomentumEngine — Edge Cases', () => {
       const result = inferMomentumSignalFromStatEffect({ intelligence: 10 });
       expect(result).toBe('PRAGMATIC');
     });
+
+    it('enerji harcanan sağlık kazanımı (spor) → AGGRESSIVE', () => {
+      expect(inferMomentumSignalFromStatEffect({ health: 5, energy: -20, discipline: 2 })).toBe('AGGRESSIVE');
+    });
+
+    it('dinlenmeden gelen sağlık (uyku, yemek) eğilim sayılmaz', () => {
+      // "Ninni bitmeden uyu" ve bebek uykusu "Cesur ritmi güçleniyor!" diyordu
+      expect(inferMomentumSignalFromStatEffect({ health: 3, energy: 5 })).toBeNull();
+      expect(inferMomentumSignalFromStatEffect({ health: 5, energy: 40 })).toBeNull();
+      expect(inferMomentumSignalFromStatEffect({ health: 5 })).toBeNull();
+      expect(inferMomentumSignalFromStatEffect({ health: 15, familyRelation: 10, energy: 10 })).toBe('HELPFUL');
+    });
   });
 
   // ==========================================================

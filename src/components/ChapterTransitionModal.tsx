@@ -15,6 +15,7 @@ import { Modal } from './ui/Modal';
 import { Typography } from './ui/Typography';
 import { Button } from './ui/Button';
 import { AgeMilestoneContent } from './AgeMilestoneContent';
+import { ReminderOffer } from './ReminderOffer';
 import { useUI } from '../context/UIContext';
 import type { AgeMilestoneSummary, ChapterSummary } from '../types/game';
 import type { StatKey } from '../types/core';
@@ -28,6 +29,8 @@ interface Props {
   yearMilestone?: AgeMilestoneSummary | null;
   nextChapterId?: number;
   nextChapterEmoji?: string;
+  /** Tek seferlik hatırlatma teklifi (Bebeklik sonu); uygun değilse teklif kendini gizler. */
+  reminderOffer?: boolean;
   onClose: () => void;
 }
 
@@ -45,6 +48,7 @@ export const ChapterTransitionModal: React.FC<Props> = ({
   yearMilestone,
   nextChapterId,
   nextChapterEmoji,
+  reminderOffer = false,
   onClose,
 }) => {
   const { theme, t } = useUI();
@@ -192,6 +196,9 @@ export const ChapterTransitionModal: React.FC<Props> = ({
           </View>
         )}
       </ScrollView>
+
+      {/* Kaydırma alanının dışında: uzun özetin altında gözden kaçmasın */}
+      {visible && reminderOffer && <ReminderOffer />}
     </Modal>
   );
 };

@@ -190,3 +190,157 @@ describe('notificationService cold start', () => {
     expect(mockScheduleNotificationAsync).not.toHaveBeenCalled();
   });
 });
+
+describe('notificationService early reminder offer', () => {
+  beforeEach(() => {
+    mockRequestPermissionsAsync.mockReset();
+    mockStorage.clear();
+  });
+
+  it('offers the reminder once on a fresh install', async () => {
+    const service = loadFreshService();
+    await expect(service.isReminderOfferEligible()).resolves.toBe(true);
+
+    await service.markReminderOfferShown();
+
+    // Sonraki soğuk açılışta ve koşuda da bir daha çıkmaz
+    await expect(loadFreshService().isReminderOfferEligible()).resolves.toBe(false);
+  });
+
+  it('does not offer the reminder once the player has opted in (e.g. at game end)', async () => {
+    mockRequestPermissionsAsync.mockResolvedValue({ status: 'granted' });
+    const service = loadFreshService();
+    await service.requestPermissions();
+
+    await expect(service.isReminderOfferEligible()).resolves.toBe(false);
+  });
+});
+
+describe('notificationService permission retry', () => {
+  beforeEach(() => {
+    mockRequestPermissionsAsync.mockReset();
+    mockStorage.clear();
+  });
+
+  it('asks the OS again at game end after the player denied the Bebeklik offer in the same session', async () => {
+    mockRequestPermissionsAsync
+      .mockResolvedValueOnce({ status: 'denied' })
+      .mockResolvedValueOnce({ status: 'granted' });
+    const service = loadFreshService();
+
+    // Bebeklik teklifinde ret; ret önceden oturum boyunca saklanıyor, oyun sonu düğmesi sormadan false alıyordu
+    await expect(service.requestPermissions()).resolves.toBe(false);
+    await expect(service.requestPermissions()).resolves.toBe(true);
+
+    expect(mockRequestPermissionsAsync).toHaveBeenCalledTimes(2);
+    expect(mockStorage.get(REMINDER_OPT_IN_KEY)).toBe('true');
+  });
+
+  it('does not ask again once permission was granted', async () => {
+    mockRequestPermissionsAsync.mockResolvedValue({ status: 'granted' });
+    const service = loadFreshService();
+
+    await service.requestPermissions();
+    await expect(service.requestPermissions()).resolves.toBe(true);
+
+    expect(mockRequestPermissionsAsync).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('notificationService reminder text', () => {
+  beforeEach(() => {
+    mockRequestPermissionsAsync.mockReset().mockResolvedValue({ status: 'granted' });
+    mockScheduleNotificationAsync.mockReset().mockResolvedValue('id');
+    mockCancelAllScheduledNotificationsAsync.mockReset().mockResolvedValue(undefined);
+    mockStorage.clear();
+  });
+
+  // Metin kurulduğu andaki oyun dilinde yazılır; dil, servisle aynı (taze) i18n modülünde ayarlanır
+  const loadFreshServiceIn = (locale: 'tr' | 'en'): NotificationServiceModule => {
+    let service!: NotificationServiceModule;
+    jest.isolateModules(() => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      require('../../src/i18n/strings').setRuntimeLocale(locale);
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      service = require('../../src/services/notificationService');
+    });
+    return service;
+  };
+
+  const scheduledContent = (index: number) => mockScheduleNotificationAsync.mock.calls[index][0].content;
+
+  it('names the character and age in Turkish', async () => {
+    const service = loadFreshServiceIn('tr');
+    await service.requestPermissions();
+
+    await service.scheduleReengagement(24, { name: 'Taner', age: 4 });
+    await service.scheduleReengagement(24, { name: 'Taner', age: 0 });
+
+    expect(scheduledContent(0)).toMatchObject({
+      title: 'Yazgı',
+      body: 'Taner, 4 yaşındasın. Sıradaki seçim seni bekliyor. 🌟',
+    });
+    expect(scheduledContent(1).body).toBe('Taner, hayatın daha yeni başladı. Sıradaki seçim seni bekliyor. 🌟');
+  });
+
+  it('writes reminders in English for English players (they used to get Turkish text)', async () => {
+    const service = loadFreshServiceIn('en');
+    await service.requestPermissions();
+
+    await service.scheduleReengagement(24, { name: 'Taner', age: 4 });
+    await service.scheduleNPCReminder('Ayşe', 48);
+    await service.scheduleReengagement(24);
+
+    expect(scheduledContent(0).body).toBe('Taner, you are 4. Your next choice is waiting. 🌟');
+    expect(scheduledContent(1)).toMatchObject({ title: 'Ayşe', body: 'Ayşe is wondering how you are...' });
+    // Karakter yoksa (oyun sonu, soğuk açılış) genel metin
+    expect(scheduledContent(2).body).toBe('Your life is waiting for you... 🌟');
+  });
+});
+
+describe('notificationService duplicate reminders', () => {
+  // Kütüphane gibi davranan depo: istekleri kimliğe göre saklar (aynı kimlik eskisinin yerine geçer),
+  // cancelAll hepsini siler. Kimlik verilmezse her istek yeni bir kimlik alır.
+  const scheduledStore = new Map<string, unknown>();
+  let generatedId = 0;
+
+  beforeEach(() => {
+    scheduledStore.clear();
+    generatedId = 0;
+    mockStorage.clear();
+    mockRequestPermissionsAsync.mockReset().mockResolvedValue({ status: 'granted' });
+    mockCancelAllScheduledNotificationsAsync.mockReset().mockImplementation(async () => {
+      scheduledStore.clear();
+    });
+    mockScheduleNotificationAsync.mockReset().mockImplementation(async (request: { identifier?: string }) => {
+      const id = request.identifier ?? `generated-${generatedId++}`;
+      scheduledStore.set(id, request);
+      return id;
+    });
+  });
+
+  it('keeps a single re-engagement reminder when two schedules race in the same turn', async () => {
+    // useEvents iki bileşende çalışıyor: her tur iki eşzamanlı kurulum geliyordu (MEmu'da iki alarm, 2 ms arayla)
+    const service = loadFreshService();
+    await service.requestPermissions();
+
+    await Promise.all([
+      service.scheduleReengagement(24, { name: 'Buse', age: 4 }),
+      service.scheduleReengagement(24, { name: 'Buse', age: 4 }),
+    ]);
+
+    expect([...scheduledStore.keys()]).toEqual(['yazgi_reengagement']);
+  });
+
+  it('replaces the NPC reminder instead of stacking it', async () => {
+    const service = loadFreshService();
+    await service.requestPermissions();
+
+    await Promise.all([
+      service.scheduleNPCReminder('Ayşe', 48),
+      service.scheduleNPCReminder('Ayşe', 48),
+    ]);
+
+    expect([...scheduledStore.keys()]).toEqual(['yazgi_npc_reminder']);
+  });
+});

@@ -10,6 +10,7 @@ import { FateIndicator } from '../components/FateIndicator';
 import { EventPlayerBar } from '../components/EventPlayerBar';
 import { isFeatureEnabled } from '../config/featureFlags';
 import { useEventScreenController } from '../hooks/useEventScreenController';
+import { isPremium } from '../services/monetization';
 import { getAvatarMood } from '../utils/avatarMood';
 
 export const EventScreen: React.FC = React.memo(() => {
@@ -91,6 +92,7 @@ export const EventScreen: React.FC = React.memo(() => {
         crisisRecoveryLoading={crisisRecoveryLoading}
         undoLoading={undoLoading}
         canUndo={canUndo}
+        undoRequiresAd={!isPremium()}
         onUndo={handleUndo}
         onContinue={handleContinue}
         onRecoverWithAd={handleCrisisRecoveryAd}

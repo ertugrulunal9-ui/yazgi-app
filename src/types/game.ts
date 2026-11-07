@@ -411,6 +411,9 @@ export interface GameState {
   /** Bölüm (chapter) özet kayıtları — Faz 1A */
   chapterSummaries?: ChapterSummary[];
 
+  /** Oyuncunun kapattığı yıl sonu pencereleri; kayıtta durur ki uygulama yeniden açılınca tekrar çıkmasınlar */
+  yearEndWindowsShown?: { milestoneAges: number[]; chapterIds: number[] };
+
   /** Aktif bölüm numarası (1-6) — Faz 1A */
   chapter?: number;
 

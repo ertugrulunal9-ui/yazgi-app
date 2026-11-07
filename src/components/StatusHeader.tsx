@@ -29,6 +29,8 @@ interface StatusHeaderProps {
   stats: Stats;
   maxEnergy: number;
   selectedGoal?: LifeGoal | null;
+  /** Oyuncu 10 yaştaki hedef olayında "Henüz bilmiyorum" dedi (hedef bilerek boş). */
+  goalUndecided?: boolean;
   dreamProgress?: number;
   riskPercent?: number;
   riskReasons?: string[];
@@ -50,6 +52,7 @@ interface StatMeterProps {
 
 interface TrackerProps {
   selectedGoal?: LifeGoal | null;
+  goalUndecided?: boolean;
   dreamProgress: number;
   riskPercent: number;
   riskReasons?: string[];
@@ -205,6 +208,7 @@ const getRiskHint = (risk: number, t: TranslateFn): string => {
 
 const GoalAndRiskTracker: React.FC<TrackerProps> = ({
   selectedGoal,
+  goalUndecided = false,
   dreamProgress,
   riskPercent,
   riskReasons,
@@ -213,6 +217,7 @@ const GoalAndRiskTracker: React.FC<TrackerProps> = ({
   t,
 }) => {
   const goalMeta = useMemo(() => getLifeGoalMeta(selectedGoal), [selectedGoal]);
+  const showUndecided = goalUndecided && !goalMeta;
   const safeDreamProgress = clamp(dreamProgress, 0, 100);
   const safeRisk = clamp(riskPercent, 0, 100);
   const shakeX = useRef(new Animated.Value(0)).current;
@@ -252,27 +257,33 @@ const GoalAndRiskTracker: React.FC<TrackerProps> = ({
               {t('ui.statusHeader.dreamTracker')}
             </Text>
           </View>
-          <Text style={[styles.trackerValue, { color: theme.textPrimary }]}>%{Math.round(safeDreamProgress)}</Text>
+          {/* Hedefsiz yolda izlenecek tek bir hedef yok; %0 başarısızlık gibi okunmasın */}
+          {!showUndecided && (
+            <Text style={[styles.trackerValue, { color: theme.textPrimary }]}>%{Math.round(safeDreamProgress)}</Text>
+          )}
         </View>
         <Text style={[styles.goalName, { color: theme.textPrimary }]}>
-          {goalMeta?.label || t('ui.statusHeader.goalUnlocksAt10')}
+          {goalMeta?.label
+            || (showUndecided ? t('ui.statusHeader.goalUndecided') : t('ui.statusHeader.goalUnlocksAt10'))}
         </Text>
         <Text style={[styles.goalHint, { color: theme.textSecondary }]}>
           {goalMeta
             ? getDreamHint(safeDreamProgress, goalMeta.statHint, t)
-            : t('ui.statusHeader.selectGoalHint')}
+            : (showUndecided ? t('ui.statusHeader.goalUndecidedHint') : t('ui.statusHeader.selectGoalHint'))}
         </Text>
-        <View style={[styles.trackerBar, { backgroundColor: theme.border }]}>
-          <View
-            style={[
-              styles.trackerFill,
-              {
-                width: `${safeDreamProgress}%`,
-                backgroundColor: goalMeta?.accentColor || theme.accentEvent,
-              },
-            ]}
-          />
-        </View>
+        {!showUndecided && (
+          <View style={[styles.trackerBar, { backgroundColor: theme.border }]}>
+            <View
+              style={[
+                styles.trackerFill,
+                {
+                  width: `${safeDreamProgress}%`,
+                  backgroundColor: goalMeta?.accentColor || theme.accentEvent,
+                },
+              ]}
+            />
+          </View>
+        )}
       </View>
 
       <View style={[styles.trackerCard, { borderColor: theme.border, backgroundColor: trackerBackground }]}>
@@ -393,6 +404,7 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
   stats,
   maxEnergy,
   selectedGoal,
+  goalUndecided = false,
   dreamProgress = 0,
   riskPercent = 0,
   riskReasons,
@@ -783,6 +795,7 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({
         <View style={styles.notificationPanelContent}>
           <GoalAndRiskTracker
             selectedGoal={selectedGoal}
+            goalUndecided={goalUndecided}
             dreamProgress={dreamProgress}
             riskPercent={riskPercent}
             riskReasons={riskReasons}
@@ -881,6 +894,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     marginBottom: 6,
+    // Sağ üstte sabit duran Ayarlar düğmesine (AppNavigator: 48 px, kenardan 16 px) yer bırak; enerji çipi altında kalıyordu
+    paddingRight: 56,
   },
   avatarContainer: {
     width: 46,

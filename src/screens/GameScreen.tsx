@@ -77,7 +77,11 @@ import { hasSpendableEnergy } from '../utils/endDayPrompt';
 import { getAvatarMood } from '../utils/avatarMood';
 import { countPendingEchoes } from '../utils/echoTrail';
 import { isRiskWarningAge } from '../utils/riskDisplay';
+import { hasSeenLifeGoalEvent, LIFE_GOAL_SELECTION_EVENT_ID } from '../utils/lifeGoalSystem';
 import { CHAPTERS } from '../config/gameBalance';
+
+// Hatırlatma teklifi Bebeklik (1. bölüm) penceresinde çıkar: ilk koşuyu yarıda bırakan da görsün
+const REMINDER_OFFER_CHAPTER_ID = 1;
 
 // Kritik sağlık eşiği yaşa göre tavanın %20'si (yetişkinde 20); bebeklikte tavan 30 olduğu için sabit 20 yanlış alarm veriyordu
 const isHealthCriticalForAge = (health: number, age: number): boolean => health <= getStatCap(age, 'health') * 0.2;
@@ -144,8 +148,6 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
   const [achievementsOpen, setAchievementsOpen] = useState(false);
   // Yıl sonunda tek pencere: bölüm değişimi varsa bölüm penceresi (yaş özeti içinde), yoksa yaş özeti
   const [yearEndWindow, setYearEndWindow] = useState<YearEndWindow | null>(null);
-  const shownMilestoneAgesRef = useRef<Set<number>>(new Set());
-  const shownChaptersRef = useRef<Set<number>>(new Set());
   const [sessionRecapVisible, setSessionRecapVisible] = useState(false);
   const sessionRecapShownRef = useRef(false);
   // shopOpen state removed — IAP disabled
@@ -293,28 +295,35 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
     }
   }, [gameState.totalTurns, enqueueToast, t]);
 
+  // "Gösterildi" bilgisi kayıtta: bellekte tutulunca uygulama her açılışta son bölümü/yaş özetini yeniden
+  // gösteriyordu; kayıtla birlikte yeni hayatta da sıfırlanır
+  const yearEndWindowsShown = gameState.yearEndWindowsShown;
   useEffect(() => {
     const next = resolveYearEndWindow({
       milestones: gameState.ageMilestoneSummaries,
       chapters: gameState.chapterSummaries,
       milestoneEnabled: isFeatureEnabled('MILESTONE_SUMMARY'),
       chapterEnabled: isFeatureEnabled('CHAPTER_SYSTEM'),
-      shownMilestoneAges: shownMilestoneAgesRef.current,
-      shownChapterIds: shownChaptersRef.current,
+      shownMilestoneAges: new Set(yearEndWindowsShown?.milestoneAges ?? []),
+      shownChapterIds: new Set(yearEndWindowsShown?.chapterIds ?? []),
     });
     if (next) setYearEndWindow(next);
-  }, [gameState.ageMilestoneSummaries, gameState.chapterSummaries]);
+  }, [gameState.ageMilestoneSummaries, gameState.chapterSummaries, yearEndWindowsShown]);
 
   // Tek pencere iki özeti de gösterir; kapanınca ikisi de "gösterildi" olur
   const handleYearEndClose = useCallback(() => {
-    if (yearEndWindow?.milestone) {
-      shownMilestoneAgesRef.current.add(yearEndWindow.milestone.age);
-    }
-    if (yearEndWindow?.chapter) {
-      shownChaptersRef.current.add(yearEndWindow.chapter.chapterId);
+    if (yearEndWindow) {
+      const milestoneAges = yearEndWindowsShown?.milestoneAges ?? [];
+      const chapterIds = yearEndWindowsShown?.chapterIds ?? [];
+      updateGameState({
+        yearEndWindowsShown: {
+          milestoneAges: yearEndWindow.milestone ? [...milestoneAges, yearEndWindow.milestone.age] : milestoneAges,
+          chapterIds: yearEndWindow.chapter ? [...chapterIds, yearEndWindow.chapter.chapterId] : chapterIds,
+        },
+      });
     }
     setYearEndWindow(null);
-  }, [yearEndWindow]);
+  }, [updateGameState, yearEndWindow, yearEndWindowsShown]);
 
   // Session Recap — Faz 1B: mount'ta son oturum 5+ dakika önceyse göster
   useEffect(() => {
@@ -638,6 +647,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
               stats={stats}
               maxEnergy={gameState.maxEnergy}
               selectedGoal={gameState.selectedGoal ?? null}
+              goalUndecided={!gameState.selectedGoal && hasSeenLifeGoalEvent(gameState, LIFE_GOAL_SELECTION_EVENT_ID)}
               dreamProgress={dreamProgress}
               riskPercent={riskPercent}
               riskReasons={riskReasons}
@@ -897,6 +907,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
           yearMilestone={yearEndWindow.milestone}
           nextChapterId={nextChapter?.id}
           nextChapterEmoji={nextChapter?.emoji}
+          reminderOffer={yearEndWindow.chapter.chapterId === REMINDER_OFFER_CHAPTER_ID}
           onClose={handleYearEndClose}
         />
       ) : yearEndWindow?.milestone ? (

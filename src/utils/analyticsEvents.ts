@@ -646,6 +646,16 @@ export const logMilestoneReached = async (meta: MilestoneMeta) => {
   });
 };
 
+export type ReminderOfferResult = 'shown' | 'enabled' | 'unavailable';
+
+/** Bebeklik penceresindeki erken hatırlatma teklifi: kaç oyuncu gördü, kaçı açtı. */
+export const logReminderOffer = async (result: ReminderOfferResult) => {
+  await logCustomEvent('reminder_offer', {
+    placement: 'chapter_1',
+    result,
+  });
+};
+
 export const logTutorialTooltipShown = async (stepId: string) => {
   await logCustomEvent('tutorial_tooltip_shown', {
     step_id: stepId,

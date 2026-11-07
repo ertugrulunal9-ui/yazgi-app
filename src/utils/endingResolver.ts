@@ -3,6 +3,7 @@ import {
   GameState,
   LifeGoal,
   MetaProgression,
+  NPCRole,
   SchoolGrades,
   Skills,
   Stats,
@@ -119,7 +120,9 @@ const generatedTierEndings: EndingCatalogEntry[] = GOAL_ENDING_CATALOG.flatMap(
   )
 );
 
-const generatedMismatchEndings: EndingCatalogEntry[] = GOAL_ENDING_CATALOG.map(
+// Uyumsuzluk sonu oyuncunun seçtiği yaşam hedefinden üretilir; BALANCED seçilebilir bir hedef
+// değil (LifeGoal), bu yüzden balanced_mismatch_failure hiç gelemezdi ve katalogda yer almaz.
+const generatedMismatchEndings: EndingCatalogEntry[] = GOAL_ENDING_CATALOG.filter(({ goal }) => goal !== 'BALANCED').map(
   ({ goal, prefix, labelKey, fallbackLabel, icon }) => (
     createLocalizedCatalogEntry({
       id: `${prefix}_mismatch_failure`,
@@ -980,9 +983,10 @@ const flavorByAchievements = (
   return lines;
 };
 
-const calculateTier = (score: number, errorDebt: EndingErrorDebt): CareerResult['type'] => {
+export const calculateTier = (score: number, errorDebt: EndingErrorDebt): CareerResult['type'] => {
   if (errorDebt.total >= 60) return 'FAILURE';
-  if (score >= 90) return 'LEGENDARY';
+  // 85: atletik hedefte not ağırlığı olmadığı için puan tavanı 89,6; 90 eşiğinde atletik efsane imkânsızdı.
+  if (score >= 85) return 'LEGENDARY';
   if (score >= 70) return 'SUCCESS';
   if (score >= 50) return 'NORMAL';
   return 'FAILURE';
@@ -1568,6 +1572,9 @@ interface SecretEndingResult {
   result: CareerResult;
 }
 
+// "Kimseye ihtiyaç duymadan" yaşayan biri tanıdık ve rakip edinebilir, yakın bağ kurmaz
+const SILENT_LEGEND_CLOSE_ROLES: NPCRole[] = ['FRIEND', 'BEST_FRIEND', 'CRUSH', 'PARTNER'];
+
 const checkSecretEndings = (
   gameState: GameState,
   stats: Stats,
@@ -1577,7 +1584,8 @@ const checkSecretEndings = (
   const npcs = gameState.npcs || [];
   const fateTokens = gameState.fate?.tokens ?? 0;
   const hasPartner = npcs.some(n => n.role === 'PARTNER');
-  const npcCount = npcs.length;
+  // Her oyun 2 NPC ile başlar ve NPC silinmez; "hiç NPC yok" şartı bu sonu imkânsız kılıyordu
+  const hasCloseBond = npcs.some(n => SILENT_LEGEND_CLOSE_ROLES.includes(n.role));
 
   // secret_true_balance: all core stats are 85+ (gerçekten olağanüstü denge)
   if (
@@ -1642,9 +1650,9 @@ const checkSecretEndings = (
     };
   }
 
-  // secret_silent_legend: low NPC interaction with high skill profile
+  // secret_silent_legend: no close bond (friend, best friend, crush, partner) with high skill profile
   if (
-    npcCount === 0 &&
+    !hasCloseBond &&
     stats.intelligence >= 85 &&
     stats.discipline >= 80 &&
     stats.health >= 60 &&
