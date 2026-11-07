@@ -104,16 +104,84 @@ const effectByGoal = (
     : { charisma: 6, familyRelation: 4, money: 100, energy: -6 };
 };
 
+const GOAL_FEEDBACK: Record<LifeGoal, Record<'stage1' | 'stage2' | 'stage3', { safe: string; risky: string }>> = {
+  ACADEMIC: {
+    stage1: {
+      safe: 'Mentorla her hafta aynı saatte oturup bir konu defteri tutmaya başladın. Yavaş ilerliyorsun ama sayfalar dolmaya başladı.',
+      risky: 'İlk haftada mentorun verdiği listenin iki katını bitirdin. Hocanın yüzü güldü, ama gözlerinin altı mor.',
+    },
+    stage2: {
+      safe: 'Çözdüğün yanlışları tek tek defterine geçirmiştin. Kâğıtta tanıdık sorular görünce elin titremedi.',
+      risky: 'Son geceyi sabaha kadar deneme çözerek geçirdin. Puanın yükseldi, ama çıkışta arkadaşlarının şakasına gülecek halin kalmamıştı.',
+    },
+    stage3: {
+      safe: 'Salona girerken cebindeki özet kartını bir kez daha yokladın. Sorular sırayla ve sakince yerine oturdu.',
+      risky: 'Zor soruları öne alıp süreyle yarıştın. Birkaçı tuttu, birkaçı kâğıtta yarım kaldı; çıkışta başın zonkluyordu.',
+    },
+  },
+  ATHLETIC: {
+    stage1: {
+      safe: 'Antrenörün seni her sabah ısınmayla başlatıp bir koşu çizelgesine yazdı. Nefesin her hafta biraz daha uzun dayanıyor.',
+      risky: 'Programın dışına ekstra tekrarlar eklemeye başladın. Hızın fark edildi, ama derste otururken bile bacakların sızlıyor.',
+    },
+    stage2: {
+      safe: 'Turnuvada tempoyu ilk dakikada değil, son çeyrekte yükseltmeyi seçtin. Rakipler yorulurken sen tam yerindeydin.',
+      risky: 'Daha ilk dakikada tempoyu zorlayıp öne geçtin. Maç sonrası eve gitmek yerine tesiste oyalandın, ailen seni bekledi.',
+    },
+    stage3: {
+      safe: 'Finalde antrenörün çizdiği oyun planına sadık kaldın. Skor tabelası ağır ağır senin lehine döndü.',
+      risky: 'Son dakikalarda büyük bir riske girdin ve hamle tuttu. Salondaki alkışla birlikte cebine küçük bir ödül de girdi.',
+    },
+  },
+  CREATIVE: {
+    stage1: {
+      safe: 'Proje grubuna işini önce küçük bir taslakla gösterdin. Hocanın kenara yazdığı notları tek tek uyguladın.',
+      risky: 'Taslağı bırakıp tamamen yeni bir fikre atladın. Grup şaşırdı, ama plansız gece mesaileri düzenini bozdu.',
+    },
+    stage2: {
+      safe: 'Sahneye çıkmadan önce parçanı üç kez baştan sona prova etmiştin. Seyirciden gelen ilk alkış omuzlarını gevşetti.',
+      risky: 'Provadaki halini bırakıp sahnede doğaçlama yaptın. Salon seni ayrıca not etti, ama bir yerde ipin ucu elinden kaydı.',
+    },
+    stage3: {
+      safe: 'Final gecesi işini en güvendiğin haliyle sundun. Jüriden biri sonra yanına gelip bir atölye teklifi bıraktı.',
+      risky: 'Işıkları kısıp işini hiç denemediğin bir biçimde sundun. Salon önce sustu, sonra ayağa kalktı; ailene sarılmak için vakit bulamadın.',
+    },
+  },
+  WEALTH: {
+    stage1: {
+      safe: 'Mentorun için iki sayfalık bir iş planı yazıp maliyetleri satır satır çıkardın. Küçük ama sağlam bir ilk gelir kapıyı çaldı.',
+      risky: 'Planı beklemeden ilk siparişi aldın. Para daha hızlı geldi, ama akşam yemeğine geç kalmaya başladın.',
+    },
+    stage2: {
+      safe: 'İlk müşteriye söz verdiğin tarihten bir gün önce teslim ettin. Müşteri bir sonraki siparişini aynı akşam yazdı.',
+      risky: 'Fiyatı yükseltip teslimatı sıkıştırdın. Kasa doldu, ama müşterinin sesindeki soğukluk aklında kaldı.',
+    },
+    stage3: {
+      safe: 'Yatırımcıya hayalini değil, rakamlarını anlattın. Sorulara defterindeki sayfalarla tek tek cevap verdin.',
+      risky: 'Sunumun ortasında hedefi büyütüp iddialı bir rakam söyledin. Yatırımcı etkilendi; evdeki sofrada ise sessizlik uzadı.',
+    },
+  },
+  SOCIAL: {
+    stage1: {
+      safe: 'Aday olarak önce sınıfları tek tek gezip herkesi dinledin. Kendini anlatmadan önce not aldın ve insanlar bunu fark etti.',
+      risky: 'Tanıtım konuşmasını sınıf sınıf koşarak yaptın. Adın herkesin dilinde, ama ödev defterin yarım kaldı.',
+    },
+    stage2: {
+      safe: 'Herkesin söz hakkı olduğunu açıkça söyleyip sırayla dinledin. Toplantı sonunda iki taraf da el sıkıştı.',
+      risky: 'Karşı çıkanın sözünü kesip kararı kendin verdin. Toplantı bitti, ama pankart masrafı cebinden çıktı.',
+    },
+    stage3: {
+      safe: 'Forumda konuşmanı tek bir hikaye etrafında topladın. Çıkarken tanımadığın birkaç kişi sana teşekkür etti.',
+      risky: 'Hazırladığın metni bırakıp doğrudan seyirciye konuştun. Salon coştu, kuliste sesin kısılmıştı ama elinde ödül parası vardı.',
+    },
+  },
+};
+
 const feedbackByGoal = (
   goal: LifeGoal,
   stage: 1 | 2 | 3,
   variant: 'safe' | 'risky'
-): string => {
-  if (variant === 'safe') {
-    return `${GOAL_TEXT[goal][`stage${stage}` as 'stage1' | 'stage2' | 'stage3']} Dengeli bir yaklaşımla istikrar kurdun.`;
-  }
-  return `${GOAL_TEXT[goal][`stage${stage}` as 'stage1' | 'stage2' | 'stage3']} Yüksek risk aldın; hızlı kazandın ama bedel ödedin.`;
-};
+): string => GOAL_FEEDBACK[goal][`stage${stage}` as 'stage1' | 'stage2' | 'stage3'][variant];
 
 const buildStageChoices = (stage: 1 | 2 | 3): ((context: EventContext) => Choice)[] => [
   (context) => {
