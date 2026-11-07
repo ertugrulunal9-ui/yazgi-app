@@ -66,12 +66,35 @@ export const REWARDED_AD_LOAD_TIMEOUT_ERROR = 'Rewarded ad load timed out';
  * bırakır ama oyuncuyu "yükleniyor"da bekletmez ve bayat bir reklamın geç açılmasını önler.
  */
 export const REWARDED_AD_LOAD_TIMEOUT_MS = 15_000;
+/**
+ * Geçiş reklamı önceden (arka planda) yüklenir; oyuncu beklemez. LOADED ya da ERROR bu sürede
+ * gelmezse istek bırakılır (yükleme "sürüyor"da takılı kalmasın), geç gelen LOADED yok sayılır.
+ * Ödüllüden uzun: yavaş bağlantıda istek boşa gitmesin.
+ */
+export const INTERSTITIAL_AD_LOAD_TIMEOUT_MS = 30_000;
+/**
+ * Önceden yüklenen reklam bu süreden eskiyse gösterilmez, atılır (yüklenen tam ekran reklamlar
+ * zamanla geçersiz olur; sınır ihtiyatlı tutuldu).
+ */
+export const INTERSTITIAL_AD_MAX_AGE_MS = 55 * 60 * 1000;
+/**
+ * `show()` sonrası OPENED bu sürede gelmezse gösterim başarısız sayılır ve yuva bırakılır. Kütüphane
+ * sessiz gösterim hatasını bildirmeyebiliyor; aksi hâlde yuva oturum boyunca "showing"de takılır ve
+ * başka geçiş reklamı yüklenmez. Yalnızca SDK OPENED olayını sağlıyorsa kurulur.
+ */
+export const INTERSTITIAL_AD_OPEN_TIMEOUT_MS = 10_000;
+
+/**
+ * Uygulama arka plandayken (Ana ekran / geri tuşu) tam ekran reklam açılmaz: uygulamayı öne çekip
+ * beklenmedik reklam göstermesin. Yalnızca gösterim öncesinde bakılır; reklam açıkken uygulamanın
+ * arka plana geçmesi sonucu etkilemez. Ödüllü ve geçiş reklamı ortak kullanır.
+ */
+const isAppInForeground = (): boolean => (
+  AppState.currentState == null || AppState.currentState === 'active'
+);
 
 const canShowRewardedAd = (shouldShow?: () => boolean): boolean => {
-  // Uygulama arka plandayken (Ana ekran / geri tuşu) yüklenen reklam açılmaz: uygulamayı öne çekip
-  // beklenmedik tam ekran reklam göstermesin. Yalnızca gösterim öncesinde bakılır; reklam açıkken
-  // uygulamanın arka plana geçmesi ödülü etkilemez.
-  if (AppState.currentState != null && AppState.currentState !== 'active') return false;
+  if (!isAppInForeground()) return false;
   if (!shouldShow) return true;
   try {
     return shouldShow() === true;
@@ -87,7 +110,11 @@ export type InterstitialBlockReason =
   | 'session_cap'
   | 'cooldown'
   | 'provider_unavailable'
-  | 'ad_error';
+  | 'ad_error'
+  /** Doğal arada önceden yüklenmiş reklam hazır değildi: fırsat atlandı, sonradan gösterilmez. */
+  | 'not_ready'
+  /** Doğal arada uygulama ön planda değildi. */
+  | 'background';
 
 export interface InterstitialAdResult {
   shown: boolean;
@@ -114,6 +141,7 @@ type AdMobModule = {
     LOADED: string;
     ERROR: string;
     CLOSED: string;
+    OPENED?: string;
   };
   RewardedAdEventType?: {
     LOADED: string;
@@ -135,6 +163,30 @@ interface AdMobConfig {
 interface MonetizationConfig {
   interstitialSessionLimit?: number | string;
   interstitialCooldownMs?: number | string;
+}
+
+/** Kütüphanenin geçiş reklamı nesnesinden kullanılan kısım. */
+interface InterstitialAdHandle {
+  addAdEventListener: (type: string, listener: (payload?: unknown) => void) => () => void;
+  load: () => void;
+  show: () => unknown;
+  /** Kütüphane hata/kapanma sonrası false yapar. */
+  loaded?: boolean;
+}
+
+/** Önceden yüklenen tek geçiş reklamı. LOADED yalnızca `ready` yapar; reklamı hiçbir zaman açmaz. */
+interface InterstitialSlot {
+  ad: InterstitialAdHandle;
+  state: 'loading' | 'ready' | 'showing';
+  /** İstek hangi kişiselleştirme tercihiyle yapıldı (tercih değişirse reklam atılır). */
+  personalized: boolean;
+  loadedAt: number;
+  loadTimer: ReturnType<typeof setTimeout> | null;
+  /** `show()` sonrası OPENED bekçisi (bkz. INTERSTITIAL_AD_OPEN_TIMEOUT_MS). */
+  openTimer: ReturnType<typeof setTimeout> | null;
+  unsubs: (() => void)[];
+  /** Gösterim sürerken: reklam kapanınca (true) ya da gösterilemeyince (false) çağrılır. */
+  onShowSettled: ((shown: boolean) => void) | null;
 }
 
 const STORAGE_AD_COUNT_KEY = '@yazgi/ad_count';
@@ -323,9 +375,17 @@ class MonetizationService {
   private interstitialCooldownMs = DEFAULT_INTERSTITIAL_COOLDOWN_MS;
   private lastInterstitialShownAt = 0;
   private lastAdResetDate: string | null = null;
+  private interstitialSlot: InterstitialSlot | null = null;
+  /**
+   * Başlatma bitmeden istenen ön yükleme başlatma bitince yapılır. Ön yükleme servisi kendisi
+   * başlatmaz: açılışta başlatma UMP izin akışından sonra yapılıyor (`useAppBootstrap`).
+   */
+  private interstitialPreloadRequested = false;
   private readonly allowMockAds = isDevRuntime;
 
   __reset() {
+    if (this.interstitialSlot) this.finishInterstitialSlot(this.interstitialSlot, false);
+    this.interstitialPreloadRequested = false;
     this.isInitialized = false;
     this.adProvider = 'mock';
     this.adMobModule = null;
@@ -364,6 +424,11 @@ class MonetizationService {
     devLog.log(
       `[monetization] initialized (ads=${this.adProvider}, session_cap=${this.interstitialSessionLimit}, cooldown_ms=${this.interstitialCooldownMs})`
     );
+
+    if (this.interstitialPreloadRequested) {
+      this.interstitialPreloadRequested = false;
+      this.preloadInterstitialAd();
+    }
   }
 
   async getProducts(): Promise<Product[]> {
@@ -518,9 +583,36 @@ class MonetizationService {
     };
   }
 
-  async showInterstitialAdDetailed(): Promise<InterstitialAdResult> {
-    if (!this.isInitialized) await this.initialize();
+  /**
+   * Geçiş reklamını sıradaki doğal ara için önceden yükler. Reklamı açmaz. Zaten yükleniyorsa,
+   * hazırsa ya da gösteriliyorsa bir şey yapmaz; premium, reklam kapalı ya da oturum sınırı
+   * dolmuşsa istek yapılmaz. Servis henüz başlatılmadıysa istek başlatma bitince yapılır.
+   */
+  preloadInterstitialAd(): void {
+    if (!this.isInitialized) {
+      this.interstitialPreloadRequested = true;
+      return;
+    }
+    if (this.adProvider !== 'admob' || !this.adMobModule) return;
+    if (this.isPremium() || !this.adsEnabled) return;
+    if (this.interstitialShownThisSession >= this.interstitialSessionLimit) return;
 
+    const slot = this.interstitialSlot;
+    if (slot) {
+      if (slot.state === 'loading' || slot.state === 'showing') return;
+      if (this.isInterstitialSlotUsable(slot, Date.now())) return;
+      this.finishInterstitialSlot(slot, false);
+    }
+    this.loadInterstitialSlot();
+  }
+
+  /**
+   * Doğal arada çağrılır (yıl sonu penceresi kapanınca ya da sakin yılda yaş geçişinde). Karar bu
+   * çağrının içinde, beklemeden verilir: önceden yüklenmiş reklam şimdi hazırsa hemen açılır, değilse
+   * fırsat `not_ready` ile atlanır. Sonradan gelen LOADED reklam açmaz (gecikmeli gösterim yok).
+   * Dönen söz reklam kapanınca çözülür.
+   */
+  async showInterstitialAdDetailed(): Promise<InterstitialAdResult> {
     if (this.isPremium()) {
       return { shown: false, reason: 'premium_user', provider: this.adProvider };
     }
@@ -554,8 +646,23 @@ class MonetizationService {
       };
     }
 
+    if (!isAppInForeground()) {
+      return { shown: false, reason: 'background', provider: this.adProvider };
+    }
+
+    // Başlatma beklenmez: beklemek doğal arayı kaçırıp reklamı sonradan açmak olurdu.
+    if (!this.isInitialized) {
+      return { shown: false, reason: 'not_ready', provider: this.adProvider };
+    }
+
     if (this.adProvider === 'admob' && this.adMobModule) {
-      const shown = await this.showInterstitialWithAdMob();
+      const slot = this.interstitialSlot;
+      if (!slot || slot.state !== 'ready' || !this.isInterstitialSlotUsable(slot, now)) {
+        // Eskimiş ya da eski kişiselleştirme tercihiyle istenmiş reklam atılır; yenisini çağıran ister.
+        if (slot && slot.state === 'ready') this.finishInterstitialSlot(slot, false);
+        return { shown: false, reason: 'not_ready', provider: 'admob' };
+      }
+      const shown = await this.presentInterstitialSlot(slot);
       if (shown) this.recordInterstitialShown(now);
       return {
         shown,
@@ -597,6 +704,13 @@ class MonetizationService {
 
   setPersonalizedAdsEnabled(enabled: boolean): void {
     this.personalizedAdsEnabled = enabled;
+    // Önceden yüklenmiş geçiş reklamı eski tercihle istendi: atılır ve yeni tercihle yeniden istenir
+    // (oyuncu kişiselleştirmeyi kapattıysa kişiselleştirilmiş reklam gösterilmesin).
+    const slot = this.interstitialSlot;
+    if (slot && slot.state !== 'showing' && slot.personalized !== enabled) {
+      this.finishInterstitialSlot(slot, false);
+      this.preloadInterstitialAd();
+    }
   }
 
   setEntitlementTokenProvider(_provider: AuthTokenProvider | null): void {
@@ -760,59 +874,139 @@ class MonetizationService {
     });
   }
 
-  private async showInterstitialWithAdMob(): Promise<boolean> {
+  private isInterstitialSlotUsable(slot: InterstitialSlot, now: number): boolean {
+    return slot.state === 'ready'
+      && slot.ad.loaded !== false
+      && now - slot.loadedAt < INTERSTITIAL_AD_MAX_AGE_MS
+      && slot.personalized === this.personalizedAdsEnabled;
+  }
+
+  /** Yeni geçiş reklamı isteği başlatır. LOADED yalnızca reklamı "hazır" işaretler. */
+  private loadInterstitialSlot(): void {
     const interstitialFactory = this.adMobModule?.InterstitialAd;
     const adEventType = this.adMobModule?.AdEventType;
     const adUnitId = this.getAdUnitId('interstitial');
 
-    if (!interstitialFactory || !adEventType || !adUnitId) {
-      return false;
-    }
+    if (!interstitialFactory || !adEventType || !adUnitId) return;
 
-    return new Promise<boolean>((resolve) => {
-      const interstitialAd = interstitialFactory.createForAdRequest(adUnitId, {
+    let ad: InterstitialAdHandle;
+    try {
+      ad = interstitialFactory.createForAdRequest(adUnitId, {
         requestNonPersonalizedAdsOnly: !this.personalizedAdsEnabled,
       });
+    } catch (error) {
+      devLog.warn('[monetization] Interstitial request could not be created.', error);
+      return;
+    }
 
-      let settled = false;
-      const unsubs: Array<() => void> = [];
-      const settle = (result: boolean) => {
-        if (settled) return;
-        settled = true;
-        unsubs.forEach((unsub) => {
-          try {
-            unsub();
-          } catch {
-            // no-op
+    const slot: InterstitialSlot = {
+      ad,
+      state: 'loading',
+      personalized: this.personalizedAdsEnabled,
+      loadedAt: 0,
+      loadTimer: null,
+      openTimer: null,
+      unsubs: [],
+      onShowSettled: null,
+    };
+    this.interstitialSlot = slot;
+    // Atılan isteğin olayları (kütüphane dinleyiciyi kaldırmasa bile) yok sayılır.
+    const isCurrent = () => this.interstitialSlot === slot;
+
+    try {
+      slot.unsubs.push(
+        ad.addAdEventListener(adEventType.LOADED, () => {
+          if (!isCurrent() || slot.state !== 'loading') return;
+          if (slot.loadTimer) {
+            clearTimeout(slot.loadTimer);
+            slot.loadTimer = null;
           }
-        });
-        resolve(result);
-      };
-
-      unsubs.push(
-        interstitialAd.addAdEventListener(adEventType.LOADED, () => {
-          try {
-            void interstitialAd.show();
-          } catch {
-            settle(false);
-          }
+          slot.state = 'ready';
+          slot.loadedAt = Date.now();
         })
       );
-
-      unsubs.push(
-        interstitialAd.addAdEventListener(adEventType.ERROR, () => {
-          settle(false);
+      // Yükleme hatası ya da gösterim hatası (ör. platform reddi) aynı olayla gelir.
+      slot.unsubs.push(
+        ad.addAdEventListener(adEventType.ERROR, () => {
+          if (!isCurrent()) return;
+          this.finishInterstitialSlot(slot, false);
         })
       );
-
-      unsubs.push(
-        interstitialAd.addAdEventListener(adEventType.CLOSED, () => {
-          settle(true);
+      slot.unsubs.push(
+        ad.addAdEventListener(adEventType.CLOSED, () => {
+          if (!isCurrent()) return;
+          this.finishInterstitialSlot(slot, slot.state === 'showing');
         })
       );
+      if (adEventType.OPENED) {
+        slot.unsubs.push(
+          ad.addAdEventListener(adEventType.OPENED, () => {
+            if (!isCurrent() || !slot.openTimer) return;
+            clearTimeout(slot.openTimer);
+            slot.openTimer = null;
+          })
+        );
+      }
 
-      interstitialAd.load();
+      slot.loadTimer = setTimeout(() => {
+        slot.loadTimer = null;
+        if (isCurrent() && slot.state === 'loading') this.finishInterstitialSlot(slot, false);
+      }, INTERSTITIAL_AD_LOAD_TIMEOUT_MS);
+
+      ad.load();
+    } catch (error) {
+      devLog.warn('[monetization] Interstitial load failed.', error);
+      this.finishInterstitialSlot(slot, false);
+    }
+  }
+
+  /** Hazır reklamı şimdi açar; reklam kapanınca true, gösterilemezse false ile çözülür. */
+  private presentInterstitialSlot(slot: InterstitialSlot): Promise<boolean> {
+    return new Promise<boolean>((resolve) => {
+      slot.state = 'showing';
+      slot.onShowSettled = resolve;
+      const settleShowFailure = () => this.finishInterstitialSlot(slot, false);
+      // Bekçi show()'dan önce kurulur: OPENED hiç gelmezse yuva "showing"de takılı kalmasın.
+      if (this.adMobModule?.AdEventType?.OPENED) {
+        slot.openTimer = setTimeout(() => {
+          slot.openTimer = null;
+          if (this.interstitialSlot === slot && slot.state === 'showing') settleShowFailure();
+        }, INTERSTITIAL_AD_OPEN_TIMEOUT_MS);
+      }
+      try {
+        const shown = slot.ad.show() as Promise<unknown> | undefined;
+        if (shown && typeof shown.then === 'function') {
+          shown.then(undefined, settleShowFailure);
+        }
+      } catch {
+        settleShowFailure();
+      }
     });
+  }
+
+  /** Reklamı bırakır: dinleyiciler ve zamanlayıcı kaldırılır, gösterim sürüyorsa sonucu bildirilir. */
+  private finishInterstitialSlot(slot: InterstitialSlot, shown: boolean): void {
+    if (slot.loadTimer) {
+      clearTimeout(slot.loadTimer);
+      slot.loadTimer = null;
+    }
+    if (slot.openTimer) {
+      clearTimeout(slot.openTimer);
+      slot.openTimer = null;
+    }
+    const unsubs = slot.unsubs;
+    slot.unsubs = [];
+    unsubs.forEach((unsub) => {
+      try {
+        unsub();
+      } catch {
+        // no-op
+      }
+    });
+    if (this.interstitialSlot === slot) this.interstitialSlot = null;
+    const settle = slot.onShowSettled;
+    slot.onShowSettled = null;
+    settle?.(shown);
   }
 
   private getFallbackRewardAmount(rewardType: RewardType): number {
@@ -873,6 +1067,7 @@ export const showContextualRewardedAd = (placement: RewardedPlacement, options?:
   monetizationService.showContextualRewardedAd(placement, options);
 export const showInterstitialAd = () => monetizationService.showInterstitialAd();
 export const showInterstitialAdDetailed = () => monetizationService.showInterstitialAdDetailed();
+export const preloadInterstitialAd = () => monetizationService.preloadInterstitialAd();
 export const getRemainingRewardedAds = () => monetizationService.getRemainingRewardedAds();
 export const restorePurchases = () => monetizationService.restorePurchases();
 export const setPersonalizedAdsEnabled = (enabled: boolean) =>

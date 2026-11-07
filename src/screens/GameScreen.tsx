@@ -43,15 +43,9 @@ import { AchievementToast } from '../components/AchievementToast';
 // ShopModal removed — monetization is ad-only
 import * as Sharing from 'expo-sharing';
 import { useAchievements } from '../hooks/useAchievements';
-import {
-  logInterstitialOpportunity,
-  logInterstitialResult,
-} from '../utils/analyticsEvents';
+import { useAgeTransitionInterstitial } from '../hooks/useAgeTransitionInterstitial';
 import { TabContent } from '../components/ui';
 import { calculateEndingErrorDebt, calculateSelectedGoalStatProgress } from '../utils/endingResolver';
-import {
-  showInterstitialAdDetailed,
-} from '../services/monetization';
 import {
   MiniGameContainer,
   MathExamGame,
@@ -253,25 +247,6 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
   useEffect(() => {
     if (gameState.age > previousAgeRef.current) {
       levelUp();
-      // İlk koşu reklamsız: oyuncu ilk hayatını bitirmeden geçiş reklamı gösterilmez
-      const isFirstRun = (gameState.metaProgression?.totalRunsCompleted ?? 0) === 0;
-      void (async () => {
-        void logInterstitialOpportunity({ placement: 'age_transition' });
-        if (isFirstRun) {
-          void logInterstitialResult({
-            placement: 'age_transition',
-            shown: false,
-            reason: 'first_run_grace',
-          });
-          return;
-        }
-        const interstitial = await showInterstitialAdDetailed();
-        void logInterstitialResult({
-          placement: 'age_transition',
-          shown: interstitial.shown,
-          reason: interstitial.reason,
-        });
-      })();
     }
     previousAgeRef.current = gameState.age;
   }, [gameState.age]);
@@ -298,17 +273,25 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
   // "Gösterildi" bilgisi kayıtta: bellekte tutulunca uygulama her açılışta son bölümü/yaş özetini yeniden
   // gösteriyordu; kayıtla birlikte yeni hayatta da sıfırlanır
   const yearEndWindowsShown = gameState.yearEndWindowsShown;
+  const pendingYearEndWindow = useMemo(() => resolveYearEndWindow({
+    milestones: gameState.ageMilestoneSummaries,
+    chapters: gameState.chapterSummaries,
+    milestoneEnabled: isFeatureEnabled('MILESTONE_SUMMARY'),
+    chapterEnabled: isFeatureEnabled('CHAPTER_SYSTEM'),
+    shownMilestoneAges: new Set(yearEndWindowsShown?.milestoneAges ?? []),
+    shownChapterIds: new Set(yearEndWindowsShown?.chapterIds ?? []),
+  }), [gameState.ageMilestoneSummaries, gameState.chapterSummaries, yearEndWindowsShown]);
   useEffect(() => {
-    const next = resolveYearEndWindow({
-      milestones: gameState.ageMilestoneSummaries,
-      chapters: gameState.chapterSummaries,
-      milestoneEnabled: isFeatureEnabled('MILESTONE_SUMMARY'),
-      chapterEnabled: isFeatureEnabled('CHAPTER_SYSTEM'),
-      shownMilestoneAges: new Set(yearEndWindowsShown?.milestoneAges ?? []),
-      shownChapterIds: new Set(yearEndWindowsShown?.chapterIds ?? []),
-    });
-    if (next) setYearEndWindow(next);
-  }, [gameState.ageMilestoneSummaries, gameState.chapterSummaries, yearEndWindowsShown]);
+    if (pendingYearEndWindow) setYearEndWindow(pendingYearEndWindow);
+  }, [pendingYearEndWindow]);
+
+  // Geçiş reklamı yalnızca doğal arada: yıl sonu penceresi kapanınca, pencere yoksa yaş geçişinde.
+  // İlk koşu reklamsız: oyuncu ilk hayatını bitirmeden geçiş reklamı gösterilmez.
+  const { handleYearEndWindowClosed } = useAgeTransitionInterstitial({
+    age: gameState.age,
+    isFirstRun: (gameState.metaProgression?.totalRunsCompleted ?? 0) === 0,
+    yearEndWindowPending: pendingYearEndWindow !== null,
+  });
 
   // Tek pencere iki özeti de gösterir; kapanınca ikisi de "gösterildi" olur
   const handleYearEndClose = useCallback(() => {
@@ -323,7 +306,8 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
       });
     }
     setYearEndWindow(null);
-  }, [updateGameState, yearEndWindow, yearEndWindowsShown]);
+    handleYearEndWindowClosed();
+  }, [handleYearEndWindowClosed, updateGameState, yearEndWindow, yearEndWindowsShown]);
 
   // Session Recap — Faz 1B: mount'ta son oturum 5+ dakika önceyse göster
   useEffect(() => {

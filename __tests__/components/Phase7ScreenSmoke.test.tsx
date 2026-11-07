@@ -19,6 +19,7 @@ import SaveManager from '../../src/save/SaveManager';
 import { CHAPTERS } from '../../src/config/gameBalance';
 import { buildChapterSummary } from '../../src/utils/milestoneBuilder';
 import * as achievementSystem from '../../src/systems/achievementSystem';
+import { showInterstitialAdDetailed } from '../../src/services/monetization';
 import type { AgeMilestoneSummary, GameState, UnlockedAchievement } from '../../src/types/game';
 
 jest.mock('react-native', () => {
@@ -209,6 +210,7 @@ jest.mock('../../src/services/monetization', () => ({
   getRemainingRewardedAds: jest.fn(() => 0),
   showContextualRewardedAd: jest.fn(async () => ({ success: false, error: 'not_available' })),
   showInterstitialAdDetailed: jest.fn(async () => ({ shown: false, reason: 'disabled' })),
+  preloadInterstitialAd: jest.fn(),
 }));
 
 jest.mock('../../src/utils/analyticsEvents', () => ({
@@ -536,6 +538,51 @@ describe('Phase 7 screen smoke', () => {
       const { visibleModals } = renderYearEnd([yearSummary(3)], [1], { milestoneAges: [3], chapterIds: [1] });
 
       expect(visibleModals()).toHaveLength(0);
+    });
+
+    // Y-013: geçiş reklamı yalnızca doğal arada; yıl sonu penceresinin üstüne açılmaz
+    describe('age transition interstitial', () => {
+      const mockedShowInterstitial = showInterstitialAdDetailed as jest.Mock;
+
+      const renderAgeUp = (closingYear: AgeMilestoneSummary) => {
+        const current = mockedUseGame();
+        const before = {
+          ...current.gameState,
+          age: 7,
+          metaProgression: { ...(current.gameState.metaProgression as object), totalRunsCompleted: 1 } as GameState['metaProgression'],
+          ageMilestoneSummaries: [],
+          chapterSummaries: [],
+          yearEndWindowsShown: undefined,
+        };
+        mockedUseGame.mockReturnValue({ ...current, gameState: before });
+        const view = render(<GameScreen onPhaseChange={jest.fn()} currentTab="hub" />);
+        expect(mockedShowInterstitial).not.toHaveBeenCalled();
+
+        mockedUseGame.mockReturnValue({
+          ...current,
+          gameState: { ...before, age: 8, ageMilestoneSummaries: [closingYear] },
+        });
+        // Yeni prop: memo'lu ekran yeniden çizilsin
+        view.rerender(<GameScreen onPhaseChange={jest.fn()} currentTab="hub" />);
+        return view;
+      };
+
+      it('waits for the year summary to close before trying the ad', () => {
+        const { getByText } = renderAgeUp(yearSummary(7));
+
+        expect(getByText('Age 7 Summary')).toBeTruthy();
+        expect(mockedShowInterstitial).not.toHaveBeenCalled();
+
+        fireEvent.press(getByText('Continue'));
+
+        expect(mockedShowInterstitial).toHaveBeenCalledTimes(1);
+      });
+
+      it('tries the ad at the age-up itself after a quiet year', () => {
+        renderAgeUp(yearSummary(7, false));
+
+        expect(mockedShowInterstitial).toHaveBeenCalledTimes(1);
+      });
     });
   });
 

@@ -26,6 +26,7 @@ import {
 } from '../utils/metaProgression';
 import {
   getRemainingRewardedAds,
+  REWARDED_AD_CANCELLED_ERROR,
   showContextualRewardedAd,
 } from '../services/monetization';
 import {
@@ -134,6 +135,16 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
   const [altEndingUnlocking, setAltEndingUnlocking] = useState(false);
   const [notificationPromptState, setNotificationPromptState] = useState<NotificationPromptState>('idle');
   const [communityRunCount, setCommunityRunCount] = useState<number>(0);
+  // Oyuncu hâlâ bu oyun sonu ekranında mı: ekran kapanınca ya da "Yeni Hayat"a basınca false.
+  // Alternatif son reklamı yüklenirken oyuncu çıktıysa reklam açılmaz, ödül uygulanmaz.
+  const isOnGameOverScreenRef = useRef(true);
+
+  useEffect(() => {
+    isOnGameOverScreenRef.current = true;
+    return () => {
+      isOnGameOverScreenRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     incrementCommunityRuns().then(setCommunityRunCount).catch(() => {});
@@ -309,9 +320,26 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
       rewardType: 'utility',
       remainingBefore,
     });
+    const isStillOnGameOverScreen = () => isOnGameOverScreenRef.current;
     try {
-      const adResult = await showContextualRewardedAd('ending_alternative');
+      const adResult = await showContextualRewardedAd('ending_alternative', {
+        shouldShow: isStillOnGameOverScreen,
+      });
       const remainingAfter = getRemainingRewardedAds();
+      // Oyuncu ekrandan çıktıysa (Yeni Hayat, ekran kapandı) ya da reklam iptal olduysa sessizce bırak:
+      // ödül yeni oyuna uygulanmaz, çıkılmış ekrana hata penceresi açılmaz.
+      if (!isStillOnGameOverScreen() || adResult.error === REWARDED_AD_CANCELLED_ERROR) {
+        void logRewardedAdResult({
+          placement: 'ending_alternative',
+          rewardType: 'utility',
+          success: false,
+          remainingAfter,
+          errorMessage: adResult.success
+            ? 'Alternative ending skipped: game over screen closed'
+            : adResult.error,
+        });
+        return;
+      }
       if (!adResult.success) {
         void logRewardedAdResult({
           placement: 'ending_alternative',
@@ -332,11 +360,13 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
         remainingAfter,
       });
     } finally {
-      setAltEndingUnlocking(false);
+      if (isOnGameOverScreenRef.current) setAltEndingUnlocking(false);
     }
   };
 
   const handleRestart = () => {
+    // "Yeni Hayat" kilitlenmez (reklam takılırsa oyuncu sıkışmasın); yüklenen reklam artık açılmaz
+    isOnGameOverScreenRef.current = false;
     buttonPress();
     successHaptic();
     onRestart();
