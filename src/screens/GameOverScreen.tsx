@@ -29,6 +29,7 @@ import {
   REWARDED_AD_CANCELLED_ERROR,
   showContextualRewardedAd,
 } from '../services/monetization';
+import { getAdErrorMessage } from '../utils/adErrorMessage';
 import {
   requestPermissions as requestNotificationPermissions,
   scheduleReengagement,
@@ -348,7 +349,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ theme, metrics, 
           remainingAfter,
           errorMessage: adResult.error,
         });
-        Alert.alert(t('messages.adNotShown'), adResult.error || t('messages.tryAgain'));
+        Alert.alert(t('messages.adNotShown'), getAdErrorMessage(adResult.error));
         return;
       }
       setAltEndingUnlocked(true);
