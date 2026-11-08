@@ -54,6 +54,7 @@
       <li>Yazgı ücretsizdir ve Google AdMob reklamları gösterir. Reklamlar <strong>yalnızca sen açarsan</strong> kişiselleştirilir.</li>
       <li>Kullanım istatistikleri (Firebase Analytics) <strong>yalnızca sen açarsan</strong> gönderilir.</li>
       <li>Uygulama çökerse Firebase Crashlytics bir çökme raporu gönderir (varsayılan olarak açık).</li>
+      <li>Bazı oyun özellikleri Firebase Remote Config ile uzaktan açılıp kapatılabilir; bunun için açılışta kısa bir istek gider.</li>
       <li>Hatırlatma bildirimleri cihazında planlanır; bunun için sunucumuz yoktur.</li>
     </ul>
 
@@ -101,13 +102,18 @@
       7. bölümdeki adresten bize yazabilirsin.
     </p>
 
-    <p><strong>d) Bildirimler:</strong> Hatırlatma bildirimleri cihazında yerel olarak planlanır. Bildirim izni
+    <p><strong>d) Uzaktan ayarlar (Firebase Remote Config) — her zaman:</strong> Uygulama açıldığında bazı
+      özelliklerin açık mı kapalı mı olacağını (ör. hatalı bir özelliği hızla kapatmak için) Firebase'den sorar.
+      Bu istekte Firebase kurulum kimliği, uygulama ve işletim sistemi sürümü, cihazının dil/bölge ayarı ve
+      saat dilimi gönderilir. Oyun ilerlemen ve seçimlerin gönderilmez.</p>
+
+    <p><strong>e) Bildirimler:</strong> Hatırlatma bildirimleri cihazında yerel olarak planlanır. Bildirim izni
       yalnızca bir hatırlatma düğmesine dokunduğunda sorulur: Bebeklik bölümünün sonunda gösterilen
       "Yarın hatırlat" ya da oyun sonundaki "Yarın yeni bir hayat için hatırlat". Bildirimler için bir
       sunucuya veri gönderilmez. Uygulama bildirim (push) kimliği istemez ve kullanmaz; Firebase Cloud
       Messaging'in otomatik kaydı kapalıdır.</p>
 
-    <p><strong>e) Oyun kayıtları ve ayarlar:</strong> Kayıtların, tercihlerin ve gizlilik seçimlerin
+    <p><strong>f) Oyun kayıtları ve ayarlar:</strong> Kayıtların, tercihlerin ve gizlilik seçimlerin
       cihazında saklanır; bizim sunucularımıza gönderilmez. Cihazında Android'in yedekleme özelliği açıksa
       Android bu verileri diğer uygulama verileriyle birlikte Google hesabına yedekleyebilir ve uygulamayı
       yeniden kurduğunda ya da yeni bir cihaza geçtiğinde geri yükleyebilir. Bu yedeklemeyi Android yapar;
@@ -123,6 +129,7 @@
       <li><strong>Reklam göstermek ve oyunu ücretsiz sunmak:</strong> kişiselleştirilmemiş reklamlar için meşru menfaat; kişiselleştirilmiş reklamlar için açık rızan (KVKK m.5/1, GDPR m.6/1-a).</li>
       <li><strong>Oyunu geliştirmek (kullanım istatistikleri):</strong> açık rızan.</li>
       <li><strong>Teknik hataları tespit edip düzeltmek (çökme raporları):</strong> uygulamanın çalışır kalmasındaki meşru menfaatimiz (KVKK m.5/2-f, GDPR m.6/1-f).</li>
+      <li><strong>Özellikleri uzaktan açıp kapatmak (uzaktan ayarlar):</strong> uygulamanın çalışır kalmasındaki meşru menfaatimiz (KVKK m.5/2-f, GDPR m.6/1-f).</li>
       <li><strong>Hatırlatma bildirimleri:</strong> cihazında verdiğin bildirim izni.</li>
     </ul>
     <p>
@@ -142,7 +149,7 @@
         <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">Google'ın iş ortağı uygulamalardaki veri kullanımı</a>
       </li>
       <li>
-        <strong>Firebase Analytics &amp; Crashlytics</strong> (Google) —
+        <strong>Firebase Analytics, Crashlytics &amp; Remote Config</strong> (Google) —
         <a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener">firebase.google.com/support/privacy</a>
       </li>
     </ul>
