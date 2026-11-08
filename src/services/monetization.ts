@@ -61,6 +61,11 @@ export interface RewardedAdShowOptions {
 export const REWARDED_AD_CANCELLED_ERROR = 'cancelled';
 export const REWARDED_AD_LOAD_TIMEOUT_ERROR = 'Rewarded ad load timed out';
 /**
+ * UMP `canRequestAds` false iken ödüllü reklam istenmez; oyuncu "reklam şu an yok" mesajını görür
+ * ("unavailable" geçtiği için `getAdErrorMessage` bunu mevcut Türkçe metne çevirir), günlük hak düşmez.
+ */
+export const REWARDED_AD_CONSENT_ERROR = 'Ads unavailable: consent not granted';
+/**
  * Ödüllü reklam isteğinde LOADED ya da ERROR bu sürede gelmezse istek bırakılır; sonradan gelen
  * LOADED reklam açmaz. Normal bir istek birkaç saniyede biter; 15 sn yavaş mobil bağlantıya pay
  * bırakır ama oyuncuyu "yükleniyor"da bekletmez ve bayat bir reklamın geç açılmasını önler.
@@ -392,12 +397,30 @@ class MonetizationService {
   private interstitialPreloadRequested = false;
   /** Süren başlatma: eşzamanlı çağrılar aynı başlatmayı bekler (istek yapılandırması bir kez). */
   private initializePromise: Promise<void> | null = null;
+  /**
+   * UMP `canRequestAds` (Google: reklam isteği ve SDK başlatma yalnızca true iken). Varsayılan false:
+   * UMP cevap vermeden basılan ödüllü reklam SDK'yı başlatıp istek atmasın (Y-037 #2). Açılışta
+   * `useAppBootstrap` UMP akışı bitince gerçek değeri `setCanRequestAds` ile yazar. Kapı yalnızca gerçek
+   * AdMob yolunu etkiler (mock/web/Expo Go reklam istek yapmaz).
+   */
+  private canRequestAds = false;
+  /** Günlük sayaç diskten okundu mu; okunmadan diske yazılmaz (Y-037 #4). */
+  private adCountLoaded = false;
+  /** AdMob modülü var ama `canRequestAds` false olduğu için SDK başlatılmadı; true olunca başlatılır. */
+  private adsAwaitingConsent = false;
+  private pendingAdMobImport: AdMobModule | null = null;
+  private adsResumePromise: Promise<void> | null = null;
   private readonly allowMockAds = isDevRuntime;
 
   __reset() {
     if (this.interstitialSlot) this.finishInterstitialSlot(this.interstitialSlot, false);
     this.interstitialPreloadRequested = false;
     this.initializePromise = null;
+    this.canRequestAds = false;
+    this.adCountLoaded = false;
+    this.adsAwaitingConsent = false;
+    this.pendingAdMobImport = null;
+    this.adsResumePromise = null;
     this.isInitialized = false;
     this.adProvider = 'mock';
     this.adMobModule = null;
@@ -438,6 +461,7 @@ class MonetizationService {
 
     await this.initializeAds();
     await this.loadAdCount();
+    this.adCountLoaded = true;
     this.resetDailyAdCountIfNeeded();
 
     SaveManager.setPremiumUnlocked(checkPremiumSubscription());
@@ -448,10 +472,41 @@ class MonetizationService {
       `[monetization] initialized (ads=${this.adProvider}, session_cap=${this.interstitialSessionLimit}, cooldown_ms=${this.interstitialCooldownMs})`
     );
 
-    if (this.interstitialPreloadRequested) {
-      this.interstitialPreloadRequested = false;
-      this.preloadInterstitialAd();
-    }
+    await this.resumeAdsAfterConsent();
+  }
+
+  /**
+   * Reklam istekleri UMP `canRequestAds` false olduğu sürece yapılmaz. Mock/web sağlayıcı istek
+   * yapmadığı için etkilenmez; AdMob modülü olup SDK başlatma bekliyorsa (`adsAwaitingConsent`) da engel sürer.
+   */
+  private consentBlocksAds(): boolean {
+    return !this.canRequestAds && (this.adsAwaitingConsent || this.adProvider === 'admob');
+  }
+
+  /**
+   * Başlatma bitti ve istek izni var: bekleyen SDK başlatmayı yapar, sonra bekleyen ön yüklemeyi
+   * (gerekiyorsa) mevcut yoldan ister. Eşzamanlı çağrılar aynı işi paylaşır.
+   */
+  private resumeAdsAfterConsent(): Promise<void> {
+    if (this.adsResumePromise) return this.adsResumePromise;
+    const run = (async () => {
+      if (this.adsAwaitingConsent && this.canRequestAds && this.pendingAdMobImport) {
+        const pending = this.pendingAdMobImport;
+        this.adsAwaitingConsent = false;
+        this.pendingAdMobImport = null;
+        await this.startAdMobSdk(pending);
+      }
+      if (this.interstitialPreloadRequested && !this.consentBlocksAds()) {
+        this.interstitialPreloadRequested = false;
+        this.preloadInterstitialAd();
+      }
+    })();
+    this.adsResumePromise = run;
+    const clear = () => {
+      if (this.adsResumePromise === run) this.adsResumePromise = null;
+    };
+    run.then(clear, clear);
+    return run;
   }
 
   async getProducts(): Promise<Product[]> {
@@ -483,6 +538,14 @@ class MonetizationService {
 
   async showRewardedAd(rewardType: RewardType, options?: RewardedAdShowOptions): Promise<RewardedAdResult> {
     if (!this.isInitialized) await this.initialize();
+    // İzin yeni geldiyse ve SDK başlıyorsa bitmesini bekle ("reklam yok" demesin).
+    if (this.adsResumePromise) {
+      try {
+        await this.adsResumePromise;
+      } catch {
+        // Başlatma hatası: sağlayıcı mock kalır, aşağıdaki mevcut yollar karar verir.
+      }
+    }
 
     if (this.isPremium()) {
       return { success: false, error: 'Premium user — ads disabled' };
@@ -502,6 +565,11 @@ class MonetizationService {
         success: false,
         error: `Daily ad limit reached (${this.dailyAdLimit})`,
       };
+    }
+
+    // Hak düşmeden: izin yokken ne AdMob ne de mock yedek reklam gösterilir.
+    if (this.consentBlocksAds()) {
+      return { success: false, error: REWARDED_AD_CONSENT_ERROR };
     }
 
     const fallbackAmount = this.getFallbackRewardAmount(rewardType);
@@ -616,6 +684,11 @@ class MonetizationService {
       this.interstitialPreloadRequested = true;
       return;
     }
+    if (this.consentBlocksAds()) {
+      // İzin gelince (`setCanRequestAds(true)`) mevcut yoldan yapılır.
+      this.interstitialPreloadRequested = true;
+      return;
+    }
     if (this.adProvider !== 'admob' || !this.adMobModule) return;
     if (this.isPremium() || !this.adsEnabled) return;
     if (this.interstitialShownThisSession >= this.interstitialSessionLimit) return;
@@ -676,6 +749,10 @@ class MonetizationService {
     // Başlatma beklenmez: beklemek doğal arayı kaçırıp reklamı sonradan açmak olurdu.
     if (!this.isInitialized) {
       return { shown: false, reason: 'not_ready', provider: this.adProvider };
+    }
+
+    if (this.consentBlocksAds()) {
+      return { shown: false, reason: 'provider_unavailable', provider: this.adProvider };
     }
 
     if (this.adProvider === 'admob' && this.adMobModule) {
@@ -745,6 +822,34 @@ class MonetizationService {
     }
   }
 
+  /**
+   * UMP `canRequestAds` değerini uygular (açılış akışı ve gizlilik seçenekleri formu sonrası).
+   * true -> false: hazır/yüklenen geçiş reklamı atılır (gösterilen dokunulmaz), yeni istek yapılmaz.
+   * false -> true: bekleyen SDK başlatma ve ön yükleme bu oturumda yapılır.
+   */
+  setCanRequestAds(canRequestAds: boolean): void {
+    const previous = this.canRequestAds;
+    this.canRequestAds = canRequestAds === true;
+    if (previous === this.canRequestAds) return;
+
+    if (!this.canRequestAds) {
+      const slot = this.interstitialSlot;
+      if (slot && slot.state !== 'showing') {
+        this.finishInterstitialSlot(slot, false);
+        // İzin geri gelirse reklam yeniden istensin.
+        this.interstitialPreloadRequested = true;
+      }
+      return;
+    }
+
+    if (this.isInitialized) {
+      void this.resumeAdsAfterConsent().catch((error) => {
+        devLog.warn('[monetization] Resuming ads after consent failed.', error);
+      });
+    }
+    // Başlatma sürüyorsa `runInitialize` sonunda aynı yol çalışır.
+  }
+
   setEntitlementTokenProvider(_provider: AuthTokenProvider | null): void {
     // No-op in ad-only build.
   }
@@ -768,10 +873,31 @@ class MonetizationService {
       return;
     }
 
-    try {
-      const adMobImport = optionalRequire('react-native-google-mobile-ads') as AdMobModule | null;
-      const mobileAdsFactory = adMobImport?.default;
+    const adMobImport = optionalRequire('react-native-google-mobile-ads') as AdMobModule | null;
+    if (!adMobImport?.default) {
+      this.adProvider = 'mock';
+      this.adMobModule = null;
+      return;
+    }
 
+    // Google UMP rehberi: Mobile Ads SDK yalnızca `canRequestAds` true iken başlatılır. İzin yoksa
+    // (AEA'da onay alınmadı/form yüklenemedi) başlatma ertelenir; sağlayıcı "mock" kalır ama
+    // `consentBlocksAds` mock yedek reklamı da engeller. İzin gelince `resumeAdsAfterConsent` başlatır.
+    if (!this.canRequestAds) {
+      this.adsAwaitingConsent = true;
+      this.pendingAdMobImport = adMobImport;
+      this.adProvider = 'mock';
+      this.adMobModule = null;
+      devLog.log('[monetization] AdMob start deferred: canRequestAds is false.');
+      return;
+    }
+
+    await this.startAdMobSdk(adMobImport);
+  }
+
+  private async startAdMobSdk(adMobImport: AdMobModule): Promise<void> {
+    try {
+      const mobileAdsFactory = adMobImport.default;
       if (!mobileAdsFactory) {
         this.adProvider = 'mock';
         this.adMobModule = null;
@@ -782,7 +908,7 @@ class MonetizationService {
       // İlk reklam isteğinden önce: azami içerik derecesi T. Uygulanamazsa AdMob kullanılmaz
       // (sınırsız dereceli reklam istenmesin). Başka istek bayrağı bilerek verilmez.
       await mobileAds.setRequestConfiguration({
-        maxAdContentRating: adMobImport?.MaxAdContentRating?.T ?? AD_MAX_CONTENT_RATING,
+        maxAdContentRating: adMobImport.MaxAdContentRating?.T ?? AD_MAX_CONTENT_RATING,
       });
       await mobileAds.initialize();
       this.adProvider = 'admob';
@@ -870,6 +996,11 @@ class MonetizationService {
           // Zaman aşımından ya da iptalden sonra gelen LOADED reklam açmaz.
           if (settled) return;
           clearLoadTimer();
+          // İstek izin gelmeden önce atıldıysa ve izin sonradan kapandıysa reklam açılmaz, hak düşmez.
+          if (this.consentBlocksAds()) {
+            settle({ success: false, error: REWARDED_AD_CONSENT_ERROR });
+            return;
+          }
           if (!canShowRewardedAd(shouldShow)) {
             settle({ success: false, error: REWARDED_AD_CANCELLED_ERROR });
             return;
@@ -1059,6 +1190,8 @@ class MonetizationService {
   }
 
   private resetDailyAdCountIfNeeded(): void {
+    // Sayaç diskten okunmadan sıfırlama diske yazılmasın (UMP yavaşken günlük sınır silinmesin).
+    if (!this.adCountLoaded) return;
     const today = new Date().toISOString().split('T')[0];
     if (this.lastAdResetDate === today) return;
 
@@ -1108,6 +1241,8 @@ export const showInterstitialAdDetailed = () => monetizationService.showIntersti
 export const preloadInterstitialAd = () => monetizationService.preloadInterstitialAd();
 export const getRemainingRewardedAds = () => monetizationService.getRemainingRewardedAds();
 export const restorePurchases = () => monetizationService.restorePurchases();
+export const setCanRequestAds = (canRequestAds: boolean) =>
+  monetizationService.setCanRequestAds(canRequestAds);
 export const setPersonalizedAdsEnabled = (enabled: boolean, options?: { consentChanged?: boolean }) =>
   monetizationService.setPersonalizedAdsEnabled(enabled, options);
 export const setEntitlementTokenProvider = (provider: AuthTokenProvider | null) =>

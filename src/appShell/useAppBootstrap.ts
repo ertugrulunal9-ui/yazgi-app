@@ -15,7 +15,11 @@ import { logAppOpen } from '../utils/analyticsEvents';
 import { requestAndResolveConsent, subscribeUmpConsent } from '../services/consentService';
 import { resolveEffectivePersonalizedAds } from '../services/adConsentPolicy';
 import type { UmpConsentOutcome } from '../services/adConsentPolicy';
-import { initMonetization, setPersonalizedAdsEnabled as setMonetizationPersonalizedAdsEnabled } from '../services/monetization';
+import {
+  initMonetization,
+  setCanRequestAds as setMonetizationCanRequestAds,
+  setPersonalizedAdsEnabled as setMonetizationPersonalizedAdsEnabled,
+} from '../services/monetization';
 import { restoreNotificationPermission } from '../services/notificationService';
 import { initializeSubscriptions } from '../services/subscriptionManager';
 import { usePrivacyChoicesGate } from './usePrivacyChoicesGate';
@@ -177,6 +181,9 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
     // Ayarlar'daki reklam gizlilik seçenekleri formu kapanınca da gelir. Yalnızca UMP durumu
     // güncellenir (etkin değer aşağıda yeniden hesaplanır); oyuncunun Ayarlar tercihi değişmez.
     // Sıra: işaret, sonra yeni sonuç, en son sürüm (güncellemeler birleşmese bile ilk uygulama yeni değerle olur).
+    // Reklam isteği kapısı (UMP `canRequestAds`) önce: açılış akışı `initMonetization`'dan önce yayınlar,
+    // yani SDK başlatma bu değeri görür. Web'de UMP yayını yok; kapı varsayılan açık kalır (reklam mock).
+    setMonetizationCanRequestAds(snapshot.canRequestAds);
     const fromPrivacyOptions = snapshot.source === 'privacy_options';
     if (fromPrivacyOptions) consentRefreshPendingRef.current = true;
     if (snapshot.outcome !== null) setUmpConsentOutcome(snapshot.outcome);

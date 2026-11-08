@@ -71,7 +71,7 @@ describe('UMP privacy options state from the startup consent flow', () => {
 
     await expect(service.requestAndResolveConsent()).resolves.toBe('obtained');
 
-    const expected: UmpConsentSnapshot = { outcome: 'obtained', privacyOptionsRequired: true, source: 'startup' };
+    const expected: UmpConsentSnapshot = { outcome: 'obtained', privacyOptionsRequired: true, canRequestAds: true, source: 'startup' };
     expect(service.getUmpConsentSnapshot()).toEqual(expected);
     expect(listener).toHaveBeenCalledWith(expected);
   });
@@ -107,8 +107,38 @@ describe('UMP privacy options state from the startup consent flow', () => {
     expect(service.getUmpConsentSnapshot()).toEqual({
       outcome: 'error',
       privacyOptionsRequired: true,
+      canRequestAds: false,
       source: 'startup',
     });
+  });
+
+  it('canRequestAds comes from the final UMP info; false when the EEA form was not completed', async () => {
+    const service = loadService();
+    mockRequestInfoUpdate.mockResolvedValue({ ...info('REQUIRED', 'REQUIRED'), canRequestAds: false });
+    mockShowForm.mockResolvedValue(info('REQUIRED', 'REQUIRED'));
+
+    await expect(service.requestAndResolveConsent()).resolves.toBe('required');
+
+    expect(service.getUmpConsentSnapshot().canRequestAds).toBe(false);
+  });
+
+  it('on a startup error offline, a previous session consent in the cache still allows ads (canRequestAds true)', async () => {
+    const service = loadService();
+    mockRequestInfoUpdate.mockRejectedValue(new Error('network'));
+    mockGetConsentInfo.mockResolvedValue(info('OBTAINED', 'REQUIRED'));
+
+    await expect(service.requestAndResolveConsent()).resolves.toBe('error');
+
+    expect(service.getUmpConsentSnapshot().canRequestAds).toBe(true);
+  });
+
+  it('a missing canRequestAds field never counts as true', async () => {
+    const service = loadService();
+    mockRequestInfoUpdate.mockResolvedValue({ status: 'NOT_REQUIRED', privacyOptionsRequirementStatus: 'NOT_REQUIRED' });
+
+    await service.requestAndResolveConsent();
+
+    expect(service.getUmpConsentSnapshot().canRequestAds).toBe(false);
   });
 
   it('on a startup error with no cached info hides the entry', async () => {
@@ -121,6 +151,7 @@ describe('UMP privacy options state from the startup consent flow', () => {
     expect(service.getUmpConsentSnapshot()).toEqual({
       outcome: 'error',
       privacyOptionsRequired: false,
+      canRequestAds: false,
       source: 'startup',
     });
   });
@@ -155,6 +186,7 @@ describe('showAdPrivacyOptions', () => {
     expect(listener).toHaveBeenCalledWith({
       outcome: 'obtained',
       privacyOptionsRequired: true,
+      canRequestAds: true,
       source: 'privacy_options',
     });
   });

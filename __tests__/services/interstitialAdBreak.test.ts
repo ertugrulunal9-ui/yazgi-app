@@ -53,6 +53,7 @@ const installFakeAdMob = (showImpl?: () => unknown) => {
   const service = monetizationService as any;
   service.isInitialized = true;
   service.adProvider = 'admob';
+  service.canRequestAds = true;
   service.adMobModule = {
     InterstitialAd: { createForAdRequest },
     AdEventType: { LOADED: EVENTS.loaded, ERROR: EVENTS.error, CLOSED: EVENTS.closed },

@@ -129,6 +129,7 @@ describe('MonetizationService (ad-only)', () => {
 
       service.isInitialized = true;
       service.adProvider = 'admob';
+      service.canRequestAds = true;
       service.adMobModule = {
         RewardedAd: {
           createForAdRequest: () => rewardedAd,
@@ -166,6 +167,7 @@ describe('MonetizationService (ad-only)', () => {
       const createForAdRequest = jest.fn();
       service.isInitialized = true;
       service.adProvider = 'admob';
+      service.canRequestAds = true;
       service.adMobModule = {
         RewardedAd: { createForAdRequest },
         AdEventType: { LOADED: 'loaded', ERROR: 'error', CLOSED: 'closed' },

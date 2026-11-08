@@ -40,6 +40,7 @@ const installFakeAdMob = (showImpl?: () => unknown) => {
   const service = monetizationService as any;
   service.isInitialized = true;
   service.adProvider = 'admob';
+  service.canRequestAds = true;
   service.adMobModule = {
     RewardedAd: { createForAdRequest: () => rewardedAd },
     AdEventType: { LOADED: EVENTS.adLoaded, ERROR: EVENTS.adError, CLOSED: EVENTS.adClosed },
