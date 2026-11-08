@@ -8,7 +8,8 @@
  */
 
 import { CHAPTERS } from '../config/gameBalance';
-import type { AgeMilestoneSummary, ChapterSummary } from '../types/game';
+import { isFeatureEnabled } from '../config/featureFlags';
+import type { AgeMilestoneSummary, ChapterSummary, GameState } from '../types/game';
 import { hasMilestoneContent } from './milestoneBuilder';
 
 export interface YearEndWindow {
@@ -69,3 +70,18 @@ export const resolveYearEndWindow = ({
 
   return pendingMilestone ? { chapter: null, milestone: pendingMilestone } : null;
 };
+
+/**
+ * Kayıttaki duruma göre açılması gereken yıl sonu penceresi. GameScreen pencereyi çizer, EventScreen
+ * pencere kapanana kadar olay kartını gizler; ikisi de aynı karardan okur.
+ */
+export const resolvePendingYearEndWindow = (
+  state: Pick<GameState, 'ageMilestoneSummaries' | 'chapterSummaries' | 'yearEndWindowsShown'>
+): YearEndWindow | null => resolveYearEndWindow({
+  milestones: state.ageMilestoneSummaries,
+  chapters: state.chapterSummaries,
+  milestoneEnabled: isFeatureEnabled('MILESTONE_SUMMARY'),
+  chapterEnabled: isFeatureEnabled('CHAPTER_SYSTEM'),
+  shownMilestoneAges: new Set(state.yearEndWindowsShown?.milestoneAges ?? []),
+  shownChapterIds: new Set(state.yearEndWindowsShown?.chapterIds ?? []),
+});
