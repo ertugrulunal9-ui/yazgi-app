@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import React, { useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import {
   Linking,
   Platform,
@@ -15,6 +15,7 @@ import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from '
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FeatureFlag, FeatureFlagState } from '../config/featureFlags';
 import { PRIVACY_POLICY_URL, TERMS_URL } from '../config/legal';
+import { getUmpConsentSnapshot, showAdPrivacyOptions, subscribeUmpConsent } from '../services/consentService';
 import { canOpenPremiumPaywall, isPremium } from '../services/subscriptionManager';
 import { DENSITY_OPTION_COLORS, DANGER_COLOR, MOTION_OPTION_COLOR, THEME_OPTION_COLORS } from '../constants/themeColors';
 import { Z_INDEX } from '../constants/zIndex';
@@ -91,6 +92,24 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
     transform: [{ translateX: settingsTranslateX.value }],
   }));
   const showPremiumEntry = canOpenPremiumPaywall() && !isPremium();
+  // Açılıştaki UMP akışının sonucu okunur; Ayarlar açılınca ağ isteği yapılmaz.
+  const umpConsent = useSyncExternalStore(subscribeUmpConsent, getUmpConsentSnapshot);
+  const showAdPrivacyOptionsEntry = Platform.OS !== 'web' && umpConsent.privacyOptionsRequired;
+  const [adPrivacyOptionsBusy, setAdPrivacyOptionsBusy] = useState(false);
+  const [adPrivacyOptionsError, setAdPrivacyOptionsError] = useState(false);
+
+  useEffect(() => {
+    if (!open) setAdPrivacyOptionsError(false);
+  }, [open]);
+
+  const handleOpenAdPrivacyOptions = useCallback(async () => {
+    setAdPrivacyOptionsBusy(true);
+    setAdPrivacyOptionsError(false);
+    // Hata fırlatmaz; etkin kişiselleştirme useAppBootstrap'te yeniden hesaplanır.
+    const result = await showAdPrivacyOptions();
+    setAdPrivacyOptionsBusy(false);
+    setAdPrivacyOptionsError(result === 'error');
+  }, []);
 
   const readableMotionColor = ensureTextContrast(MOTION_OPTION_COLOR, theme.surfaceBase);
   const readableDangerColor = ensureTextContrast(DANGER_COLOR, theme.surfaceBase);
@@ -473,6 +492,52 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   accessibilityLabel={t('settings.personalizedAds')}
                 />
               </View>
+
+              {showAdPrivacyOptionsEntry && (
+                <TouchableOpacity
+                  testID="settings-ad-privacy-options"
+                  onPress={() => void handleOpenAdPrivacyOptions()}
+                  disabled={adPrivacyOptionsBusy}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                    marginTop: 12,
+                    paddingVertical: 14,
+                    paddingHorizontal: 16,
+                    borderRadius: 14,
+                    backgroundColor: theme.surfaceBase,
+                    borderWidth: 2,
+                    borderColor: theme.border,
+                    opacity: adPrivacyOptionsBusy ? 0.6 : 1,
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('settings.adPrivacyOptions')}
+                  accessibilityHint={t('settings.adPrivacyOptionsHint')}
+                  accessibilityState={{ disabled: adPrivacyOptionsBusy, busy: adPrivacyOptionsBusy }}
+                >
+                  <Feather name="sliders" color={theme.textSecondary} size={22} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: theme.textPrimary, fontSize: 16, fontWeight: '600' }}>
+                      {t('settings.adPrivacyOptions')}
+                    </Text>
+                    <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>
+                      {t('settings.adPrivacyOptionsHint')}
+                    </Text>
+                  </View>
+                  <Feather name="chevron-right" color={theme.textSecondary} size={20} />
+                </TouchableOpacity>
+              )}
+
+              {showAdPrivacyOptionsEntry && adPrivacyOptionsError && (
+                <Text
+                  testID="settings-ad-privacy-options-error"
+                  accessibilityLiveRegion="polite"
+                  style={{ color: readableDangerColor, fontSize: 12, marginTop: 8, paddingHorizontal: 4 }}
+                >
+                  {t('settings.adPrivacyOptionsError')}
+                </Text>
+              )}
 
               <Text style={{ color: theme.textSecondary, fontSize: 11, marginTop: 8, paddingHorizontal: 4 }}>
                 {t('settings.consentNote')}

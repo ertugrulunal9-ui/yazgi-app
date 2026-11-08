@@ -3,9 +3,16 @@ import { DomainStrings } from './types';
 /**
  * İlk açılış gizlilik tercihleri kartı (PrivacyChoicesCard).
  * Ayarlar > Gizlilik bölümündeki adlarla tutarlı tutulmalı.
+ * `settings.adPrivacyOptions*`: Ayarlar > Gizlilik'teki UMP gizlilik seçenekleri düğmesi
+ * (yalnızca UMP istediğinde, AEA/İngiltere; diğer `settings.*` metinleri legacy.ts'te).
  */
 export const privacyStrings: DomainStrings = {
   tr: {
+    settings: {
+      adPrivacyOptions: 'Reklam gizlilik seçenekleri',
+      adPrivacyOptionsHint: "Reklam iznini Google'ın formunda değiştir",
+      adPrivacyOptionsError: 'Reklam gizlilik seçenekleri şu an açılamadı. Biraz sonra yeniden dene.',
+    },
     privacyChoices: {
       title: 'Gizlilik tercihlerin',
       intro: 'İkisi de isteğe bağlı ve kapalı başlar; açmasan da oyun aynı şekilde çalışır.',
@@ -23,6 +30,11 @@ export const privacyStrings: DomainStrings = {
     },
   },
   en: {
+    settings: {
+      adPrivacyOptions: 'Ad privacy options',
+      adPrivacyOptionsHint: "Change your ad consent in Google's form",
+      adPrivacyOptionsError: "Ad privacy options couldn't open right now. Try again in a moment.",
+    },
     privacyChoices: {
       title: 'Your privacy choices',
       intro: 'Both are optional and start off; the game works the same either way.',
