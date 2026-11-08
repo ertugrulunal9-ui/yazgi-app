@@ -552,19 +552,19 @@ export const enEventTranslationsOverrides: EventTranslationCatalog = {
     choices: {
       futbol_join: {
         text: 'Jump in immediately',
-        feedback: 'Dusty shoes, scraped knees, huge fun.',
+        feedback: 'Your knees got scraped in front of the stone goalposts and your T-shirt turned gray with dust. Nobody gave up the ball until the evening call to prayer.',
       },
       futbol_join_introvert: {
         text: 'Join in (Hard)',
-        feedback: 'Awkward at first, then you find your rhythm and enjoy it.',
+        feedback: 'For the first five minutes you didn’t know what to do with your hands. After your first pass the buzzing in your ears faded, and you played the rest without thinking.',
       },
       futbol_goalkeeper: {
         text: 'Play goalkeeper (less contact)',
-        feedback: 'Not easy, but you make a few clutch saves.',
+        feedback: 'Between the two stones you waited for the ball to find you. After a few saves, someone shouted “Nice one, keeper!” from across the pitch.',
       },
       futbol_watch: {
         text: 'Just watch',
-        feedback: 'You stay on the sidelines. Your friends are a little disappointed.',
+        feedback: 'You watched the ball go back and forth from the curb. Someone said “Come on, join us,” you shrugged, and the laughter went on without you.',
       },
     },
   },
@@ -836,15 +836,15 @@ export const enEventTranslationsOverrides: EventTranslationCatalog = {
     choices: {
       yemek_anlat: {
         text: 'Talk about your day',
-        feedback: 'Everyone listens. Family talks can be surprisingly good.',
+        feedback: 'As you told the funny thing from school, spoons stopped midair and someone laughed so hard they spilled their soup. The table felt warmer that evening.',
       },
       yemek_dinle: {
         text: 'Eat quietly',
-        feedback: 'Not lively, but peaceful.',
+        feedback: 'You focused on the rice on your plate; the TV and the clink of forks were enough. Nobody asked you anything, and you were fine with that.',
       },
       yemek_soru: {
         text: 'Ask questions',
-        feedback: "You ask about their past and end up with stories you did not expect.",
+        feedback: 'When you asked, the table went quiet to listen, and out came a neighborhood story you’d never heard. You were still laughing when dessert arrived.',
       },
     },
   },
@@ -853,15 +853,15 @@ export const enEventTranslationsOverrides: EventTranslationCatalog = {
     choices: {
       ders_fokus: {
         text: 'Focus and study',
-        feedback: 'It is hard, but two solid hours lock things in.',
+        feedback: 'You left your phone in another room. By the end of the second hour your notebook was full, your head tired, and the topics had clicked into place one by one.',
       },
       ders_telefon: {
         text: 'Check your phone for a bit',
-        feedback: "Five minutes turns into two hours. Procrastination wins again.",
+        feedback: 'One notification, one video, one more scroll... By the time you looked at the clock it was dinner, and the book was still open to the same page.',
       },
       ders_pomodoro: {
         text: '25 min study, 5 min break',
-        feedback: 'Pomodoro works. You study better and burn out less.',
+        feedback: 'You set the timer and stayed focused through the first round. On your break you gazed out the window and sipped water, then found your place right away.',
       },
     },
   },
@@ -1706,7 +1706,7 @@ export const enEventTranslationsOverrides: EventTranslationCatalog = {
     choices: {
       choice_0: {
         text: 'Check the result',
-        feedback: 'Great score. The extra effort paid off.',
+        feedback: 'You turned the paper over and the topic you reviewed last night was in the first question. In the hallway, people kept asking about your grade, and you carried that feeling all day.',
       },
     },
   },
@@ -1776,11 +1776,11 @@ export const enEventTranslationsOverrides: EventTranslationCatalog = {
     choices: {
       choice_0: {
         text: 'Run in for a hug',
-        feedback: 'Life sometimes gives perfect surprises at strange times.',
+        feedback: 'The years melted away when you hugged. On the bench you laughed over old games, and swapped numbers so you wouldn’t lose each other again.',
       },
       choice_1: {
         text: '"Why now?"',
-        feedback: 'You keep your distance, but listen. The story starts unfolding.',
+        feedback: 'You folded your arms and kept your distance. Your question made their eyes drop, and then, slowly, they began to explain.',
       },
     },
   },
@@ -1954,11 +1954,11 @@ export const enEventTranslationsOverrides: EventTranslationCatalog = {
     choices: {
       aggressive_reputation_control: {
         text: 'Control the power and set clear boundaries',
-        feedback: 'You shape a line that earns respect, not fear.',
+        feedback: 'You said “that’s far enough” without raising your voice, and the other person stepped back. Later, a few people came to tell you they trust you.',
       },
       aggressive_reputation_push: {
         text: 'Push harder with a sharper stance',
-        feedback: 'Influence rises, but relationships fracture.',
+        feedback: 'You came down hard on anyone who stepped over the line, and people on the street began making way. But one evening at home the table stayed silent and no one met your eyes.',
       },
     },
   },
@@ -2636,11 +2636,11 @@ export const enEventTranslationsOverrides: EventTranslationCatalog = {
     choices: {
       choice_0: {
         text: 'Build shared rules together',
-        feedback: 'Trust at home gets stronger.',
+        feedback: 'You wrote the rules down together at the kitchen table, and some of your points made the list. For a moment, your family’s eyes softened.',
       },
       choice_1: {
         text: 'React defensively',
-        feedback: 'Tension keeps climbing.',
+        feedback: 'Your voice rose at the very first rule and the clinking of spoons stopped. In your room, it was what you said that weighed on you, not the rules.',
       },
     },
   },
@@ -2649,11 +2649,11 @@ export const enEventTranslationsOverrides: EventTranslationCatalog = {
     choices: {
       choice_0: {
         text: 'Revisit the rules calmly',
-        feedback: 'The tension drops and you find middle ground.',
+        feedback: 'Your family heard you out without cutting in, and curfew moved half an hour later. Not all you wanted, but no one left the table upset.',
       },
       choice_1: {
         text: 'Slam the door and leave',
-        feedback: 'You feel relief for a moment, but the relationship strains.',
+        feedback: 'The door slammed behind you and your footsteps echoed down the stairwell. You feel lighter, but you know someone inside is hurt.',
       },
     },
   },
@@ -2844,11 +2844,11 @@ export const enEventTranslationsOverrides: EventTranslationCatalog = {
     choices: {
       choice_0: {
         text: 'Say how you feel clearly',
-        feedback: 'Whatever happens next, that was a brave step.',
+        feedback: 'You hit send without deleting it this time and shoved your phone under the pillow. The minutes before a reply felt like years, but you’re no longer hiding.',
       },
       choice_1: {
         text: 'Stay friends',
-        feedback: 'You keep things calm and controlled.',
+        feedback: 'The message stayed in your drafts and you kept the chat light with jokes. It’s comfortable, but a half-finished sentence stays inside you.',
       },
     },
   },
@@ -2857,11 +2857,11 @@ export const enEventTranslationsOverrides: EventTranslationCatalog = {
     choices: {
       love_deep_communicate: {
         text: 'Talk openly about it',
-        feedback: 'Hard conversation, healthier relationship foundation.',
+        feedback: 'You said out loud what you each expect and what makes you uneasy. Palms were sweaty and voices cracked, but in the end you both breathed easier.',
       },
       love_deep_slow: {
         text: 'Take it slow',
-        feedback: 'No rush. The pace is slow but steady.',
+        feedback: 'You didn’t rush to answer every message and kept your meetups few. There’s no hurry; you’re slowly learning each other’s little habits.',
       },
     },
   },
@@ -2870,11 +2870,11 @@ export const enEventTranslationsOverrides: EventTranslationCatalog = {
     choices: {
       choice_0: {
         text: 'Journal to clarify your thoughts',
-        feedback: 'Writing helps you understand yourself better.',
+        feedback: 'By the third page you noticed you were writing what you’re curious about, not what others expect. The answers are still missing, but the questions finally feel like yours.',
       },
       choice_1: {
         text: 'Scroll social media and avoid it',
-        feedback: 'Nice short escape, same unanswered questions.',
+        feedback: 'You scrolled for an hour past everyone else’s highlights. When the screen went dark, the questions were still waiting in the room.',
       },
     },
   },
@@ -3399,10 +3399,40 @@ export const enEventTranslationsOverrides: EventTranslationCatalog = {
   npc_new_classmate: {
     ...(enEventTranslationsGenerated.npc_new_classmate ?? {}),
     text: "A new classmate joins your class and sits nearby.",
+    choices: {
+      ...(enEventTranslationsGenerated.npc_new_classmate?.choices ?? {}),
+      choice_0: {
+        ...(enEventTranslationsGenerated.npc_new_classmate?.choices?.choice_0 ?? {}),
+        feedback: 'You held out your hand and told them your name. You laughed together at the doodle on the edge of the desk, and when the bell rang neither of you wanted to get up.',
+      },
+      choice_1: {
+        ...(enEventTranslationsGenerated.npc_new_classmate?.choices?.choice_1 ?? {}),
+        feedback: 'You bent over your notebook and ignored the glance from the next seat. At recess you each went out to the yard alone.',
+      },
+      choice_2: {
+        ...(enEventTranslationsGenerated.npc_new_classmate?.choices?.choice_2 ?? {}),
+        feedback: 'You stared at the board and felt them sitting silently beside you. Seeing them eat lunch alone, you felt a small pang.',
+      },
+    },
   },
   npc_homework_together: {
     ...(enEventTranslationsGenerated.npc_homework_together ?? {}),
     text: "A friend asks you for help with homework after class.",
+    choices: {
+      ...(enEventTranslationsGenerated.npc_homework_together?.choices ?? {}),
+      choice_0: {
+        ...(enEventTranslationsGenerated.npc_homework_together?.choices?.choice_0 ?? {}),
+        feedback: 'You sketched a little diagram in their notebook and walked through it step by step. When they said “Ohh, so that’s how it works!” you saw the topic clearly for the first time too.',
+      },
+      choice_1: {
+        ...(enEventTranslationsGenerated.npc_homework_together?.choices?.choice_1 ?? {}),
+        feedback: 'You filled in the blanks and closed the notebook. They were relieved, but nobody can write their exam answers for them.',
+      },
+      choice_2: {
+        ...(enEventTranslationsGenerated.npc_homework_together?.choices?.choice_2 ?? {}),
+        feedback: 'You kept your eyes on your notebook as you said “I have no time.” You still saw their face fall, and they didn’t come over at recess.',
+      },
+    },
   },
   npc_friend_fight: {
     ...(enEventTranslationsGenerated.npc_friend_fight ?? {}),
@@ -3467,6 +3497,21 @@ export const enEventTranslationsOverrides: EventTranslationCatalog = {
   npc_new_friend_opportunity: {
     ...(enEventTranslationsGenerated.npc_new_friend_opportunity ?? {}),
     text: "You notice a chance to meet someone new and potentially become friends.",
+    choices: {
+      ...(enEventTranslationsGenerated.npc_new_friend_opportunity?.choices ?? {}),
+      choice_0: {
+        ...(enEventTranslationsGenerated.npc_new_friend_opportunity?.choices?.choice_0 ?? {}),
+        feedback: 'You started with your shared interest and the words just flowed. By the time you parted, you’d promised to meet at the same spot tomorrow.',
+      },
+      choice_1: {
+        ...(enEventTranslationsGenerated.npc_new_friend_opportunity?.choices?.choice_1 ?? {}),
+        feedback: 'You made eye contact and both smiled and ducked your heads. As you walked away, a small voice kept asking, “What if I’d said something?”',
+      },
+      choice_2: {
+        ...(enEventTranslationsGenerated.npc_new_friend_opportunity?.choices?.choice_2 ?? {}),
+        feedback: 'You kept walking with your head down, and the person in the garden slipped past at the edge of your vision. You wondered later who they were, but the moment was gone.',
+      },
+    },
   },
   npc_friend_needs_help: {
     ...(enEventTranslationsGenerated.npc_friend_needs_help ?? {}),
@@ -3599,6 +3644,21 @@ export const enEventTranslationsOverrides: EventTranslationCatalog = {
   npcq_romance_family_reaction: {
     ...(enEventTranslationsGenerated.npcq_romance_family_reaction ?? {}),
     text: "Your family reacts strongly to your relationship.",
+    choices: {
+      ...(enEventTranslationsGenerated.npcq_romance_family_reaction?.choices ?? {}),
+      choice_0: {
+        ...(enEventTranslationsGenerated.npcq_romance_family_reaction?.choices?.choice_0 ?? {}),
+        feedback: 'Your voice shook as you spoke, but you didn’t look away. The silence at the table dragged on, then someone said, “Bring them over sometime.”',
+      },
+      choice_1: {
+        ...(enEventTranslationsGenerated.npcq_romance_family_reaction?.choices?.choice_1 ?? {}),
+        feedback: '“Just a friend,” you said, and the topic closed at once. But every buzz of your phone now tightens something in your chest.',
+      },
+      choice_2: {
+        ...(enEventTranslationsGenerated.npcq_romance_family_reaction?.choices?.choice_2 ?? {}),
+        feedback: 'The moment you said “my private life,” the forks went quiet. Nobody called after you as you left, and you’re not sure how you feel about that.',
+      },
+    },
   },
   npcq_romance_commitment: {
     ...(enEventTranslationsGenerated.npcq_romance_commitment ?? {}),
@@ -3615,6 +3675,17 @@ export const enEventTranslationsOverrides: EventTranslationCatalog = {
   npcq_rival_group_sides: {
     ...(enEventTranslationsGenerated.npcq_rival_group_sides ?? {}),
     text: "Your rivalry starts dividing friend circles into sides.",
+    choices: {
+      ...(enEventTranslationsGenerated.npcq_rival_group_sides?.choices ?? {}),
+      choice_0: {
+        ...(enEventTranslationsGenerated.npcq_rival_group_sides?.choices?.choice_0 ?? {}),
+        feedback: '“Nobody here is on a team,” you said. A few people stopped laughing, some looked away, and the air in the hallway loosened a little.',
+      },
+      choice_1: {
+        ...(enEventTranslationsGenerated.npcq_rival_group_sides?.choices?.choice_1 ?? {}),
+        feedback: 'At recess you rallied your people, and the cafeteria split into two corners. Having a crowd behind you feels good, but the gap between you keeps growing.',
+      },
+    },
   },
   npcq_rival_showdown: {
     ...(enEventTranslationsGenerated.npcq_rival_showdown ?? {}),
@@ -3623,10 +3694,32 @@ export const enEventTranslationsOverrides: EventTranslationCatalog = {
   npcq_rival_aftermath: {
     ...(enEventTranslationsGenerated.npcq_rival_aftermath ?? {}),
     text: "After the showdown, you decide what kind of rival you will be.",
+    choices: {
+      ...(enEventTranslationsGenerated.npcq_rival_aftermath?.choices ?? {}),
+      choice_0: {
+        ...(enEventTranslationsGenerated.npcq_rival_aftermath?.choices?.choice_0 ?? {}),
+        feedback: 'As you shook hands, you realized their palm was as sweaty as yours. “Racing you was good,” they said. Not friends, but no longer enemies.',
+      },
+      choice_1: {
+        ...(enEventTranslationsGenerated.npcq_rival_aftermath?.choices?.choice_1 ?? {}),
+        feedback: 'Your shoulders nearly brushed as you passed without a word. When their footsteps behind you faded, the hallway felt very long.',
+      },
+    },
   },
   npcq_rival_peace_offer: {
     ...(enEventTranslationsGenerated.npcq_rival_peace_offer ?? {}),
     text: "A peace offer arrives from your rival.",
+    choices: {
+      ...(enEventTranslationsGenerated.npcq_rival_peace_offer?.choices ?? {}),
+      choice_0: {
+        ...(enEventTranslationsGenerated.npcq_rival_peace_offer?.choices?.choice_0 ?? {}),
+        feedback: 'You took the offered hand, and for once your shoulders didn’t tense standing next to them. Letting go of the old fight felt strange, but a good kind of strange.',
+      },
+      choice_1: {
+        ...(enEventTranslationsGenerated.npcq_rival_peace_offer?.choices?.choice_1 ?? {}),
+        feedback: 'You gave a nod that said “we’ll see.” On the next group task you’ll be watching them; the door is ajar, and you’re waiting on the threshold.',
+      },
+    },
   },
   npcq_rival_escalation: {
     ...(enEventTranslationsGenerated.npcq_rival_escalation ?? {}),
@@ -3639,6 +3732,17 @@ export const enEventTranslationsOverrides: EventTranslationCatalog = {
   npcq_betray_first_doubt: {
     ...(enEventTranslationsGenerated.npcq_betray_first_doubt ?? {}),
     text: "Small signs make you question someone you trust.",
+    choices: {
+      ...(enEventTranslationsGenerated.npcq_betray_first_doubt?.choices ?? {}),
+      choice_0: {
+        ...(enEventTranslationsGenerated.npcq_betray_first_doubt?.choices?.choice_0 ?? {}),
+        feedback: 'You shrugged it off, but you can’t forget the plan they skipped. Next time you’ll weigh their words a little more carefully.',
+      },
+      choice_1: {
+        ...(enEventTranslationsGenerated.npcq_betray_first_doubt?.choices?.choice_1 ?? {}),
+        feedback: 'You started noticing their messages and who they laugh with. You have no proof yet, but the uneasy knot inside you stays.',
+      },
+    },
   },
   npcq_betray_gossip_heard: {
     ...(enEventTranslationsGenerated.npcq_betray_gossip_heard ?? {}),
@@ -3701,6 +3805,11 @@ export const enEventTranslationsOverrides: EventTranslationCatalog = {
       choice_0: {
         ...(enEventTranslationsGenerated.npcq_rival_enemy?.choices?.choice_0 ?? {}),
         text: 'Let it go and step back',
+        feedback: 'When your eyes met in the hallway, your jaw didn’t tighten this time. Nothing is solved, but your shoulders dropped a little, and they noticed.',
+      },
+      choice_1: {
+        ...(enEventTranslationsGenerated.npcq_rival_enemy?.choices?.choice_1 ?? {}),
+        feedback: 'In bed you replay the moment again and again, planning what to say next. The anger won’t let go, and people around you start to keep their distance.',
       },
     },
   },
