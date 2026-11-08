@@ -113,7 +113,10 @@ const extractStringUnionValues = (sourceText, typeName) => {
 const extractPlacementConfig = (sourceText) => {
   const mapIndex = sourceText.indexOf('const placementMap');
   if (mapIndex < 0) return {};
-  const openIndex = sourceText.indexOf('{', mapIndex);
+  // `const placementMap: Record<..., { ... }> = {` -> tip ek açıklamasındaki `{` değil, atamadaki `{` aranır.
+  const assignIndex = sourceText.slice(mapIndex).search(/>\s*=\s*\{|=\s*\{/);
+  if (assignIndex < 0) return {};
+  const openIndex = sourceText.indexOf('{', mapIndex + assignIndex);
   if (openIndex < 0) return {};
 
   let depth = 0;
@@ -334,7 +337,6 @@ const run = () => {
 
   const branchingSource = readText('src/data/eventBranchingEnhancer.ts');
   const monetizationSource = readText('src/services/monetization.ts');
-  const gameScreenSource = readText('src/screens/GameScreen.tsx');
   const gameOverSource = readText('src/screens/GameOverScreen.tsx');
 
   const targetGateRatio = extractNumericConstant(branchingSource, 'TARGET_GATE_RATIO');
@@ -375,23 +377,25 @@ const run = () => {
     ? evaluateNumericExpression(interstitialCooldownInitializer.split(':').slice(1).join(':'))
     : evaluateNumericExpression(interstitialCooldownInitializer);
 
-  const rewardedPlacementCalls = unique([
-    ...extractCallLiterals(gameScreenSource, /showContextualRewardedAd\('([^']+)'\)/g),
-    ...extractCallLiterals(gameOverSource, /showContextualRewardedAd\('([^']+)'\)/g),
-  ]);
+  // Çağrılar artık hook'larda da var (useAdRewards, useEventScreenController, useAgeTransitionInterstitial):
+  // tüm src taranır. Çağrı tek ya da iki argümanlı olabilir: showContextualRewardedAd('x') / ('x', { ... }).
+  const REWARDED_CALL_REGEX = /showContextualRewardedAd\(\s*'([^']+)'/g;
+  const INTERSTITIAL_CALL_REGEX = /logInterstitialOpportunity\(\s*\{\s*placement:\s*'([^']+)'/g;
+  const srcSources = listFilesRecursive(path.resolve(ROOT_DIR, 'src'), new Set(['.ts', '.tsx']))
+    .map(filePath => fs.readFileSync(filePath, 'utf8'));
 
-  const interstitialPlacementCalls = unique([
-    ...extractCallLiterals(gameScreenSource, /logInterstitialOpportunity\(\{\s*placement:\s*'([^']+)'/g),
-    ...extractCallLiterals(gameOverSource, /logInterstitialOpportunity\(\{\s*placement:\s*'([^']+)'/g),
-  ]);
-
-  const gameOverRewardedPlacements = extractCallLiterals(
-    gameOverSource,
-    /showContextualRewardedAd\('([^']+)'\)/g
+  const rewardedPlacementCalls = unique(
+    srcSources.flatMap(source => extractCallLiterals(source, REWARDED_CALL_REGEX))
   );
+
+  const interstitialPlacementCalls = unique(
+    srcSources.flatMap(source => extractCallLiterals(source, INTERSTITIAL_CALL_REGEX))
+  );
+
+  const gameOverRewardedPlacements = extractCallLiterals(gameOverSource, REWARDED_CALL_REGEX);
   const gameOverInterstitialPlacements = extractCallLiterals(
     gameOverSource,
-    /logInterstitialOpportunity\(\{\s*placement:\s*'([^']+)'/g
+    INTERSTITIAL_CALL_REGEX
   );
 
   const gameBalanceImporters = collectImporters(/from\s+['"][^'"]*gameBalance(?:\.ts)?['"]/);

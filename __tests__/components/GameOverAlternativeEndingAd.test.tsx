@@ -200,4 +200,16 @@ describe('GameOverScreen: alternatif son reklamı', () => {
     expect(alertSpy).not.toHaveBeenCalled();
     expect(view.getByText(tr('buttons.watchAdAlternativeEnding'))).toBeTruthy();
   });
+  it('gerçek reklam hatasında ham İngilizce SDK metni değil Türkçe mesaj gösterilir', async () => {
+    const view = renderGameOver();
+    const ad = requestAlternativeEnding(view);
+
+    await act(async () => {
+      ad.resolve({ success: false, placement: 'ending_alternative', rewardType: 'utility', amount: 0, error: 'Rewarded ad failed to load: no-fill' });
+    });
+
+    expect(alertSpy).toHaveBeenCalledTimes(1);
+    expect(alertSpy).toHaveBeenCalledWith(tr('messages.adNotShown'), tr('messages.adErrorGeneric'));
+    expect(JSON.stringify(alertSpy.mock.calls)).not.toContain('no-fill');
+  });
 });

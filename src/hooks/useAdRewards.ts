@@ -1,8 +1,13 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useGame } from '../context/GameContext';
 import { Stats } from '../types';
 import { logRewardedAdRequested, logRewardedAdResult } from '../utils/analyticsEvents';
 import { getAdErrorMessage } from '../utils/adErrorMessage';
-import { getRemainingRewardedAds, showContextualRewardedAd } from '../services/monetization';
+import {
+  getRemainingRewardedAds,
+  REWARDED_AD_CANCELLED_ERROR,
+  showContextualRewardedAd,
+} from '../services/monetization';
 
 type ToastType = 'success' | 'error' | 'info' | 'warning';
 type TranslateFn = (
@@ -19,11 +24,23 @@ interface UseAdRewardsOptions {
   updateStats: (updates: Partial<Stats>) => void;
 }
 
+interface ClaimAdOptions {
+  /** Ek koşul: false dönerse reklam açılmaz (tur/faz denetimine ek olarak). */
+  shouldShow?: () => boolean;
+}
+
+// Ana ekran dışı fazlar: oyuncu bunlara geçtiyse enerji reklamı artık "aynı yerde" değildir.
+const LEFT_HUB_PHASES = new Set(['EVENT', 'RESULT', 'GAME_OVER']);
+
+/** claimExamPrepBoostAd: reklam gösterilmedi (oyuncu ayrıldı ya da iptal); çağıran sınavı açmamalı. */
+export const EXAM_PREP_AD_SKIPPED = -1;
+
 interface UseAdRewardsResult {
   examPrepBoostApplied: number;
   clearExamPrepBoost: () => void;
   claimEnergyRecoveryAd: () => Promise<void>;
-  claimExamPrepBoostAd: () => Promise<number>;
+  /** Takviye miktarı; reklam gösterilmediyse (ayrıldı/iptal) EXAM_PREP_AD_SKIPPED. */
+  claimExamPrepBoostAd: (options?: ClaimAdOptions) => Promise<number>;
   claimUndoAd: () => Promise<boolean>;
 }
 
@@ -35,6 +52,20 @@ export const useAdRewards = ({
   updateStats,
 }: UseAdRewardsOptions): UseAdRewardsResult => {
   const [examPrepBoostApplied, setExamPrepBoostApplied] = useState(0);
+
+  // Reklam yüklenirken (en fazla 15 sn) oyuncu ilerlerse reklam açılmasın ve hak düşmesin.
+  // GameScreen'e yeni prop eklememek için güncel tur/faz bağlamdan okunup ref'te tutulur.
+  const { gameState } = useGame();
+  const placeRef = useRef({ turn: gameState.turn, phase: gameState.phase });
+  placeRef.current = { turn: gameState.turn, phase: gameState.phase };
+  // GameScreen kapanınca (Yeni Hayat -> ana menü) render durur ve ref donar; bağlı mı bilgisi ayrı tutulur.
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const clearExamPrepBoost = useCallback(() => {
     if (examPrepBoostApplied <= 0) return;
@@ -50,17 +81,27 @@ export const useAdRewards = ({
       remainingBefore,
     });
 
-    const adResult = await showContextualRewardedAd('energy_depleted');
+    const requestedTurn = placeRef.current.turn;
+    const isStillOnSameScreen = () =>
+      isMountedRef.current &&
+      placeRef.current.turn === requestedTurn && !LEFT_HUB_PHASES.has(placeRef.current.phase);
+
+    const adResult = await showContextualRewardedAd('energy_depleted', {
+      shouldShow: isStillOnSameScreen,
+    });
     const remainingAfter = getRemainingRewardedAds();
 
     if (!adResult.success) {
-      enqueueToast(getAdErrorMessage(adResult.error), 'error');
+      // Oyuncu ilerlediği için reklam gösterilmediyse iptal gibi sessiz kal (hata tostu yok).
+      // Arka plana geçiş iptali de oyuncu eylemi değil: hata tostu yok.
+      const leftScreen = !isStillOnSameScreen() || adResult.error === REWARDED_AD_CANCELLED_ERROR;
+      if (!leftScreen) enqueueToast(getAdErrorMessage(adResult.error), 'error');
       void logRewardedAdResult({
         placement: 'energy_depleted',
         rewardType: 'energy',
         success: false,
         remainingAfter,
-        errorMessage: adResult.error,
+        errorMessage: leftScreen ? 'Energy ad skipped: player moved on' : adResult.error,
       });
       return;
     }
@@ -85,7 +126,7 @@ export const useAdRewards = ({
     });
   }, [enqueueToast, maxEnergy, stats.energy, t, updateStats]);
 
-  const claimExamPrepBoostAd = useCallback(async (): Promise<number> => {
+  const claimExamPrepBoostAd = useCallback(async (options?: ClaimAdOptions): Promise<number> => {
     const remainingBefore = getRemainingRewardedAds();
     void logRewardedAdRequested({
       placement: 'exam_prep',
@@ -93,19 +134,27 @@ export const useAdRewards = ({
       remainingBefore,
     });
 
-    const adResult = await showContextualRewardedAd('exam_prep');
+    const requestedTurn = placeRef.current.turn;
+    const isStillOnSameTurn = () =>
+      isMountedRef.current &&
+      placeRef.current.turn === requestedTurn && (options?.shouldShow?.() ?? true);
+
+    const adResult = await showContextualRewardedAd('exam_prep', {
+      shouldShow: isStillOnSameTurn,
+    });
     const remainingAfter = getRemainingRewardedAds();
 
     if (!adResult.success) {
-      enqueueToast(getAdErrorMessage(adResult.error), 'error');
+      const leftScreen = !isStillOnSameTurn() || adResult.error === REWARDED_AD_CANCELLED_ERROR;
+      if (!leftScreen) enqueueToast(getAdErrorMessage(adResult.error), 'error');
       void logRewardedAdResult({
         placement: 'exam_prep',
         rewardType: 'intelligence',
         success: false,
         remainingAfter,
-        errorMessage: adResult.error,
+        errorMessage: leftScreen ? 'Exam prep ad skipped: player moved on' : adResult.error,
       });
-      return 0;
+      return leftScreen ? EXAM_PREP_AD_SKIPPED : 0;
     }
 
     const rewardAmount = adResult.amount || 15;

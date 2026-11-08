@@ -1,6 +1,8 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
 import { ExamResult, ExamType as ExamGameType } from '../components/exams';
+import { useGame } from '../context/GameContext';
+import { EXAM_PREP_AD_SKIPPED } from './useAdRewards';
 import { useExamHandler } from './useExamHandler';
 import { ExamSubject, GameStateUpdate, SchoolGrades, Skills, Stats } from '../types';
 
@@ -26,7 +28,7 @@ interface UseExamFlowOptions {
   t: TranslateFn;
   examPrepBoostApplied: number;
   clearExamPrepBoost: () => void;
-  claimExamPrepBoostAd: () => Promise<number>;
+  claimExamPrepBoostAd: (options?: { shouldShow?: () => boolean }) => Promise<number>;
 }
 
 interface UseExamFlowResult {
@@ -97,6 +99,29 @@ export const useExamFlow = ({
     },
   });
 
+  // Hazırlık reklamı yüklenirken oyuncu ilerlediyse (tur değişti) ya da sınav zaten açıldıysa
+  // reklam açılmaz ve sınav sonradan açılmaz.
+  const { gameState } = useGame();
+  const placeRef = useRef({
+    turn: gameState.turn,
+    examOpen: examGameVisible,
+    isExamPeriod: gameState.isExamPeriod,
+    pendingReportCard: gameState.pendingReportCard,
+  });
+  placeRef.current = {
+    turn: gameState.turn,
+    examOpen: examGameVisible,
+    isExamPeriod: gameState.isExamPeriod,
+    pendingReportCard: gameState.pendingReportCard,
+  };
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   const handleExamCancelWithBoostReset = useCallback(() => {
     clearExamPrepBoost();
     handleExamCancel();
@@ -121,7 +146,18 @@ export const useExamFlow = ({
           onPress: () => {
             void (async () => {
               clearExamPrepBoost();
-              await claimExamPrepBoostAd();
+              const requestedTurn = placeRef.current.turn;
+              const requestedExamPeriod = placeRef.current.isExamPeriod;
+              // Sınav Dönemi/karne kapanınca tur değişmez ama yeni olay gelir: bunlar da "ayrıldı" sayılır.
+              const isStillHere = () =>
+                isMountedRef.current &&
+                placeRef.current.turn === requestedTurn &&
+                placeRef.current.isExamPeriod === requestedExamPeriod &&
+                !placeRef.current.pendingReportCard &&
+                !placeRef.current.examOpen;
+              const boost = await claimExamPrepBoostAd({ shouldShow: isStillHere });
+              // Reklam arka planda iptal olduysa oyuncu geri dönünce Sınav Dönemi penceresi durur: sınavı hazırlıksız açma.
+              if (boost === EXAM_PREP_AD_SKIPPED || !isStillHere()) return;
               openExamGame(examType);
             })();
           },
