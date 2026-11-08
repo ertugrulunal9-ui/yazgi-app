@@ -127,10 +127,14 @@ export type AuthTokenProvider = () => Promise<string | null> | string | null;
 
 type AdMobFactory = () => {
   initialize: () => Promise<unknown>;
+  setRequestConfiguration: (requestConfiguration: { maxAdContentRating?: string }) => Promise<unknown>;
 };
 
 type AdMobModule = {
   default?: AdMobFactory;
+  MaxAdContentRating?: {
+    T: string;
+  };
   InterstitialAd?: {
     createForAdRequest: (adUnitId: string, requestOptions?: Record<string, unknown>) => any;
   };
@@ -207,6 +211,11 @@ const KNOWN_TEST_AD_UNIT_IDS = new Set([
   'ca-app-pub-3940256099942544/1712485313',
   'ca-app-pub-3940256099942544/4411468910',
 ]);
+/**
+ * Azami reklam içerik derecesi (kullanıcı kararı 2026-11-08, U8): "T" = gençler ve üstü
+ * (SDK `MaxAdContentRating.T`). Tüm reklam isteklerine SDK başlatılmadan önce bir kez uygulanır.
+ */
+export const AD_MAX_CONTENT_RATING = 'T';
 
 let asyncStorageModule: any = null;
 
@@ -381,11 +390,14 @@ class MonetizationService {
    * başlatmaz: açılışta başlatma UMP izin akışından sonra yapılıyor (`useAppBootstrap`).
    */
   private interstitialPreloadRequested = false;
+  /** Süren başlatma: eşzamanlı çağrılar aynı başlatmayı bekler (istek yapılandırması bir kez). */
+  private initializePromise: Promise<void> | null = null;
   private readonly allowMockAds = isDevRuntime;
 
   __reset() {
     if (this.interstitialSlot) this.finishInterstitialSlot(this.interstitialSlot, false);
     this.interstitialPreloadRequested = false;
+    this.initializePromise = null;
     this.isInitialized = false;
     this.adProvider = 'mock';
     this.adMobModule = null;
@@ -408,7 +420,18 @@ class MonetizationService {
 
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
+    if (this.initializePromise) return this.initializePromise;
 
+    const pending = this.runInitialize();
+    this.initializePromise = pending;
+    const clear = () => {
+      if (this.initializePromise === pending) this.initializePromise = null;
+    };
+    pending.then(clear, clear);
+    return pending;
+  }
+
+  private async runInitialize(): Promise<void> {
     const interstitialRuntime = getRuntimeInterstitialConfig();
     this.interstitialSessionLimit = interstitialRuntime.sessionLimit;
     this.interstitialCooldownMs = interstitialRuntime.cooldownMs;
@@ -702,12 +725,21 @@ class MonetizationService {
     this.adsEnabled = enabled;
   }
 
-  setPersonalizedAdsEnabled(enabled: boolean): void {
+  /**
+   * Etkin kişiselleştirme değerini uygular. `consentChanged`: oyuncu Ayarlar'daki reklam gizlilik
+   * seçenekleri formunu kapattı; UMP izni (TCF dizesi) bayrak aynı kalsa bile değişmiş olabilir.
+   */
+  setPersonalizedAdsEnabled(enabled: boolean, options: { consentChanged?: boolean } = {}): void {
     this.personalizedAdsEnabled = enabled;
-    // Önceden yüklenmiş geçiş reklamı eski tercihle istendi: atılır ve yeni tercihle yeniden istenir
-    // (oyuncu kişiselleştirmeyi kapattıysa kişiselleştirilmiş reklam gösterilmesin).
+    // Önceden yüklenmiş geçiş reklamı eski tercihle ya da eski UMP izniyle istendi: atılır ve yeni
+    // değerle bir kez yeniden istenir (oyuncu kişiselleştirmeyi kapattıysa kişiselleştirilmiş reklam
+    // gösterilmesin). Hazır reklam yoksa yeni istek başlatılmaz.
     const slot = this.interstitialSlot;
-    if (slot && slot.state !== 'showing' && slot.personalized !== enabled) {
+    if (
+      slot
+      && slot.state !== 'showing'
+      && (slot.personalized !== enabled || options.consentChanged === true)
+    ) {
       this.finishInterstitialSlot(slot, false);
       this.preloadInterstitialAd();
     }
@@ -746,7 +778,13 @@ class MonetizationService {
         return;
       }
 
-      await mobileAdsFactory().initialize();
+      const mobileAds = mobileAdsFactory();
+      // İlk reklam isteğinden önce: azami içerik derecesi T. Uygulanamazsa AdMob kullanılmaz
+      // (sınırsız dereceli reklam istenmesin). Başka istek bayrağı bilerek verilmez.
+      await mobileAds.setRequestConfiguration({
+        maxAdContentRating: adMobImport?.MaxAdContentRating?.T ?? AD_MAX_CONTENT_RATING,
+      });
+      await mobileAds.initialize();
       this.adProvider = 'admob';
       this.adMobModule = adMobImport;
       devLog.log('[monetization] AdMob initialized.');
@@ -1070,7 +1108,7 @@ export const showInterstitialAdDetailed = () => monetizationService.showIntersti
 export const preloadInterstitialAd = () => monetizationService.preloadInterstitialAd();
 export const getRemainingRewardedAds = () => monetizationService.getRemainingRewardedAds();
 export const restorePurchases = () => monetizationService.restorePurchases();
-export const setPersonalizedAdsEnabled = (enabled: boolean) =>
-  monetizationService.setPersonalizedAdsEnabled(enabled);
+export const setPersonalizedAdsEnabled = (enabled: boolean, options?: { consentChanged?: boolean }) =>
+  monetizationService.setPersonalizedAdsEnabled(enabled, options);
 export const setEntitlementTokenProvider = (provider: AuthTokenProvider | null) =>
   monetizationService.setEntitlementTokenProvider(provider);

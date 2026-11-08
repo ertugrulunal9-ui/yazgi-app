@@ -20,6 +20,33 @@ export type UmpConsentOutcome =
   /** UMP isteği hata verdi. */
   | 'error';
 
+/**
+ * Son bilinen UMP durumu. Açılıştaki onay akışı ve Ayarlar'daki gizlilik seçenekleri formu
+ * yazar; Ayarlar yalnızca bunu okur (açılınca ağ isteği yapmaz).
+ */
+export interface UmpConsentSnapshot {
+  /** `null`: UMP sonucu henüz gelmedi. */
+  outcome: UmpConsentOutcome | null;
+  /** UMP "gizlilik seçenekleri" girişi istiyor (AEA/İngiltere): Ayarlar'da düğme gösterilir. */
+  privacyOptionsRequired: boolean;
+  /** Durumu son kim yazdı. */
+  source: 'startup' | 'privacy_options' | null;
+}
+
+export const INITIAL_UMP_CONSENT_SNAPSHOT: UmpConsentSnapshot = {
+  outcome: null,
+  privacyOptionsRequired: false,
+  source: null,
+};
+
+/**
+ * Gizlilik seçenekleri formunun sonucu.
+ *  - `closed`: form açıldı ve kapandı; UMP durumu yeniden okundu.
+ *  - `unavailable`: UMP bu girişi istemiyor (AEA dışı, web); form açılmadı.
+ *  - `error`: form açılamadı; UMP durumu değişmedi.
+ */
+export type AdPrivacyOptionsResult = 'closed' | 'unavailable' | 'error';
+
 export const isPersonalizedAdsAllowedByUmp = (outcome: UmpConsentOutcome | null): boolean =>
   outcome === 'obtained' || outcome === 'not_required';
 

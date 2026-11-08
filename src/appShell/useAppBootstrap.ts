@@ -12,7 +12,7 @@ import { DEFAULT_LOCALE } from '../i18n/strings';
 import type { AppLocale } from '../i18n/strings';
 import { analyticsService } from '../services/analytics';
 import { logAppOpen } from '../utils/analyticsEvents';
-import { requestAndResolveConsent } from '../services/consentService';
+import { requestAndResolveConsent, subscribeUmpConsent } from '../services/consentService';
 import { resolveEffectivePersonalizedAds } from '../services/adConsentPolicy';
 import type { UmpConsentOutcome } from '../services/adConsentPolicy';
 import { initMonetization, setPersonalizedAdsEnabled as setMonetizationPersonalizedAdsEnabled } from '../services/monetization';
@@ -75,6 +75,10 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
   const [checkingOnboarding, setCheckingOnboarding] = useState(true);
   // UMP sonucu oyuncu tercihinden ayrı tutulur; hiçbir zaman uiPrefs'e yazılmaz.
   const [umpConsentOutcome, setUmpConsentOutcome] = useState<UmpConsentOutcome | null>(null);
+  // Gizlilik seçenekleri formu kapanınca artar: sonuç aynı kalsa bile etkin değer yeniden uygulanır.
+  const [umpConsentRevision, setUmpConsentRevision] = useState(0);
+  // Bir sonraki uygulamada hazır geçiş reklamı (eski UMP izniyle istendi) bir kez yenilenir.
+  const consentRefreshPendingRef = useRef(false);
   const { checkingPrivacyChoices, privacyChoicesPending, markPrivacyChoicesSeen } = usePrivacyChoicesGate();
   const appOpenLoggedRef = useRef(false);
   const splashQuote = useMemo(() => getLoadingQuoteByAge(0, locale), [locale]);
@@ -169,12 +173,26 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
     }
   }, [uiPrefs.analyticsEnabled, uiPrefsLoaded]);
 
+  useEffect(() => subscribeUmpConsent((snapshot) => {
+    // Ayarlar'daki reklam gizlilik seçenekleri formu kapanınca da gelir. Yalnızca UMP durumu
+    // güncellenir (etkin değer aşağıda yeniden hesaplanır); oyuncunun Ayarlar tercihi değişmez.
+    // Sıra: işaret, sonra yeni sonuç, en son sürüm (güncellemeler birleşmese bile ilk uygulama yeni değerle olur).
+    const fromPrivacyOptions = snapshot.source === 'privacy_options';
+    if (fromPrivacyOptions) consentRefreshPendingRef.current = true;
+    if (snapshot.outcome !== null) setUmpConsentOutcome(snapshot.outcome);
+    if (fromPrivacyOptions) setUmpConsentRevision(revision => revision + 1);
+  }), []);
+
   useEffect(() => {
-    // Etkin değer = UMP izin veriyor VE oyuncu açtı (tercih yüklenmeden kapalı).
+    // Etkin değer = UMP izin veriyor VE oyuncu açtı (tercih yüklenmeden kapalı). Form sonrası
+    // reklam servisi hazır reklamı tek çağrıda, yeni değerle bir kez yeniden ister.
+    const consentChanged = consentRefreshPendingRef.current;
+    consentRefreshPendingRef.current = false;
     setMonetizationPersonalizedAdsEnabled(
-      resolveEffectivePersonalizedAds(umpConsentOutcome, uiPrefsLoaded && uiPrefs.personalizedAdsEnabled)
+      resolveEffectivePersonalizedAds(umpConsentOutcome, uiPrefsLoaded && uiPrefs.personalizedAdsEnabled),
+      { consentChanged }
     );
-  }, [umpConsentOutcome, uiPrefs.personalizedAdsEnabled, uiPrefsLoaded]);
+  }, [umpConsentOutcome, uiPrefs.personalizedAdsEnabled, uiPrefsLoaded, umpConsentRevision]);
 
   useEffect(() => {
     const checkOnboarding = async () => {

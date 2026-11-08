@@ -19,6 +19,11 @@ jest.mock('react-native-google-mobile-ads', () => ({
     NOT_REQUIRED: 'NOT_REQUIRED',
     OBTAINED: 'OBTAINED',
   },
+  AdsConsentPrivacyOptionsRequirementStatus: {
+    UNKNOWN: 'UNKNOWN',
+    REQUIRED: 'REQUIRED',
+    NOT_REQUIRED: 'NOT_REQUIRED',
+  },
 }));
 
 describe('resolveEffectivePersonalizedAds', () => {
