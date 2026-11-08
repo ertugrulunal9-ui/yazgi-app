@@ -179,6 +179,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, onLoadGame
     age: gameState.age,
     playerName,
     isLoading,
+    yearEndWindowsShown: gameState.yearEndWindowsShown,
     prepareState: prepareStateForPersistence,
   });
 

@@ -184,9 +184,9 @@ export const uiStrings: DomainStrings = {
     save: {
       emptySlot: 'Boş Yuva',
       tapToSave: 'Kaydetmek için dokun',
-      emptySlotAria: 'Boş yuva {yuvaId}, kaydetmek için dokun',
+      emptySlotAria: 'Boş yuva {slotId}, kaydetmek için dokun',
       autoSave: '⏱️ Otomatik',
-      slotLabel: 'Yuva {yuvaId}',
+      slotLabel: 'Yuva {slotId}',
       corrupted: 'Bozuk',
       active: 'Aktif',
       deleteSave: 'Kaydı sil',
