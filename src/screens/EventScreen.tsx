@@ -12,6 +12,8 @@ import { isFeatureEnabled } from '../config/featureFlags';
 import { useEventScreenController } from '../hooks/useEventScreenController';
 import { isPremium } from '../services/monetization';
 import { getAvatarMood } from '../utils/avatarMood';
+import { resolvePendingYearEndWindow } from '../utils/yearEndWindow';
+import { resolveOverlayStage } from '../utils/overlaySequence';
 
 export const EventScreen: React.FC = React.memo(() => {
   const { theme, metrics, t } = useUI();
@@ -69,7 +71,21 @@ export const EventScreen: React.FC = React.memo(() => {
     padding: metrics.pad,
   }), [metrics.pad]);
 
+  // Aynı anda tek pencere: yıl sonu özeti ve Sınav Dönemi bitene kadar olay kartı gizli kalır
+  // (10 yaşın başında hedef olayı bunların altında kalıyordu). Sonuç ekranı etkilenmez.
+  const yearEndPending = useMemo(() => resolvePendingYearEndWindow({
+    ageMilestoneSummaries: gameState.ageMilestoneSummaries,
+    chapterSummaries: gameState.chapterSummaries,
+    yearEndWindowsShown: gameState.yearEndWindowsShown,
+  }) !== null, [gameState.ageMilestoneSummaries, gameState.chapterSummaries, gameState.yearEndWindowsShown]);
+  const overlayStage = resolveOverlayStage({
+    yearEndPending,
+    examPeriodActive: gameState.isExamPeriod || false,
+    eventActive: gameState.phase === 'EVENT',
+  });
+
   if (gameState.phase !== 'EVENT' && gameState.phase !== 'RESULT') return null;
+  if (gameState.phase === 'EVENT' && overlayStage !== 'EVENT') return null;
 
   if (gameState.phase === 'RESULT') {
     return (

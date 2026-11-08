@@ -136,7 +136,9 @@ jest.mock('../../src/components/AchievementToast', () => ({
 jest.mock('../../src/components/ReportCard', () => () => null);
 
 jest.mock('../../src/components/ExamPeriodModal', () => ({
-  ExamPeriodModal: () => null,
+  ExamPeriodModal: ({ visible }: { visible: boolean }) => (
+    visible ? require('react').createElement('Text', null, 'EXAM_PERIOD_OPEN') : null
+  ),
 }));
 
 jest.mock('../../src/components/DaySummaryModal', () => ({
@@ -538,6 +540,53 @@ describe('Phase 7 screen smoke', () => {
       const { visibleModals } = renderYearEnd([yearSummary(3)], [1], { milestoneAges: [3], chapterIds: [1] });
 
       expect(visibleModals()).toHaveLength(0);
+    });
+
+    // Y-029: 10 yaşın başında yıl sonu özeti ve Sınav Dönemi hedef olayının üstünde üst üste açılıyordu
+    describe('year end window and exam period at age 10', () => {
+      const EXAM_TITLE = 'EXAM_PERIOD_OPEN';
+      const renderAgeTen = (yearEndWindowsShown?: GameState['yearEndWindowsShown']) => {
+        const view = renderYearEnd([yearSummary(9)], [], yearEndWindowsShown);
+        const current = mockedUseGame();
+        mockedUseGame.mockReturnValue({
+          ...current,
+          gameState: { ...current.gameState, age: 10, isExamPeriod: true, examsTakenThisYear: [] },
+        });
+        view.rerender(<GameScreen onPhaseChange={jest.fn()} currentTab="hub" />);
+        return view;
+      };
+
+      it('shows one window at a time: year summary first, then the exam period', () => {
+        const updateGameState = jest.fn();
+        mockedUseGameActions.mockReturnValue({ updateGameState, updateStats: jest.fn(), setStats: jest.fn() } as any);
+        const view = renderAgeTen();
+        const { getByText, queryByText } = view;
+
+        expect(getByText('Age 9 Summary')).toBeTruthy();
+        expect(queryByText(EXAM_TITLE)).toBeNull();
+
+        fireEvent.press(getByText('Continue'));
+        expect(updateGameState).toHaveBeenCalledWith({
+          yearEndWindowsShown: { milestoneAges: [9], chapterIds: [] },
+        });
+        // Kapanış "gösterildi" bilgisini kayda yazar; sahte durum olduğu için elle uygula.
+        const current = mockedUseGame();
+        mockedUseGame.mockReturnValue({
+          ...current,
+          gameState: { ...current.gameState, yearEndWindowsShown: { milestoneAges: [9], chapterIds: [] } },
+        });
+        view.rerender(<GameScreen onPhaseChange={jest.fn()} currentTab="hub" />);
+
+        expect(view.queryByText('Age 9 Summary')).toBeNull();
+        expect(view.getByText(EXAM_TITLE)).toBeTruthy();
+      });
+
+      it('shows the exam period alone when the year summary was already closed', () => {
+        const { getByText, queryByText } = renderAgeTen({ milestoneAges: [9], chapterIds: [] });
+
+        expect(getByText(EXAM_TITLE)).toBeTruthy();
+        expect(queryByText('Age 9 Summary')).toBeNull();
+      });
     });
 
     // Y-013: geçiş reklamı yalnızca doğal arada; yıl sonu penceresinin üstüne açılmaz

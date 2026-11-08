@@ -66,7 +66,8 @@ import { SessionRecapModal } from '../components/SessionRecapModal';
 import { GoalTracker } from '../components/GoalTracker';
 import { isFeatureEnabled } from '../config/featureFlags';
 import { getCurrentChapter, getLocalizedChapterName, getStatCap } from '../utils/gameUtils';
-import { resolveYearEndWindow, type YearEndWindow } from '../utils/yearEndWindow';
+import { resolvePendingYearEndWindow, type YearEndWindow } from '../utils/yearEndWindow';
+import { resolveOverlayStage } from '../utils/overlaySequence';
 import { hasSpendableEnergy } from '../utils/endDayPrompt';
 import { getAvatarMood } from '../utils/avatarMood';
 import { countPendingEchoes } from '../utils/echoTrail';
@@ -273,14 +274,17 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
   // "Gösterildi" bilgisi kayıtta: bellekte tutulunca uygulama her açılışta son bölümü/yaş özetini yeniden
   // gösteriyordu; kayıtla birlikte yeni hayatta da sıfırlanır
   const yearEndWindowsShown = gameState.yearEndWindowsShown;
-  const pendingYearEndWindow = useMemo(() => resolveYearEndWindow({
-    milestones: gameState.ageMilestoneSummaries,
-    chapters: gameState.chapterSummaries,
-    milestoneEnabled: isFeatureEnabled('MILESTONE_SUMMARY'),
-    chapterEnabled: isFeatureEnabled('CHAPTER_SYSTEM'),
-    shownMilestoneAges: new Set(yearEndWindowsShown?.milestoneAges ?? []),
-    shownChapterIds: new Set(yearEndWindowsShown?.chapterIds ?? []),
+  const pendingYearEndWindow = useMemo(() => resolvePendingYearEndWindow({
+    ageMilestoneSummaries: gameState.ageMilestoneSummaries,
+    chapterSummaries: gameState.chapterSummaries,
+    yearEndWindowsShown,
   }), [gameState.ageMilestoneSummaries, gameState.chapterSummaries, yearEndWindowsShown]);
+  // Aynı anda tek pencere: Sınav Dönemi, yıl sonu penceresi kapanana kadar bekler (10 yaşın başı).
+  const overlayStage = resolveOverlayStage({
+    yearEndPending: pendingYearEndWindow !== null || yearEndWindow !== null,
+    examPeriodActive: gameState.isExamPeriod || false,
+    eventActive: gameState.phase === 'EVENT',
+  });
   useEffect(() => {
     if (pendingYearEndWindow) setYearEndWindow(pendingYearEndWindow);
   }, [pendingYearEndWindow]);
@@ -863,7 +867,7 @@ const GameScreenComponent: React.FC<GameScreenProps> = ({ onPhaseChange, current
 
       {/* Exam Period Modal */}
       <ExamPeriodModal
-        visible={(gameState.isExamPeriod || false) && !examGameVisible}
+        visible={overlayStage === 'EXAM_PERIOD' && !examGameVisible}
         examsTaken={gameState.examsTakenThisYear || []}
         onTakeExam={handleExamPeriodExam}
         onClose={handleExamPeriodClose}
