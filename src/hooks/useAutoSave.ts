@@ -34,6 +34,11 @@ export interface UseAutoSaveConfig {
   age: number;
   playerName: string;
   isLoading: boolean;
+  /**
+   * Yıl sonu penceresi kapanınca da kaydedilir: aksi hâlde "gösterildi" bilgisi bir sonraki tura
+   * kadar diske yazılmaz ve uygulama o arada ön planda kapanırsa pencere yeniden açılır.
+   */
+  yearEndWindowsShown?: GameState['yearEndWindowsShown'];
 
   // Pure function that strips runtime caches before persistence
   prepareState: (state: GameState) => GameState;
@@ -56,6 +61,7 @@ export function useAutoSave(config: UseAutoSaveConfig): void {
     age,
     playerName,
     isLoading,
+    yearEndWindowsShown,
     prepareState,
   } = config;
 
@@ -142,7 +148,7 @@ export function useAutoSave(config: UseAutoSaveConfig): void {
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [turn, age, playerName, isLoading]);
+  }, [turn, age, playerName, isLoading, yearEndWindowsShown]);
 
   // Eagerly save on app background to capture changes between turn boundaries.
   useEffect(() => {
