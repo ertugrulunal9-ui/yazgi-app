@@ -59,12 +59,19 @@ const toUmpConsentOutcome = (status: AdsConsentStatus | undefined): UmpConsentOu
 const isPrivacyOptionsRequired = (info: Partial<AdsConsentInfo> | null | undefined): boolean =>
   info?.privacyOptionsRequirementStatus === AdsConsentPrivacyOptionsRequirementStatus.REQUIRED;
 
-/** Onay akışı yarıda kaldıysa SDK'nın son bildiği durumdan okunur (ağ isteği yok). */
-const readCachedPrivacyOptionsRequired = async (): Promise<boolean> => {
+/** `canRequestAds` yalnızca açıkça true ise true (eksik/bozuk bilgi = reklam isteği yok). */
+const canRequestAdsFrom = (info: Partial<AdsConsentInfo> | null | undefined): boolean =>
+  info?.canRequestAds === true;
+
+/**
+ * Onay akışı yarıda kaldıysa SDK'nın son bildiği durumdan okunur (ağ isteği yok). Önceki oturumda
+ * onay alındıysa `canRequestAds` burada da true gelir (çevrimdışı açılışta reklam çalışmaya devam eder).
+ */
+const readCachedConsentInfo = async (): Promise<Partial<AdsConsentInfo> | null> => {
   try {
-    return isPrivacyOptionsRequired(await AdsConsent.getConsentInfo());
+    return await AdsConsent.getConsentInfo();
   } catch {
-    return false;
+    return null;
   }
 };
 
@@ -83,14 +90,17 @@ export async function requestAndResolveConsent(): Promise<UmpConsentOutcome> {
     publish({
       outcome,
       privacyOptionsRequired: isPrivacyOptionsRequired(finalInfo),
+      canRequestAds: canRequestAdsFrom(finalInfo),
       source: 'startup',
     });
     return outcome;
   } catch {
     // Herhangi bir hata durumunda güvenli fallback: kişiselleştirilmemiş reklam
+    const cached = await readCachedConsentInfo();
     publish({
       outcome: 'error',
-      privacyOptionsRequired: await readCachedPrivacyOptionsRequired(),
+      privacyOptionsRequired: isPrivacyOptionsRequired(cached),
+      canRequestAds: canRequestAdsFrom(cached),
       source: 'startup',
     });
     return 'error';
@@ -116,6 +126,7 @@ export function showAdPrivacyOptions(): Promise<AdPrivacyOptionsResult> {
       publish({
         outcome: toUmpConsentOutcome(info?.status),
         privacyOptionsRequired: isPrivacyOptionsRequired(info),
+        canRequestAds: canRequestAdsFrom(info),
         source: 'privacy_options',
       });
       return 'closed';

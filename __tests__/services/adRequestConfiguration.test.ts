@@ -48,6 +48,7 @@ describe('AdMob request configuration (max ad content rating)', () => {
   beforeEach(() => {
     localStorage.clear();
     (monetizationService as any).__reset__();
+    monetizationService.setCanRequestAds(true);
     mockSetRequestConfiguration.mockReset().mockResolvedValue(undefined);
     mockSdkInitialize.mockReset().mockResolvedValue([]);
     fakeAds = [];
@@ -119,6 +120,7 @@ describe('setPersonalizedAdsEnabled after the UMP privacy options form', () => {
   beforeEach(async () => {
     localStorage.clear();
     (monetizationService as any).__reset__();
+    monetizationService.setCanRequestAds(true);
     mockSetRequestConfiguration.mockReset().mockResolvedValue(undefined);
     mockSdkInitialize.mockReset().mockResolvedValue([]);
     fakeAds = [];

@@ -98,10 +98,10 @@ const createFakeInterstitial = () => {
   };
 };
 
-const consentInfo = (status: string) => ({
+const consentInfo = (status: string, canRequestAds: boolean = status !== 'REQUIRED') => ({
   status,
   privacyOptionsRequirementStatus: 'REQUIRED',
-  canRequestAds: status !== 'REQUIRED',
+  canRequestAds,
   isConsentFormAvailable: true,
 });
 
@@ -199,8 +199,10 @@ describe('useAppBootstrap after the UMP privacy options form', () => {
   it('(a) effective value turns on: exactly one re-request, already personalized', async () => {
     await AsyncStorage.setItem(UI_PREFS_KEY, JSON.stringify({ personalizedAdsEnabled: true }));
     // Açılışta form cevaplanmadı: UMP "required" → kişiselleştirme kapalı (oyuncu açmış olsa bile).
-    mockRequestInfoUpdate.mockResolvedValue(consentInfo('REQUIRED'));
-    mockShowForm.mockResolvedValue(consentInfo('REQUIRED'));
+    // Reklam isteği serbest (canRequestAds true) tutulur ki test yalnızca kişiselleştirmeyi ölçsün;
+    // izin yokken reklamın hiç istenmediği aşağıdaki canRequestAds testlerinde.
+    mockRequestInfoUpdate.mockResolvedValue(consentInfo('REQUIRED', true));
+    mockShowForm.mockResolvedValue(consentInfo('REQUIRED', true));
     const { ref } = await startAppWithReadyInterstitial();
     expect(service.personalizedAdsEnabled).toBe(false);
 
@@ -255,5 +257,67 @@ describe('useAppBootstrap after the UMP privacy options form', () => {
 
     expect(service.personalizedAdsEnabled).toBe(true);
     expect(reRequests()).toEqual([]);
+  });
+});
+
+describe('useAppBootstrap and UMP canRequestAds (Y-035)', () => {
+  const mount = async () => {
+    let tree!: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(React.createElement(() => {
+        useAppBootstrap();
+        return null;
+      }));
+    });
+    mountedTrees.push(tree);
+    for (let i = 0; i < 10 && !service.isInitialized; i += 1) await flush();
+  };
+
+  beforeEach(() => {
+    storageMock.__CLEAR__();
+    localStorage.clear();
+    service.__reset__();
+    mockRequestInfoUpdate.mockReset();
+    mockShowForm.mockReset();
+    mockShowPrivacyOptionsForm.mockReset();
+    fakeAds = [];
+    mockCreateInterstitial.mockReset().mockImplementation(() => {
+      const ad = createFakeInterstitial();
+      fakeAds.push(ad);
+      return ad;
+    });
+  });
+
+  afterEach(() => {
+    act(() => {
+      mountedTrees.forEach((tree) => tree.unmount());
+    });
+    mountedTrees = [];
+    service.__reset__();
+  });
+
+  it('EEA, form not completed (canRequestAds false): no ad request; form later grants consent: ads start this session', async () => {
+    mockRequestInfoUpdate.mockResolvedValue(consentInfo('REQUIRED'));
+    mockShowForm.mockResolvedValue(consentInfo('REQUIRED'));
+    await mount();
+    expect(service.isInitialized).toBe(true);
+    expect(service.adProvider).toBe('mock');
+
+    monetizationService.preloadInterstitialAd();
+    expect(mockCreateInterstitial).not.toHaveBeenCalled();
+
+    await closePrivacyOptionsForm('OBTAINED');
+
+    expect(service.adProvider).toBe('admob');
+    expect(mockCreateInterstitial).toHaveBeenCalledTimes(1);
+  });
+
+  it('outside the EEA (NOT_REQUIRED, canRequestAds true): unchanged, SDK starts at launch', async () => {
+    mockRequestInfoUpdate.mockResolvedValue(consentInfo('NOT_REQUIRED', true));
+    await mount();
+
+    expect(service.adProvider).toBe('admob');
+    monetizationService.preloadInterstitialAd();
+    expect(mockCreateInterstitial).toHaveBeenCalledTimes(1);
   });
 });

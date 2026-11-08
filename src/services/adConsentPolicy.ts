@@ -29,6 +29,11 @@ export interface UmpConsentSnapshot {
   outcome: UmpConsentOutcome | null;
   /** UMP "gizlilik seçenekleri" girişi istiyor (AEA/İngiltere): Ayarlar'da düğme gösterilir. */
   privacyOptionsRequired: boolean;
+  /**
+   * UMP `canRequestAds`: Google'a göre reklam isteği yalnızca bu true iken yapılır (AEA'da onay
+   * alınmadıysa false; AEA dışında UMP onay istemediği için true). Bilinmiyorsa false.
+   */
+  canRequestAds: boolean;
   /** Durumu son kim yazdı. */
   source: 'startup' | 'privacy_options' | null;
 }
@@ -36,6 +41,7 @@ export interface UmpConsentSnapshot {
 export const INITIAL_UMP_CONSENT_SNAPSHOT: UmpConsentSnapshot = {
   outcome: null,
   privacyOptionsRequired: false,
+  canRequestAds: false,
   source: null,
 };
 
